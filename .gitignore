@@ -1,0 +1,12 @@
+.DS_Store
+*.xcuserstate
+xcuserdata/
+DerivedData/
+build/
+.derived/
+Local.xcconfig
+FXETennis.xcodeproj/
+.claude/settings.local.json
+.claude/worktrees/
+supabase/.temp/
+supabase/.branches/

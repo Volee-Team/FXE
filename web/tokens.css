@@ -1,0 +1,289 @@
+/*
+ * tokens.css
+ * FXE Tennis web admin design tokens.
+ *
+ * Mirror of FXETennis/Resources/Brand.swift. Change one, change both.
+ * Every measured contrast ratio and every rationale lives in that file. This
+ * file repeats the numbers so a web-only contributor never has to open Xcode,
+ * but Brand.swift is the source of truth.
+ *
+ * ---------------------------------------------------------------------------
+ * TARA'S PALETTE (2026-08-02)
+ *   #0E1239 navy      #6DBE45 green      #D5DF24 yellow-green   #FFFFFF white
+ *   #6F6E6F grey dark  #9E9F9F grey mid   #BBBBBB grey light
+ *
+ * ONE COLOUR IS OURS, NOT HERS:
+ *   --fxe-surface: #FAF7F1
+ * The Developer Guide asks for cream or warm-white. Her sheets contain no
+ * cream, only pure white. #FAF7F1 is warm without reading as beige, and it is
+ * the warmest value that still keeps #6F6E6F above 4.5:1 for secondary text.
+ * Pending her approval. If she supplies her own cream, change this one value
+ * and re-check the two greys.
+ *
+ * LIGHT APPEARANCE ONLY. A dark theme needs surfaces she has not supplied.
+ * ---------------------------------------------------------------------------
+ */
+
+:root {
+  /* ---- Brand core ---- */
+  --fxe-navy: #0e1239;          /* supplied: primary brand colour */
+  --fxe-court: #6dbe45;         /* supplied: gator green. FILL ONLY, see rules */
+  --fxe-accent: #d5df24;        /* supplied: tennis ball. FILL ONLY, see rules */
+
+  /* ---- Surfaces ---- */
+  --fxe-surface: #faf7f1;       /* OUR CHOICE, pending Tara */
+  --fxe-surface-raised: #ffffff;/* supplied */
+  --fxe-surface-inverted: #0e1239;
+
+  /* ---- Text ---- */
+  --fxe-text-primary: #0e1239;      /* 16.87:1 on surface */
+  --fxe-text-secondary: #6f6e6f;    /*  4.75:1 on surface */
+  --fxe-text-on-navy: #ffffff;      /* 18.04:1 on navy */
+  --fxe-text-on-navy-muted: #bbbbbb;/*  9.40:1 on navy */
+  --fxe-text-on-court: #0e1239;     /*  7.82:1 on court */
+  --fxe-text-on-accent: #0e1239;    /* 12.38:1 on accent */
+
+  /* ---- Lines and states ---- */
+  --fxe-border: #6f6e6f;    /* control outlines. 4.75:1, clears the 3:1 floor */
+  --fxe-hairline: #bbbbbb;  /* decorative row separators only. 1.80:1 */
+  --fxe-disabled: #9e9f9f;  /* inactive controls, WCAG exempt. 2.48:1 */
+  --fxe-focus-ring: #0e1239;
+
+  /* ---- Status ----
+   * Never use a status colour on its own. Every status renders as
+   * icon + label + tint. See .fxe-chip below.
+   * You're In and Response Needed are shades of Tara's greens.
+   * Player Pool and Canceled are ADDITIONS: she supplied no orange and no red.
+   */
+  --fxe-status-in-ink: #2c6318;         /* 6.76:1 on surface, 6.25:1 on tint */
+  --fxe-status-in-tint: #e4f3dc;
+  --fxe-status-pool-ink: #a9500a;       /* 5.12:1 on surface, 4.62:1 on tint */
+  --fxe-status-pool-tint: #fbe9d5;
+  --fxe-status-respond-ink: #565b00;    /* 6.79:1 on surface, 6.65:1 on tint */
+  --fxe-status-respond-tint: #f6f8ce;
+  --fxe-status-canceled-ink: #992018;   /* 7.63:1 on surface, 6.47:1 on tint */
+  --fxe-status-canceled-tint: #fadfdc;
+
+  /* ---- Typography ----
+   * rem based so the browser's own font size setting scales everything,
+   * the web equivalent of Dynamic Type. Never set a font-size in px.
+   * Serif on display and title matches Brand.Typography.displayDesign.
+   */
+  --fxe-font-display: ui-serif, "New York", Georgia, "Times New Roman", serif;
+  --fxe-font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --fxe-font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --fxe-text-display: 2.125rem;   /* 34px at default root */
+  --fxe-text-title: 1.375rem;     /* 22px */
+  --fxe-text-headline: 1.0625rem; /* 17px */
+  --fxe-text-body: 1rem;          /* 16px */
+  --fxe-text-subheadline: 0.9375rem;
+  --fxe-text-caption: 0.8125rem;
+  --fxe-text-chip: 0.8125rem;
+
+  --fxe-weight-regular: 400;
+  --fxe-weight-semibold: 600;
+  --fxe-weight-bold: 700;
+
+  --fxe-leading-tight: 1.2;
+  --fxe-leading-body: 1.45;
+
+  /* ---- Spacing, four point grid ---- */
+  --fxe-space-xxs: 0.25rem;  /* 4 */
+  --fxe-space-xs: 0.5rem;    /* 8 */
+  --fxe-space-sm: 0.75rem;   /* 12 */
+  --fxe-space-md: 1rem;      /* 16 */
+  --fxe-space-lg: 1.5rem;    /* 24 */
+  --fxe-space-xl: 2rem;      /* 32 */
+  --fxe-space-xxl: 3rem;     /* 48 */
+  --fxe-page-margin: 1.25rem;
+  --fxe-card-padding: 1rem;
+
+  /* ---- Radius ---- */
+  --fxe-radius-xs: 6px;
+  --fxe-radius-sm: 10px;
+  --fxe-radius-md: 14px;   /* default card */
+  --fxe-radius-lg: 20px;   /* sheets, hero panels */
+  --fxe-radius-pill: 999px;
+
+  /* ---- Layout ---- */
+  --fxe-tap-min: 44px;
+  --fxe-tap-comfortable: 52px;
+  --fxe-hairline-width: 1px;
+  --fxe-border-width: 1.5px;
+}
+
+/* ---------------------------------------------------------------------------
+ * Base
+ * ------------------------------------------------------------------------ */
+
+body {
+  background: var(--fxe-surface);
+  color: var(--fxe-text-primary);
+  font-family: var(--fxe-font-body);
+  font-size: var(--fxe-text-body);
+  line-height: var(--fxe-leading-body);
+}
+
+h1,
+h2 {
+  font-family: var(--fxe-font-display);
+  line-height: var(--fxe-leading-tight);
+}
+
+h1 {
+  font-size: var(--fxe-text-display);
+  font-weight: var(--fxe-weight-bold);
+}
+
+h2 {
+  font-size: var(--fxe-text-title);
+  font-weight: var(--fxe-weight-semibold);
+}
+
+:focus-visible {
+  outline: 2px solid var(--fxe-focus-ring);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------------------
+ * Status chips
+ *
+ * Required markup. The icon and the label are both mandatory, which is how the
+ * never-colour-alone rule is enforced on the web where there are no SF Symbols.
+ *
+ *   <span class="fxe-chip fxe-chip--in">
+ *     <span class="fxe-chip__icon" aria-hidden="true">&#10003;</span>
+ *     You're In!
+ *   </span>
+ *
+ * Icon glyphs that match the iOS SF Symbols:
+ *   You're In        &#10003;  check
+ *   Player Pool      &#8987;   hourglass
+ *   Response Needed  &#33;     exclamation
+ *   Canceled         &#10005;  cross
+ * ------------------------------------------------------------------------ */
+
+.fxe-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fxe-space-xxs);
+  padding: var(--fxe-space-xxs) var(--fxe-space-xs);
+  border-radius: var(--fxe-radius-pill);
+  font-size: var(--fxe-text-chip);
+  font-weight: var(--fxe-weight-semibold);
+  white-space: nowrap;
+}
+
+.fxe-chip--in {
+  color: var(--fxe-status-in-ink);
+  background: var(--fxe-status-in-tint);
+}
+
+.fxe-chip--pool {
+  color: var(--fxe-status-pool-ink);
+  background: var(--fxe-status-pool-tint);
+}
+
+.fxe-chip--respond {
+  color: var(--fxe-status-respond-ink);
+  background: var(--fxe-status-respond-tint);
+}
+
+.fxe-chip--canceled {
+  color: var(--fxe-status-canceled-ink);
+  background: var(--fxe-status-canceled-tint);
+}
+
+/* ---------------------------------------------------------------------------
+ * Cards and buttons
+ * ------------------------------------------------------------------------ */
+
+.fxe-card {
+  background: var(--fxe-surface-raised);
+  border-radius: var(--fxe-radius-md);
+  padding: var(--fxe-card-padding);
+}
+
+.fxe-card__divider {
+  border: 0;
+  border-top: var(--fxe-hairline-width) solid var(--fxe-hairline);
+}
+
+.fxe-btn {
+  min-height: var(--fxe-tap-comfortable);
+  padding: 0 var(--fxe-space-md);
+  border: 0;
+  border-radius: var(--fxe-radius-sm);
+  font-size: var(--fxe-text-body);
+  font-weight: var(--fxe-weight-semibold);
+  cursor: pointer;
+}
+
+.fxe-btn--primary {
+  background: var(--fxe-navy);
+  color: var(--fxe-text-on-navy);
+}
+
+/* Navy text on green, never white. White on #6dbe45 is 2.31:1 and fails. */
+.fxe-btn--secondary {
+  background: var(--fxe-court);
+  color: var(--fxe-text-on-court);
+}
+
+.fxe-btn--quiet {
+  background: transparent;
+  color: var(--fxe-text-primary);
+  border: var(--fxe-border-width) solid var(--fxe-border);
+}
+
+.fxe-btn--destructive {
+  background: var(--fxe-status-canceled-ink);
+  color: #ffffff; /* 8.16:1 */
+}
+
+.fxe-btn:disabled {
+  background: transparent;
+  color: var(--fxe-disabled);
+  border: var(--fxe-border-width) solid var(--fxe-disabled);
+  cursor: not-allowed;
+}
+
+/* ---------------------------------------------------------------------------
+ * MEASURED WCAG 2.1 CONTRAST RATIOS, sRGB, 2026-08-02
+ * Thresholds: 4.5:1 body text, 3:1 large text and non-text UI components.
+ *
+ *   #0e1239 on #faf7f1   16.87:1  PASS   primary text on page
+ *   #0e1239 on #ffffff   18.04:1  PASS   primary text on card
+ *   #6f6e6f on #faf7f1    4.75:1  PASS   secondary text on page
+ *   #6f6e6f on #ffffff    5.08:1  PASS   secondary text on card
+ *   #ffffff on #0e1239   18.04:1  PASS   text on navy
+ *   #bbbbbb on #0e1239    9.40:1  PASS   muted text on navy
+ *   #0e1239 on #6dbe45    7.82:1  PASS   text on green button
+ *   #0e1239 on #d5df24   12.38:1  PASS   text on accent
+ *   #6dbe45 on #0e1239    7.82:1  PASS   green text on navy panel
+ *   #d5df24 on #0e1239   12.38:1  PASS   accent text on navy panel
+ *   #6f6e6f on #faf7f1    4.75:1  PASS   control border, needs 3:1
+ *   #0e1239 on #faf7f1   16.87:1  PASS   focus ring, needs 3:1
+ *
+ *   #2c6318 on #faf7f1    6.76:1  PASS   You're In on page
+ *   #2c6318 on #e4f3dc    6.25:1  PASS   You're In chip
+ *   #a9500a on #faf7f1    5.12:1  PASS   Player Pool on page
+ *   #a9500a on #fbe9d5    4.62:1  PASS   Player Pool chip
+ *   #565b00 on #faf7f1    6.79:1  PASS   Response Needed on page
+ *   #565b00 on #f6f8ce    6.65:1  PASS   Response Needed chip
+ *   #992018 on #faf7f1    7.63:1  PASS   Canceled on page
+ *   #992018 on #fadfdc    6.47:1  PASS   Canceled chip
+ *   #ffffff on #992018    8.16:1  PASS   destructive button
+ *   #ffffff on #a9500a    5.47:1  PASS   Player Pool banner
+ *
+ * FAILING PAIRS AND THE RULE THAT REPLACES THEM
+ *   #ffffff on #6dbe45    2.31:1  FAIL   banned. Green buttons take navy text.
+ *   #6dbe45 on #faf7f1    2.16:1  FAIL   green is fill only, never text or icon
+ *   #d5df24 on #faf7f1    1.36:1  FAIL   accent is fill only, never text or icon
+ *   #bbbbbb on #faf7f1    1.80:1  below 3:1. Decorative separators only, which
+ *                                 1.4.11 exempts. Controls use --fxe-border.
+ *   #9e9f9f on #faf7f1    2.48:1  below 4.5:1. Inactive controls, WCAG exempt.
+ *                                 Always pair with visible helper text.
+ * ------------------------------------------------------------------------ */
