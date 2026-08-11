@@ -16,6 +16,61 @@ Source spec: the FXE Tennis Version 1 Developer Guide. Engineering decisions der
 
 ---
 
+## Who is who, and what matters to them
+
+**Tara** — FXE tennis pro. She is the client, the sole administrator, and the
+only person whose opinion settles a product argument. She currently runs the
+program from texts, a spreadsheet, and a handwritten court sheet. She is not
+technical and should never be asked a technical question; translate first.
+
+**Alex** — building it. Relays Tara, makes engineering calls, does not want to
+be asked the same thing twice.
+
+**Kat** — product manager, joined 2026. Asks the questions a real company asks:
+architecture diagrams, data docs, how changes get approved, where bugs live.
+
+**FXE** is a member club. That is not decoration: it is why clinic location is
+hidden from players. Tara, 2026-08-02: *"I don't want it to look like it is for
+everyone and all nonmembers by listing where FXE is at."*
+
+---
+
+## Build & Run
+
+```bash
+# Local stack (Postgres, Auth, Storage). Docker must be running.
+supabase start
+
+# Apply every migration + seed. Destroys local data; that is the point.
+supabase db reset
+
+# The whole test suite: 142 checks + a concurrency probe.
+bash tests/run-probes.sh
+
+# Push migrations to the hosted project.
+export SUPABASE_DB_PASSWORD='<from .env.local, gitignored>'
+supabase db push
+```
+
+| | |
+|---|---|
+| Local DB container | `supabase_db_FXE-Tennis` |
+| Hosted project | `amnaxvznkadkgzdxzegw` (`fxe-tennis`, us-east-1) |
+| Remote | `github.com/Volee-Team/FXE`, branch `main` |
+| CI | `.github/workflows/probes.yml`, runs the full suite on every push and PR |
+
+**The hosted database is not seeded and must not be.** It will hold Tara's real
+players. Probe verification runs against a throwaway Postgres: locally via
+`supabase db reset`, and in CI on a fresh runner. Never point a probe at hosted.
+
+Run a single probe:
+
+```bash
+docker exec -i supabase_db_FXE-Tennis psql -U postgres -d postgres -f - < tests/sql/pricing_and_revenue.sql
+```
+
+---
+
 ## Testing & verification protocol
 
 **A clean build is not proof a feature works.** Before claiming any task is done, produce an artifact.
@@ -61,6 +116,25 @@ That exercise is what exposed a defect in the probe harness itself: the pass con
 9. **Where a privilege boundary exists, write a probe that tries to cross it.** `information_hiding.sql` was green for the entire life of the bug above. It asserted `maria_is_not_admin = false` and then tested what a non-admin can read. It never attempted the transition. **A probe that only tests the state you expect cannot find a transition you did not think of.** `tests/sql/privilege_escalation.sql` attacks instead: eight attempts to escalate, each asserting the *resulting state*, plus one check that legitimate self-service still works so the hole cannot be "fixed" by breaking the product.
 
    Assert the outcome, not the error. An UPDATE blocked by RLS affects zero rows and raises nothing, so `exception when others` alone would have reported a pass.
+
+10. **When you are not sure, ask. Including about small things.** This is the
+    rule Alex has asked for most often, so it is the one most worth obeying.
+    A sixty-second question beats half a day of rework and beats a confident
+    guess that quietly becomes a load-bearing assumption.
+
+    Ask **Alex** for engineering calls and anything about how work gets done.
+    Ask **Tara**, through Alex and in plain language, for anything about how her
+    program actually runs: prices, timing, who sees what, what she does today.
+    Never ask Tara a technical question; translate it into her world first.
+
+    Signals that you should be asking rather than deciding: you are about to
+    write "presumably" or "I will assume"; two readings of a sentence would
+    produce different code; you are inventing a value nobody gave you (a price,
+    a limit, a default); or the answer changes a database column.
+
+    When you do decide something yourself, **write it down** — a line in
+    `docs/decisions/`, or the roadmap, or here. A decision that lives only in a
+    chat log will be made again differently next month.
 
 ---
 
@@ -239,7 +313,38 @@ The local Supabase dev image segfaults the Postgres backend when a role without 
 
 ---
 
+---
+
+## Where things are written down
+
+Chat is not memory. Every session ends and takes its context with it. If it
+matters and it is not in the repo, it is gone.
+
+| File | What belongs there |
+|---|---|
+| `CLAUDE.md` | Rules, conventions, hard-won lessons. What every session must know |
+| `docs/roadmap.md` | What is in v1, v1.1, v2, what is parked, what we are deliberately not doing. **Tara's new asks land here first**, never straight into code |
+| `docs/decisions/` | One file per decision that would otherwise be re-litigated. What we chose, why, what we rejected, how we would know we were wrong |
+| `docs/backlog.md` | Bugs and chores. Anything noticed and not fixed goes here in the same breath |
+| `CLAUDE.md` changelog | One entry per session. The diary |
+
+**The habit that makes it work:** when Tara says something new, it goes in the
+roadmap before it goes in a migration. When a decision gets made, it gets a
+number. When something is noticed and skipped, it goes in the backlog. Writing
+it down is part of doing it, not paperwork afterwards.
+
+### Audit this file periodically
+
+At the start of a session that will run long, and after any batch of decisions,
+re-read CLAUDE.md against reality. Specifically: do the Build & Run commands
+still work, does the probe count match what the suite prints, does every hard
+rule still have a probe, and has anything in "Tara's decisions" been superseded
+by a later call? Stale rules are worse than missing ones, because they get
+obeyed.
+
 ## Changelog
+
+- **2026-08-10** — Hosted Supabase live (`amnaxvznkadkgzdxzegw`), all migrations applied, schema verified against local. CI now runs the suite on every push and PR, plus a job that fails any PR editing an already-committed migration. **Pricing rebuilt** to Tara's locked table (member 60/90 = $18/$22, non-member = $23/$28), filled in by a trigger from clinic length, and **snapshotted onto the registration** so editing a price never rewrites past revenue (decision 0002). `revenue_summary()` returns the four numbers and the total she asked for. Juniors out of v1 (decision 0004). **Two more harness bugs found and fixed, both silently passing:** the error match was anchored to `^ERROR` but psql writes `psql:<stdin>:138: ERROR:`, so five aborting probes reported green; and a probe running zero assertions also reported green. Suite: 142 checks + concurrency. Added `docs/roadmap.md`, `docs/decisions/`, `docs/backlog.md`, and the Build & Run / Who is who sections above.
 
 - **2026-08-02 (later)** - **Critical privilege escalation fixed.** Any player could run one UPDATE against their own `accounts` row to become an administrator, then read every roster, capacity, court assignment and payment status in the club, demote Tara, and reassign other players to their own account. Cause: the lockdown block revoked grants on every hidden table except `accounts` and `players`, and both update policies had `USING` but no `WITH CHECK`. Fixed in `20260802000003_fix_privilege_escalation.sql` with three layers (column grants, `WITH CHECK`, trigger). Found by adversarial review, not by the existing tests: `information_hiding.sql` was green throughout because it never attempted the escalation. New probe `privilege_escalation.sql` performs the attack; it was verified to go **red on 7 checks against the unfixed schema** before the fix was applied. Suite now 107 checks plus the concurrency test, all green. See hard rules 8 and 9.
 
