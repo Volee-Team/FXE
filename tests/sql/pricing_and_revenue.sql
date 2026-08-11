@@ -148,12 +148,42 @@ begin
   select expected_cents::text into v from public.revenue_by_clinic where clinic_id = c90;
   insert into _probe_result values ('pool_entry_owes_nothing', '7200', v);
 
+  -- ── the four numbers Tara reads off ──────────────────────────────────────
+  -- Two members and one non-member on a 90, plus Maria and Rob on a 60 that
+  -- are both Player Pool (past the member window), so they owe nothing.
+  perform set_config('request.jwt.claims', json_build_object('sub', TARA_ACC)::text, true);
+  select member_90_players::text into v from public.revenue_summary();
+  insert into _probe_result values ('summary_member_90_is_2', '2', v);
+  select nonmember_90_players::text into v from public.revenue_summary();
+  insert into _probe_result values ('summary_nonmember_90_is_1', '1', v);
+  select other_players::text into v from public.revenue_summary();
+  insert into _probe_result values ('summary_no_odd_durations', '0', v);
+  select expected_cents::text into v from public.revenue_summary();
+  insert into _probe_result values ('summary_expected_7200', '7200', v);
+  select collected_cents::text into v from public.revenue_summary();
+  insert into _probe_result values ('summary_collected_2200', '2200', v);
+  -- The buckets must always reconcile to the total, or a number is going missing.
+  select (member_60_players + member_90_players + nonmember_60_players
+          + nonmember_90_players + other_players = total_players)::text
+    into v from public.revenue_summary();
+  insert into _probe_result values ('summary_buckets_reconcile', 'true', v);
+  -- A range that excludes every clinic must be all zeroes, not all-time totals.
+  select expected_cents::text into v
+    from public.revenue_summary(now() - interval '60 days', now() - interval '30 days');
+  insert into _probe_result values ('summary_range_filter_works', '0', v);
+
   -- ── players must never see the money ─────────────────────────────────────
   perform set_config('request.jwt.claims', json_build_object('sub', MARIA_ACC)::text, true);
   select count(*)::text into v from public.revenue_by_clinic;
   insert into _probe_result values ('player_sees_no_revenue_rows', '0', v);
   select count(*)::text into v from public.revenue_by_segment;
   insert into _probe_result values ('player_sees_no_segment_rows', '0', v);
+  -- revenue_summary is SECURITY DEFINER, so its is_admin() gate is the only
+  -- thing standing between a player and the club's money. Attack it directly.
+  select expected_cents::text into v from public.revenue_summary();
+  insert into _probe_result values ('player_summary_is_zero', '0', v);
+  select total_players::text into v from public.revenue_summary();
+  insert into _probe_result values ('player_summary_no_headcount', '0', v);
 
   perform set_config('role', 'postgres', true);
 end $$;
