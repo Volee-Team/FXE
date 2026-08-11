@@ -1,0 +1,67 @@
+name: probes
+
+# Every push and every pull request. The whole point is that a change which
+# breaks a rule Tara relies on fails here, not in front of her.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  sql-probes:
+    name: SQL probes + concurrency
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start local Postgres stack
+        run: supabase start -x realtime,storage-api,imgproxy,studio,edge-runtime,logflare,vector,supavisor
+
+      # `db reset` applies every migration in order and then the seed. If a
+      # migration is broken, or the seed no longer satisfies a new constraint,
+      # this is where it surfaces.
+      - name: Apply migrations and seed
+        run: supabase db reset
+
+      - name: Run probe suite
+        run: bash tests/run-probes.sh
+
+      # Diagnostics only on failure, so a green run stays quiet.
+      - name: Dump Postgres logs on failure
+        if: failure()
+        run: supabase logs db || docker logs "$(docker ps -aqf name=supabase_db)" 2>&1 | tail -100
+
+  # A migration that has been applied to the hosted database can never be
+  # edited in place, only superseded. This catches the most common way that
+  # rule gets broken by accident.
+  migration-immutability:
+    name: No edits to existing migrations
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fail if a committed migration was modified
+        run: |
+          BASE="origin/${{ github.base_ref }}"
+          CHANGED=$(git diff --name-only --diff-filter=M "$BASE"...HEAD -- supabase/migrations/ || true)
+          if [ -n "$CHANGED" ]; then
+            echo "::error::These migrations were modified rather than superseded:"
+            echo "$CHANGED"
+            echo ""
+            echo "A migration that may already be applied to the hosted database"
+            echo "must not be edited. Add a new migration that changes what you"
+            echo "need instead."
+            exit 1
+          fi
+          echo "No existing migrations were modified."
