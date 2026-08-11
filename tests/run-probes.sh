@@ -24,13 +24,24 @@ for f in tests/sql/*.sql; do
     echo "  FAIL  $name"
     echo "$out" | grep -E "FAIL" | sed 's/^/          /'
     FAILED=1
-  elif echo "$out" | grep -qiE "^ERROR|server closed"; then
+  # psql writes errors as "psql:<stdin>:138: ERROR: ...", so anchoring this
+  # pattern to start-of-line silently let every SQL error through as a pass.
+  # Match ERROR anywhere. (Found 2026-08-10, after a NOT NULL column made five
+  # probes abort and the suite still reported them green.)
+  elif echo "$out" | grep -qiE "ERROR:|server closed"; then
     echo "  ERROR $name"
-    echo "$out" | grep -iE "^ERROR|server closed" | head -3 | sed 's/^/          /'
+    echo "$out" | grep -iE "ERROR:|server closed" | head -3 | sed 's/^/          /'
     FAILED=1
   else
     n=$(echo "$out" | grep -c "PASS")
-    echo "  ok    $name ($n checks)"
+    # A probe that ran zero assertions is not a passing probe. Same family of
+    # bug as the one above: silence is not evidence.
+    if [ "$n" -eq 0 ]; then
+      echo "  EMPTY $name (0 checks ran — probe produced no assertions)"
+      FAILED=1
+    else
+      echo "  ok    $name ($n checks)"
+    fi
   fi
 done
 
