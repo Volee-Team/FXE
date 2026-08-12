@@ -78,57 +78,62 @@ import SwiftUI
 
 public enum Brand {
 
-    // Brand core.
+    // Brand core — PALETTE B, "full country club" (Tara, 2026-08-12: "lets do b for now").
+    // Softer navy, forest green, a brass accent, a cream ground. The gator mark
+    // is being redrawn in this palette to match. Palette A (her raw file colours)
+    // lives in git history if she ever reverts.
 
     /// Primary brand colour. Bars, headings, primary buttons, body text.
-    public static let navy = Color(hex: 0x0E1239)
+    /// #16264C on the cream surface is ~13.6:1 — headings stay crisp in sunlight.
+    public static let navy = Color(hex: 0x16264C)
 
-    /// The gator green. Fill only. See the hard rule in the ACCESSIBILITY block:
-    /// this colour is 2.16:1 on the surface, so it may never carry text or an icon.
-    public static let court = Color(hex: 0x6DBE45)
+    /// Forest green. Fill and small markers only. ~4.0:1 on the surface, below the
+    /// 4.5 text floor, so it may never carry body text — use `textOnCourt` on it,
+    /// or keep it to fills and the You're In! dot.
+    public static let court = Color(hex: 0x3E7C55)
 
-    /// Tennis ball yellow-green. Small highlights, active indicators, never text.
-    public static let accent = Color(hex: 0xD5DF24)
+    /// Brass accent. Small highlights and the Player Pool marker. Fill, never text.
+    public static let accent = Color(hex: 0xB08D57)
 
     // Surfaces.
 
-    /// Page background. Warm off-white. Our choice, see the note above.
-    public static let surface = Color(hex: 0xFAF7F1)
+    /// Page background. Warm cream — the country-club ground from option B.
+    public static let surface = Color(hex: 0xF7F4EC)
 
     /// Cards and sheets lifted off the page.
     public static let surfaceRaised = Color(hex: 0xFFFFFF)
 
     /// Inverted surface: navy panels, the tab bar, hero headers.
-    public static let surfaceInverted = Color(hex: 0x0E1239)
+    public static let surfaceInverted = Color(hex: 0x16264C)
 
     // Text.
 
-    public static let textPrimary = Color(hex: 0x0E1239)
-    public static let textSecondary = Color(hex: 0x6F6E6F)
-    public static let textOnNavy = Color(hex: 0xFFFFFF)
-    public static let textOnNavyMuted = Color(hex: 0xBBBBBB)
-    public static let textOnCourt = Color(hex: 0x0E1239)
-    public static let textOnAccent = Color(hex: 0x0E1239)
+    public static let textPrimary = Color(hex: 0x16264C)
+    /// Secondary text. #6E6552 warm grey-brown is ~5.0:1 on the cream surface.
+    public static let textSecondary = Color(hex: 0x6E6552)
+    /// On navy: warm cream rather than pure white, so it belongs to this palette.
+    public static let textOnNavy = Color(hex: 0xF6F3EA)
+    public static let textOnNavyMuted = Color(hex: 0xCFC9BC)
+    public static let textOnCourt = Color(hex: 0xFFFFFF)
+    public static let textOnAccent = Color(hex: 0x231A0C)
 
     // Lines and states.
 
-    /// Outline for interactive controls. Passes the 3:1 non-text threshold, so
-    /// it is safe when the border is the only thing marking a control's bounds.
-    public static let border = Color(hex: 0x6F6E6F)
+    /// Outline for interactive controls. #6E6552 clears the 3:1 non-text
+    /// threshold on the surface, so it is safe as the sole marker of a control.
+    public static let border = Color(hex: 0x6E6552)
 
     /// Decorative separators between rows inside an already bounded card.
-    /// 1.80:1 against the surface, which is below 3:1. WCAG 1.4.11 exempts
-    /// purely decorative graphics, so this is allowed, but only where removing
-    /// the line would lose no information. Never use it to outline a control.
-    public static let hairline = Color(hex: 0xBBBBBB)
+    /// Warm and low-contrast by design; WCAG 1.4.11 exempts purely decorative
+    /// graphics. Never use it to outline a control.
+    public static let hairline = Color(hex: 0xE3DCCB)
 
-    /// Disabled controls. WCAG exempts inactive components from contrast, which
-    /// is why 2.48:1 is acceptable here and nowhere else. Always pair a disabled
-    /// control with visible helper text explaining why it is unavailable.
-    public static let disabled = Color(hex: 0x9E9F9F)
+    /// Disabled controls. WCAG exempts inactive components from contrast.
+    /// Always pair a disabled control with visible helper text explaining why.
+    public static let disabled = Color(hex: 0xB7B0A2)
 
-    /// Focus and selection ring. Navy, for 16.87:1 against the surface.
-    public static let focusRing = Color(hex: 0x0E1239)
+    /// Focus and selection ring. Navy, for ~13.6:1 against the surface.
+    public static let focusRing = Color(hex: 0x16264C)
 }
 
 // MARK: - Status
@@ -176,20 +181,20 @@ public extension Brand {
         /// marker of any kind, because the saturated hues fail 3:1 on light.
         public var ink: Color {
             switch self {
-            case .youreIn: return Color(hex: 0x2C6318)
-            case .playerPool: return Color(hex: 0xA9500A)
-            case .responseNeeded: return Color(hex: 0x565B00)
-            case .canceled: return Color(hex: 0x992018)
+            case .youreIn: return Color(hex: 0x2C5A3E)         // forest, ~6.3:1 on its tint
+            case .playerPool: return Color(hex: 0x7A5E24)      // brass, ~5.3:1 on its tint
+            case .responseNeeded: return Color(hex: 0x1F4E5A)  // deep teal, distinct from both, ~7:1
+            case .canceled: return Color(hex: 0x992E22)        // brick red, ~6.5:1
             }
         }
 
         /// Chip background. Pale enough that `ink` clears 4.5:1 on top of it.
         public var tint: Color {
             switch self {
-            case .youreIn: return Color(hex: 0xE4F3DC)
-            case .playerPool: return Color(hex: 0xFBE9D5)
-            case .responseNeeded: return Color(hex: 0xF6F8CE)
-            case .canceled: return Color(hex: 0xFADFDC)
+            case .youreIn: return Color(hex: 0xE7F0E7)
+            case .playerPool: return Color(hex: 0xF5EBD8)
+            case .responseNeeded: return Color(hex: 0xDDEEF0)
+            case .canceled: return Color(hex: 0xF6DED9)
             }
         }
 

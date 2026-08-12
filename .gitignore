@@ -10,3 +10,8 @@ FXETennis.xcodeproj/
 .claude/worktrees/
 supabase/.temp/
 supabase/.branches/
+
+# XcodeGen output (regenerate with: xcodegen generate)
+*.xcodeproj
+.build/
+DerivedData/

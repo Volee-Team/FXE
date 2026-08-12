@@ -1,0 +1,64 @@
+# XcodeGen project definition.
+#
+# Why XcodeGen: the .xcodeproj is GENERATED from this file, never hand-edited
+# and never committed. That means parallel work (several agents, or Alex and a
+# session at once) writes Swift files into folders and nobody ever merge-
+# conflicts a pbxproj. Regenerate any time with:  xcodegen generate
+#
+# Sources are globbed from the FXETennis/ folder at generation time, so a new
+# file is picked up by re-running xcodegen — no manual "add to target" step.
+
+name: FXETennis
+options:
+  bundleIdPrefix: com.fxetennis        # PLACEHOLDER — final id waits on FXE Tennis, LLC (see roadmap)
+  deploymentTarget:
+    iOS: "17.0"                        # iOS 17 floor: @Observable + a wide device range for a club's mixed phones
+  createIntermediateGroups: true
+
+packages:
+  Supabase:
+    url: https://github.com/supabase/supabase-swift
+    exactVersion: "2.41.1"             # pinned to match Volee, a known-good version on this backend stack
+
+targets:
+  FXETennis:
+    type: application
+    platform: iOS
+    sources:
+      - path: FXETennis
+    dependencies:
+      - package: Supabase
+        product: Supabase
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.fxetennis.app
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        SWIFT_VERSION: "5.0"
+        TARGETED_DEVICE_FAMILY: "1"     # iPhone only for v1
+        ENABLE_USER_SCRIPT_SANDBOXING: YES
+        INFOPLIST_KEY_CFBundleDisplayName: "FXE Tennis"
+
+  FXETennisTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: FXETennisTests
+    dependencies:
+      - target: FXETennis
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.fxetennis.app.tests
+
+schemes:
+  FXETennis:
+    build:
+      targets:
+        FXETennis: all
+        FXETennisTests: [test]
+    test:
+      targets:
+        - FXETennisTests

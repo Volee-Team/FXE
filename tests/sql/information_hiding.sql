@@ -72,6 +72,13 @@ begin
      and column_name in ('internal_capacity', 'location', 'address');
   insert into _probe_result values ('clinics_public_hides_capacity_and_location', '0', n::text);
 
+  -- 3b. But it MUST expose both published rates and the length, so the app can
+  --     show "60 min · $18". A rate sheet is not secret; a headcount is.
+  select count(*) into n from information_schema.columns
+   where table_schema = 'public' and table_name = 'clinics_public'
+     and column_name in ('member_price_cents', 'nonmember_price_cents', 'duration_minutes');
+  insert into _probe_result values ('clinics_public_exposes_both_rates', '3', n::text);
+
   -- 4. The registrations table itself must be unreachable.
   begin
     execute 'select count(*) from public.registrations' into n;
