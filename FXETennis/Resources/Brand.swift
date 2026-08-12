@@ -347,83 +347,53 @@ private extension Color {
         )
     }
 }
-
 //  ============================================================================
-//  ACCESSIBILITY: MEASURED WCAG 2.1 CONTRAST RATIOS
+//  ACCESSIBILITY: MEASURED WCAG 2.1 CONTRAST RATIOS  (PALETTE B)
 //  ============================================================================
 //
-//  Computed with the WCAG relative luminance formula, sRGB, 2026-08-02.
-//  Thresholds: 4.5:1 body text, 3:1 large text (>= 18pt regular or 14pt bold)
-//  and non-text UI components, per 1.4.3 and 1.4.11.
+//  Recomputed for palette B with the WCAG relative-luminance formula, sRGB,
+//  2026-08-12 (script in the commit that introduced palette B). Thresholds:
+//  4.5:1 body text, 3:1 large text and non-text UI components (1.4.3, 1.4.11).
+//  Every pair below PASSES.
 //
-//  Foreground              Background              Ratio     Need   Result
+//  Foreground              Background              Ratio    Need  Result
 //  ----------------------------------------------------------------------------
-//  textPrimary   #0E1239   surface       #FAF7F1   16.87:1   4.5    PASS
-//  textPrimary   #0E1239   surfaceRaised #FFFFFF   18.04:1   4.5    PASS
-//  textSecondary #6F6E6F   surface       #FAF7F1    4.75:1   4.5    PASS
-//  textSecondary #6F6E6F   surfaceRaised #FFFFFF    5.08:1   4.5    PASS
-//  textOnNavy    #FFFFFF   navy          #0E1239   18.04:1   4.5    PASS
-//  textOnNavyMut #BBBBBB   navy          #0E1239    9.40:1   4.5    PASS
-//  textOnCourt   #0E1239   court         #6DBE45    7.82:1   4.5    PASS
-//  textOnAccent  #0E1239   accent        #D5DF24   12.38:1   4.5    PASS
-//  court         #6DBE45   navy          #0E1239    7.82:1   4.5    PASS
-//  accent        #D5DF24   navy          #0E1239   12.38:1   4.5    PASS
-//  border        #6F6E6F   surface       #FAF7F1    4.75:1   3.0    PASS
-//  focusRing     #0E1239   surface       #FAF7F1   16.87:1   3.0    PASS
-//
-//  Status, ink on the page surface #FAF7F1
-//  youreIn        #2C6318                           6.76:1   4.5    PASS
-//  playerPool     #A9500A                           5.12:1   4.5    PASS
-//  responseNeeded #565B00                           6.79:1   4.5    PASS
-//  canceled       #992018                           7.63:1   4.5    PASS
+//  textPrimary   #16264C   surface       #F7F4EC   13.50:1  4.5   PASS
+//  textPrimary   #16264C   surfaceRaised #FFFFFF   14.83:1  4.5   PASS
+//  textSecondary #6E6552   surface       #F7F4EC    5.24:1  4.5   PASS
+//  textSecondary #6E6552   surfaceRaised #FFFFFF    5.76:1  4.5   PASS
+//  textOnNavy    #F6F3EA   navy          #16264C   13.37:1  4.5   PASS
+//  textOnNavyMut #CFC9BC   navy          #16264C    8.99:1  4.5   PASS
+//  textOnCourt   #FFFFFF   court         #3E7C55    4.98:1  4.5   PASS
+//  textOnAccent  #231A0C   accent        #B08D57    5.55:1  4.5   PASS
+//  border        #6E6552   surface       #F7F4EC    5.24:1  3.0   PASS
 //
 //  Status, ink on its own chip tint
-//  youreIn        #2C6318 on #E4F3DC                6.25:1   4.5    PASS
-//  playerPool     #A9500A on #FBE9D5                4.62:1   4.5    PASS
-//  responseNeeded #565B00 on #F6F8CE                6.65:1   4.5    PASS
-//  canceled       #992018 on #FADFDC                6.47:1   4.5    PASS
+//  youreIn        #2C5A3E on #E7F0E7                6.83:1  4.5   PASS
+//  playerPool     #7A5E24 on #F5EBD8                5.14:1  4.5   PASS
+//  responseNeeded #1F4E5A on #DDEEF0                7.65:1  4.5   PASS
+//  canceled       #992E22 on #F6DED9                5.91:1  4.5   PASS
 //
-//  Status, white on a solid ink fill (destructive buttons, banners)
-//  #FFFFFF on canceled  #992018                     8.16:1   4.5    PASS
-//  #FFFFFF on playerPool #A9500A                    5.47:1   4.5    PASS
-//
-//  ----------------------------------------------------------------------------
-//  PAIRS THAT FAIL, AND WHAT WE DID ABOUT THEM
-//  ----------------------------------------------------------------------------
-//
-//  #FFFFFF on court #6DBE45              2.31:1   FAILS 4.5:1.
-//      Fixed by rule, not by recolouring: green buttons take navy text
-//      (textOnCourt, 7.82:1). White on the gator green is banned. If you see it
-//      in a mockup, it is a bug.
-//
-//  court #6DBE45 on surface #FAF7F1      2.16:1   FAILS 4.5:1 and 3:1.
-//  accent #D5DF24 on surface #FAF7F1     1.36:1   FAILS 4.5:1 and 3:1.
-//      Both are fill-only colours. Neither may carry text or an icon, and
-//      neither may act as a status marker. Status markers use Status.ink, which
-//      is why `ink` and `tint` are separate properties.
-//
-//  hairline #BBBBBB on surface #FAF7F1   1.80:1   below 3:1.
-//      Kept, restricted to decorative row separators inside an already bounded
-//      card, which 1.4.11 exempts. Controls use `border` #6F6E6F at 4.75:1.
-//
-//  disabled #9E9F9F on surface #FAF7F1   2.48:1   below 4.5:1.
-//      Kept. WCAG exempts inactive controls. Always pair with helper text so
-//      the reason is legible even though the control is not.
+//  Status, ink on the page surface #F7F4EC
+//  youreIn        #2C5A3E                           7.24:1  4.5   PASS
+//  playerPool     #7A5E24                           5.53:1  4.5   PASS
+//  responseNeeded #1F4E5A                           8.32:1  4.5   PASS
+//  canceled       #992E22                           6.90:1  4.5   PASS
 //
 //  ----------------------------------------------------------------------------
-//  TWO STATUS COLOURS ARE ADDITIONS, NOT TARA'S
+//  FILL-ONLY COLOURS  (must never carry text or act as a status marker)
 //  ----------------------------------------------------------------------------
+//  court  #3E7C55 on surface #F7F4EC   4.53:1  — as a FILL it is fine; text on
+//         it uses textOnCourt (white, 4.98:1). Never set body text in court green.
+//  accent #B08D57 on surface #F7F4EC   2.81:1  — brass fill only. Never text.
 //
-//  The guide fixes four status colours: green, orange, yellow, red. Tara's
-//  palette contains a green and a yellow-green but no orange and no red.
+//  Status markers use Status.ink (all >= 5:1 above), never court or accent,
+//  which is why ink and tint are separate properties.
 //
-//    You're In        #2C6318 ink / #E4F3DC tint   shade of her green #6DBE45
-//    Response Needed  #565B00 ink / #F6F8CE tint   shade of her yellow #D5DF24
-//    Player Pool      #A9500A ink / #FBE9D5 tint   ADDED, no orange supplied
-//    Canceled         #992018 ink / #FADFDC tint   ADDED, no red supplied
-//
-//  Both additions are muted and earthy rather than signal-bright, so they read
-//  as country club rather than traffic light next to #0E1239. They are
-//  functional status colours, not brand colours, and they never appear outside
-//  a status chip or a destructive control. Flagged for Tara's approval.
-//
+//  ----------------------------------------------------------------------------
+//  PALETTE HISTORY
+//  ----------------------------------------------------------------------------
+//  Palette A (Tara's raw file colours: navy #0E1239, green #6DBE45, yellow
+//  #D5DF24) shipped first and is in git history. Tara chose palette B ("full
+//  country club") on 2026-08-12. If she reverts, the A ratios are in that
+//  file's history.
