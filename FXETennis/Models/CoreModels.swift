@@ -145,7 +145,12 @@ struct PlayerProfile: Codable, Identifiable, Sendable {
     let kind: String
     let firstName: String
     let lastName: String
-    let dateOfBirth: Date?
+    // Date-ONLY column ("1988-04-12"). The Supabase decoder handles timestamptz
+    // but throws on a bare date, which silently broke the whole profile load
+    // (caught on the simulator: "Hi, there" + non-member price for a member).
+    // Kept as the raw string; adults never display it, and age derivation for
+    // juniors (v1.1) parses it then.
+    let dateOfBirth: String?
     let adultRating: Double?
     let isMember: Bool
     let isActive: Bool

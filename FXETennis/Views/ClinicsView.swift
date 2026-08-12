@@ -69,11 +69,17 @@ struct ClinicsView: View {
         ScrollView {
             LazyVStack(spacing: Brand.Spacing.md) {
                 ForEach(model.clinics) { clinic in
-                    ClinicCard(
-                        clinic: clinic,
-                        registration: model.myRegistrationsByClinic[clinic.id],
-                        isMember: isMember
-                    )
+                    NavigationLink {
+                        ClinicDetailView(clinic: clinic, isMember: isMember,
+                                         onChanged: { await model.load() })
+                    } label: {
+                        ClinicCard(
+                            clinic: clinic,
+                            registration: model.myRegistrationsByClinic[clinic.id],
+                            isMember: isMember
+                        )
+                    }
+                    .buttonStyle(.plain)
                 }
             }
             .padding(Brand.Spacing.pageMargin)

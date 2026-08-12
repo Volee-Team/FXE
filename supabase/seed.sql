@@ -55,3 +55,45 @@ insert into public.clinic_templates (id, name, audience, category, description,
   ('b0000000-0000-0000-0000-000000000002', 'Coed Cardio',  'coed',   'Clinic',
    'Fast-paced hour, all levels.',     1800, 1800, 2300, '18:00', 60, 10)
 on conflict (id) do nothing;
+
+-- ── Dev-only walkable clinics (local app verification + XCUITest) ────────────
+-- Published clinics in the current service week so a signed-in seed user sees a
+-- browsable list. NO registrations seeded on purpose: an 'in' registration would
+-- change revenue_summary() and break the pricing probe. Register live through the
+-- app instead — that exercises the core loop. Prices are left null so the
+-- default-pricing trigger fills them from duration.
+insert into public.clinics (id, name, audience, category, description, starts_at, ends_at,
+    member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
+values
+  ('d0000000-0000-0000-0000-000000000001', 'Tuesday Ladies 3.0+', 'coed', 'Clinic',
+   'Live-ball drilling for 3.0 to 4.0. Bring water.',
+   now() + interval '3 days', now() + interval '3 days 1 hour',
+   now() - interval '1 day', now() - interval '12 hours', 8, 'published', 60),
+  ('d0000000-0000-0000-0000-000000000002', 'Thursday Morning Cardio', 'coed', 'Clinic',
+   'High-energy cardio tennis, all levels welcome.',
+   now() + interval '5 days', now() + interval '5 days 90 minutes',
+   now() - interval '1 day', now() - interval '12 hours', 10, 'published', 90),
+  ('d0000000-0000-0000-0000-000000000003', 'Saturday Members Only', 'coed', 'Clinic',
+   'Members priority window is open; public opens Friday.',
+   now() + interval '6 days', now() + interval '6 days 1 hour',
+   now() - interval '2 hours', now() + interval '12 hours', 6, 'published', 60),
+  ('d0000000-0000-0000-0000-000000000004', 'Sunday Social (next week)', 'coed', '105',
+   'Opens later so you can see the "registration opens" state.',
+   now() + interval '10 days', now() + interval '10 days 90 minutes',
+   now() + interval '3 days', now() + interval '4 days', 12, 'published', 90)
+on conflict (id) do nothing;
+
+-- GoTrue login reads these token columns and cannot scan NULLs — a manual
+-- auth.users INSERT leaves them null, which fails real sign-in with "Database
+-- error querying schema" (the probes never hit GoTrue, so this stayed hidden
+-- until the app first signed in for real). Set them to '' for every seeded user.
+update auth.users set
+  confirmation_token = coalesce(confirmation_token, ''),
+  recovery_token = coalesce(recovery_token, ''),
+  email_change = coalesce(email_change, ''),
+  email_change_token_new = coalesce(email_change_token_new, ''),
+  email_change_token_current = coalesce(email_change_token_current, ''),
+  phone_change = coalesce(phone_change, ''),
+  phone_change_token = coalesce(phone_change_token, ''),
+  reauthentication_token = coalesce(reauthentication_token, '')
+where email like '%@fxe.test';
