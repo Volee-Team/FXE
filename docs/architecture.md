@@ -151,8 +151,12 @@ Four ideas run through the client code:
    is stateless enums of `static async` funcs (`ClinicRepository`,
    `RegistrationRepository`, `NewsRepository`, `ProfileRepository`). Views never
    touch `supabase` directly. One place to change when an RPC changes, and one
-   place a reviewer can confirm the client never reads a hidden table. Today the
-   client reads only the narrow views and calls only the player-facing RPCs.
+   place a reviewer can confirm the client never reads a hidden table. The client
+   reads the narrow views (`clinics_public`, `my_registrations`, …) plus two base
+   tables it is deliberately allowed — `accounts` and `players`, whose grants are
+   NOT revoked because RLS scopes them to the caller's own rows — and calls only
+   the player-facing RPCs. The seven hidden tables have their grants revoked; the
+   client cannot read them at all.
 
 3. **Models mirror the views, and absence is a feature.** `CoreModels.swift` is
    mapped to the DB with explicit `CodingKeys`. It has no field for capacity, no
@@ -452,8 +456,8 @@ the corresponding screens can exist.
 ## 9. Testing and CI
 
 The invariants that matter are in Postgres, so the test suite is too. (The
-`FXETennisTests` / `FXETennisUITests` targets exist but are **empty**: there are
-no Swift unit tests yet.)
+the `FXETennisTests` unit-test target exists but is **empty**: there are no
+Swift unit tests yet. There is no UI-test target in `project.yml`.)
 
 **SQL probes** in `tests/sql/`, each a `.sql` file that prints `PASS`/`FAIL`
 lines:
