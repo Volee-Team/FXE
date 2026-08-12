@@ -246,6 +246,26 @@ What replaces it is app behaviour, and it is a real requirement, not a nicety:
 
 `devices` already tells the server whether a push can be delivered, which is the only server-side question worth asking. iOS knows its own permission state locally and never needed a round-trip to nag its own user.
 
+### 2026-08-12 call
+
+| # | Decision |
+|---|---|
+| 17 | **Court number is never shown to a player.** Confirms hard rule 1. She reads it off her own screen |
+| 18 | **Capacity is never shown to a player.** The wireframe's "Max: 12 Players" is not built |
+| 19 | **Adults only, confirmed again.** Juniors return in the fall. The wireframe's child-profile screen is not v1 |
+| 20 | **Clinic messaging: three audiences.** You're In!, Player Pool, or Both. Her example: a pro calls in sick. See `docs/decisions/0005-clinic-messaging.md` |
+| 21 | **Three tabs, no Community tab.** Home, Clinics, Profile |
+| 22 | **The gator-with-crossed-racquets mark**, not the tennis-ball one. Gets redrawn in whichever palette she picks |
+| 23 | **Palette: racquet club / country club.** Her `#6dbe45` green kept but restrained; navy warms; cream ground. Three options sent for her to choose |
+
+**On the wireframe mockups:** treat them as a *style guide*, not a spec. Alex,
+2026-08-12: *"the wireframe is more of an overall style guide, dont let those
+details override anything else... the most recent things tara says take
+priority."* Where a mockup and a stated rule disagree, the rule wins, and the
+most recent thing she said wins over both.
+
+---
+
 ## Visual direction
 
 Navy country-club styling, not bright royal blue. Cream or warm-white backgrounds, clean cards, restrained green accents. Large text and generous tap areas for outdoor use. Icons always paired with text labels. Player screens must never feel like long blocks of writing.
