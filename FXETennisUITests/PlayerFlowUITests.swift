@@ -88,7 +88,7 @@ final class PlayerFlowUITests: XCTestCase {
         // The server decides the resulting status; the app must reflect it.
         // Either outcome is legitimate depending on the window, so assert the
         // TRANSITION happened rather than hard-coding one status.
-        let status = app.staticTexts["clinic.statusChip"]
+        let status = app.descendants(matching: .any).matching(identifier: "clinic.statusChip").firstMatch
         XCTAssertTrue(status.waitForExistence(timeout: 15),
                       "No status appeared after registering — the RPC may not have been called")
         XCTAssertTrue(["You're In!", "Player Pool"].contains(status.label),
@@ -129,7 +129,7 @@ final class PlayerFlowUITests: XCTestCase {
         XCTAssertTrue(back.waitForExistence(timeout: 15))
         XCTAssertEqual(back.label, "Register",
                        "After undoing, the player should be able to register again")
-        XCTAssertFalse(app.staticTexts["clinic.statusChip"].exists,
+        XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "clinic.statusChip").firstMatch.exists,
                        "A status chip survived cancellation")
     }
 
@@ -251,7 +251,10 @@ final class PlayerFlowUITests: XCTestCase {
         // The save-password sheet can land late, after sign-in has already
         // returned. Clear it defensively before touching the tab bar.
         dismissSavePasswordSheetIfPresent()
-        app.buttons["tab.profile"].tap()
+        // SwiftUI's TabView replaces a tab item's accessibilityIdentifier with
+        // the SF Symbol name ('person.fill'), so querying by identifier finds
+        // nothing. The visible label is stable and is what a user reads.
+        app.buttons["Profile"].tap()
         let out = app.buttons["profile.signOut"]
         XCTAssertTrue(out.waitForExistence(timeout: 10), "No sign-out control on Profile")
         out.tap()

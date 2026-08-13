@@ -25,41 +25,74 @@ struct AuthView: View {
     var body: some View {
         ZStack {
             Brand.surface.ignoresSafeArea()
-            VStack(spacing: Brand.Spacing.lg) {
-                Spacer()
-                Image("gator-x")
-                    .resizable().scaledToFit()
-                    .frame(width: 96, height: 96)
-                Text("FXE Tennis")
-                    .font(Brand.Typography.display)
-                    .foregroundStyle(Brand.navy)
 
-                VStack(spacing: Brand.Spacing.sm) {
-                    TextField("Email", text: $email)
-                        .accessibilityIdentifier("auth.email")
-                        .textContentType(.emailAddress)
-                        .keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .padding()
-                        .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
-                        .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
-
-                    SecureField("Password", text: $password)
-                        .accessibilityIdentifier("auth.password")
-                        .textContentType(mode == .signIn ? .password : .newPassword)
-                        .padding()
-                        .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
-                        .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
+            VStack(spacing: 0) {
+                // Navy banner, straight from Tara's mockups: every important
+                // screen opens on navy rather than a field of white. It also
+                // anchors the layout, so nothing shifts when the keyboard or an
+                // error message appears.
+                ZStack {
+                    Brand.navy
+                    VStack(spacing: Brand.Spacing.sm) {
+                        Image("gator-x")
+                            .resizable().scaledToFit()
+                            .frame(width: 84, height: 84)
+                        Text("FXE TENNIS")
+                            .font(Brand.Typography.display)
+                            .tracking(1.5)
+                            .foregroundStyle(Brand.textOnNavy)
+                        // Her tagline from the mockups, not invented here.
+                        Text("Smart. Simple. Built for Tennis.")
+                            .font(Brand.Typography.subheadline)
+                            .foregroundStyle(Brand.textOnNavy.opacity(0.72))
+                    }
+                    .padding(.top, Brand.Spacing.xl)
                 }
+                .frame(height: 320)
+                .ignoresSafeArea(edges: .top)
 
-                if let err = session.authError {
-                    Text(err)
+                // The form sits on cream, lifted slightly into the banner so the
+                // two planes overlap rather than sitting in separate boxes.
+                VStack(spacing: Brand.Spacing.lg) {
+                    // Capped so the form sits just under the banner instead of
+                    // floating in the middle of an empty field of cream.
+                    Spacer(minLength: 0).frame(maxHeight: Brand.Spacing.xl)
+                    VStack(spacing: Brand.Spacing.sm) {
+                        TextField("Email", text: $email)
+                            .accessibilityIdentifier("auth.email")
+                            .textContentType(.emailAddress)
+                            .keyboardType(.emailAddress)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .padding()
+                            .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
+                            .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
+
+                        SecureField("Password", text: $password)
+                            .accessibilityIdentifier("auth.password")
+                            // Under UI test, declare no content type. `.password`
+                            // is what tells iOS "this is a login form", which
+                            // makes SpringBoard show the "Save Password?" sheet
+                            // after a successful sign-in. That sheet covers the
+                            // app and every XCUITest query then finds nothing,
+                            // surfacing as a misleading "not hittable".
+                            .textContentType(AppEnv.isUITesting
+                                             ? nil
+                                             : (mode == .signIn ? .password : .newPassword))
+                            .padding()
+                            .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
+                            .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
+                    }
+
+                    // Reserve the error row's height always, so the button never
+                    // moves when an error appears. A control that shifts under
+                    // your thumb is how a real person mis-taps.
+                    Text(session.authError ?? " ")
                         .accessibilityIdentifier("auth.error")
                         .font(Brand.Typography.caption)
                         .foregroundStyle(Brand.Status.canceled.ink)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
+                        .frame(maxWidth: .infinity, minHeight: 18, alignment: .leading)
+                        .opacity(session.authError == nil ? 0 : 1)
 
                 Button {
                     Task {
@@ -96,9 +129,10 @@ struct AuthView: View {
                         .multilineTextAlignment(.center)
                         .padding(.top, Brand.Spacing.xs)
                 }
-                Spacer()
+                Spacer(minLength: 0)
             }
-            .padding(Brand.Spacing.pageMargin)
+            .padding(.horizontal, Brand.Spacing.pageMargin)
+            }
         }
     }
 }
