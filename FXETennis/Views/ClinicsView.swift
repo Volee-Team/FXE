@@ -31,7 +31,7 @@ final class ClinicsViewModel {
                 live.map { ($0.clinicId, $0) }, uniquingKeysWith: { a, _ in a }
             )
         } catch {
-            loadError = "Couldn't load clinics. Pull to refresh."
+            loadError = "Couldn't load clinics."
         }
         loading = false
     }
@@ -78,8 +78,10 @@ struct ClinicsView: View {
                             registration: model.myRegistrationsByClinic[clinic.id],
                             isMember: isMember
                         )
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier("clinic.card")
                 }
             }
             .padding(Brand.Spacing.pageMargin)
@@ -134,6 +136,8 @@ struct ClinicCard: View {
                 Label("\(durationLine) · \(price.centsAsPrice)", systemImage: "tennisball")
                     .font(Brand.Typography.subheadline)
                     .foregroundStyle(Brand.textSecondary)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityIdentifier("clinic.price")
             }
 
             if registration == nil && !clinic.isCanceled {

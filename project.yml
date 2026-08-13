@@ -52,6 +52,20 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.fxetennis.app.tests
+        GENERATE_INFOPLIST_FILE: YES
+
+  FXETennisUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: FXETennisUITests
+    dependencies:
+      - target: FXETennis
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.fxetennis.app.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: FXETennis
 
 schemes:
   FXETennis:
@@ -59,6 +73,8 @@ schemes:
       targets:
         FXETennis: all
         FXETennisTests: [test]
+        FXETennisUITests: [test]
     test:
       targets:
         - FXETennisTests
+        - FXETennisUITests

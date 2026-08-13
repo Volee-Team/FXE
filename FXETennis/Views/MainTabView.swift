@@ -17,6 +17,7 @@ struct MainTabView: View {
                 .tabItem { Label("Clinics", systemImage: "figure.tennis") }
             ProfileView()
                 .tabItem { Label("Profile", systemImage: "person.fill") }
+                .accessibilityIdentifier("tab.profile")
         }
     }
 }

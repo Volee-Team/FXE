@@ -335,6 +335,63 @@ The local Supabase dev image segfaults the Postgres backend when a role without 
 
 ---
 
+## Copy: do not invent it
+
+Alex, 2026-08-12: *"I pretty much NEVER want you making up sentences or little
+text blurbs that go in the app... somehow the text is always cringe and
+unnatural."*
+
+**Player-facing words are Tara's, not yours.** Every notification body, every
+piece of guidance, anything with a voice, comes from her. When a screen needs a
+sentence nobody has written, do not invent one and move on: write the shortest
+literal thing that works, add it to `docs/copy.md` marked **PENDING**, and tell
+Alex it needs her words.
+
+### Rules for the chrome you do write
+
+Button labels, empty states, and error lines are unavoidable. Keep them plain.
+
+* **No throat-clearing.** No "Heads up:", "Just a reminder,", "Oops!", "Please
+  note", "Don't worry". Delete the opener and start at the fact.
+* **One sentence.** If it needs two, the screen is doing too much.
+* **No em-dash explainers**, no clever asides, no exclamation marks. Tara's own
+  copy uses them; yours does not.
+* **Say the thing, not the feeling.** "Couldn't load clinics." not "Something
+  went wrong while we were fetching your clinics. Please try again."
+* **Errors say what happened**, and only offer a next step if there is a real
+  one. Pull-to-refresh already exists; the text does not need to explain it.
+* **Match her vocabulary exactly.** You're In!, Player Pool, Response Needed,
+  Canceled. Never waitlist, confirmed, registered.
+
+Examples of the rewrite, all real:
+
+| Before | After |
+|---|---|
+| "Heads up: clinic updates come through the app. If your notifications are off, you may miss important messages." | "Clinic updates come through the app. Keep notifications on so you don't miss them." |
+| "That didn't go through — someone may have acted first. Here's the latest." | "That just changed. Here's the latest." |
+| "New here? Create an account" | "Create an account" |
+| "Couldn't load clinics. Pull to refresh." | "Couldn't load clinics." |
+
+---
+
+## Which source wins
+
+Alex, 2026-08-12: *"dont 100% trust that dev guide, more what tara says and the
+original spec."*
+
+When two sources disagree, this is the order:
+
+1. **What Tara said most recently.** A call today beats a document from June.
+2. **The original spec** she approved.
+3. **The Developer Guide.** Useful, and already wrong in places (it specs a News
+   tab, junior flows, and a Community tab that are not v1).
+4. **The wireframe mockups.** A style guide for look and feel, never a spec.
+
+If a lower source contradicts a higher one, the higher one wins and the conflict
+gets written down rather than silently resolved.
+
+---
+
 ## Where things are written down
 
 Chat is not memory. Every session ends and takes its context with it. If it

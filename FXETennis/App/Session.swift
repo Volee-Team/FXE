@@ -31,6 +31,20 @@ final class SessionStore {
     /// Called once at launch. Restores a session if one exists, then loads the
     /// profile so screens have an identity before they render.
     func bootstrap() async {
+        #if DEBUG
+        // UI tests own their session: start every run signed out so the suite
+        // controls who is logged in. Without this, a session left behind by a
+        // previous run (or a manual poke at the simulator) makes the app skip
+        // the auth screen and every test fails with "Sign-in screen never
+        // appeared" — which is exactly how this was found.
+        if ProcessInfo.processInfo.environment["UITEST_SIGNED_OUT"] == "1" {
+            try? await supabase.auth.signOut()
+            account = nil; players = []; activePlayer = nil
+            phase = .signedOut
+            return
+        }
+        #endif
+
         if (try? await supabase.auth.session) != nil {
             await loadProfile()
             phase = players.isEmpty && account == nil ? .signedOut : .signedIn

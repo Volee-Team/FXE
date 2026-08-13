@@ -24,6 +24,7 @@ struct ProfileView: View {
                             Task { await session.signOut() }
                         } label: {
                             Text("Sign Out")
+                                .accessibilityIdentifier("profile.signOut")
                                 .font(Brand.Typography.button)
                                 .frame(maxWidth: .infinity)
                                 .padding()

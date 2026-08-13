@@ -19,7 +19,7 @@ struct AuthView: View {
 
     enum Mode { case signIn, signUp
         var cta: String { self == .signIn ? "Sign In" : "Create Account" }
-        var toggle: String { self == .signIn ? "New here? Create an account" : "Already have an account? Sign in" }
+        var toggle: String { self == .signIn ? "Create an account" : "Sign in" }
     }
 
     var body: some View {
@@ -36,6 +36,7 @@ struct AuthView: View {
 
                 VStack(spacing: Brand.Spacing.sm) {
                     TextField("Email", text: $email)
+                        .accessibilityIdentifier("auth.email")
                         .textContentType(.emailAddress)
                         .keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never)
@@ -45,6 +46,7 @@ struct AuthView: View {
                         .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
 
                     SecureField("Password", text: $password)
+                        .accessibilityIdentifier("auth.password")
                         .textContentType(mode == .signIn ? .password : .newPassword)
                         .padding()
                         .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
@@ -53,6 +55,7 @@ struct AuthView: View {
 
                 if let err = session.authError {
                     Text(err)
+                        .accessibilityIdentifier("auth.error")
                         .font(Brand.Typography.caption)
                         .foregroundStyle(Brand.Status.canceled.ink)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -75,6 +78,7 @@ struct AuthView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(Brand.navy, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
+                    .accessibilityIdentifier("auth.submit")
                     .foregroundStyle(Brand.textOnNavy)
                 }
                 .disabled(working || email.isEmpty || password.isEmpty)
@@ -86,7 +90,7 @@ struct AuthView: View {
                 .foregroundStyle(Brand.textSecondary)
 
                 if mode == .signUp {
-                    Text("Heads up: clinic updates come through the app. If your notifications are off, you may miss important messages.")
+                    Text("Clinic updates come through the app. Keep notifications on so you don't miss them.")
                         .font(Brand.Typography.caption)
                         .foregroundStyle(Brand.textSecondary)
                         .multilineTextAlignment(.center)

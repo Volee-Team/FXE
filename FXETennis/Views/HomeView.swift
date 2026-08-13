@@ -46,6 +46,7 @@ struct HomeView: View {
     private var greeting: some View {
         let name = session.activePlayer?.firstName ?? "there"
         return Text("Hi, \(name)")
+            .accessibilityIdentifier("home.greeting")
             .font(Brand.Typography.display)
             .foregroundStyle(Brand.navy)
     }
@@ -70,8 +71,10 @@ struct HomeView: View {
                             registration: model.myRegistrationsByClinic[clinic.id],
                             isMember: isMember
                         )
+                        .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier("clinic.card")
                 }
             }
         }

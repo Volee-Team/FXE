@@ -35,7 +35,7 @@ final class ClinicDetailModel {
             messages = try await ClinicRepository.messages(clinicId: clinicId)
             if paymentLine == nil { paymentLine = try? await ProfileRepository.paymentInstructions() }
         } catch {
-            notice = "Couldn't load this clinic. Pull to refresh."
+            notice = "Couldn't load this clinic."
         }
         loaded = true
     }
@@ -51,7 +51,7 @@ final class ClinicDetailModel {
             await onChanged()
         } catch {
             await load(clinicId: clinicId)
-            notice = "That didn't go through — someone may have acted first. Here's the latest."
+            notice = "That just changed. Here's the latest."
         }
         working = false
     }
@@ -100,6 +100,7 @@ struct ClinicDetailView: View {
                 .foregroundStyle(Brand.navy)
             if let reg = model.registration {
                 StatusChip(reg.status.display)
+                    .accessibilityIdentifier("clinic.statusChip")
             }
         }
     }
@@ -261,6 +262,8 @@ struct ClinicDetailView: View {
         .frame(minHeight: Brand.Layout.comfortableTapTarget)
         .background(bg, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
         .foregroundStyle(fg)
+        .accessibilityIdentifier("clinic.primaryAction")
+        .accessibilityLabel(title)
     }
 
     private var timeRange: String {
