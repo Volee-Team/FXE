@@ -14,3 +14,10 @@ The history of what we believed is part of the record.
 | [0002](0002-snapshot-the-price.md) | Copy the price onto the registration | 2026-08-10 | Active |
 | [0003](0003-payments.md) | Zelle + a report for v1, Stripe in v1.1 | 2026-08-10 | Active |
 | [0004](0004-adults-only-v1.md) | Adults only in v1, juniors stay in the schema | 2026-08-02 | Active |
+| [0005](0005-clinic-messaging.md) | Clinic messaging targets You're In!, Player Pool, or Both | 2026-08-12 | Active |
+| [0006](0006-three-tabs-no-news.md) | Three tabs, News deferred, no Community tab | 2026-08-12 | Active |
+
+**Keeping this index complete is part of writing the record.** 0005 sat
+unindexed from the day it was written until 2026-08-13, which meant the one place
+you go to find a decision did not know it existed. A decision nobody can find has
+the same value as a decision nobody wrote.

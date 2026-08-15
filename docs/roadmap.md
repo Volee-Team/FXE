@@ -31,18 +31,38 @@ handwritten court sheet. Nothing more.
 | ✅ | News with audience and unread tracking |
 | ✅ | 142 automated checks + a concurrency probe, green in CI on every push |
 
-### iOS app ⬜
+### iOS app 🔨
+
+Status corrected 2026-08-13. This section read "not started" for every row while
+`docs/architecture.md` in the same repo said "Built" and eight commits on
+2026-08-12 had delivered a walkable player flow. **A roadmap that lies in the
+optimistic direction wastes a day; one that lies in the pessimistic direction
+hides finished work and gets it rebuilt.** Re-check this table against the code
+whenever you touch it.
 
 | | |
 |---|---|
-| ⬜ | Xcode project, brand tokens from Tara's palette, the gator mark |
-| ⬜ | Sign up / sign in. **Everyone makes an account** (Tara, 2026-08-02) |
-| ⬜ | Profile: name, contact, member yes/no, NTRP rating with the "?" explainer |
-| ⬜ | Browse clinics by week, **one month ahead**, showing "Registration opens Aug 8" on ones not yet open |
-| ⬜ | Clinic details: name, day, time, price for *this* player, description, Zelle/Venmo line, message board |
-| ⬜ | Register / Cancel / Leave Player Pool |
-| ⬜ | Accept or decline an invitation |
-| ⬜ | My Clinics, News, notification permission with the warning Tara asked for |
+| ✅ | Xcode project, brand tokens from Tara's palette, the gator mark. **Except the app icon**: the asset slot is empty, which is a hard TestFlight blocker (backlog) |
+| 🔨 | Sign **in** works. Sign **up** is broken: nothing creates the `accounts` row, so a new user gets an orphan auth record and a Register button that silently does nothing |
+| 🔨 | Profile: the NTRP "?" explainer is done and correct. Everything else is read-only and unpopulated, because there is no write path to `accounts` or `players` anywhere in the client |
+| 🔨 | Browse clinics: the "Registration opens" state is built and handles member vs non-member correctly. Week grouping, the one-month horizon, and a date floor are not, so past clinics live in the list forever and sort to the top |
+| ✅ | Clinic details: name, day, time, price for *this* player, description, Zelle/Venmo line, message board |
+| ✅ | Register / Cancel / Leave Player Pool |
+| ✅ | Accept or decline an invitation |
+| 🔨 | My Clinics: a three-row section on Home, no dedicated surface, and "View All Clinics" does not go there |
+| ⬜ | Notification permission with the warning Tara asked for. Zero code: no permission request, no APNs entitlement, no device registration, and no sender in `supabase/functions/` |
+| ⏸ | News. Model and repository exist, no screen. **Deferred**: decision 21 cut the tab (see `docs/decisions/0006`) |
+
+### Test health 🔨
+
+Tracked here because it was red for days without anyone noticing, which is
+itself the finding.
+
+| | |
+|---|---|
+| ✅ | SQL probe suite: 7 probes, 164 checks, plus the concurrency probe. Green in CI on every push |
+| ⬜ | `FXETennisTests/` is **empty**, so `xcodebuild test` cannot load the bundle and exits 65 regardless of anything else. Also breaks `xcodegen` on a fresh clone |
+| ⬜ | XCUITests are **0 of 4 green**, not the 2 of 4 claimed in `ed88c1f` |
 
 ### Web admin ⬜
 
@@ -61,11 +81,30 @@ forward with suggestion"*).
 
 ### Ship ⬜
 
+Split by what actually gates what. An **internal** TestFlight round (Tara added
+as an App Store Connect user on our own team) needs far less than an external
+one, and conflating the two is what made this section look like a wall.
+
+**Gates an internal TestFlight build:**
+
 | | |
 |---|---|
-| ❓ | FXE Tennis, LLC — does it exist? D-U-N-S number needed either way |
+| ⬜ | **App icon.** The `AppIcon.appiconset` slot is empty, so the bundle has no `CFBundleIconName` and the upload fails validation (ITMS-90713) before Beta App Review ever runs |
+| ⬜ | **`DEVELOPMENT_TEAM`.** Not set anywhere, so a device build fails outright. Must go in `project.yml`, not the Xcode UI, because `.gitignore` excludes the `.xcodeproj` and `xcodegen` regenerates it |
+| ⬜ | Distribution certificate and provisioning profile on the build machine |
+| ⬜ | App Store Connect app record; the bundle id is still the placeholder `com.fxetennis.app` |
+| ⬜ | **Sign-up that produces a usable account.** Without it a tester installs the app and cannot get past the first screen |
+| ⬜ | Tara's real clinics in hosted, which needs an admin path to create them |
+
+**Gates an external round and App Store release, but NOT an internal one:**
+
+| | |
+|---|---|
+| ✅ | FXE Tennis, LLC exists. **D-U-N-S 11-654-7195**, registered, address on file with D&B |
+| ⬜ | Apple Developer Program enrollment as the LLC (Tara decision 16). Alex has authority as her developer |
+| ⬜ | A website at the entity's domain. Apple wants one at enrollment. Cheap: a static page on Vercel, as done for Volee |
 | ⬜ | Privacy policy live on a URL, FXE waiver wording |
-| ⬜ | App Store listing, TestFlight round with real members |
+| ⬜ | Beta App Review, then the App Store listing |
 
 ---
 
