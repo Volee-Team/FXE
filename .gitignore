@@ -1,3 +1,16 @@
+# ---------------------------------------------------------------- secrets ----
+# NEVER remove these. CLAUDE.md's Build & Run tells you to put the hosted
+# Postgres password in .env.local AT THE REPO ROOT. Until 2026-08-13 that was
+# not ignored: supabase/.gitignore covers supabase/.env.local only, and the root
+# had no .env rule at all, so one `git add -A` would have published the database
+# password to a GitHub repo. Nothing was leaked (the file did not exist yet and
+# no .env has ever been committed, verified with
+# `git log --all --diff-filter=A --name-only`), but the doc had been asserting
+# a protection that did not exist. A claim is not a control.
+.env
+.env.*
+!.env.example
+
 .DS_Store
 *.xcuserstate
 xcuserdata/
