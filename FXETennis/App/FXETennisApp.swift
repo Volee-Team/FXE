@@ -33,6 +33,11 @@ struct RootView: View {
             LaunchView()
         case .signedOut:
             AuthView()
+        case .needsProfile:
+            // Authenticated but with no profile row. Previously this state sent
+            // the user back to signedOut, which was a dead end: their auth user
+            // already existed, so signing up again failed too.
+            CompleteProfileView()
         case .signedIn:
             MainTabView()
         }

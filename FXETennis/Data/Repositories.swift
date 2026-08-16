@@ -127,6 +127,46 @@ enum ProfileRepository {
             .value
     }
 
+    /// Create the caller's own `accounts` + adult `players` rows after auth
+    /// sign-up, returning the new player id.
+    ///
+    /// This is the ONLY write path into `accounts`. `authenticated` has no
+    /// INSERT on that table (revoked by 20260802000003) and there is no trigger
+    /// on `auth.users`, both deliberately: see the header of
+    /// `20260815000001_create_my_account.sql`. Until this existed, sign-up
+    /// produced an auth user with no profile, and every downstream screen
+    /// silently no-opped.
+    ///
+    /// Note what is NOT a parameter: the account id (it is `auth.uid()`), the
+    /// email (read from `auth.users`), and the role (hard-coded to `member`).
+    /// A client that could name any of those could impersonate or self-promote.
+    /// Safe to call twice: the function is idempotent.
+    static func createMyAccount(
+        firstName: String,
+        lastName: String,
+        phone: String?,
+        isMember: Bool,
+        adultRating: Double?
+    ) async throws -> UUID {
+        struct Params: Encodable {
+            let p_first_name: String
+            let p_last_name: String
+            let p_phone: String?
+            let p_is_member: Bool
+            let p_adult_rating: Double?
+        }
+        return try await supabase
+            .rpc("create_my_account", params: Params(
+                p_first_name: firstName,
+                p_last_name: lastName,
+                p_phone: phone,
+                p_is_member: isMember,
+                p_adult_rating: adultRating
+            ))
+            .execute()
+            .value
+    }
+
     /// The signed-in account row.
     static func myAccount() async throws -> Account? {
         guard let uid = supabase.auth.currentUser?.id else { return nil }

@@ -19,6 +19,7 @@ final class SessionStore {
     enum Phase {
         case loading        // deciding whether we're signed in
         case signedOut
+        case needsProfile   // authenticated, but no accounts row yet
         case signedIn
     }
 
@@ -47,7 +48,11 @@ final class SessionStore {
 
         if (try? await supabase.auth.session) != nil {
             await loadProfile()
-            phase = players.isEmpty && account == nil ? .signedOut : .signedIn
+            // An authenticated user with no profile row used to be sent back to
+            // signedOut with no explanation, which was a dead end: their auth
+            // user already existed, so signing up again failed too. Now it
+            // routes to the screen that finishes the job.
+            phase = account == nil ? .needsProfile : .signedIn
         } else {
             phase = .signedOut
         }
@@ -73,20 +78,60 @@ final class SessionStore {
         do {
             try await supabase.auth.signIn(email: email, password: password)
             await loadProfile()
-            phase = .signedIn
+            // Someone who signed up before this screen existed, or who quit
+            // partway through it, still has no profile. Send them to finish it
+            // rather than into an app where nothing works.
+            phase = account == nil ? .needsProfile : .signedIn
         } catch {
             authError = friendly(error)
         }
     }
 
+    /// Creates the auth user only. The `accounts` and `players` rows are written
+    /// by `completeProfile` on the next screen, because they need a real name
+    /// and `accounts.first_name` is NOT NULL.
     func signUp(email: String, password: String) async {
         authError = nil
         do {
             try await supabase.auth.signUp(email: email, password: password)
-            await loadProfile()
-            phase = .signedIn
+            phase = .needsProfile
         } catch {
             authError = friendly(error)
+        }
+    }
+
+    /// Finishes sign-up by creating the profile rows, then reloads so screens
+    /// have an identity. Stays on `.needsProfile` if it fails: landing in the
+    /// app without a profile is the exact dead end this replaces.
+    func completeProfile(
+        firstName: String,
+        lastName: String,
+        phone: String?,
+        isMember: Bool,
+        adultRating: Double?
+    ) async -> Bool {
+        authError = nil
+        do {
+            _ = try await ProfileRepository.createMyAccount(
+                firstName: firstName,
+                lastName: lastName,
+                phone: phone,
+                isMember: isMember,
+                adultRating: adultRating
+            )
+            await loadProfile()
+            guard account != nil, activePlayer != nil else {
+                // The RPC returned without error but the rows are not readable.
+                // Report it rather than proceeding into a broken session: this
+                // silent-success case IS the bug being fixed.
+                authError = "Your profile didn't save. Please try again."
+                return false
+            }
+            phase = .signedIn
+            return true
+        } catch {
+            authError = friendly(error)
+            return false
         }
     }
 
