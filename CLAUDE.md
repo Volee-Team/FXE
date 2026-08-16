@@ -487,22 +487,6 @@ The same scrutiny applied to a migration gets applied to how we work:
   adversarial review, rather than the fastest one. Cost is not the constraint on
   this project; being wrong is.
 
-### The source-of-truth ordering, restated because it decides arguments
-
-Alex, 2026-08-12: *"the most recent things tara says take priority."*
-
-1. **What Tara said most recently.** A call today beats a document from June.
-2. **The original spec** she approved.
-3. **The Developer Guide.** Useful, already wrong in places.
-4. **The wireframe mockups.** A **style guide for look and feel, never a spec.**
-   Tara made them with AI: trust the layout, spacing and visual register, do not
-   trust the literal text, labels or screen inventory. They still show a
-   Community tab and a "Max: 12 Players" capacity line, both of which are cut.
-
-When a lower source contradicts a higher one, the higher wins **and the conflict
-gets written down** rather than silently resolved. See `docs/decisions/0006` for
-a worked example.
-
 ### Standing instruction: improve the practice without being asked
 
 Alex, 2026-08-13: *"i keep asking you these things, be more robust, think of
