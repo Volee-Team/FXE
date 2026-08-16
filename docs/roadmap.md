@@ -60,9 +60,24 @@ itself the finding.
 
 | | |
 |---|---|
-| ✅ | SQL probe suite: 7 probes, 164 checks, plus the concurrency probe. Green in CI on every push |
-| ⬜ | `FXETennisTests/` is **empty**, so `xcodebuild test` cannot load the bundle and exits 65 regardless of anything else. Also breaks `xcodegen` on a fresh clone |
-| ⬜ | XCUITests are **0 of 4 green**, not the 2 of 4 claimed in `ed88c1f` |
+| ✅ | SQL probe suite: 8 probes, 186 checks, plus the concurrency probe. Green in CI on every push |
+| ✅ | Unit tests: 13, covering the pure logic the probes cannot see (price formatting, member rate selection, NTRP bucketing) |
+| ✅ | XCUITests: **5 of 5 green** as of 2026-08-15, including a sign-up regression test |
+
+The XCUITest suite was 0 of 4, not the "2 of 4" claimed in `ed88c1f`. Three
+causes, all worth remembering because two are the same mistake:
+
+1. `FXETennisTests/` was empty, so the target built an `.xctest` with no
+   executable and **every** `xcodebuild test` exited 65 regardless of the UI
+   tests' own result. `build-for-testing` still succeeded, which is why it went
+   unnoticed.
+2. `clinic.card` on Home and `profile.signOut` on Profile were set on the view
+   *inside* the button rather than on the button, so `app.buttons[...]` matched
+   nothing. `ClinicsView:84` had it right; Home drifted in `8357fb9`.
+3. The status assertion compared against visible chip text, but `StatusChip`
+   collapses to one accessibility element publishing its **VoiceOver** label. It
+   now asserts the documented strings from `docs/design-system.md`, which pins
+   the accessibility contract too.
 
 ### Web admin ⬜
 

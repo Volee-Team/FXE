@@ -20,17 +20,23 @@ struct ProfileView: View {
                     VStack(alignment: .leading, spacing: Brand.Spacing.lg) {
                         header
                         detailsCard
+                        // Identifier on the BUTTON, not on the Text inside it.
+                        // Set on the label, it lands on the inner static text
+                        // and `app.buttons["profile.signOut"]` matches nothing,
+                        // which is why every UI test that signs out failed with
+                        // "No sign-out control on Profile". Same drift as the
+                        // Home clinic card.
                         Button(role: .destructive) {
                             Task { await session.signOut() }
                         } label: {
                             Text("Sign Out")
-                                .accessibilityIdentifier("profile.signOut")
                                 .font(Brand.Typography.button)
                                 .frame(maxWidth: .infinity)
                                 .padding()
                                 .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
                                 .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
                         }
+                        .accessibilityIdentifier("profile.signOut")
                     }
                     .padding(Brand.Spacing.pageMargin)
                 }

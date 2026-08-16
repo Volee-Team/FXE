@@ -54,9 +54,9 @@ struct CompleteProfileView: View {
                 VStack(alignment: .leading, spacing: Brand.Spacing.lg) {
                     header
 
-                    field("First Name", text: $firstName, content: .givenName)
-                    field("Last Name", text: $lastName, content: .familyName)
-                    field("Phone", text: $phone, content: .telephoneNumber, keyboard: .phonePad)
+                    field("First Name", text: $firstName, content: .givenName, id: "profile.firstName")
+                    field("Last Name", text: $lastName, content: .familyName, id: "profile.lastName")
+                    field("Phone", text: $phone, content: .telephoneNumber, keyboard: .phonePad, id: "profile.phone")
 
                     membershipQuestion
                     ratingPicker
@@ -92,7 +92,8 @@ struct CompleteProfileView: View {
         _ label: String,
         text: Binding<String>,
         content: UITextContentType,
-        keyboard: UIKeyboardType = .default
+        keyboard: UIKeyboardType = .default,
+        id: String
     ) -> some View {
         VStack(alignment: .leading, spacing: Brand.Spacing.xxs) {
             Text(label)
@@ -112,6 +113,7 @@ struct CompleteProfileView: View {
                         .stroke(Brand.border, lineWidth: Brand.Layout.borderWidth)
                 )
                 .accessibilityLabel(label)
+                .accessibilityIdentifier(id)
         }
     }
 
@@ -129,13 +131,18 @@ struct CompleteProfileView: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             HStack(spacing: Brand.Spacing.sm) {
-                choice("Yes", selected: isMember == true) { isMember = true }
-                choice("No", selected: isMember == false) { isMember = false }
+                choice("Yes", selected: isMember == true, id: "profile.member.yes") { isMember = true }
+                choice("No", selected: isMember == false, id: "profile.member.no") { isMember = false }
             }
         }
     }
 
-    private func choice(_ label: String, selected: Bool, action: @escaping () -> Void) -> some View {
+    private func choice(
+        _ label: String,
+        selected: Bool,
+        id: String,
+        action: @escaping () -> Void
+    ) -> some View {
         Button(action: action) {
             Text(label)
                 .font(Brand.Typography.button)
@@ -154,6 +161,7 @@ struct CompleteProfileView: View {
         .buttonStyle(.plain)
         // Selection must not be carried by colour alone.
         .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
+        .accessibilityIdentifier(id)
     }
 
     private var ratingPicker: some View {
