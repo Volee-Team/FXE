@@ -119,10 +119,26 @@ enum NewsRepository {
 enum ProfileRepository {
 
     /// The players this account owns. For an adult that is one row (themselves).
+    ///
+    /// The `.eq("account_id", ...)` is LOAD-BEARING and must not be removed as
+    /// redundant. RLS on `players` is
+    /// `account_id = auth.uid() OR is_admin()`, so relying on the policy alone
+    /// returns every player in the club **to an administrator**. This method
+    /// feeds `SessionStore.activePlayer` via `players.first`, so without the
+    /// filter Tara signs in and becomes an arbitrary other member: found on the
+    /// simulator 2026-08-15, where signing in as tara@fxe.test produced "Good
+    /// Morning, Maria!". She would have seen someone else's My Clinics and been
+    /// able to register and cancel as them.
+    ///
+    /// The general shape, worth remembering: **an RLS policy written to also
+    /// admit admins is not a substitute for a WHERE clause.** RLS bounds what a
+    /// query *may* return, never what it *should*.
     static func myPlayers() async throws -> [PlayerProfile] {
-        try await supabase
+        guard let uid = supabase.auth.currentUser?.id else { return [] }
+        return try await supabase
             .from("players")
             .select()
+            .eq("account_id", value: uid)
             .execute()
             .value
     }

@@ -299,6 +299,46 @@ where table_schema = 'public'
                      'registrations_admin', 'my_clinic_messages', 'my_news',
                      'revenue_by_clinic', 'revenue_by_segment');
 
+-- ------------------------------------------------- view column completeness --
+--
+-- A `select *` view snapshots its column list at creation, so a later
+-- `alter table ... add column` leaves the view silently behind. That is how
+-- `clinics_admin` lost the pricing columns for five weeks: players saw both
+-- published rates and the person who SETS the rates could not.
+--
+-- It is also how an attack in this very probe reported a false pass, by naming
+-- a column the view did not have and failing with 42703 instead of a privilege
+-- error. Blocked-by-a-typo is not blocked-by-a-privilege.
+--
+-- This asserts the shape rather than any one bug: every pricing column on
+-- `clinics` must be visible on the admin view. Adding a column to `clinics`
+-- without deciding about `clinics_admin` now goes red here.
+do $$
+declare
+  missing text;
+begin
+  select string_agg(c.column_name, ', ' order by c.column_name)
+    into missing
+  from information_schema.columns c
+  where c.table_schema = 'public' and c.table_name = 'clinics'
+    and c.column_name like '%price%'
+    and not exists (
+      select 1 from information_schema.columns v
+      where v.table_schema = 'public' and v.table_name = 'clinics_admin'
+        and v.column_name = c.column_name
+    );
+
+  insert into _probe_result
+  values ('clinics_admin_has_every_price_column', 'none missing', coalesce(missing, 'none missing'));
+
+  -- duration_minutes drives the "60 min · $18" line and went missing the same way.
+  insert into _probe_result
+  select 'clinics_admin_has_duration_minutes', '1', count(*)::text
+  from information_schema.columns
+  where table_schema = 'public' and table_name = 'clinics_admin'
+    and column_name = 'duration_minutes';
+end $$;
+
 select
   check_name,
   expected,
