@@ -2,9 +2,12 @@ name: probes
 
 # Every push and every pull request. The whole point is that a change which
 # breaks a rule Tara relies on fails here, not in front of her.
+# `push:` with no branch filter, deliberately. It used to be
+# `branches: [main]`, which meant CI never ran on the feature branches this
+# project's own SessionStart hook tells every session to create. Work happened
+# on a branch, CI watched main, and the two never met. (2026-08-13)
 on:
   push:
-    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -17,10 +20,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Pinned, not `latest`. CI running a different CLI than the laptop means
+      # green here and red there, with nothing to point at. Bump this
+      # deliberately, in its own commit, after testing locally. (2026-08-13)
       - name: Install Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.90.0
 
       - name: Start local Postgres stack
         run: supabase start -x realtime,storage-api,imgproxy,studio,edge-runtime,logflare,vector,supavisor
@@ -38,6 +44,104 @@ jobs:
       - name: Dump Postgres logs on failure
         if: failure()
         run: supabase logs db || docker logs "$(docker ps -aqf name=supabase_db)" 2>&1 | tail -100
+
+  # The app itself. Until 2026-08-13 CI never compiled a line of Swift, which
+  # is exactly how a test target with zero sources survived for days while the
+  # suite reported green: nothing here ever tried to run it.
+  ios-build-and-test:
+    name: Build iOS app + unit tests
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # The .xcodeproj is gitignored and regenerated, so a fresh clone has no
+      # project until this runs. That also makes this step the guard on the
+      # fresh-clone path: if xcodegen breaks, CI finds out before a human does.
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Build (Debug)
+        run: |
+          xcodebuild -project FXETennis.xcodeproj -scheme FXETennis \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+            -quiet build
+
+      - name: Unit tests
+        run: |
+          xcodebuild -project FXETennis.xcodeproj -scheme FXETennis \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+            -only-testing:FXETennisTests test
+
+      # Release is what TestFlight ships, and it points at the hosted project
+      # rather than localhost. It has broken independently of Debug before.
+      - name: Build (Release, simulator SDK)
+        run: |
+          xcodebuild -project FXETennis.xcodeproj -scheme FXETennis \
+            -configuration Release -sdk iphonesimulator \
+            -derivedDataPath /tmp/dd -quiet build
+
+      # The missing app icon is an upload-time validation failure (ITMS-90713),
+      # which means you discover it after archiving rather than after building.
+      # Catch it here instead.
+      - name: Fail if the app icon is missing
+        run: |
+          PLIST=/tmp/dd/Build/Products/Release-iphonesimulator/FXETennis.app/Info.plist
+          if ! plutil -p "$PLIST" | grep -q CFBundleIconName; then
+            echo "::error::No CFBundleIconName in the built Info.plist."
+            echo "The AppIcon asset is empty, so App Store Connect will reject"
+            echo "the upload with ITMS-90713 before TestFlight ever sees it."
+            exit 1
+          fi
+          echo "App icon present."
+
+  # Credentials must never reach this repo. CLAUDE.md tells you to put the
+  # hosted Postgres password in .env.local, and until 2026-08-13 that file was
+  # not actually gitignored. The rule now has a machine behind it.
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fail on committed secrets
+        run: |
+          FAIL=0
+
+          # Any .env that is not the committed template.
+          if git ls-files | grep -E '^\.env' | grep -v '^\.env\.example$' | grep -q .; then
+            echo "::error::A .env file is tracked by git:"
+            git ls-files | grep -E '^\.env' | grep -v '^\.env\.example$'
+            FAIL=1
+          fi
+
+          # Supabase secret keys and service-role JWTs. The `sb_publishable_`
+          # keys in SupabaseClient.swift are SAFE and expected: they are the
+          # anon keys, designed to sit in a client binary. It is the secret and
+          # service_role variants that must never appear.
+          if git grep -nE 'sb_secret_|service_role.{0,40}eyJ|SUPABASE_SERVICE_ROLE_KEY *= *["'"'"'][^"'"'"']' -- \
+               ':!*.md' ':!.github/workflows/*' | grep -q .; then
+            echo "::error::Possible service-role key committed:"
+            git grep -nE 'sb_secret_|service_role.{0,40}eyJ' -- ':!*.md' ':!.github/workflows/*'
+            FAIL=1
+          fi
+
+          # A password assigned a real value in a tracked file.
+          if git grep -nE '(PASSWORD|password) *= *["'"'"'][^"'"'"']{6,}' -- \
+               ':!*.md' ':!tests/*' ':!supabase/seed.sql' ':!.github/workflows/*' | grep -q .; then
+            echo "::error::Possible hard-coded password:"
+            git grep -nE '(PASSWORD|password) *= *["'"'"'][^"'"'"']{6,}' -- \
+              ':!*.md' ':!tests/*' ':!supabase/seed.sql' ':!.github/workflows/*'
+            FAIL=1
+          fi
+
+          [ "$FAIL" -eq 0 ] && echo "No secrets found." || exit 1
 
   # A migration that has been applied to the hosted database can never be
   # edited in place, only superseded. This catches the most common way that

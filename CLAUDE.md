@@ -218,6 +218,32 @@ That exercise is what exposed a defect in the probe harness itself: the pass con
     implicit privilege: **enumerate what a role can do, never assume what it
     cannot.** See also hard rules 8 and 9.
 
+12. **A claim about this repo comes with the command that produced it, in the
+    same message. Never from memory, never copied from an earlier message.**
+
+    Test counts, how many pass, what is built, whether something is ignored,
+    what is deployed: all of these are claims, and every one of them has been
+    wrong in this repo while sounding confident.
+
+    Earned 2026-08-13, from the record itself. `ed88c1f` says the XCUITest suite
+    was "2 of 4 green"; it was 0 of 4, and `docs/backlog.md` later had to correct
+    the project's own commit message. `CLAUDE.md` said the probe suite ran 142
+    checks while it ran 164, and that number had been copied forward through
+    four documents. This file said `.env.local` was gitignored; it was not.
+    `.claude/agents/sql-auditor.md` audits *Volee's* age brackets, in a repo that
+    has no age brackets. Fifteen of the first sixteen commits were AI-authored
+    with no reviewer, and every one of those errors is the same failure: a
+    generated assertion accepted without independent re-derivation.
+
+    The principle is **verification asymmetry**: the thing that produces an
+    artifact cannot be the thing that certifies it. That is why code review, CI
+    and separation of duties all exist. It is also why the SQL probes are the
+    one part of this project that has never lied: they re-derive the claim from
+    the database instead of restating it.
+
+    In practice: run it, paste the output, then say what it means. "Tests pass"
+    is not evidence. `Executed 13 tests, with 0 failures` is.
+
 ---
 
 ## Locked terminology
@@ -476,6 +502,40 @@ Alex, 2026-08-12: *"the most recent things tara says take priority."*
 When a lower source contradicts a higher one, the higher wins **and the conflict
 gets written down** rather than silently resolved. See `docs/decisions/0006` for
 a worked example.
+
+### Standing instruction: improve the practice without being asked
+
+Alex, 2026-08-13: *"i keep asking you these things, be more robust, think of
+more docs to add to have better memory, use these hooks etc, but can you write
+this down so you are constantly learning and automatically thinking of ways to
+better yourself and make your SWE practices better?"*
+
+So this is the instruction, and it does not need re-issuing. **Proposing
+improvements to how we work is part of the work, not a separate request.**
+Concretely, every session:
+
+* **When something goes wrong, ask what mechanism would have caught it**, and
+  build that mechanism in the same session. Not a note, not a resolution: a
+  probe, a hook, a CI job, or a slash command. A lesson with no mechanism is a
+  lesson you get to learn twice.
+* **Notice repetition.** The third time a ritual is done by hand it becomes a
+  slash command. The second time a rule is broken it becomes a hook.
+* **Say when a practice is below what the tools allow.** Alex has explicitly
+  said he wants the ceiling, not the floor, and that cost is not the constraint.
+  Parallel subagents, adversarial verification, a full audit before a big
+  decision: reach for them rather than economising.
+* **Volunteer the concept, not just the fix.** When a technique applies here,
+  name it and explain it briefly, because half the point of this project is that
+  Alex learns the vocabulary. Recent examples worth knowing: verification
+  asymmetry (hard rule 12), red-first testing, enumerate-don't-list, mechanism
+  over discipline, context rot.
+* **Keep an eye on the enforcement ladder.** Every rule in this file should be
+  climbing it: advisory prose, then a slash command, then a hook or CI job that
+  hard-blocks. If a rule has sat at prose for weeks, either promote it or admit
+  it is not really a rule.
+
+The measure is not "did we ship". It is whether the same class of mistake can
+happen twice.
 
 ### Everything important gets saved, or it did not happen
 
