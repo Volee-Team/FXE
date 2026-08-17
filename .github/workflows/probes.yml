@@ -20,16 +20,46 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Pinned, not `latest`. CI running a different CLI than the laptop means
-      # green here and red there, with nothing to point at. Bump this
-      # deliberately, in its own commit, after testing locally. (2026-08-13)
+      # Back to `latest` on 2026-08-16, reverting a same-week pin to 2.90.0.
+      #
+      # The pin was well intentioned (CI and the laptop running different CLIs
+      # means green here and red there) but it is the ONLY thing that changed in
+      # this job before it started failing after ~2 minutes, which is the shape
+      # of `supabase start` dying rather than a probe failing. 2.90.0 is ~24
+      # minor versions behind and pulls older service images.
+      #
+      # Reverting the suspect change is the cheap move; the expensive one was
+      # having no way to tell. That is what the diagnostics below are for.
+      #
+      # The right long-term fix is still to pin BOTH sides to the same current
+      # version. Local is 2.90.0 and cannot be upgraded from here because the
+      # Homebrew tap needs `brew trust supabase/tap`, which is Alex's call. Once
+      # local is upgraded, pin this to that exact version in its own commit.
       - name: Install Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: 2.90.0
+          version: latest
 
+      # Printed, not assumed. When this job goes red, the first question is
+      # always "what changed underneath us", and a version in the log answers it
+      # in seconds. Hard rule 12: a claim about the environment comes with the
+      # command that produced it.
+      - name: Record the environment
+        run: |
+          echo "supabase CLI: $(supabase --version 2>&1 | head -1)"
+          echo "docker:       $(docker --version)"
+          echo "runner:       $(uname -a)"
+          echo "date (UTC):   $(date -u)"
+
+      # Output is NOT suppressed. This step failing used to produce a red job
+      # with no explanation, because the only diagnostic step ran `supabase logs
+      # db` against a stack that had never come up.
       - name: Start local Postgres stack
         run: supabase start -x realtime,storage-api,imgproxy,studio,edge-runtime,logflare,vector,supavisor
+
+      - name: Show container state
+        if: always()
+        run: docker ps -a --format '{{.Names}}\t{{.Status}}\t{{.Image}}'
 
       # `db reset` applies every migration in order and then the seed. If a
       # migration is broken, or the seed no longer satisfies a new constraint,
@@ -40,10 +70,20 @@ jobs:
       - name: Run probe suite
         run: bash tests/run-probes.sh
 
-      # Diagnostics only on failure, so a green run stays quiet.
-      - name: Dump Postgres logs on failure
+      # Diagnostics on failure. Each falls back rather than short-circuiting,
+      # because the most useful case is the one where the stack never started
+      # and `supabase logs` itself cannot run.
+      - name: Diagnostics on failure
         if: failure()
-        run: supabase logs db || docker logs "$(docker ps -aqf name=supabase_db)" 2>&1 | tail -100
+        run: |
+          echo "===== containers ====="
+          docker ps -a || true
+          echo "===== supabase logs db ====="
+          supabase logs db 2>&1 | tail -100 || true
+          echo "===== raw db container logs ====="
+          docker logs "$(docker ps -aqf name=supabase_db)" 2>&1 | tail -100 || true
+          echo "===== migrations present ====="
+          ls -1 supabase/migrations/ || true
 
   # The app itself. Until 2026-08-13 CI never compiled a line of Swift, which
   # is exactly how a test target with zero sources survived for days while the

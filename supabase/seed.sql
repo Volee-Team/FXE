@@ -65,8 +65,11 @@ on conflict (id) do nothing;
 insert into public.clinics (id, name, audience, category, description, starts_at, ends_at,
     member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
 values
+  -- Description is Tara's verbatim copy for her real "Ladies 3.0+" clinic
+  -- (docs/copy.md, 2026-08-15), replacing an invented placeholder. The NAME and
+  -- the UUID are deliberately unchanged: probes reference this clinic by both.
   ('d0000000-0000-0000-0000-000000000001', 'Tuesday Ladies 3.0+', 'coed', 'Clinic',
-   'Live-ball drilling for 3.0 to 4.0. Bring water.',
+   'A fast-paced clinic for 3.0+ players focused on live-ball doubles play. Pros feed plenty of points while players rotate through courts, work with different pros, and focus on doubles strategy, positioning, and movement. Lots of balls, constant action, and great preparation for match play',
    now() + interval '3 days', now() + interval '3 days 1 hour',
    now() - interval '1 day', now() - interval '12 hours', 8, 'published', 60),
   ('d0000000-0000-0000-0000-000000000002', 'Thursday Morning Cardio', 'coed', 'Clinic',
