@@ -20,25 +20,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Back to `latest` on 2026-08-16, reverting a same-week pin to 2.90.0.
+      # Pinned to the SAME version as the laptop (2.115.0), which is the
+      # whole point. This job was red for days while local was green, because
+      # local was pinned to 2.90.0 and CI installed `latest`. The skew was not
+      # a nuisance; it was actively hiding a real bug: the newer Supabase stack
+      # stopped handing `anon`/`authenticated` a blanket table grant, and this
+      # schema had never written down the SELECT the app depends on. CI was
+      # correct and unheard for three days.
       #
-      # The pin was well intentioned (CI and the laptop running different CLIs
-      # means green here and red there) but it is the ONLY thing that changed in
-      # this job before it started failing after ~2 minutes, which is the shape
-      # of `supabase start` dying rather than a probe failing. 2.90.0 is ~24
-      # minor versions behind and pulls older service images.
-      #
-      # Reverting the suspect change is the cheap move; the expensive one was
-      # having no way to tell. That is what the diagnostics below are for.
-      #
-      # The right long-term fix is still to pin BOTH sides to the same current
-      # version. Local is 2.90.0 and cannot be upgraded from here because the
-      # Homebrew tap needs `brew trust supabase/tap`, which is Alex's call. Once
-      # local is upgraded, pin this to that exact version in its own commit.
+      # Bump this and the laptop together, in one commit, after the suite is
+      # green locally on the new version. Never let the two drift again.
       - name: Install Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.115.0
 
       # Printed, not assumed. When this job goes red, the first question is
       # always "what changed underneath us", and a version in the log answers it
