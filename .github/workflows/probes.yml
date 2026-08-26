@@ -133,6 +133,20 @@ jobs:
           fi
           echo "App icon present."
 
+  # New player-facing prose must never arrive silently. Alex, 2026-08-16:
+  # "text should either come straight from tara or made by u and checked by me
+  # first", after finding AI filler like "Press play - Start Hitting!" in an
+  # app a real club will use. docs/copy-approved.txt is the snapshot; this job
+  # is the gate.
+  copy-gate:
+    name: No unapproved copy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check user-visible strings against the approved snapshot
+        run: bash scripts/check-copy.sh
+
   # Credentials must never reach this repo. CLAUDE.md tells you to put the
   # hosted Postgres password in .env.local, and until 2026-08-13 that file was
   # not actually gitignored. The rule now has a machine behind it.

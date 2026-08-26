@@ -439,6 +439,32 @@ The local Supabase dev image segfaults the Postgres backend when a role without 
 * Ask clarifying questions before building anything non-trivial. A 60-second clarification beats half a day of rework.
 * Update this file when a rule is earned. A correction that only lives in a transcript is lost.
 
+13. **Never put a word in front of a player that Tara did not write or Alex did
+    not approve.** Copy is either hers, or plain functional chrome, and there is
+    no third category.
+
+    Earned 2026-08-16. Alex: *"text should either come straight from tara or
+    made by u and checked by me first"*, after finding cliche AI filler of the
+    *"Press play — Start Hitting!"* kind. The danger is not one bad sentence: it
+    is that a generated line reads as plausible, arrives as one green line in a
+    large diff, and ends up in front of a real club's members in a voice that is
+    not their coach's.
+
+    **Chrome** is a button that says Save, a field labelled Phone, an error that
+    says the connection failed. Keep it plain and boring. **Everything else** —
+    anything with tone, encouragement, a promise, or a claim about how FXE works
+    — is Tara's, and if she has not written it yet the correct move is to ask,
+    not to draft something plausible.
+
+    Mechanically enforced. `docs/copy-approved.txt` snapshots every user-visible
+    string; the `copy-gate` CI job fails on any addition or edit and prints the
+    diff. Regenerating the snapshot is not a formality: read the new lines,
+    decide which of the two categories each belongs to, and commit it alongside
+    the change so a human sees the words in review. `docs/copy-audit.md` is the
+    standing inventory of everything we wrote rather than her, with the 34 items
+    that still need her marked.
+
+
 ---
 
 ## What this project is FOR (read this before optimising for speed)
