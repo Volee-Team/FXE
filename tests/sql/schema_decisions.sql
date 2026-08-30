@@ -202,6 +202,39 @@ select 'is_member_admin_overridable', '1', count(*)::text
  where schemaname = 'public' and tablename = 'players'
    and policyname = 'players_update_own' and qual ~ 'is_admin';
 
+
+-- ---------------------------------------------- Tara's answers, 2026-08-27 --
+-- Pinned here so a later "simplification" cannot quietly undo a decision she
+-- made. Each row names the person and the date, because the whole point of this
+-- probe is that these are HER calls and not ours.
+do $$
+declare n int; v numeric;
+begin
+  -- Q5: registration closes 3 hours before the clinic starts.
+  select round(extract(epoch from ('2026-10-06 09:00:00-04'::timestamptz
+         - public.default_closes_at('2026-10-06 09:00:00-04'::timestamptz))) / 3600, 1)
+    into v;
+  insert into _probe_result values ('tara_close_window_is_3h', '3.0', v::text);
+
+  -- Every clinic in the future must have one. Null meant "never closes", which
+  -- left finished clinics bookable.
+  select count(*) into n from public.clinics where starts_at > now() and closes_at is null;
+  insert into _probe_result values ('no_future_clinic_without_a_close', '0', n::text);
+
+  -- Q2: members get the same schedule 24 hours earlier. Asserted as the GAP so
+  -- it holds for any clinic, rather than pinning two literal timestamps.
+  select round(extract(epoch from (public.public_opens_at('2026-10-06 09:00:00-04'::timestamptz)
+         - public.member_opens_at('2026-10-06 09:00:00-04'::timestamptz))) / 3600, 1)
+    into v;
+  insert into _probe_result values ('tara_member_head_start_is_24h', '24.0', v::text);
+
+  -- Q6: juniors are deferred to November or the spring session. The enum value
+  -- must survive so re-enabling is UI work, not a migration against live data.
+  select count(*) into n from pg_enum e join pg_type t on t.oid = e.enumtypid
+   where t.typname = 'clinic_audience' and e.enumlabel = 'juniors';
+  insert into _probe_result values ('juniors_enum_still_present', '1', n::text);
+end $$;
+
 select
   check_name,
   expected,

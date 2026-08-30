@@ -12,19 +12,21 @@ Ordered by what it unblocks, not by how hard it is to answer.
 
 | # | Question | Why it blocks | Our current assumption |
 |---|---|---|---|
-| 1 | **Queen City: should the app actually stop non-team players registering?** | Decides whether "private clinic" is a real schema feature or just a description | We do NOT enforce it. Anyone may register; Tara picks from the Player Pool. Her own words: *"I'll just need to manually figure that one out"* |
-| 2 | **Do members get a different email from the non-member list, or the same schedule?** | Decides whether one published schedule serves both tiers | One schedule, both tiers see it, differing only in when registration opens |
-| 3 | **The rating guide, in her words** (`for-tara.md` q7) | It is what a nervous new member reads before self-rating, and self-rating decides which clinic they land in | Currently **copied verbatim from Volee** and reads like a chart, not like her. `docs/copy-audit.md` §1 |
-| 4 | **Notification wording** (`for-tara.md` q14) | Push is the only way the app reaches anyone | 14 messages drafted by us. **Three speak as her, in first person.** `docs/copy-audit.md` §2 |
-| 5 | **When does registration close?** (`closes_at`) | Nothing sets it, so registration never closes and finished clinics stay bookable | Unset. Options: at clinic start, some hours before, or only when full |
-| 6 | **Junior fall session starts Aug 24.** Does the app handle it, or does that stay on email? | Decision 0004 deferred juniors to winter; her own session is sooner | Stays on email for now |
-| 7 | **"Smart. Simple. Built for Tennis."** on the sign-in screen: keep it? | It came from the AI mockups, so it may not feel like hers | Keeping it until told otherwise |
-| 8 | **Clinic categories** (`for-tara.md` q8) | The form has a "category" field with no agreed values | Her real schedule suggests the axis is format and level ("105", "3.0+"), not "Drill / Cardio / Match Play" |
+| 1 | **Queen City: "does not have a pool" — do registrations go straight to You're In!, skipping the Player Pool?** | It would be a real exception to hard rule 2 (Tara picks everyone), so it is asked rather than guessed | It behaves like every other clinic. Her eligibility answer is settled: no filtering |
+| 2 | **The late-request path.** Inside the 3-hour close, a player should be able to message her to ask in when the clinic is not full. What should that message say, and does she want it as a notification or in the app? | Half of her own answer to the close-time question | Not built. Registration simply closes |
 
-**Answered already, do not re-ask:**
-* What "105" is — answered 2026-08-15, in `docs/copy.md`
-* Her real weekly list — the Aug 9-14 email IS it, captured in `docs/taras-real-week.md`
-* Clinic descriptions — sent 2026-08-15, in `docs/copy.md`
+**Answered already, do not re-ask.** Six of the eight closed on 2026-08-27; see
+`docs/decisions/0007`.
+
+* What "105" is — 2026-08-15, in `docs/copy.md`
+* Her real weekly list — the Aug 9-14 email IS it, in `docs/taras-real-week.md`
+* Clinic descriptions — 2026-08-15, in `docs/copy.md`
+* **Queen City eligibility** — not enforced. "Too complicated to filter this, so let it go"
+* **Member head start** — 24 hours, same email, same schedule. Confirms decision 0001
+* **Rating guide** — stays as Volee material, she is happy with it
+* **Notification tone** — first person approved, "personal but not cheesy"
+* **Registration close** — 3 hours before start, and she expects to adjust it
+* **Juniors** — November or the spring session, not a fall problem
 
 ## Blocked on Apple / business
 

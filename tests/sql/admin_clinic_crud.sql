@@ -59,8 +59,15 @@ begin
 
   -- closes_at had never been populated by anything, so finished clinics stayed
   -- bookable and real Player Pool rows appeared for events already over.
+  -- Tara, 2026-08-27: registration closes 3 hours before the clinic starts.
+  -- Asserted as a duration, not a literal timestamp, so the check still reads
+  -- as the rule when she moves the number (she expects to, after trial).
   insert into _probe_result values ('closes_at_is_set', 'true',
     (v_clinic.closes_at is not null)::text);
+  insert into _probe_result values ('closes_3h_before_start', '3.0',
+    round(extract(epoch from (v_clinic.starts_at - v_clinic.closes_at)) / 3600, 1)::text);
+  insert into _probe_result values ('closes_before_it_starts', 'true',
+    (v_clinic.closes_at < v_clinic.starts_at)::text);
 
   -- Prices are derived by trigger from length, never typed into a form, so a
   -- typo cannot undercharge the club.
@@ -81,6 +88,8 @@ begin
   v_clinic := public.admin_upsert_clinic(p_id => v_id, p_starts_at => LATER_);
   insert into _probe_result values ('reschedule_moves_member_window',
     public.member_opens_at(LATER_)::text, v_clinic.member_opens_at::text);
+  insert into _probe_result values ('reschedule_moves_close', '3.0',
+    round(extract(epoch from (v_clinic.starts_at - v_clinic.closes_at)) / 3600, 1)::text);
   insert into _probe_result values ('reschedule_keeps_duration', '60',
     ((extract(epoch from (v_clinic.ends_at - v_clinic.starts_at)) / 60)::int)::text);
 

@@ -19,7 +19,13 @@ grep -rnE 'Text\(\s*"|Label\(\s*"|Button\(\s*"|\.navigationTitle\(\s*"' FXETenni
 
 ---
 
-## 1. Needs Tara: the NTRP rating guide (7 long + 6 short)
+## 1. ~~Needs Tara~~ SETTLED: the NTRP rating guide stays
+
+> **Tara, 2026-08-27: "Rating guide is good where it's at if it's volee material."**
+> Closed. The Volee wording is approved as-is. The cross-repo coupling note in
+> `NTRPRating.swift` still applies: if she ever changes it, change both.
+
+### Original entry, kept for the record
 
 **The highest-value thing on this list.** This is what a nervous new member
 reads before self-rating, and self-rating decides which clinic they land in.
@@ -48,7 +54,13 @@ strokes", "Advanced, dictates play", "High-level competitor".
 must change in BOTH repos, because a player who uses Volee and FXE should read
 identical words. Worth confirming that is still what she wants.
 
-## 2. Needs Tara: notification wording (14 messages)
+## 2. Needs Tara: notification wording (14 messages) — TONE NOW SETTLED
+
+> **Tara, 2026-08-27: "First person is ok. I want it to sound personal but not
+> cheesy."** The three messages that speak as her may stay in her voice.
+> "Personal but not cheesy" is the bar, and it is a real constraint: it rules
+> out exclamation-stacking and manufactured enthusiasm, which is the register
+> AI drafts drift into. The exact wording is still worth her eye.
 
 `for-tara.md` question 14. Drafts written by us, never through her. These are
 the only way the app reaches anyone, so the tone matters more than anywhere
