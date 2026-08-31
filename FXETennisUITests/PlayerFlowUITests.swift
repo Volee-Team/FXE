@@ -135,7 +135,28 @@ final class PlayerFlowUITests: XCTestCase {
         XCTAssertTrue(undo.waitForExistence(timeout: 15))
         XCTAssertTrue(["Cancel Registration", "Leave Player Pool"].contains(undo.label),
                       "Not in a registered state, cannot test undo")
-        undo.tap()
+
+        // First tap, then BACK OUT. Keeping the spot is the reason the dialog
+        // exists, so it is asserted before the real cancellation.
+        //
+        // Verified on the simulator 2026-08-28: confirmationDialog presents as
+        // a POPOVER anchored to the button here, which shows the destructive
+        // choice but hides the cancel-role button — dismissal is tapping
+        // anywhere outside. So the dialog-appeared assertion is the confirm
+        // button, and backing out is an outside tap, not a "Keep my spot" tap.
+        XCTAssertTrue(tapWhenReady(undo), "Undo button never became tappable")
+        let confirmChoice = app.buttons["Yes, cancel my spot"].exists
+            ? app.buttons["Yes, cancel my spot"] : app.buttons["Yes, leave the pool"]
+        XCTAssertTrue(confirmChoice.waitForExistence(timeout: 6), "No confirmation dialog appeared")
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.12)).tap()
+        XCTAssertTrue(app.buttons["clinic.primaryAction"].waitForExistence(timeout: 6))
+        XCTAssertTrue(["Cancel Registration", "Leave Player Pool"].contains(
+            app.buttons["clinic.primaryAction"].label),
+            "Backing out of the dialog lost the registration")
+
+        // Now do it for real.
+        XCTAssertTrue(tapDestructiveAndConfirm(app.buttons["clinic.primaryAction"]),
+                      "Confirmation flow did not complete")
 
         // Back to an offer to register, and the status chip is gone.
         let back = app.buttons["clinic.primaryAction"]
@@ -318,6 +339,18 @@ final class PlayerFlowUITests: XCTestCase {
         return element.isHittable
     }
 
+    /// Destructive actions confirm first as of 2026-08-28. The dialog's confirm
+    /// button deliberately carries a DIFFERENT label than the button that opened
+    /// it, so this helper taps the action and then whichever confirm appears.
+    private func tapDestructiveAndConfirm(_ element: XCUIElement) -> Bool {
+        guard tapWhenReady(element) else { return false }
+        for label in ["Yes, cancel my spot", "Yes, leave the pool"] {
+            let confirm = app.buttons[label]
+            if confirm.waitForExistence(timeout: 4) { confirm.tap(); return true }
+        }
+        return false
+    }
+
     private func tapWhenReady(_ element: XCUIElement, timeout: TimeInterval = 20) -> Bool {
         let hittable = NSPredicate(format: "isHittable == true")
         let exp = XCTNSPredicateExpectation(predicate: hittable, object: element)
@@ -334,7 +367,7 @@ final class PlayerFlowUITests: XCTestCase {
         let action = app.buttons["clinic.primaryAction"]
         guard action.waitForExistence(timeout: 15) else { return }
         if ["Cancel Registration", "Leave Player Pool"].contains(action.label) {
-            tapWhenReady(action)
+            _ = tapDestructiveAndConfirm(action)
             let back = app.buttons["clinic.primaryAction"]
             _ = back.waitForExistence(timeout: 15)
         }

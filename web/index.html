@@ -84,8 +84,15 @@
       <input id="email" type="email" autocomplete="username">
       <label for="password">Password</label>
       <input id="password" type="password" autocomplete="current-password">
+      <div id="signup-extra" class="hide">
+        <label for="su-first">First name</label>
+        <input id="su-first" autocomplete="given-name">
+        <label for="su-last">Last name</label>
+        <input id="su-last" autocomplete="family-name">
+      </div>
       <div id="signin-msg"></div>
       <button class="primary" id="dosignin" style="width:100%;margin-top:14px">Sign In</button>
+      <button id="togglemode" style="width:100%;margin-top:8px">First time? Create your account</button>
     </div>
   </section>
 
@@ -102,6 +109,10 @@
 <dialog id="edit">
   <h3 id="edit-title" style="margin-top:0">New clinic</h3>
   <form method="dialog" id="edit-form">
+    <div id="template-row">
+      <label for="f-template">Start from a template</label>
+      <select id="f-template"><option value="">— blank —</option></select>
+    </div>
     <label for="f-name">Name</label>
     <input id="f-name" required>
     <div class="grid">
@@ -128,6 +139,10 @@
     </div>
     <label for="f-desc">Description (players see this under the “?”)</label>
     <textarea id="f-desc" rows="4"></textarea>
+    <label id="save-template-row" style="display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer">
+      <input type="checkbox" id="f-save-template" style="width:18px;height:18px;min-height:0">
+      Save these details as a template for next week
+    </label>
     <p class="muted" style="margin-top:10px">
       Registration opens automatically: members Thursday 8am, everyone else
       Friday 8am, for the whole week this clinic falls in. Prices come from the
@@ -159,6 +174,20 @@
     <span class="grow"></span>
     <button type="button" id="message-cancel">Cancel</button>
     <button type="button" class="primary" id="message-send">Send</button>
+  </div>
+</dialog>
+
+<dialog id="walkup">
+  <h3 style="margin-top:0">Add a player</h3>
+  <p class="muted" style="margin-top:0">For someone who called or grabbed you at
+     the club. They go straight to You&rsquo;re In!</p>
+  <label for="w-query">Search by name</label>
+  <input id="w-query" placeholder="Ann finds Anna, Annette, Joann…">
+  <div id="w-results" style="margin-top:10px"></div>
+  <div id="walkup-msg"></div>
+  <div class="row" style="margin-top:14px">
+    <span class="grow"></span>
+    <button type="button" id="walkup-cancel">Close</button>
   </div>
 </dialog>
 
@@ -204,6 +233,9 @@ function friendly(e) {
 
 let editingId = null;
 let messagingClinic = null;
+let walkupClinic = null;
+let templates = [];
+let signupMode = false;
 
 async function boot() {
   const { data: { session } } = await sb.auth.getSession();
@@ -228,8 +260,16 @@ async function showApp() {
   await loadClinics();
 }
 
+async function loadTemplates() {
+  const { data } = await sb.from("templates_admin").select("*").order("name");
+  templates = data || [];
+  $("f-template").innerHTML = '<option value="">— blank —</option>'
+    + templates.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join("");
+}
+
 async function loadClinics() {
   note($("msg"), "");
+  await loadTemplates();
   const { data: clinics, error } = await sb.from("clinics_admin").select("*").order("starts_at");
   if (error) return note($("msg"), friendly(error));
   if (!clinics.length) {
@@ -270,6 +310,7 @@ async function loadClinics() {
         <span class="muted">${group("in").length}/${c.internal_capacity}</span>
         <button class="small" data-edit="${c.id}">Edit</button>
         <button class="small" data-message="${c.id}">Message</button>
+        <button class="small" data-walkup="${c.id}">Add player</button>
         ${c.status === "draft" ? `<button class="small primary" data-publish="${c.id}">Publish</button>` : ""}
       </div>
       ${section("in", r => `<button class="small" data-paid="${r.id}" data-now="${r.paid}">${r.paid ? "Paid" : "Unpaid"}</button>`)}
@@ -301,6 +342,8 @@ document.addEventListener("click", async (e) => {
   if (b.dataset.paid)     return run(() => call("set_paid", { p_registration: b.dataset.paid, p_paid: b.dataset.now !== "true" }));
   if (b.dataset.publish)  return run(() => call("publish_clinic",     { p_clinic: b.dataset.publish }));
   if (b.dataset.message)  { messagingClinic = b.dataset.message; $("m-body").value = ""; note($("message-msg"), ""); $("message").showModal(); return; }
+  if (b.dataset.walkup)   { walkupClinic = b.dataset.walkup; $("w-query").value = ""; $("w-results").innerHTML = ""; note($("walkup-msg"), ""); $("walkup").showModal(); $("w-query").focus(); return; }
+  if (b.dataset.place)    return run(() => call("place_player", { p_clinic: walkupClinic, p_player: b.dataset.place, p_status: "in" }).then(() => $("walkup").close()));
   if (b.dataset.edit)     return openEdit(b.dataset.edit);
 });
 
@@ -308,6 +351,11 @@ async function openEdit(id) {
   editingId = id || null;
   note($("edit-msg"), "");
   $("edit-title").textContent = id ? "Edit clinic" : "New clinic";
+  // Templates only make sense when CREATING: prefilling over an existing
+  // clinic would silently overwrite fields Tara already set.
+  $("template-row").classList.toggle("hide", !!id);
+  $("save-template-row").classList.toggle("hide", !!id);
+  $("f-template").value = ""; $("f-save-template").checked = false;
   if (id) {
     const { data: c } = await sb.from("clinics_admin").select("*").eq("id", id).single();
     $("f-name").value = c.name; $("f-audience").value = c.audience;
@@ -323,9 +371,36 @@ async function openEdit(id) {
   $("edit").showModal();
 }
 
+$("f-template").onchange = () => {
+  const t = templates.find(x => x.id === $("f-template").value);
+  if (!t) return;
+  $("f-name").value = t.name; $("f-audience").value = t.audience;
+  $("f-duration").value = t.duration_minutes; $("f-capacity").value = t.internal_capacity;
+  $("f-desc").value = t.description || "";
+};
+
 $("new-clinic").onclick = () => openEdit(null);
 $("edit-cancel").onclick = () => $("edit").close();
 $("message-cancel").onclick = () => $("message").close();
+$("walkup-cancel").onclick = () => $("walkup").close();
+
+let searchTimer = null;
+$("w-query").addEventListener("input", () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(async () => {
+    const q = $("w-query").value.trim();
+    if (q.length < 2) { $("w-results").innerHTML = ""; return; }
+    const { data, error } = await sb.rpc("search_players", { p_query: q, p_include_inactive: false });
+    if (error) return note($("walkup-msg"), friendly(error));
+    $("w-results").innerHTML = (data || []).length
+      ? data.map(pl => `<div class="row">
+          <span class="grow"><span class="name">${esc(pl.first_name)} ${esc(pl.last_name)}</span><br>
+          <span class="muted">${pl.adult_rating ?? "—"} · ${pl.is_member ? "Member" : "Non-member"}</span></span>
+          <button class="small primary" data-place="${pl.id}">Put in clinic</button>
+        </div>`).join("")
+      : `<p class="muted">Nobody by that name yet. They may need to sign up in the app first.</p>`;
+  }, 250);
+});
 
 $("edit-save").onclick = async () => {
   const btn = $("edit-save"); btn.disabled = true;
@@ -341,6 +416,14 @@ $("edit-save").onclick = async () => {
     };
     const { error } = await sb.rpc("admin_upsert_clinic", params);
     if (error) throw error;
+    if (!editingId && $("f-save-template").checked) {
+      const { error: te } = await sb.rpc("admin_upsert_template", {
+        p_name: params.p_name, p_audience: params.p_audience,
+        p_duration_minutes: params.p_duration_minutes,
+        p_internal_capacity: params.p_internal_capacity,
+        p_description: params.p_description });
+      if (te) throw te;
+    }
     $("edit").close(); await loadClinics();
   } catch (err) { note($("edit-msg"), friendly(err)); }
   finally { btn.disabled = false; }
@@ -359,13 +442,36 @@ $("message-send").onclick = async () => {
   finally { btn.disabled = false; }
 };
 
+$("togglemode").onclick = () => {
+  signupMode = !signupMode;
+  $("signup-extra").classList.toggle("hide", !signupMode);
+  $("dosignin").textContent = signupMode ? "Create Account" : "Sign In";
+  $("togglemode").textContent = signupMode
+    ? "Already have an account? Sign in" : "First time? Create your account";
+  note($("signin-msg"), "");
+};
+
 $("dosignin").onclick = async () => {
   const btn = $("dosignin"); btn.disabled = true; note($("signin-msg"), "");
-  const { error } = await sb.auth.signInWithPassword({
-    email: $("email").value.trim(), password: $("password").value });
-  btn.disabled = false;
-  if (error) return note($("signin-msg"), friendly(error));
-  await showApp();
+  try {
+    const email = $("email").value.trim(), password = $("password").value;
+    if (signupMode) {
+      const first = $("su-first").value.trim(), last = $("su-last").value.trim();
+      if (!first || !last) throw new Error("Add your first and last name.");
+      const { error } = await sb.auth.signUp({ email, password });
+      if (error) throw error;
+      // Same RPC the iOS app uses: id from auth, role decided by the schema.
+      const { error: pe } = await sb.rpc("create_my_account", {
+        p_first_name: first, p_last_name: last, p_phone: null,
+        p_is_member: true, p_adult_rating: null });
+      if (pe) throw pe;
+    } else {
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+    }
+    await showApp();
+  } catch (err) { note($("signin-msg"), friendly(err)); }
+  finally { btn.disabled = false; }
 };
 $("password").addEventListener("keydown", e => { if (e.key === "Enter") $("dosignin").click(); });
 $("signout").onclick = async () => { await sb.auth.signOut(); location.reload(); };

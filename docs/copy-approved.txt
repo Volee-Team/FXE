@@ -2,9 +2,12 @@ A clinic needs a name.
 ACTION NEEDED
 About this clinic
 Accept
+Add a player
+Add your first and last name.
 Add your name and answer the membership question to continue.
 Admin sign-in.
 Almost there
+Ann finds Anna, Annette, Joann…
 Are you currently a Foxcroft East Racquet & Swim Club member?
 Cancel
 Cancel Invite
@@ -24,9 +27,12 @@ FXE TENNIS
 FXE Tennis
 FXE Tennis · Admin
 FXE Tennis — Admin
+First time? Create your account
+For someone who called or grabbed you at the club. They go straight to You&rsquo;re In!
 Home
 Invite
 Invite \(entry.displayName)
+Keep my spot
 Leave Player Pool
 Length (minutes)
 Length must be more than 0 minutes.
@@ -39,9 +45,11 @@ Message players
 Need Help?
 No clinics yet. Use “New clinic” to add your first one.
 No description yet.
+Nobody by that name yet. They may need to sign up in the app first.
 Nothing open right now.
 Optional. Tara can set this for you later.
 Profile
+Put in clinic
 Rating Guide
 Register
 Registration has closed for this clinic.
@@ -49,11 +57,13 @@ Registration open
 Registration opens \(openMoment.formatted(.dateTime.month(.abbreviated).day()))
 Registration opens \(openMoment.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day().hour().minute()))
 Response Needed
+Search by name
 She will let you know if there is room.
 Sign Out
 Sign out
 Signs you out. Your account is kept, and you can finish this later.
 Smart. Simple. Built for Tennis.
+Start from a template
 Tara has your message.
 Tara uses this to build her clinic lists.
 That account is not an administrator.
