@@ -89,6 +89,28 @@ enum RegistrationRepository {
             .execute()
     }
 
+    /// Ask Tara to fit a player into a clinic whose registration has closed.
+    ///
+    /// Returns a `late_requests` row, not a registration. The server enforces
+    /// every clause of Tara's condition ("assuming there is space and it isn't
+    /// full"): inside the closed window, before the clinic starts, not full, and
+    /// the caller owns the player. See `20260827000002_late_requests.sql`.
+    @discardableResult
+    static func requestLateSpot(clinicId: UUID, playerId: UUID, message: String?) async throws -> UUID {
+        struct P: Encodable {
+            let p_clinic: UUID
+            let p_player: UUID
+            let p_message: String?
+        }
+        struct Row: Decodable { let id: UUID }
+        let row: Row = try await supabase
+            .rpc("request_late_spot", params: P(p_clinic: clinicId, p_player: playerId, p_message: message))
+            .single()
+            .execute()
+            .value
+        return row.id
+    }
+
     static func respondToInvitation(registrationId: UUID, accept: Bool) async throws {
         try await supabase
             .rpc("respond_to_invitation", params: RespondParams(p_registration: registrationId, p_accept: accept))

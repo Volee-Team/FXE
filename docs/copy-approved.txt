@@ -34,6 +34,7 @@ Manage
 Max players must be at least 1.
 Message
 Message Players
+Message Tara
 Message players
 Need Help?
 No clinics yet. Use “New clinic” to add your first one.
@@ -43,14 +44,17 @@ Optional. Tara can set this for you later.
 Profile
 Rating Guide
 Register
+Registration has closed for this clinic.
 Registration open
 Registration opens \(openMoment.formatted(.dateTime.month(.abbreviated).day()))
 Registration opens \(openMoment.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day().hour().minute()))
 Response Needed
+She will let you know if there is room.
 Sign Out
 Sign out
 Signs you out. Your account is kept, and you can finish this later.
 Smart. Simple. Built for Tennis.
+Tara has your message.
 Tara uses this to build her clinic lists.
 That account is not an administrator.
 That email or password didn't work.
@@ -62,5 +66,6 @@ View Open Clinics
 What do the ratings mean?
 What is 105?
 Write a message first.
+You can still ask Tara to fit you in.
 You're not in any clinics yet.
 Your tennis rating

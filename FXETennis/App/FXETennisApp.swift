@@ -17,6 +17,23 @@ struct FXETennisApp: App {
             RootView()
                 .environment(session)
                 .tint(Brand.navy)
+                // LOAD-BEARING. docs/design-system.md has said since 2026-08-12
+                // that "the root view sets .preferredColorScheme(.light)", and
+                // until 2026-08-27 that sentence was true only inside a COMMENT
+                // in Brand.swift. Nothing applied it.
+                //
+                // Every colour in Brand is a hardcoded light-palette value, and
+                // the palette is deliberately closed with no dark tokens (Tara
+                // has not supplied dark surfaces). So under a dark system the
+                // app kept its cream and white grounds while SwiftUI switched
+                // its DEFAULT text and control colours to their dark variants:
+                // white text on a white field. A player with dark mode on could
+                // not read what they were typing on the sign-in screen.
+                //
+                // Do not remove this to "support dark mode". Supporting dark
+                // mode means Tara supplying a dark surface set first; until
+                // then this line is what makes the light palette honest.
+                .preferredColorScheme(.light)
                 .task { await session.bootstrap() }
         }
     }
