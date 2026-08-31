@@ -12,7 +12,6 @@ Ordered by what it unblocks, not by how hard it is to answer.
 
 | # | Question | Why it blocks | Our current assumption |
 |---|---|---|---|
-| 1 | **Queen City: "does not have a pool" — do registrations go straight to You're In!, skipping the Player Pool?** | It would be a real exception to hard rule 2 (Tara picks everyone), so it is asked rather than guessed | It behaves like every other clinic. Her eligibility answer is settled: no filtering |
 | 2 | **The late-request path.** Inside the 3-hour close, a player should be able to message her to ask in when the clinic is not full. What should that message say, and does she want it as a notification or in the app? | Half of her own answer to the close-time question | Not built. Registration simply closes |
 
 **Answered already, do not re-ask.** Six of the eight closed on 2026-08-27; see
@@ -21,7 +20,13 @@ Ordered by what it unblocks, not by how hard it is to answer.
 * What "105" is — 2026-08-15, in `docs/copy.md`
 * Her real weekly list — the Aug 9-14 email IS it, in `docs/taras-real-week.md`
 * Clinic descriptions — 2026-08-15, in `docs/copy.md`
-* **Queen City eligibility** — not enforced. "Too complicated to filter this, so let it go"
+* **Queen City eligibility** — not enforced, and the ambiguity is resolved
+  (2026-08-28): *"Queen City means our FXE Queen City team. No nonmembers or
+  anyone other than those on the team will be able to practice at that time. As
+  long as it's labeled 'FXE QC Team practice' no one else should sign up for
+  that. And if they do - I'll let them know."* So: normal Player Pool behaviour,
+  the LABEL is the control, and she polices exceptions by hand. The clinic name
+  must be exactly **FXE QC Team practice**
 * **Member head start** — 24 hours, same email, same schedule. Confirms decision 0001
 * **Rating guide** — stays as Volee material, she is happy with it
 * **Notification tone** — first person approved, "personal but not cheesy"

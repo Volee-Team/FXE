@@ -85,7 +85,7 @@ for the description. FXE Queen city team ladies practice."*
 
 | | |
 |---|---|
-| Name | FXE Queen City Team Ladies Practice |
+| Name | **FXE QC Team practice** (updated 2026-08-28: *"As long as it's labeled 'FXE QC Team practice' no one else should sign up for that"*) |
 | Day / time | Tuesdays, 10:30–11:30 AM |
 | Duration | 60 min |
 | Audience | Ladies |
