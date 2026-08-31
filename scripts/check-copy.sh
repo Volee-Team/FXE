@@ -44,5 +44,6 @@ echo "If the added lines are correct copy (Tara's words, or plain chrome that"
 echo "Alex has seen), record them and commit the snapshot with your change:"
 echo "  python3 scripts/extract-copy.py > $SNAP"
 echo ""
-echo "New player-facing sentences also belong in docs/copy-audit.md."
+echo "New player-facing sentences also belong in docs/copy-review.md,
+the checklist Alex walks with Tara."
 exit 1

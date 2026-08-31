@@ -1,44 +1,59 @@
+A clinic needs a name.
 ACTION NEEDED
 About this clinic
 Accept
 Add your name and answer the membership question to continue.
+Admin sign-in.
 Almost there
 Are you currently a Foxcroft East Racquet & Swim Club member?
 Cancel
 Cancel Invite
 Cancel Registration
+Cancel invite
 Cancel the invitation to \(entry.displayName)
 Clinic updates come through the app. Keep notifications on so you don't miss them.
 Clinics
+Couldn't reach the server. Check your connection.
+Date &amp; time
 Decline
+Description (players see this under the “?”)
 Done
 Draft
 FROM TARA
 FXE TENNIS
 FXE Tennis
+FXE Tennis · Admin
+FXE Tennis — Admin
 Home
 Invite
 Invite \(entry.displayName)
 Leave Player Pool
+Length (minutes)
+Length must be more than 0 minutes.
 Manage
+Max players must be at least 1.
 Message
 Message Players
+Message players
 Need Help?
+No clinics yet. Use “New clinic” to add your first one.
 No description yet.
 Nothing open right now.
 Optional. Tara can set this for you later.
-PAYMENT
 Profile
 Rating Guide
 Register
 Registration open
 Registration opens \(openMoment.formatted(.dateTime.month(.abbreviated).day()))
 Registration opens \(openMoment.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day().hour().minute()))
+Response Needed
 Sign Out
 Sign out
 Signs you out. Your account is kept, and you can finish this later.
 Smart. Simple. Built for Tennis.
 Tara uses this to build her clinic lists.
+That account is not an administrator.
+That email or password didn't work.
 This clinic has been canceled.
 To
 USTA \(level.label)
@@ -46,5 +61,6 @@ View All Clinics
 View Open Clinics
 What do the ratings mean?
 What is 105?
+Write a message first.
 You're not in any clinics yet.
 Your tennis rating
