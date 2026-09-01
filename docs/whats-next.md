@@ -52,8 +52,11 @@ Ordered by what it unblocks, not by how hard it is to answer.
    She asked directly: *"show me how I can easily change the schedule within the
    app as the super admin."* Today nothing can create or edit a clinic from any
    client, and `clinic_templates` has no write path at all.
-3. **Tara's real admin account and clinics in hosted.** Hosted is empty: 0
-   accounts, 0 clinics. Until this happens every client shows her nothing.
+3. **Tara's real admin account and clinics in hosted.** ~~Blocked~~ UNBLOCKED
+   2026-09-01: hosted now has every migration, the web admin is live at
+   `fxe-tennis-admin.vercel.app`, and her email self-promotes to admin on
+   sign-up. The remaining step is HERS: open the site, Create account, build
+   the week from templates.
 4. **Push notifications** — zero code anywhere. `supabase/functions/` is empty.
 5. **Crash reporting** — none, before real members are on it.
 6. **Privacy policy + account deletion** — required before children's data in v1.1.
