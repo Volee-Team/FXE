@@ -35,7 +35,12 @@ get committed aimed at the wrong project. Sign in as `tara@fxe.test` /
 
 ## Deploy it (free, ~5 minutes)
 
-There is no build step and no server. It is three static files.
+There is no build step and no server — just the static files in this folder.
+
+**Live at <https://fxe-tennis-admin.vercel.app>** (Vercel project
+`fxe-tennis-admin`, deployed 2026-08-28). Redeploy after changes with
+`cd web && npx vercel --prod`. Do NOT connect the Git repo to Vercel: previews
+would point at Tara's live data, and the repo root is not this folder.
 
 **Vercel**
 
@@ -52,17 +57,13 @@ Anything not on `localhost` talks to the hosted project automatically.
 
 ## Before Tara can actually use it
 
-Hosted currently has **0 accounts and 0 clinics**, so she would sign in to an
-empty page. Two things, in order:
-
-1. **Create her admin account.** She signs up in the iOS app or via Supabase
-   Auth, then her `accounts.role` is set to `admin` once, by hand. There is no
-   RPC for granting admin on purpose: hard rule 8 says a privilege column is
-   never writable by the role it grants privilege to, and an admin-maker RPC
-   would be exactly that.
-2. **Her real clinics** go in through this page, not a hand-written INSERT, so
-   the path itself gets exercised. Her week is in `docs/taras-real-week.md` and
-   the descriptions are in `docs/copy.md`.
+~~Two things~~ **Nothing — as of 2026-09-01 the path is fully open.** Hosted has
+every migration, and sign-up exists in this page ("First time? Create your
+account"). Her email self-promotes to admin at account creation
+(`bootstrap_first_admin`, 20260828000001), so the whole bootstrap is: she opens
+the live URL, creates her account, and builds her week from templates. Her real
+clinics enter through this page, never a hand-written INSERT, so the path itself
+gets exercised.
 
 ## Why the key in `config.js` is not a leak
 

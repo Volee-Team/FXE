@@ -41,3 +41,17 @@ echo "Recent commits:"
 echo '```'
 git log --oneline -5 2>/dev/null
 echo '```'
+
+# Doc freshness. Docs rot silently between sessions; this makes the age of the
+# last audit visible at the top of every session instead of discoverable by
+# accident. The marker is updated by whoever completes a docs pass.
+if [ -f docs/.last-doc-audit ]; then
+  LAST=$(cat docs/.last-doc-audit)
+  AGE=$(( ( $(date +%s) - $(date -j -f %Y-%m-%d "$LAST" +%s 2>/dev/null || date -d "$LAST" +%s) ) / 86400 ))
+  echo ""
+  echo "Docs last audited: $LAST ($AGE days ago)."
+  if [ "$AGE" -gt 7 ]; then
+    echo "OVERDUE: run a docs-freshness pass (check docs/ claims against reality,"
+    echo "move fixed backlog rows, then update docs/.last-doc-audit)."
+  fi
+fi

@@ -44,7 +44,9 @@ supabase start
 # Apply every migration + seed. Destroys local data; that is the point.
 supabase db reset
 
-# The whole test suite: 142 checks + a concurrency probe.
+# The whole test suite. It prints its own totals; never quote a stale count
+# in prose (the number 142 sat here for three weeks while the suite grew to
+# 285).
 bash tests/run-probes.sh
 
 # Push migrations to the hosted project. THE ONLY sanctioned way to write hosted.

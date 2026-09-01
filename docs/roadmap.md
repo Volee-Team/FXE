@@ -29,7 +29,7 @@ handwritten court sheet. Nothing more.
 | ✅ | Court assignment 1–5, admin only |
 | ✅ | Clinic messages with audience targeting |
 | ✅ | News with audience and unread tracking |
-| ✅ | 142 automated checks + a concurrency probe, green in CI on every push |
+| ✅ | Automated SQL probe suite + a concurrency probe (the suite prints its own total; 285 checks across 12 probes as of 2026-09-01), green in CI on every push |
 
 ### iOS app 🔨
 
@@ -42,14 +42,17 @@ whenever you touch it.
 
 | | |
 |---|---|
-| ✅ | Xcode project, brand tokens from Tara's palette, the gator mark. **Except the app icon**: the asset slot is empty, which is a hard TestFlight blocker (backlog) |
-| 🔨 | Sign **in** works. Sign **up** is broken: nothing creates the `accounts` row, so a new user gets an orphan auth record and a Register button that silently does nothing |
-| 🔨 | Profile: the NTRP "?" explainer is done and correct. Everything else is read-only and unpopulated, because there is no write path to `accounts` or `players` anywhere in the client |
-| 🔨 | Browse clinics: the "Registration opens" state is built and handles member vs non-member correctly. Week grouping, the one-month horizon, and a date floor are not, so past clinics live in the list forever and sort to the top |
+| ✅ | Xcode project, brand tokens from Tara's palette, the gator mark, **and the app icon** (real crossed-racquets mark on navy, 2026-08-16; CI fails if it ever goes missing) |
+| ✅ | Sign in AND sign up (2026-08-15): profile screen with Tara's Screen-4 copy, `create_my_account`, `.needsProfile` routing, sign-up regression UI test |
+| 🔨 | Profile: populated after sign-up, NTRP "?" explainer done. Still read-only after creation — a player cannot edit their own details yet |
+| 🔨 | Browse clinics: "Registration opens" state ✅, date floor ✅ (2026-08-28, finished clinics vanish), **closed state with "Message Tara"** ✅. Week grouping and the one-month horizon still not built |
 | ✅ | Clinic details: name, day, time, price for *this* player, description, Zelle/Venmo line, message board |
 | ✅ | Register / Cancel / Leave Player Pool |
 | ✅ | Accept or decline an invitation |
 | 🔨 | My Clinics: a three-row section on Home, no dedicated surface, and "View All Clinics" does not go there |
+| ✅ | **Admin tab** (2026-08-15): Action Needed, rosters, invite from Player Pool, mark paid, message audiences |
+| ✅ | **Late requests** (2026-08-28): registration closes 3h before start; inside the window a player can Message Tara to ask in |
+| ✅ | Confirmation dialogs on all destructive taps (2026-08-28) |
 | ⬜ | Notification permission with the warning Tara asked for. Zero code: no permission request, no APNs entitlement, no device registration, and no sender in `supabase/functions/` |
 | ⏸ | News. Model and repository exist, no screen. **Deferred**: decision 21 cut the tab (see `docs/decisions/0006`) |
 
@@ -60,7 +63,7 @@ itself the finding.
 
 | | |
 |---|---|
-| ✅ | SQL probe suite: 8 probes, 186 checks, plus the concurrency probe. Green in CI on every push |
+| ✅ | SQL probe suite: 12 probes (285 checks as of 2026-09-01 — the suite prints its own total), plus the concurrency probe. Green in CI on every push |
 | ✅ | Unit tests: 13, covering the pure logic the probes cannot see (price formatting, member rate selection, NTRP bucketing) |
 | ✅ | XCUITests: **5 of 5 green** as of 2026-08-15, including a sign-up regression test |
 
@@ -79,20 +82,23 @@ causes, all worth remembering because two are the same mistake:
    now asserts the documented strings from `docs/design-system.md`, which pins
    the accessibility contract too.
 
-### Web admin ⬜
+### Web admin 🔨 — LIVE at `fxe-tennis-admin.vercel.app` (2026-08-28)
 
-Tara's weekly setup, on a laptop (her call, 2026-08-02: *"yes, please move
-forward with suggestion"*).
+Tara's weekly setup, on a laptop (her call, 2026-08-02). Sign-up self-promotes
+her email to admin, so the bootstrap is entirely hers.
 
 | | |
 |---|---|
-| ⬜ | Create a week from templates in one pass |
-| ⬜ | Clinic management: You're In! / Player Pool / Response Needed, invite, message |
-| ⬜ | **Quick-add a player to any clinic**, dropdowns and a calendar, no typing sentences |
+| ✅ | Sign in / first-time sign up; create + edit + publish clinics; windows and prices derived automatically |
+| ✅ | Templates: "Start from a template" picker and save-as-template — a clinic in ~3 clicks |
+| ✅ | Rosters: You're In! / Player Pool / Response Needed, invite, cancel invite, paid toggle |
+| ✅ | Message players by audience (Everyone / You're In! / Player Pool / Response Needed / Unpaid) |
+| ✅ | **Walk-up "Add player"**: forgiving search, one tap to You're In! |
 | ⬜ | **Court dropdown on every roster row**, re-arrangeable any time |
-| ⬜ | Paid checkbox and the unpaid reminder |
-| ⬜ | Revenue screen: the four numbers, the total, what is outstanding |
+| ⬜ | One-tap unpaid reminder (compose exists; the one-tap button does not) |
+| ⬜ | Revenue screen: the four numbers, the total, what is outstanding (`revenue_summary()` is built and probe-covered, no screen calls it) |
 | ⬜ | Player directory with forgiving search, private notes |
+| ⬜ | Late-request queue surfaced in Action Needed (backend done, notification row only) |
 
 ### Ship ⬜
 
@@ -104,20 +110,20 @@ one, and conflating the two is what made this section look like a wall.
 
 | | |
 |---|---|
-| ⬜ | **App icon.** The `AppIcon.appiconset` slot is empty, so the bundle has no `CFBundleIconName` and the upload fails validation (ITMS-90713) before Beta App Review ever runs |
-| ⬜ | **`DEVELOPMENT_TEAM`.** Not set anywhere, so a device build fails outright. Must go in `project.yml`, not the Xcode UI, because `.gitignore` excludes the `.xcodeproj` and `xcodegen` regenerates it |
+| ✅ | ~~App icon~~ Done 2026-08-16; CI gate keeps it |
+| ⬜ | **`DEVELOPMENT_TEAM`** in `project.yml` — waiting on the Apple LLC enrollment (in review; docs submitted) |
 | ⬜ | Distribution certificate and provisioning profile on the build machine |
 | ⬜ | App Store Connect app record; the bundle id is still the placeholder `com.fxetennis.app` |
-| ⬜ | **Sign-up that produces a usable account.** Without it a tester installs the app and cannot get past the first screen |
-| ⬜ | Tara's real clinics in hosted, which needs an admin path to create them |
+| ✅ | ~~Sign-up that produces a usable account~~ Done 2026-08-15, regression-tested |
+| 🔨 | Tara's real clinics in hosted — the path is open (live web admin + her self-promoting sign-up, 2026-09-01); the step is hers |
 
 **Gates an external round and App Store release, but NOT an internal one:**
 
 | | |
 |---|---|
 | ✅ | FXE Tennis, LLC exists. **D-U-N-S 11-654-7195**, registered, address on file with D&B |
-| ⬜ | Apple Developer Program enrollment as the LLC (Tara decision 16). Alex has authority as her developer |
-| ⬜ | A website at the entity's domain. Apple wants one at enrollment. Cheap: a static page on Vercel, as done for Volee |
+| 🔨 | Apple Developer Program enrollment as the LLC — **in review**: fersc.com email accepted, ID + business docs submitted |
+| ✅ | ~~A website at the entity's domain~~ fersc.com accepted by Apple |
 | ⬜ | Privacy policy live on a URL, FXE waiver wording |
 | ⬜ | Beta App Review, then the App Store listing |
 

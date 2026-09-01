@@ -1,6 +1,11 @@
 # Web Admin: Architecture Decision Record
 
-**Status:** accepted, not yet built
+**Status:** BUILT and LIVE at `fxe-tennis-admin.vercel.app` (2026-08-28),
+with one recorded deviation: plain HTML + supabase-js from a CDN instead of the
+Vite/React/Cloudflare stack below. One user, five screens, zero build step; the
+reasoning is in commit dd55e36 and stands until the surface outgrows it. The
+architecture arguments below (static SPA, no server, RPC-only authority) all
+still hold and are what the shipped page does.
 **Date:** 2026-08-02
 **Decision owner:** Alex
 **Approved by:** Tara (split admin surface, per `for-tara.md` question 1)

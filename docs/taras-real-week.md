@@ -116,4 +116,6 @@ Two consequences:
 These eight clinics plus their templates are the natural first real content in
 the hosted database. Per CLAUDE.md they must go in **through the app's own
 admin path**, not a hand-written INSERT, so that the path gets exercised. That
-admin path does not exist yet, which is why it is the next build after signup.
+admin path now EXISTS (2026-08-28): the web admin is live, her email
+self-promotes to admin at sign-up, and the template picker makes each clinic a
+three-click create. The remaining step is hers to take.

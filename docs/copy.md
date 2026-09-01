@@ -118,8 +118,9 @@ a brand new member does not know, and the alternative to a "?" is putting a
 paragraph on every row, which contradicts the standing rule that player screens
 must never feel like long blocks of writing.
 
-**Status: not built yet.** The description reaches the clinic detail screen; the
-"?" affordance on the list does not exist. Tracked in `docs/backlog.md`.
+**Status: BUILT, 2026-08-16.** The "?" sits on every clinic card and opens a
+sheet with the description; a 105 clinic additionally shows her definition of
+the format. Verified on the simulator the day it landed.
 
 ---
 
@@ -145,14 +146,14 @@ Never substitute a synonym. Full table in `docs/design-system.md`.
 
 ## Still open with Tara
 
-1. **The NTRP rating guide**, `for-tara.md` question 7: a line or two per level in
-   her own words. This is what a nervous new player reads before self-rating, so
-   it should sound like her. Currently mirrored from Volee.
-2. **Notification wording**, question 14. Roughly ten messages. Drafts exist in
-   `docs/notifications.md` and have never been through her.
+1. ~~The NTRP rating guide~~ **CLOSED 2026-08-27**: *"Rating guide is good
+   where it's at if it's volee material."*
+2. **Notification wording**, question 14. Tone settled 2026-08-27 ("First person
+   is ok. I want it to sound personal but not cheesy") — the exact words in
+   `docs/notifications.md` still deserve her eye. See `docs/copy-review.md` §E.
 3. **The Venmo / Zelle payment line**, question 11. Served from the database via
-   `payment_instructions()` so it changes without a release, but the string
-   itself is still ours.
+   `payment_instructions()`; current string reads like hers but was never
+   explicitly confirmed.
 4. **Clinic categories**, question 8. Her real schedule suggests the axis is
-   format and level ("105", "3.0+"), not the "Drill / Cardio / Match Play" the
-   form implies. Worth re-asking now that "105" is understood.
+   format and level ("105", "3.0+"), not "Drill / Cardio / Match Play". Worth
+   re-asking now that "105" is understood.

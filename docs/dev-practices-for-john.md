@@ -436,7 +436,7 @@ the model to copy for the SQL half:
 
 * `sql-probes`: install the Supabase CLI, `supabase start` a local stack,
   `supabase db reset` to apply every migration and seed onto a **fresh, empty
-  Postgres**, then `bash tests/run-probes.sh` for all 142 checks plus the
+  Postgres**, then `bash tests/run-probes.sh` for the full suite (it prints its own count; 285 checks as of 2026-09-01) plus the
   concurrency probe. The database is disposable and is thrown away when the runner
   ends.
 * `migration-immutability`: on pull requests, fail if any *already-committed*
