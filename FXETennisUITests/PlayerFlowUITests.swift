@@ -91,8 +91,21 @@ final class PlayerFlowUITests: XCTestCase {
         let status = app.descendants(matching: .any).matching(identifier: "clinic.statusChip").firstMatch
         XCTAssertTrue(status.waitForExistence(timeout: 15),
                       "No status appeared after registering — the RPC may not have been called")
-        XCTAssertTrue(["You're In!", "Player Pool"].contains(status.label),
-                      "Unexpected status after register: '\(status.label)'")
+
+        // `StatusChip` deliberately collapses to ONE accessibility element and
+        // publishes `status.accessibilityLabel`, spelled out for VoiceOver, so
+        // `element.label` is that string and never the visible chip text. This
+        // assertion previously compared against the visible words and failed on
+        // a correct registration: it read 'Status: in the Player Pool' and
+        // called it unexpected.
+        //
+        // Asserting the VoiceOver strings is the better test anyway. They are a
+        // documented contract in docs/design-system.md, so this now pins the
+        // accessibility behaviour as well as the state transition.
+        XCTAssertTrue(
+            ["Status: you're in", "Status: in the Player Pool"].contains(status.label),
+            "Unexpected status after register: '\(status.label)'"
+        )
 
         // And the single primary action must have followed the status.
         let after = app.buttons["clinic.primaryAction"]
@@ -122,7 +135,28 @@ final class PlayerFlowUITests: XCTestCase {
         XCTAssertTrue(undo.waitForExistence(timeout: 15))
         XCTAssertTrue(["Cancel Registration", "Leave Player Pool"].contains(undo.label),
                       "Not in a registered state, cannot test undo")
-        undo.tap()
+
+        // First tap, then BACK OUT. Keeping the spot is the reason the dialog
+        // exists, so it is asserted before the real cancellation.
+        //
+        // Verified on the simulator 2026-08-28: confirmationDialog presents as
+        // a POPOVER anchored to the button here, which shows the destructive
+        // choice but hides the cancel-role button — dismissal is tapping
+        // anywhere outside. So the dialog-appeared assertion is the confirm
+        // button, and backing out is an outside tap, not a "Keep my spot" tap.
+        XCTAssertTrue(tapWhenReady(undo), "Undo button never became tappable")
+        let confirmChoice = app.buttons["Yes, cancel my spot"].exists
+            ? app.buttons["Yes, cancel my spot"] : app.buttons["Yes, leave the pool"]
+        XCTAssertTrue(confirmChoice.waitForExistence(timeout: 6), "No confirmation dialog appeared")
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.12)).tap()
+        XCTAssertTrue(app.buttons["clinic.primaryAction"].waitForExistence(timeout: 6))
+        XCTAssertTrue(["Cancel Registration", "Leave Player Pool"].contains(
+            app.buttons["clinic.primaryAction"].label),
+            "Backing out of the dialog lost the registration")
+
+        // Now do it for real.
+        XCTAssertTrue(tapDestructiveAndConfirm(app.buttons["clinic.primaryAction"]),
+                      "Confirmation flow did not complete")
 
         // Back to an offer to register, and the status chip is gone.
         let back = app.buttons["clinic.primaryAction"]
@@ -131,6 +165,93 @@ final class PlayerFlowUITests: XCTestCase {
                        "After undoing, the player should be able to register again")
         XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "clinic.statusChip").firstMatch.exists,
                        "A status chip survived cancellation")
+    }
+
+    // MARK: - sign-up, the flow that was a dead end until 2026-08-15
+
+    /// A brand new person creates an account and reaches a working app.
+    ///
+    /// This is the regression test for the worst bug this project has had that
+    /// was not a security hole: `auth.signUp` created an auth user and nothing
+    /// else, so a new player landed on a Home that greeted them "Good Evening,
+    /// there!", quoted every price at the non-member rate, and had a Register
+    /// button that silently did nothing. Nothing failed. Nothing logged. The
+    /// app simply did not work, and only for people who had just joined, which
+    /// is every single one of Tara's members on day one.
+    ///
+    /// The assertions below are chosen so that the ORIGINAL bug fails them:
+    /// the greeting must contain the name that was typed, and a price must
+    /// render. A test that only checked "we reached Home" would have passed
+    /// against the broken build.
+    func testNewUserCanSignUpAndReachAWorkingApp() {
+        app.launch()
+
+        // Unique per run: the auth user survives in the local database, so a
+        // fixed address would pass once and then fail with "already
+        // registered" forever after. Tests must not depend on a fresh reset.
+        let unique = UUID().uuidString.prefix(8).lowercased()
+        let email = "newplayer-\(unique)@fxe.test"
+        let firstName = "Testcase"
+
+        let toSignUp = app.buttons["auth.toggleMode"]
+        XCTAssertTrue(toSignUp.waitForExistence(timeout: 20), "Sign-in screen never appeared")
+        toSignUp.tap()
+
+        let emailField = app.textFields["auth.email"]
+        XCTAssertTrue(emailField.waitForExistence(timeout: 10))
+        emailField.tap()
+        emailField.typeText(email)
+
+        let passwordField = app.secureTextFields["auth.password"]
+        passwordField.tap()
+        passwordField.typeText("testpassword123")
+        dismissSavePasswordSheetIfPresent()
+
+        app.buttons["auth.submit"].tap()
+        dismissSavePasswordSheetIfPresent()
+
+        // The profile screen must appear. Before the fix, sign-up went straight
+        // to a broken Home, so reaching this screen at all is the fix working.
+        let first = app.textFields["profile.firstName"]
+        XCTAssertTrue(first.waitForExistence(timeout: 20),
+                      "Profile screen never appeared after sign-up — the new user has no way to create an account")
+        first.tap()
+        first.typeText(firstName)
+
+        let last = app.textFields["profile.lastName"]
+        last.tap()
+        last.typeText("Player")
+
+        // Continue stays disabled until the membership question is answered,
+        // because a silent default puts someone in the wrong pricing tier.
+        let go = app.buttons["profile.continue"]
+        XCTAssertTrue(go.waitForExistence(timeout: 10))
+        XCTAssertFalse(go.isEnabled,
+                       "Continue was enabled before the membership question was answered")
+
+        app.buttons["profile.member.yes"].tap()
+        XCTAssertTrue(go.isEnabled, "Continue stayed disabled after a complete form")
+
+        // The software keyboard is still up from the name fields and covers the
+        // bottom of the form, so Continue exists and is enabled but is not
+        // hittable. Scroll it into view rather than sleeping: a real player on a
+        // small phone hits exactly this, and a test that cannot reach the button
+        // is telling us something true about the layout.
+        XCTAssertTrue(scrollUntilHittable(go), "Continue never became reachable")
+        go.tap()
+
+        // The greeting must name the person who just signed up. "there" is the
+        // exact symptom of the original bug.
+        let greeting = app.staticTexts["home.greeting"]
+        XCTAssertTrue(greeting.waitForExistence(timeout: 20),
+                      "Never reached Home after completing the profile")
+        XCTAssertTrue(greeting.label.contains(firstName),
+                      "Greeting was '\(greeting.label)'. Not naming the new user means the profile did not save.")
+
+        // And they must be a real player: a price rendering proves the profile
+        // reached the view, which is what decides member vs non-member pricing.
+        XCTAssertNotNil(firstClinicPriceLabel(),
+                        "No price rendered for the new user, so their profile is not reaching the clinic list")
     }
 
     // MARK: - pricing, which is money and therefore worth a UI test
@@ -202,6 +323,34 @@ final class PlayerFlowUITests: XCTestCase {
         }
     }
 
+    /// Scrolls the containing scroll view until `element` is actually hittable.
+    ///
+    /// `exists` and `isEnabled` are both true for a control sitting under the
+    /// software keyboard or below the fold, so waiting on those and then tapping
+    /// fails with a misleading "never became tappable". Swiping a bounded number
+    /// of times keeps a layout regression a failure rather than a hang.
+    @discardableResult
+    private func scrollUntilHittable(_ element: XCUIElement, maxSwipes: Int = 5) -> Bool {
+        guard element.waitForExistence(timeout: 10) else { return false }
+        for _ in 0..<maxSwipes {
+            if element.isHittable { return true }
+            app.swipeUp()
+        }
+        return element.isHittable
+    }
+
+    /// Destructive actions confirm first as of 2026-08-28. The dialog's confirm
+    /// button deliberately carries a DIFFERENT label than the button that opened
+    /// it, so this helper taps the action and then whichever confirm appears.
+    private func tapDestructiveAndConfirm(_ element: XCUIElement) -> Bool {
+        guard tapWhenReady(element) else { return false }
+        for label in ["Yes, cancel my spot", "Yes, leave the pool"] {
+            let confirm = app.buttons[label]
+            if confirm.waitForExistence(timeout: 4) { confirm.tap(); return true }
+        }
+        return false
+    }
+
     private func tapWhenReady(_ element: XCUIElement, timeout: TimeInterval = 20) -> Bool {
         let hittable = NSPredicate(format: "isHittable == true")
         let exp = XCTNSPredicateExpectation(predicate: hittable, object: element)
@@ -218,7 +367,7 @@ final class PlayerFlowUITests: XCTestCase {
         let action = app.buttons["clinic.primaryAction"]
         guard action.waitForExistence(timeout: 15) else { return }
         if ["Cancel Registration", "Leave Player Pool"].contains(action.label) {
-            tapWhenReady(action)
+            _ = tapDestructiveAndConfirm(action)
             let back = app.buttons["clinic.primaryAction"]
             _ = back.waitForExistence(timeout: 15)
         }

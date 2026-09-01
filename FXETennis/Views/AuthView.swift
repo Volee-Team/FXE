@@ -121,6 +121,10 @@ struct AuthView: View {
                 }
                 .font(Brand.Typography.caption)
                 .foregroundStyle(Brand.textSecondary)
+                // Identifier on the Button. The visible label flips between
+                // "Create an account" and "Sign in", so a UI test cannot query
+                // it by text without encoding which mode it is already in.
+                .accessibilityIdentifier("auth.toggleMode")
 
                 if mode == .signUp {
                     Text("Clinic updates come through the app. Keep notifications on so you don't miss them.")

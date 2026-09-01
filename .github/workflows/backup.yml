@@ -1,0 +1,144 @@
+name: nightly backup
+
+# WHY THIS EXISTS
+# ---------------
+# On 2026-08-13 an audit found that the hosted database had NO backup of any
+# kind. The Supabase org is on the free plan, which carries no point-in-time
+# recovery and no restorable backup you control. At the same time, CLAUDE.md
+# routes Tara's real templates and clinics INTO hosted through the app, so
+# hosted becomes the only copy of the club's operating data.
+#
+# Stack that against what else was true that week: a critical hole let any
+# holder of the publishable key (which ships inside the iOS binary) run
+# `delete from clinics_public`, cascading through every registration and
+# message. Six audit agents wrote about that hole. None asked the operational
+# question: if it HAD been used, what do you restore from? The answer was
+# nothing.
+#
+# This is the cheap answer. A nightly logical dump, kept as a build artifact.
+# It is not point-in-time recovery and it is not a substitute for the Pro plan
+# once real member data is in. It is the difference between losing a day and
+# losing everything.
+#
+# SETUP (one time, required before this can run)
+# ----------------------------------------------
+# Add a repository secret named SUPABASE_DB_URL:
+#   GitHub -> repo -> Settings -> Secrets and variables -> Actions ->
+#   New repository secret
+# The value is the connection string from
+#   Supabase Dashboard -> Project Settings -> Database -> Connection string ->
+#   URI  (use the SESSION POOLER URI, port 5432; the transaction pooler on 6543
+#   does not support pg_dump)
+# It contains the database password, so it goes in Secrets and NOWHERE else.
+# Never paste it into a file, a prompt, or a commit.
+#
+# RESTORING (read this before you need it)
+# ----------------------------------------
+# A backup nobody has restored is a hypothesis, not a backup. To verify one:
+#   gh run download <run-id> -n fxe-db-backup-<date>
+#   gunzip -c fxe-*.sql.gz | psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+# against the LOCAL stack, never against hosted. Do this once so the procedure
+# is known rather than improvised during an incident.
+
+on:
+  schedule:
+    # 07:00 UTC daily. That is 02:00 or 03:00 America/New_York depending on
+    # DST, comfortably after any evening clinic activity and before Tara's
+    # 08:00 registration openings.
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+
+jobs:
+  dump:
+    name: pg_dump hosted to an artifact
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # The hosted database is Postgres 17. Ubuntu's default client is older,
+      # and pg_dump refuses to dump a server newer than itself, so install the
+      # matching major version rather than relying on the runner image.
+      - name: Install PostgreSQL 17 client
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+            --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] \
+            https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list >/dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+          pg_dump --version
+
+      - name: Fail early if the secret is missing
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$DB_URL" ]; then
+            echo "::error::SUPABASE_DB_URL is not set. See the setup notes at"
+            echo "the top of .github/workflows/backup.yml. Until it is set,"
+            echo "there is no backup of the hosted database."
+            exit 1
+          fi
+
+      - name: Dump
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          mkdir -p backups
+          STAMP=$(date -u +%Y-%m-%d)
+
+          # --no-owner / --no-privileges: the dump should restore into a local
+          # stack whose roles differ from Supabase's. Schema and data only.
+          # Roles and grants are reproduced by the migrations, which are the
+          # source of truth for them.
+          pg_dump "$DB_URL" \
+            --no-owner --no-privileges \
+            --schema=public --schema=auth \
+            --file="backups/fxe-$STAMP.sql"
+
+          gzip -9 "backups/fxe-$STAMP.sql"
+          ls -lh backups/
+
+          # A dump that is suspiciously small usually means it silently dumped
+          # nothing. Assert a floor so an empty backup fails loudly instead of
+          # sitting in the artifact list looking like protection.
+          SIZE=$(stat -c%s "backups/fxe-$STAMP.sql.gz")
+          echo "Compressed size: $SIZE bytes"
+          if [ "$SIZE" -lt 1000 ]; then
+            echo "::error::Dump is under 1 KB. That is almost certainly empty."
+            exit 1
+          fi
+
+      # Artifacts are free and retained 90 days. When real member data lands,
+      # move this off GitHub: a backup living in the same account as the code
+      # shares a failure mode with it.
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: fxe-db-backup-${{ github.run_id }}
+          path: backups/*.sql.gz
+          retention-days: 90
+          if-no-files-found: error
+
+  # Supabase free-tier projects PAUSE after roughly a week without activity,
+  # and resuming needs a manual dashboard click. A tennis club has quiet weeks
+  # between sessions by design, so the realistic failure is Tara opening the app
+  # on a Thursday at 08:00 and the backend being asleep.
+  #
+  # This is a hack and should be deleted the moment the org moves to Pro.
+  keep-warm:
+    name: Keep the free-tier project awake
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: One trivial query
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$DB_URL" ]; then
+            echo "SUPABASE_DB_URL not set; skipping keep-warm."
+            exit 0
+          fi
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+          psql "$DB_URL" -c "select 1;" >/dev/null && echo "Project is awake."

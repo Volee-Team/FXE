@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FXE Tennis — Admin</title>
+<link rel="stylesheet" href="./tokens.css">
+<style>
+  /* Layout only. Every colour, radius and space comes from tokens.css, which
+     is transcribed from Brand.swift, so the web admin and the iOS app cannot
+     drift into looking like two different products. */
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--fxe-surface); color: var(--fxe-text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 16px; line-height: 1.45;
+  }
+  header {
+    background: var(--fxe-navy); color: var(--fxe-text-on-navy);
+    padding: 14px 20px; display: flex; align-items: center; gap: 12px;
+  }
+  header h1 { font-size: 17px; margin: 0; font-weight: 600; }
+  header .spacer { flex: 1; }
+  main { max-width: 1080px; margin: 0 auto; padding: 20px; }
+  h2 { font-size: 13px; letter-spacing: .06em; text-transform: uppercase;
+       color: var(--fxe-text-secondary); margin: 28px 0 10px; }
+  .card {
+    background: var(--fxe-surface-raised); border: 1px solid var(--fxe-hairline);
+    border-radius: 14px; padding: 16px; margin-bottom: 12px;
+  }
+  .row { display: flex; align-items: center; gap: 12px; }
+  .row + .row { border-top: 1px solid var(--fxe-hairline); padding-top: 10px; margin-top: 10px; }
+  .grow { flex: 1; min-width: 0; }
+  .muted { color: var(--fxe-text-secondary); font-size: 14px; }
+  .name { font-weight: 600; }
+  button {
+    font: inherit; font-weight: 600; cursor: pointer; border-radius: 10px;
+    border: 1px solid var(--fxe-border); background: var(--fxe-surface-raised);
+    color: var(--fxe-text-primary); padding: 10px 14px; min-height: 44px;
+  }
+  button.primary { background: var(--fxe-navy); color: var(--fxe-text-on-navy);
+                   border-color: var(--fxe-navy); }
+  button.small { min-height: 38px; padding: 6px 12px; font-size: 14px; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  input, select, textarea {
+    font: inherit; width: 100%; padding: 10px; border-radius: 10px;
+    border: 1.5px solid var(--fxe-border); background: var(--fxe-surface-raised);
+    color: var(--fxe-text-primary); min-height: 44px;
+  }
+  label { display: block; font-size: 14px; color: var(--fxe-text-secondary); margin: 10px 0 4px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 0 14px; }
+  .chip { display: inline-block; font-size: 12px; font-weight: 600; padding: 3px 10px;
+          border-radius: 999px; white-space: nowrap; }
+  /* Status colours are Brand.Status ink-on-tint. Never colour alone: every chip
+     carries its locked label too. */
+  .chip.in   { color:#2C5A3E; background:#E7F0E7; }
+  .chip.pool { color:#7A5E24; background:#F5EBD8; }
+  .chip.resp { color:#1F4E5A; background:#DDEEF0; }
+  .chip.canc { color:#992E22; background:#F6DED9; }
+  .err { color:#992E22; margin: 10px 0; }
+  .ok  { color:#2C5A3E; margin: 10px 0; }
+  dialog { border: none; border-radius: 16px; padding: 20px; max-width: 520px; width: 92%;
+           background: var(--fxe-surface); color: var(--fxe-text-primary); }
+  dialog::backdrop { background: rgba(22,38,76,.45); }
+  .hide { display: none !important; }
+  .signin { max-width: 380px; margin: 12vh auto; }
+</style>
+</head>
+<body>
+
+<header class="hide" id="bar">
+  <h1>FXE Tennis · Admin</h1>
+  <span class="spacer"></span>
+  <span class="muted" id="who" style="color:var(--fxe-text-on-navy-muted)"></span>
+  <button class="small" id="signout">Sign out</button>
+</header>
+
+<main>
+  <section id="signin" class="signin">
+    <div class="card">
+      <h1 style="margin-top:0;font-size:20px">FXE Tennis</h1>
+      <p class="muted">Admin sign-in.</p>
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="username">
+      <label for="password">Password</label>
+      <input id="password" type="password" autocomplete="current-password">
+      <div id="signup-extra" class="hide">
+        <label for="su-first">First name</label>
+        <input id="su-first" autocomplete="given-name">
+        <label for="su-last">Last name</label>
+        <input id="su-last" autocomplete="family-name">
+      </div>
+      <div id="signin-msg"></div>
+      <button class="primary" id="dosignin" style="width:100%;margin-top:14px">Sign In</button>
+      <button id="togglemode" style="width:100%;margin-top:8px">First time? Create your account</button>
+    </div>
+  </section>
+
+  <section id="app" class="hide">
+    <div class="row">
+      <h2 style="margin:0" class="grow">Clinics</h2>
+      <button class="primary" id="new-clinic">New clinic</button>
+    </div>
+    <div id="msg"></div>
+    <div id="clinics"></div>
+  </section>
+</main>
+
+<dialog id="edit">
+  <h3 id="edit-title" style="margin-top:0">New clinic</h3>
+  <form method="dialog" id="edit-form">
+    <div id="template-row">
+      <label for="f-template">Start from a template</label>
+      <select id="f-template"><option value="">— blank —</option></select>
+    </div>
+    <label for="f-name">Name</label>
+    <input id="f-name" required>
+    <div class="grid">
+      <div>
+        <label for="f-audience">Audience</label>
+        <select id="f-audience">
+          <option value="ladies">Ladies</option>
+          <option value="men">Men</option>
+          <option value="coed">Coed</option>
+        </select>
+      </div>
+      <div>
+        <label for="f-starts">Date &amp; time</label>
+        <input id="f-starts" type="datetime-local" required>
+      </div>
+      <div>
+        <label for="f-duration">Length (minutes)</label>
+        <input id="f-duration" type="number" min="15" step="15" value="60" required>
+      </div>
+      <div>
+        <label for="f-capacity">Max players</label>
+        <input id="f-capacity" type="number" min="1" value="8" required>
+      </div>
+    </div>
+    <label for="f-desc">Description (players see this under the “?”)</label>
+    <textarea id="f-desc" rows="4"></textarea>
+    <label id="save-template-row" style="display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer">
+      <input type="checkbox" id="f-save-template" style="width:18px;height:18px;min-height:0">
+      Save these details as a template for next week
+    </label>
+    <p class="muted" style="margin-top:10px">
+      Registration opens automatically: members Thursday 8am, everyone else
+      Friday 8am, for the whole week this clinic falls in. Prices come from the
+      clinic length.
+    </p>
+    <div id="edit-msg"></div>
+    <div class="row" style="margin-top:14px">
+      <span class="grow"></span>
+      <button type="button" id="edit-cancel">Cancel</button>
+      <button type="button" class="primary" id="edit-save">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="message">
+  <h3 style="margin-top:0">Message players</h3>
+  <label for="m-audience">To</label>
+  <select id="m-audience">
+    <option value="everyone">Everyone</option>
+    <option value="in">You're In!</option>
+    <option value="pool">Player Pool</option>
+    <option value="response_needed">Response Needed</option>
+    <option value="unpaid">Unpaid</option>
+  </select>
+  <label for="m-body">Message</label>
+  <textarea id="m-body" rows="5"></textarea>
+  <div id="message-msg"></div>
+  <div class="row" style="margin-top:14px">
+    <span class="grow"></span>
+    <button type="button" id="message-cancel">Cancel</button>
+    <button type="button" class="primary" id="message-send">Send</button>
+  </div>
+</dialog>
+
+<dialog id="walkup">
+  <h3 style="margin-top:0">Add a player</h3>
+  <p class="muted" style="margin-top:0">For someone who called or grabbed you at
+     the club. They go straight to You&rsquo;re In!</p>
+  <label for="w-query">Search by name</label>
+  <input id="w-query" placeholder="Ann finds Anna, Annette, Joann…">
+  <div id="w-results" style="margin-top:10px"></div>
+  <div id="walkup-msg"></div>
+  <div class="row" style="margin-top:14px">
+    <span class="grow"></span>
+    <button type="button" id="walkup-cancel">Close</button>
+  </div>
+</dialog>
+
+<script type="module">
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { CONFIG } from "./config.js";
+
+const sb = createClient(CONFIG.url, CONFIG.key);
+const $ = (id) => document.getElementById(id);
+
+// Locked terminology. These exact words appear in CLAUDE.md and Brand.swift and
+// must never be replaced with synonyms.
+const STATUS = {
+  in:              { label: "You're In!",      cls: "in"   },
+  pool:            { label: "Player Pool",     cls: "pool" },
+  response_needed: { label: "Response Needed", cls: "resp" },
+  canceled:        { label: "Canceled",        cls: "canc" },
+};
+
+const fmtDate = (iso) => new Date(iso).toLocaleString(undefined,
+  { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+const money = (c) => c == null ? "" : "$" + (c % 100 === 0 ? c / 100 : (c / 100).toFixed(2));
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, m =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+
+function note(el, text, ok = false) {
+  el.innerHTML = text ? `<div class="${ok ? "ok" : "err"}">${esc(text)}</div>` : "";
+}
+
+// Postgres raises named errors (not_authorized, capacity_full, ...). Show the
+// human sentence, never the raw code.
+function friendly(e) {
+  const m = (e?.message || String(e)).toLowerCase();
+  if (m.includes("not_authorized") || m.includes("permission denied"))
+    return "That account is not an administrator.";
+  if (m.includes("invalid login")) return "That email or password didn't work.";
+  if (m.includes("name_required")) return "A clinic needs a name.";
+  if (m.includes("capacity_must_be_positive")) return "Max players must be at least 1.";
+  if (m.includes("duration_must_be_positive")) return "Length must be more than 0 minutes.";
+  if (m.includes("failed to fetch")) return "Couldn't reach the server. Check your connection.";
+  return e?.message || "Something went wrong.";
+}
+
+let editingId = null;
+let messagingClinic = null;
+let walkupClinic = null;
+let templates = [];
+let signupMode = false;
+
+async function boot() {
+  const { data: { session } } = await sb.auth.getSession();
+  session ? await showApp() : showSignIn();
+}
+function showSignIn() { $("signin").classList.remove("hide"); $("app").classList.add("hide"); $("bar").classList.add("hide"); }
+
+async function showApp() {
+  const { data: { user } } = await sb.auth.getUser();
+  // The tab is not the control: is_admin() is enforced inside every RPC and
+  // clinics_admin returns zero rows to a non-admin. This only decides what to
+  // render.
+  const { data: acct } = await sb.from("accounts").select("first_name,last_name,role").eq("id", user.id).maybeSingle();
+  if (!acct || acct.role !== "admin") {
+    showSignIn();
+    note($("signin-msg"), "That account is not an administrator.");
+    await sb.auth.signOut();
+    return;
+  }
+  $("who").textContent = `${acct.first_name} ${acct.last_name}`;
+  $("signin").classList.add("hide"); $("app").classList.remove("hide"); $("bar").classList.remove("hide");
+  await loadClinics();
+}
+
+async function loadTemplates() {
+  const { data } = await sb.from("templates_admin").select("*").order("name");
+  templates = data || [];
+  $("f-template").innerHTML = '<option value="">— blank —</option>'
+    + templates.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join("");
+}
+
+async function loadClinics() {
+  note($("msg"), "");
+  await loadTemplates();
+  const { data: clinics, error } = await sb.from("clinics_admin").select("*").order("starts_at");
+  if (error) return note($("msg"), friendly(error));
+  if (!clinics.length) {
+    $("clinics").innerHTML = `<div class="card muted">No clinics yet. Use “New clinic” to add your first one.</div>`;
+    return;
+  }
+  const ids = clinics.map(c => c.id);
+  const { data: regs } = await sb.from("registrations_admin").select("*").in("clinic_id", ids);
+  const { data: players } = await sb.from("players").select("id,first_name,last_name,is_member,adult_rating");
+  const byPlayer = Object.fromEntries((players || []).map(p => [p.id, p]));
+
+  $("clinics").innerHTML = clinics.map(c => {
+    const mine = (regs || []).filter(r => r.clinic_id === c.id);
+    const group = (s) => mine.filter(r => r.status === s);
+    const section = (s, extra) => {
+      const rows = group(s);
+      if (!rows.length) return "";
+      return `<div style="margin-top:12px">
+        <span class="chip ${STATUS[s].cls}">${STATUS[s].label}</span>
+        <span class="muted"> ${rows.length}</span>
+        ${rows.map((r, i) => {
+          const p = byPlayer[r.player_id];
+          const who = p ? `${p.first_name} ${p.last_name}` : "Unknown player";
+          const sub = p ? `${p.adult_rating ?? "—"} · ${p.is_member ? "Member" : "Non-member"}` : "";
+          return `<div class="row">
+            ${s === "pool" ? `<span class="muted" style="width:18px;text-align:right">${i + 1}</span>` : ""}
+            <span class="grow"><span class="name">${esc(who)}</span><br><span class="muted">${esc(sub)}</span></span>
+            ${extra(r)}
+          </div>`;
+        }).join("")}
+      </div>`;
+    };
+    return `<div class="card">
+      <div class="row">
+        <span class="grow"><span class="name">${esc(c.name)}</span><br>
+          <span class="muted">${fmtDate(c.starts_at)} · ${c.duration_minutes} min ·
+          ${money(c.member_price_cents)} member / ${money(c.nonmember_price_cents)} non-member</span></span>
+        <span class="muted">${group("in").length}/${c.internal_capacity}</span>
+        <button class="small" data-edit="${c.id}">Edit</button>
+        <button class="small" data-message="${c.id}">Message</button>
+        <button class="small" data-walkup="${c.id}">Add player</button>
+        ${c.status === "draft" ? `<button class="small primary" data-publish="${c.id}">Publish</button>` : ""}
+      </div>
+      ${section("in", r => `<button class="small" data-paid="${r.id}" data-now="${r.paid}">${r.paid ? "Paid" : "Unpaid"}</button>`)}
+      ${section("pool", r => `<button class="small primary" data-invite="${r.id}">Invite</button>`)}
+      ${section("response_needed", r => `<button class="small" data-uninvite="${r.id}">Cancel invite</button>`)}
+      ${section("canceled", () => "")}
+    </div>`;
+  }).join("");
+}
+
+// One delegated listener. Every action reloads from the server rather than
+// patching the DOM: the server decides the resulting status (a player accepting
+// while Tara invites is a real race), so guessing locally would show her a state
+// the database disagrees with.
+document.addEventListener("click", async (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  const run = async (fn) => {
+    b.disabled = true;
+    try { await fn(); await loadClinics(); }
+    catch (err) { note($("msg"), friendly(err)); }
+    finally { b.disabled = false; }
+  };
+  const call = async (fn, params) => {
+    const { error } = await sb.rpc(fn, params); if (error) throw error;
+  };
+
+  if (b.dataset.invite)   return run(() => call("invite_from_pool",   { p_registration: b.dataset.invite }));
+  if (b.dataset.uninvite) return run(() => call("cancel_invitation",  { p_registration: b.dataset.uninvite }));
+  if (b.dataset.paid)     return run(() => call("set_paid", { p_registration: b.dataset.paid, p_paid: b.dataset.now !== "true" }));
+  if (b.dataset.publish)  return run(() => call("publish_clinic",     { p_clinic: b.dataset.publish }));
+  if (b.dataset.message)  { messagingClinic = b.dataset.message; $("m-body").value = ""; note($("message-msg"), ""); $("message").showModal(); return; }
+  if (b.dataset.walkup)   { walkupClinic = b.dataset.walkup; $("w-query").value = ""; $("w-results").innerHTML = ""; note($("walkup-msg"), ""); $("walkup").showModal(); $("w-query").focus(); return; }
+  if (b.dataset.place)    return run(() => call("place_player", { p_clinic: walkupClinic, p_player: b.dataset.place, p_status: "in" }).then(() => $("walkup").close()));
+  if (b.dataset.edit)     return openEdit(b.dataset.edit);
+});
+
+async function openEdit(id) {
+  editingId = id || null;
+  note($("edit-msg"), "");
+  $("edit-title").textContent = id ? "Edit clinic" : "New clinic";
+  // Templates only make sense when CREATING: prefilling over an existing
+  // clinic would silently overwrite fields Tara already set.
+  $("template-row").classList.toggle("hide", !!id);
+  $("save-template-row").classList.toggle("hide", !!id);
+  $("f-template").value = ""; $("f-save-template").checked = false;
+  if (id) {
+    const { data: c } = await sb.from("clinics_admin").select("*").eq("id", id).single();
+    $("f-name").value = c.name; $("f-audience").value = c.audience;
+    // datetime-local wants local wall-clock with no zone.
+    const d = new Date(c.starts_at);
+    $("f-starts").value = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    $("f-duration").value = c.duration_minutes;
+    $("f-capacity").value = c.internal_capacity;
+    $("f-desc").value = c.description || "";
+  } else {
+    $("edit-form").reset(); $("f-duration").value = 60; $("f-capacity").value = 8;
+  }
+  $("edit").showModal();
+}
+
+$("f-template").onchange = () => {
+  const t = templates.find(x => x.id === $("f-template").value);
+  if (!t) return;
+  $("f-name").value = t.name; $("f-audience").value = t.audience;
+  $("f-duration").value = t.duration_minutes; $("f-capacity").value = t.internal_capacity;
+  $("f-desc").value = t.description || "";
+};
+
+$("new-clinic").onclick = () => openEdit(null);
+$("edit-cancel").onclick = () => $("edit").close();
+$("message-cancel").onclick = () => $("message").close();
+$("walkup-cancel").onclick = () => $("walkup").close();
+
+let searchTimer = null;
+$("w-query").addEventListener("input", () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(async () => {
+    const q = $("w-query").value.trim();
+    if (q.length < 2) { $("w-results").innerHTML = ""; return; }
+    const { data, error } = await sb.rpc("search_players", { p_query: q, p_include_inactive: false });
+    if (error) return note($("walkup-msg"), friendly(error));
+    $("w-results").innerHTML = (data || []).length
+      ? data.map(pl => `<div class="row">
+          <span class="grow"><span class="name">${esc(pl.first_name)} ${esc(pl.last_name)}</span><br>
+          <span class="muted">${pl.adult_rating ?? "—"} · ${pl.is_member ? "Member" : "Non-member"}</span></span>
+          <button class="small primary" data-place="${pl.id}">Put in clinic</button>
+        </div>`).join("")
+      : `<p class="muted">Nobody by that name yet. They may need to sign up in the app first.</p>`;
+  }, 250);
+});
+
+$("edit-save").onclick = async () => {
+  const btn = $("edit-save"); btn.disabled = true;
+  try {
+    const params = {
+      p_id: editingId,
+      p_name: $("f-name").value,
+      p_audience: $("f-audience").value,
+      p_starts_at: new Date($("f-starts").value).toISOString(),
+      p_duration_minutes: Number($("f-duration").value),
+      p_internal_capacity: Number($("f-capacity").value),
+      p_description: $("f-desc").value,
+    };
+    const { error } = await sb.rpc("admin_upsert_clinic", params);
+    if (error) throw error;
+    if (!editingId && $("f-save-template").checked) {
+      const { error: te } = await sb.rpc("admin_upsert_template", {
+        p_name: params.p_name, p_audience: params.p_audience,
+        p_duration_minutes: params.p_duration_minutes,
+        p_internal_capacity: params.p_internal_capacity,
+        p_description: params.p_description });
+      if (te) throw te;
+    }
+    $("edit").close(); await loadClinics();
+  } catch (err) { note($("edit-msg"), friendly(err)); }
+  finally { btn.disabled = false; }
+};
+
+$("message-send").onclick = async () => {
+  const btn = $("message-send"); btn.disabled = true;
+  try {
+    const body = $("m-body").value.trim();
+    if (!body) throw new Error("Write a message first.");
+    const { error } = await sb.rpc("send_clinic_message", {
+      p_clinic: messagingClinic, p_audience: $("m-audience").value, p_body: body });
+    if (error) throw error;
+    $("message").close();
+  } catch (err) { note($("message-msg"), friendly(err)); }
+  finally { btn.disabled = false; }
+};
+
+$("togglemode").onclick = () => {
+  signupMode = !signupMode;
+  $("signup-extra").classList.toggle("hide", !signupMode);
+  $("dosignin").textContent = signupMode ? "Create Account" : "Sign In";
+  $("togglemode").textContent = signupMode
+    ? "Already have an account? Sign in" : "First time? Create your account";
+  note($("signin-msg"), "");
+};
+
+$("dosignin").onclick = async () => {
+  const btn = $("dosignin"); btn.disabled = true; note($("signin-msg"), "");
+  try {
+    const email = $("email").value.trim(), password = $("password").value;
+    if (signupMode) {
+      const first = $("su-first").value.trim(), last = $("su-last").value.trim();
+      if (!first || !last) throw new Error("Add your first and last name.");
+      const { error } = await sb.auth.signUp({ email, password });
+      if (error) throw error;
+      // Same RPC the iOS app uses: id from auth, role decided by the schema.
+      const { error: pe } = await sb.rpc("create_my_account", {
+        p_first_name: first, p_last_name: last, p_phone: null,
+        p_is_member: true, p_adult_rating: null });
+      if (pe) throw pe;
+    } else {
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+    }
+    await showApp();
+  } catch (err) { note($("signin-msg"), friendly(err)); }
+  finally { btn.disabled = false; }
+};
+$("password").addEventListener("keydown", e => { if (e.key === "Enter") $("dosignin").click(); });
+$("signout").onclick = async () => { await sb.auth.signOut(); location.reload(); };
+
+boot();
+</script>
+</body>
+</html>

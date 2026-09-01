@@ -1,3 +1,8 @@
+/* PALETTE B, transcribed from FXETennis/Resources/Brand.swift on 2026-08-26.
+   This file had been left on palette A since 2026-08-12 while Brand.swift moved
+   to B, and each file's header claimed to mirror the other. Two sources of
+   truth that both say "see the other one" is worse than one that is wrong.
+   Brand.swift wins; change it there first, then transcribe here. */
 /*
  * tokens.css
  * FXE Tennis web admin design tokens.
@@ -26,28 +31,28 @@
 
 :root {
   /* ---- Brand core ---- */
-  --fxe-navy: #0e1239;          /* supplied: primary brand colour */
-  --fxe-court: #6dbe45;         /* supplied: gator green. FILL ONLY, see rules */
-  --fxe-accent: #d5df24;        /* supplied: tennis ball. FILL ONLY, see rules */
+  --fxe-navy: #16264C;  /* Brand.navy */
+  --fxe-court: #3E7C55;  /* Brand.court. FILL ONLY */
+  --fxe-accent: #B08D57;  /* Brand.accent, brass. FILL ONLY */
 
   /* ---- Surfaces ---- */
-  --fxe-surface: #faf7f1;       /* OUR CHOICE, pending Tara */
-  --fxe-surface-raised: #ffffff;/* supplied */
-  --fxe-surface-inverted: #0e1239;
+  --fxe-surface: #F7F4EC;  /* Brand.surface */
+  --fxe-surface-raised: #FFFFFF;  /* Brand.surfaceRaised */
+  --fxe-surface-inverted: #16264C;  /* Brand.surfaceInverted */
 
   /* ---- Text ---- */
-  --fxe-text-primary: #0e1239;      /* 16.87:1 on surface */
-  --fxe-text-secondary: #6f6e6f;    /*  4.75:1 on surface */
-  --fxe-text-on-navy: #ffffff;      /* 18.04:1 on navy */
-  --fxe-text-on-navy-muted: #bbbbbb;/*  9.40:1 on navy */
+  --fxe-text-primary: #16264C;  /* Brand.textPrimary, 13.50:1 on surface */
+  --fxe-text-secondary: #6E6552;  /* Brand.textSecondary, 5.24:1 on surface */
+  --fxe-text-on-navy: #F6F3EA;  /* Brand.textOnNavy */
+  --fxe-text-on-navy-muted: #CFC9BC;  /* Brand.textOnNavyMuted */
   --fxe-text-on-court: #0e1239;     /*  7.82:1 on court */
   --fxe-text-on-accent: #0e1239;    /* 12.38:1 on accent */
 
   /* ---- Lines and states ---- */
-  --fxe-border: #6f6e6f;    /* control outlines. 4.75:1, clears the 3:1 floor */
-  --fxe-hairline: #bbbbbb;  /* decorative row separators only. 1.80:1 */
-  --fxe-disabled: #9e9f9f;  /* inactive controls, WCAG exempt. 2.48:1 */
-  --fxe-focus-ring: #0e1239;
+  --fxe-border: #6E6552;  /* Brand.border */
+  --fxe-hairline: #E3DCCB;  /* Brand.hairline */
+  --fxe-disabled: #B7B0A2;  /* Brand.disabled */
+  --fxe-focus-ring: #16264C;  /* Brand.focusRing */
 
   /* ---- Status ----
    * Never use a status colour on its own. Every status renders as

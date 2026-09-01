@@ -27,6 +27,22 @@ final class ClinicDetailModel {
     var working = false
     var notice: String?      // friendly "someone got there first" / error text
     var loaded = false
+    /// Set once the player has asked Tara to fit them in after registration
+    /// closed. Kept on the model rather than derived from the server so the
+    /// screen changes the instant she is messaged; `late_requests` has a unique
+    /// index on (clinic, player) while pending, so a double tap is refused
+    /// server-side regardless.
+    var lateRequestSent = false
+
+    /// Ask Tara to fit this player in after registration has closed.
+    ///
+    /// Not a registration: `request_late_spot` creates a request she approves or
+    /// declines, because hard rule 2 says only she puts anyone in a clinic.
+    func requestLateSpot(clinicId: UUID, playerId: UUID) async throws {
+        _ = try await RegistrationRepository.requestLateSpot(
+            clinicId: clinicId, playerId: playerId, message: nil)
+        lateRequestSent = true
+    }
 
     func load(clinicId: UUID) async {
         do {
@@ -57,7 +73,23 @@ final class ClinicDetailModel {
     }
 }
 
+/// A destructive action waiting for the player to confirm it.
+///
+/// Exists because all three irreversible taps used to fire instantly: one
+/// mistap standing courtside and you were out of the clinic, with re-registering
+/// possibly landing you at the BACK of the Player Pool. The spec's own rule is
+/// that destructive actions confirm first. Identifiable so a single
+/// confirmationDialog serves every destructive button on the screen.
+private struct PendingAction: Identifiable {
+    let id = UUID()
+    let title: String       // what the button said, repeated as the question
+    let confirmLabel: String// distinct from the button label, so a UI test (and
+                            // a person) can tell the two apart at a glance
+    let work: () async throws -> Void
+}
+
 struct ClinicDetailView: View {
+    @State private var pending: PendingAction?
     let clinic: ClinicPublic
     let isMember: Bool
     var onChanged: () async -> Void = {}
@@ -80,7 +112,7 @@ struct ClinicDetailView: View {
                 if let line = model.paymentLine, !line.isEmpty { paymentCard(line) }
                 messageBoard
                 if let notice = model.notice { noticeText(notice) }
-                actionArea
+                confirmDialog(actionArea)
             }
             .padding(Brand.Spacing.pageMargin)
         }
@@ -183,6 +215,23 @@ struct ClinicDetailView: View {
 
     // MARK: the one primary action
 
+    /// One dialog for every destructive button. `item:` binding means the
+    /// dialog always describes the action that summoned it.
+    private func confirmDialog<V: View>(_ v: V) -> some View {
+        v.confirmationDialog(
+            pending?.title ?? "",
+            isPresented: .init(get: { pending != nil }, set: { if !$0 { pending = nil } }),
+            titleVisibility: .visible
+        ) {
+            if let p = pending {
+                Button(p.confirmLabel, role: .destructive) {
+                    Task { await model.act(clinicId: clinic.id, p.work, onChanged: onChanged) }
+                }
+                Button("Keep my spot", role: .cancel) {}
+            }
+        }
+    }
+
     @ViewBuilder private var actionArea: some View {
         if clinic.isCanceled {
             EmptyView()
@@ -208,6 +257,18 @@ struct ClinicDetailView: View {
             case .canceled:
                 EmptyView()
             }
+        } else if hasClosed {
+            // Registration has closed. Before 2026-08-27 this branch did not
+            // exist: `closesAt` was decoded on ClinicPublic and read by NO view,
+            // so the Register button stayed fully enabled on a closed clinic and
+            // tapping it failed with a raw `registration_closed` from Postgres.
+            // The server was right and the screen lied.
+            //
+            // Tara's answer covers this exact moment: "if they try to register
+            // within 3 hours, they have the option to send me a direct message
+            // to get into the clinic, assuming there is space and it isn't
+            // full." So the closed state is not a dead end, it is a door.
+            lateRequestArea
         } else if isOpenNow {
             primaryButton("Register") {
                 guard let playerId = session.activePlayer?.id else { return }
@@ -220,6 +281,57 @@ struct ClinicDetailView: View {
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(Brand.Spacing.md)
         }
+    }
+
+    /// True once registration has closed but the clinic has not started.
+    ///
+    /// Deliberately NOT `closesAt < now` alone: after the clinic has begun there
+    /// is nothing to ask for, and offering to message Tara about a session she
+    /// is already coaching would be worse than saying nothing.
+    private var hasClosed: Bool {
+        guard let closes = clinic.closesAt else { return false }
+        return closes <= Date() && Date() < clinic.startsAt
+    }
+
+    /// The closed-window state: explain why, then offer the way through.
+    ///
+    /// Copy note: every sentence here is functional rather than promotional, and
+    /// the ask is phrased as messaging Tara because that is exactly how she
+    /// described it. It is chrome under hard rule 13, but it is chrome about a
+    /// disappointment, so it says what happened and what can be done rather than
+    /// apologising.
+    @ViewBuilder private var lateRequestArea: some View {
+        VStack(spacing: Brand.Spacing.sm) {
+            if model.lateRequestSent {
+                HStack(spacing: Brand.Spacing.xs) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(Brand.Status.youreIn.ink)
+                    Text("Tara has your message.")
+                        .font(Brand.Typography.bodyEmphasis)
+                        .foregroundStyle(Brand.textPrimary)
+                }
+                Text("She will let you know if there is room.")
+                    .font(Brand.Typography.subheadline)
+                    .foregroundStyle(Brand.textSecondary)
+                    .multilineTextAlignment(.center)
+            } else {
+                Text("Registration has closed for this clinic.")
+                    .font(Brand.Typography.bodyEmphasis)
+                    .foregroundStyle(Brand.textPrimary)
+                Text("You can still ask Tara to fit you in.")
+                    .font(Brand.Typography.subheadline)
+                    .foregroundStyle(Brand.textSecondary)
+                    .multilineTextAlignment(.center)
+
+                primaryButton("Message Tara") {
+                    guard let playerId = session.activePlayer?.id else { return }
+                    try await model.requestLateSpot(clinicId: clinic.id, playerId: playerId)
+                }
+                .accessibilityIdentifier("clinic.lateRequest")
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, Brand.Spacing.xs)
     }
 
     // MARK: button builders
@@ -245,7 +357,12 @@ struct ClinicDetailView: View {
 
     private func destructiveButton(_ title: String, _ work: @escaping () async throws -> Void) -> some View {
         Button(role: .destructive) {
-            Task { await model.act(clinicId: clinic.id, work, onChanged: onChanged) }
+            // Ask first. The dialog's confirm button carries a DIFFERENT label
+            // than this button, so "Cancel Registration" is never one ambiguous
+            // tap away from "Cancel" meaning keep-my-spot.
+            let confirm = title == "Cancel Registration"
+                ? "Yes, cancel my spot" : "Yes, leave the pool"
+            pending = PendingAction(title: title, confirmLabel: confirm, work: work)
         } label: {
             actionLabel(title, fg: Brand.Status.canceled.ink, bg: Brand.surfaceRaised)
                 .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))

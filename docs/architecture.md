@@ -1,3 +1,8 @@
+> **PARTIALLY STALE (banner added 2026-09-01).** Written 2026-08; predates
+> sign-up, the admin tab, the live web admin, late requests, templates and the
+> explicit-grants migration. For current state trust `CLAUDE.md`,
+> `docs/roadmap.md` and `docs/whats-next.md`. Rewrite tracked in the backlog.
+
 # FXE Tennis: Architecture
 
 The one document to read before touching this system. Written for a product

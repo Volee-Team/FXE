@@ -44,13 +44,48 @@ supabase start
 # Apply every migration + seed. Destroys local data; that is the point.
 supabase db reset
 
-# The whole test suite: 142 checks + a concurrency probe.
+# The whole test suite. It prints its own totals; never quote a stale count
+# in prose (the number 142 sat here for three weeks while the suite grew to
+# 285).
 bash tests/run-probes.sh
 
-# Push migrations to the hosted project.
-export SUPABASE_DB_PASSWORD='<from .env.local, gitignored>'
+# Push migrations to the hosted project. THE ONLY sanctioned way to write hosted.
+export SUPABASE_DB_PASSWORD='<from .env.local>'
 supabase db push
+
+# After any push, paste this into the session's changelog entry.
+supabase migration list --linked
 ```
+
+**`.env.local` goes at the repo root and IS ignored** as of 2026-08-13. It was
+not before: `supabase/.gitignore` covers `supabase/.env.local` only, and the root
+had no `.env` rule, so this very instruction was telling you to put the hosted
+Postgres password somewhere `git add -A` would publish it. Nothing leaked, but
+this line had asserted "gitignored" for three days as a parenthetical. **A claim
+in a doc is not a control.** If a doc says something is protected, go and verify
+the mechanism exists.
+
+### Hosted is written by `supabase db push` and by nothing else
+
+Earned 2026-08-13, immediately, by breaking it. The security migration was
+applied through `mcp__supabase__apply_migration` because no `.env.local` existed
+on the machine. It worked, and it silently stamped the remote ledger with its
+own timestamp (`20260814011927`) instead of the file's (`20260813000001`).
+
+Supabase matches applied migrations **by version string**, so the two
+environments immediately disagreed: hosted had a version with no file, the repo
+had a file with no version. The next `supabase db push` would have re-applied
+that migration to a database where it had already run. It happened to be
+idempotent `revoke`/`grant`, which is luck, not design. The next one will not be.
+
+Repaired with `supabase migration repair --status reverted <mcp-version>` then
+`--status applied <file-version>` (both rewrite the ledger only and run no DDL),
+then verified with `supabase migration list --linked` showing every row paired
+and `supabase db diff --linked --schema public` reporting no schema changes.
+
+**Rule: `apply_migration` is for the local stack. Hosted gets `db push`.** If
+`db push` cannot run because a credential is missing, the answer is to get the
+credential, not to reach for a different tool that writes production.
 
 | | |
 |---|---|
@@ -59,9 +94,24 @@ supabase db push
 | Remote | `github.com/Volee-Team/FXE`, branch `main` |
 | CI | `.github/workflows/probes.yml`, runs the full suite on every push and PR |
 
-**The hosted database is not seeded and must not be.** It will hold Tara's real
-players. Probe verification runs against a throwaway Postgres: locally via
-`supabase db reset`, and in CI on a fresh runner. Never point a probe at hosted.
+**No test fixtures in hosted, ever. Tara's real data is not a fixture.**
+Clarified 2026-08-13, because the original wording ("the hosted database is not
+seeded") read as a ban on putting anything in it, which was never the intent.
+
+The line is between two different things:
+
+| | Allowed in hosted? |
+|---|---|
+| Maria, Ken, Rob, "Tuesday Ladies 3.0+" and everything else in `supabase/seed.sql` | **No.** Fake people in a real roster, forever |
+| Anything a probe creates | **No.** Probes write and delete. `capacity_race.sh` hard-deletes rows and is not transactional |
+| Tara's real admin account, her real clinic templates, her real clinics | **Yes.** That is production data and the app is useless without it |
+
+So the rule is: `supabase/seed.sql` is for local only, probes point only at a
+throwaway Postgres (locally via `supabase db reset`, in CI on a fresh runner),
+and **real content goes in through the same code path a real user would use**,
+not a hand-written INSERT, so that the path itself gets exercised. Where no such
+path exists yet, that is a missing feature to build, not a reason to hand-insert
+around it.
 
 Run a single probe:
 
@@ -135,6 +185,66 @@ That exercise is what exposed a defect in the probe harness itself: the pass con
     When you do decide something yourself, **write it down** — a line in
     `docs/decisions/`, or the roadmap, or here. A decision that lives only in a
     chat log will be made again differently next month.
+
+11. **A grant you did not write is still a grant. Revoke before you grant, on
+    views as well as tables.** Supabase bootstraps `alter default privileges in
+    schema public grant all on tables to anon, authenticated`, so **every new
+    table and every new view is born with INSERT, UPDATE, DELETE and TRUNCATE
+    for both roles.** Adding `grant select` on top of that changes nothing.
+
+    This matters more for a view than a table. Our views are single-table
+    selects, so Postgres makes them **auto-updatable**; they were created without
+    `security_invoker`, so they execute as their **owner** (postgres); and
+    `relforcerowsecurity` is false, so the owner is **exempt from RLS**. A write
+    through a view therefore runs as postgres with RLS switched off. The
+    policies are not wrong, they are never reached. And a view's `WHERE` does
+    **not** constrain an `INSERT` without `WITH CHECK OPTION`, so
+    `where is_admin()` filtered reads and stopped no writes at all.
+
+    Earned 2026-08-13. Any holder of the publishable key inside the iOS binary,
+    signed out, could `delete from clinics_public` and destroy the whole
+    schedule, cascading through every registration and message. An ordinary
+    member could promote herself out of the Player Pool, mark herself paid, and
+    cancel a clinic. Fixed in `20260813000001_lock_down_view_writes.sql`, pinned
+    by `tests/sql/view_write_paths.sql`, verified red on 28 checks first.
+
+    **Do not "fix" this with `security_invoker`.** It is the obvious-looking
+    answer and it breaks the product: `authenticated` has no SELECT on the
+    locked base tables, so the entire information-hiding model depends on these
+    views reading with owner rights. The four `sanity_*` rows in that probe
+    exist to fail loudly if anyone tries it. For the same reason the eight
+    `security_definer_view` ERROR lints in Supabase's advisor are **permanent and
+    accepted**, not a to-do list.
+
+    The general shape, and the third time this project has been bitten by an
+    implicit privilege: **enumerate what a role can do, never assume what it
+    cannot.** See also hard rules 8 and 9.
+
+12. **A claim about this repo comes with the command that produced it, in the
+    same message. Never from memory, never copied from an earlier message.**
+
+    Test counts, how many pass, what is built, whether something is ignored,
+    what is deployed: all of these are claims, and every one of them has been
+    wrong in this repo while sounding confident.
+
+    Earned 2026-08-13, from the record itself. `ed88c1f` says the XCUITest suite
+    was "2 of 4 green"; it was 0 of 4, and `docs/backlog.md` later had to correct
+    the project's own commit message. `CLAUDE.md` said the probe suite ran 142
+    checks while it ran 164, and that number had been copied forward through
+    four documents. This file said `.env.local` was gitignored; it was not.
+    `.claude/agents/sql-auditor.md` audits *Volee's* age brackets, in a repo that
+    has no age brackets. Fifteen of the first sixteen commits were AI-authored
+    with no reviewer, and every one of those errors is the same failure: a
+    generated assertion accepted without independent re-derivation.
+
+    The principle is **verification asymmetry**: the thing that produces an
+    artifact cannot be the thing that certifies it. That is why code review, CI
+    and separation of duties all exist. It is also why the SQL probes are the
+    one part of this project that has never lied: they re-derive the claim from
+    the database instead of restating it.
+
+    In practice: run it, paste the output, then say what it means. "Tests pass"
+    is not evidence. `Executed 13 tests, with 0 failures` is.
 
 ---
 
@@ -331,6 +441,120 @@ The local Supabase dev image segfaults the Postgres backend when a role without 
 * Ask clarifying questions before building anything non-trivial. A 60-second clarification beats half a day of rework.
 * Update this file when a rule is earned. A correction that only lives in a transcript is lost.
 
+13. **Never put a word in front of a player that Tara did not write or Alex did
+    not approve.** Copy is either hers, or plain functional chrome, and there is
+    no third category.
+
+    Earned 2026-08-16. Alex: *"text should either come straight from tara or
+    made by u and checked by me first"*, after finding cliche AI filler of the
+    *"Press play — Start Hitting!"* kind. The danger is not one bad sentence: it
+    is that a generated line reads as plausible, arrives as one green line in a
+    large diff, and ends up in front of a real club's members in a voice that is
+    not their coach's.
+
+    **Chrome** is a button that says Save, a field labelled Phone, an error that
+    says the connection failed. Keep it plain and boring. **Everything else** —
+    anything with tone, encouragement, a promise, or a claim about how FXE works
+    — is Tara's, and if she has not written it yet the correct move is to ask,
+    not to draft something plausible.
+
+    Mechanically enforced. `docs/copy-approved.txt` snapshots every user-visible
+    string; the `copy-gate` CI job fails on any addition or edit and prints the
+    diff. Regenerating the snapshot is not a formality: read the new lines,
+    decide which of the two categories each belongs to, and commit it alongside
+    the change so a human sees the words in review. `docs/copy-audit.md` is the
+    standing inventory of everything we wrote rather than her, with the 34 items
+    that still need her marked.
+
+
+---
+
+## What this project is FOR (read this before optimising for speed)
+
+Alex, 2026-08-13: *"the goal of this whole project is developing this app the
+first time, using iteration and asking me and tara questions, double and triple
+checking, being super thorough with writing down EVERYTHING in docs, using tons
+of different tests, running agents, doing all the best SWE/AI practices."*
+
+**Two products come out of this repo.** One is an app for Tara. The other is
+Alex becoming a software engineer who can hold his own in a real company, and who
+is heading for a SWE job. The second one is not a side effect and it is not
+negotiable when it conflicts with the first.
+
+What that means concretely for anyone working here, human or model:
+
+* **Explain, do not just do.** When you use a concept Alex has not asked about
+  before (a git tag, an RPC, a property-based test, a migration rollback), say
+  what it is and why it is the right tool, in two or three sentences, in the same
+  message. He has said explicitly that he wants to learn rather than vibe-code.
+  A correct change he cannot explain to an interviewer is worth less than a
+  correct change he can.
+* **Show the reasoning, especially the rejected option.** "I used X" is worth
+  little. "I used X, not Y, because Y would have broken Z" is the thing that
+  transfers. This is why `docs/decisions/` has a Rejected section.
+* **Prefer the practice a real team would use**, even when a shortcut works for
+  one developer today. Decision records, probes, migrations, changelogs and tags
+  are all overhead at n=1 and all of them are what n=5 requires.
+* **Never trade a lesson for a few minutes.** If something broke, the write-up of
+  why it broke is the deliverable, not just the fix.
+
+### Always be auditing the practice, not only the code
+
+The same scrutiny applied to a migration gets applied to how we work:
+
+* At the start of a long session, and after any batch of decisions, re-read this
+  file against reality. Stale rules are worse than missing ones because they get
+  obeyed.
+* When something is caught by an audit rather than by a test, that is a **test
+  gap first and a bug second.** Write the probe, then the fix. See hard rule 9.
+* When the same mistake happens twice, it stops being a mistake and becomes a
+  missing mechanism. Promote it: `CLAUDE.md` rule, then slash command, then hook.
+  Advisory, then procedural, then enforced.
+* Ask what would have caught this earlier, every time. Then build that.
+* Use the strongest tool available for the job, including parallel subagents and
+  adversarial review, rather than the fastest one. Cost is not the constraint on
+  this project; being wrong is.
+
+### Standing instruction: improve the practice without being asked
+
+Alex, 2026-08-13: *"i keep asking you these things, be more robust, think of
+more docs to add to have better memory, use these hooks etc, but can you write
+this down so you are constantly learning and automatically thinking of ways to
+better yourself and make your SWE practices better?"*
+
+So this is the instruction, and it does not need re-issuing. **Proposing
+improvements to how we work is part of the work, not a separate request.**
+Concretely, every session:
+
+* **When something goes wrong, ask what mechanism would have caught it**, and
+  build that mechanism in the same session. Not a note, not a resolution: a
+  probe, a hook, a CI job, or a slash command. A lesson with no mechanism is a
+  lesson you get to learn twice.
+* **Notice repetition.** The third time a ritual is done by hand it becomes a
+  slash command. The second time a rule is broken it becomes a hook.
+* **Say when a practice is below what the tools allow.** Alex has explicitly
+  said he wants the ceiling, not the floor, and that cost is not the constraint.
+  Parallel subagents, adversarial verification, a full audit before a big
+  decision: reach for them rather than economising.
+* **Volunteer the concept, not just the fix.** When a technique applies here,
+  name it and explain it briefly, because half the point of this project is that
+  Alex learns the vocabulary. Recent examples worth knowing: verification
+  asymmetry (hard rule 12), red-first testing, enumerate-don't-list, mechanism
+  over discipline, context rot.
+* **Keep an eye on the enforcement ladder.** Every rule in this file should be
+  climbing it: advisory prose, then a slash command, then a hook or CI job that
+  hard-blocks. If a rule has sat at prose for weeks, either promote it or admit
+  it is not really a rule.
+
+The measure is not "did we ship". It is whether the same class of mistake can
+happen twice.
+
+### Everything important gets saved, or it did not happen
+
+Chat is not memory, and a `/clear` takes the whole session with it. This has
+already cost a day. If it matters and it is not in the repo, it is gone. See
+"Where things are written down" below for which file takes what.
+
 ---
 
 ---
@@ -420,6 +644,31 @@ by a later call? Stale rules are worse than missing ones, because they get
 obeyed.
 
 ## Changelog
+
+- **2026-09-01** — **The pause we predicted happened, and hosted finally caught up.** The free-tier project sat idle past its window and Supabase paused it: DNS gone (NXDOMAIN), status `INACTIVE`. This is the exact "Tara opens the app Thursday 8am and the backend is asleep" scenario the 2026-08-16 audit flagged, and the keep-warm job that prevents it has **never run once** because `backup.yml` sits in the unmerged PRs. Restored via the management API (CLI keychain token, `POST /v1/projects/{ref}/restore`), then ran the first `supabase db push` since 2026-08-13: **seven migrations** (create_my_account, clinics_admin refresh, explicit grants, admin CRUD, 3h close, late requests, templates/floor/bootstrap). Verified per protocol: all 17 migrations paired local↔remote, `templates_admin` live (401 to anon, exists), `create_my_account` live (42501 to anon, exists — note PostgREST returns 404 for a wrong-argument call, which looks identical to "missing"; test with real argument names), and `fxe-tennis-admin.vercel.app` renders against hosted with zero console errors. **Merging PRs #1–#3 is now the single most overdue action in the project**: until then there is no keep-warm, no nightly backup, and `main` predates the security lockdown.
+
+
+- **2026-08-16** — **Tara's copy, the "?" explainer, and a diagnosable CI.** `docs/copy.md` finally exists: `CLAUDE.md` has pointed at it since the repo was created, which is exactly why clinic descriptions were invented placeholders for three weeks. It carries her verbatim text for **105** (a fast-paced doubles format, undefined anywhere until she explained it, and the answer to the one blocking question from `docs/taras-real-week.md`), Ladies 3.0+, All-Level Ladies, All-Level Men's, and a new **FXE Queen City Team Ladies Practice**. Built her own suggestion: a "?" on every clinic card opening an explainer, with the 105 definition appended when the name **or** category matches. Two deliberate non-fixes recorded: the two All-Level descriptions are identical apart from an exclamation mark and are *not* merged into a shared string, and Queen City's "team players only" is **not enforced**, because there is no team concept in the schema and inventing one is a schema decision, not a copy one.
+
+  **App icon corrected twice, and the second correction was the real lesson.** The first icon used the tennis-ball mark, contradicting decision 22, which had already recorded the crossed-racquets mark as Tara's choice: a claim asserted instead of derived, one turn after writing hard rule 12 against exactly that. The second used the right mark but recoloured to palette-B tokens, which disagreed with the login screen rendering the same `gator-x` asset in its original grey. Now the untouched mark on `Brand.navy`. **Nothing checks that the shipped icon matches the recorded decision** — a gap, not a fix.
+
+  **CI: the probes job had been failing on every branch with a log that said nothing**, because its only diagnostic step ran `supabase logs db` against a stack that had never started. Versions are now printed before anything runs, `start` output is unsuppressed, container state dumps with `if: always()`, and failure diagnostics fall through four sources. Also reverted a same-week pin of the CLI to 2.90.0 back to `latest`: it was the only change to that job before it began failing after ~2 minutes, which is `supabase start` dying rather than a probe failing.
+
+- **2026-08-15** — **Sign-up was a dead end, and the admin surface did not exist.** `auth.signUp` created an auth user and nothing else: no client path could write `accounts` (no INSERT grant, no trigger, zero table writes in Swift), so a new member landed on a Home greeting them "there", was quoted every non-member price, and had a Register button that silently returned. Fixed with `create_my_account` (SECURITY DEFINER; the id is `auth.uid()`, the email comes from `auth.users`, and `role` is hard-coded to `member`, so it can neither impersonate nor self-promote) plus a `.needsProfile` phase and a profile screen using her Screen 4 copy. Probe: 22 checks, red-first. **Admin tab** built on RPCs that already existed and were already probe-covered: You're In! with a Paid toggle, Player Pool in registration order with Invite, Response Needed with Cancel Invite, and clinic messaging. Verified on the simulator that inviting moves a player to Response Needed while the You're In! count is unchanged, which is hard rule 2 holding.
+
+  **Three bugs found by looking at the screen, none of which any test would have caught.** The worst: `myPlayers()` selected from `players` with no `WHERE`, trusting RLS to narrow it, but that policy is `account_id = auth.uid() OR is_admin()`, so an **admin got every player in the club** and `players.first` made Tara an arbitrary member. Signing in as her greeted "Good Morning, Maria!"; she would have seen someone else's My Clinics and could register and cancel as them. **An RLS policy written to also admit admins is not a substitute for a WHERE clause: RLS bounds what a query MAY return, never what it SHOULD.** Also: `CompleteProfileView` had no exit, so anyone who reached it and could not finish was stuck (the same dead-end shape the screen was built to fix, one screen later); and the greeting read only `activePlayer`, so an admin account, which has no player row, was greeted "there" on her own app.
+
+  **`clinics_admin` was stale**, created as `select *`, which Postgres expands once at creation. The 2026-08-10 pricing columns therefore never appeared, so players could see both published rates and the person who sets them could not. It had already been caught in `docs/backlog.md` because naming those columns made an attack in `view_write_paths.sql` fail with 42703 and report a **false pass**. Columns are now listed explicitly, with two probe assertions verified red first. `select *` in a view is a time bomb whose fuse is the next migration.
+
+- **2026-08-14** — **Test health, CI, and the things that were quietly untrue.** `FXETennisTests/` contained zero files, so the target built an `.xctest` with no executable and **every** `xcodebuild test` exited 65 regardless of the UI tests' own result; `build-for-testing` still printed SUCCEEDED, which is why nobody noticed, and `xcodegen` broke on a fresh clone for the same reason. 13 unit tests now cover the pure logic the probes cannot see. **XCUITests were 0 of 4, not the "2 of 4" `ed88c1f` claimed**: identifiers on Home and Profile were set on the view *inside* the button rather than the button, and one assertion compared visible text when `StatusChip` publishes its VoiceOver label, so it failed on a *correct* registration. Now 5 of 5 including a sign-up regression test. CI gained an iOS build job (it had never compiled a line of Swift), a secret scan, and an app-icon gate; `push:` no longer filters to `main`, so it finally runs on the branches the SessionStart hook tells every session to create. Nightly `pg_dump` backup added: the org is on the free plan, which has no PITR, while hosted is becoming the only copy of the club's data.
+
+  **`.env.local` was never gitignored** while this file told you to put the hosted Postgres password there and called it "gitignored". Nothing leaked, but a claim had been standing in for a control. **Hard rule 12 added** from the pattern across all of it: a claim about this repo comes with the command that produced it. **Prompt and reply logging** now runs automatically via hooks, after a `/clear` destroyed a session and cost about a day.
+
+- **2026-08-13** — **Critical: anyone holding the app's publishable key could destroy the database.** Found by audit, not by the suite. The 2026-07-28 lockdown revoked the base tables but never the views, which inherit `grant all` from Supabase's default privileges. Because the views are auto-updatable, run with owner rights, and sit on tables where RLS is not forced, a write through one executed as postgres with RLS switched off, and a view's `WHERE` does not constrain an `INSERT` anyway. Signed out, `delete from clinics_public` wiped every clinic and cascaded through all registrations and messages; an ordinary member could self-promote out of the Player Pool, mark herself paid, hard-delete her own registration, and cancel a clinic. Fixed in `20260813000001_lock_down_view_writes.sql` (revoke-then-regrant on all 8 views, anon stripped of every grant in `public`, and `alter default privileges ... revoke` so the next `create view` cannot re-open it). New attack probe `tests/sql/view_write_paths.sql`, **verified red on 28 checks before the fix**, green on 21 after. Hosted was empty, so nothing was lost. See hard rule 11.
+
+  **Two lessons worth more than the fix.** First, the probe's own first draft ran the catastrophic `delete` before the other attacks; it succeeded, cascaded, and made five later attacks report a spurious PASS because their target rows were already gone. The destructive attacks now run last. Same family as the 2026-08-10 harness bugs: a probe that masks its own findings. Second, one attack reported PASS because it named a column that view does not have (42703), not because anything blocked it. Blocked-by-a-typo is not blocked-by-a-privilege, and the fixed attack then proved anon could create a clinic.
+
+  **Also learned:** Supabase's advisor had 8 ERROR-level `security_definer_view` lints the whole time, and they were **not** this bug and must not be "fixed" (owner-rights reads are load-bearing here). The real hole was invisible to the linter. Separately, the 22 `anon_security_definer_function_executable` warnings are defence-in-depth only: `place_player` and `cancel_clinic` both return `not_authorized` to anon, verified.
 
 - **2026-08-10** — Hosted Supabase live (`amnaxvznkadkgzdxzegw`), all migrations applied, schema verified against local. CI now runs the suite on every push and PR, plus a job that fails any PR editing an already-committed migration. **Pricing rebuilt** to Tara's locked table (member 60/90 = $18/$22, non-member = $23/$28), filled in by a trigger from clinic length, and **snapshotted onto the registration** so editing a price never rewrites past revenue (decision 0002). `revenue_summary()` returns the four numbers and the total she asked for. Juniors out of v1 (decision 0004). **Two more harness bugs found and fixed, both silently passing:** the error match was anchored to `^ERROR` but psql writes `psql:<stdin>:138: ERROR:`, so five aborting probes reported green; and a probe running zero assertions also reported green. Suite: 142 checks + concurrency. Added `docs/roadmap.md`, `docs/decisions/`, `docs/backlog.md`, and the Build & Run / Who is who sections above.
 

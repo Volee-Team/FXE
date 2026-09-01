@@ -15,6 +15,10 @@ if ! docker exec "$DB" pg_isready -U postgres >/dev/null 2>&1; then
 fi
 
 FAILED=0
+# Grand total, printed by the suite itself so documentation points here instead
+# of hardcoding a number. "142 checks" sat in three docs while the suite grew
+# to 285; a count only the suite prints cannot rot.
+TOTAL=0
 
 echo "════ SQL probes ════"
 for f in tests/sql/*.sql; do
@@ -41,6 +45,7 @@ for f in tests/sql/*.sql; do
       FAILED=1
     else
       echo "  ok    $name ($n checks)"
+      TOTAL=$((TOTAL + n))
     fi
   fi
 done
@@ -61,6 +66,7 @@ for f in tests/sql/*.sh; do
 done
 
 echo ""
+echo "TOTAL: $TOTAL checks across $(ls tests/sql/*.sql | wc -l | tr -d ' ') probes"
 echo "-------------------------------------"
 [ "$FAILED" -eq 0 ] && echo "All probes green." || echo "Probes RED. See above."
 exit $FAILED

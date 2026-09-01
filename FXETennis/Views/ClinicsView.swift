@@ -40,6 +40,8 @@ final class ClinicsViewModel {
 struct ClinicsView: View {
     @Environment(SessionStore.self) private var session
     @State private var model = ClinicsViewModel()
+    /// The clinic whose "?" was tapped. `nil` means no sheet.
+    @State private var explaining: ClinicPublic?
 
     private var isMember: Bool { session.activePlayer?.isMember ?? false }
 
@@ -62,6 +64,9 @@ struct ClinicsView: View {
             .navigationTitle("Clinics")
             .task { await model.load() }
             .refreshable { await model.load() }
+            .sheet(item: $explaining) { clinic in
+                ClinicExplainerSheet(clinic: clinic)
+            }
         }
     }
 
@@ -69,19 +74,37 @@ struct ClinicsView: View {
         ScrollView {
             LazyVStack(spacing: Brand.Spacing.md) {
                 ForEach(model.clinics) { clinic in
-                    NavigationLink {
-                        ClinicDetailView(clinic: clinic, isMember: isMember,
-                                         onChanged: { await model.load() })
-                    } label: {
-                        ClinicCard(
-                            clinic: clinic,
-                            registration: model.myRegistrationsByClinic[clinic.id],
-                            isMember: isMember
-                        )
-                        .contentShape(Rectangle())
+                    // The "?" is a SIBLING of the NavigationLink, not a child.
+                    // A Button placed inside a NavigationLink's label does not
+                    // reliably receive taps: the link swallows them, so the
+                    // explainer would look tappable and simply navigate. An
+                    // overlay keeps two independent targets on one row.
+                    //
+                    // Bottom-trailing rather than beside the name, because the
+                    // card's top-trailing corner already belongs to the status
+                    // chip and two controls in one corner is a mis-tap waiting
+                    // to happen on a court.
+                    ZStack(alignment: .bottomTrailing) {
+                        NavigationLink {
+                            ClinicDetailView(clinic: clinic, isMember: isMember,
+                                             onChanged: { await model.load() })
+                        } label: {
+                            ClinicCard(
+                                clinic: clinic,
+                                registration: model.myRegistrationsByClinic[clinic.id],
+                                isMember: isMember
+                            )
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("clinic.card")
+
+                        ExplainerButton(label: "What is \(clinic.name)?") {
+                            explaining = clinic
+                        }
+                        .padding(.trailing, Brand.Spacing.xxs)
+                        .padding(.bottom, Brand.Spacing.xxs)
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("clinic.card")
                 }
             }
             .padding(Brand.Spacing.pageMargin)

@@ -82,8 +82,16 @@ struct HomeView: View {
     }
 
     /// Her mockup reads "Good Morning, Sara!" — time-aware, first name, warm.
+    ///
+    /// Falls back to the ACCOUNT name before "there". An admin account has no
+    /// `players` row of its own, so reading only `activePlayer` greeted Tara as
+    /// "there" on her own app (seen on the simulator 2026-08-15). "there" now
+    /// means what it should: we genuinely do not know who this is, which is the
+    /// signal that a profile failed to load.
     private var greetingText: String {
-        let name = session.activePlayer?.firstName ?? "there"
+        let name = session.activePlayer?.firstName
+            ?? session.account?.firstName
+            ?? "there"
         let hour = Calendar.current.component(.hour, from: Date())
         let part = hour < 12 ? "Good Morning" : (hour < 17 ? "Good Afternoon" : "Good Evening")
         return "\(part), \(name)!"
@@ -99,6 +107,13 @@ struct HomeView: View {
                       isMember: isMember)
         }
         .buttonStyle(.plain)
+        // On the LINK, not on the row inside it. A SwiftUI accessibility
+        // identifier set on a NavigationLink's label lands on the label element
+        // rather than on the button the link publishes, so
+        // `app.buttons["clinic.card"]` finds nothing and every Home-based UI
+        // test dies at "No clinic cards rendered". ClinicsView:84 already does
+        // it this way; Home drifted when it was rebuilt in 8357fb9.
+        .accessibilityIdentifier("clinic.card")
     }
 }
 
@@ -172,11 +187,15 @@ struct ClinicRow: View {
                 Text(price.centsAsPrice)
                     .font(Brand.Typography.subheadline)
                     .foregroundStyle(Brand.navy)
+                    // Home renders a real price and had no identifier on it,
+                    // so the member-vs-non-member pricing test could not see
+                    // the number it exists to compare. ClinicsView:140 labels
+                    // the same value.
+                    .accessibilityIdentifier("clinic.price")
             }
         }
         .padding(.vertical, Brand.Spacing.sm)
         .contentShape(Rectangle())
-        .accessibilityIdentifier("clinic.card")
     }
 
     private var timeLine: String {
