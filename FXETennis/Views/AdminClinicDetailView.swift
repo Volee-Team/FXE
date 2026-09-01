@@ -40,6 +40,7 @@ final class AdminClinicModel {
     var pool: [RosterEntry] { roster.filter { $0.registration.status == .pool } }
     var responseNeeded: [RosterEntry] { roster.filter { $0.registration.status == .responseNeeded } }
     var canceled: [RosterEntry] { roster.filter { $0.registration.status == .canceled } }
+    var lateRequests: [(request: LateRequest, player: PlayerProfile?)] = []
     var unpaidCount: Int { youreIn.filter { !$0.registration.paid }.count }
 
     func load() async {
@@ -47,6 +48,10 @@ final class AdminClinicModel {
         defer { loading = false }
         do {
             roster = try await AdminRepository.roster(clinic: clinic.id)
+            let asks = (try? await AdminRepository.pendingLateRequests(clinic: clinic.id)) ?? []
+            let people = (try? await AdminRepository.players(ids: asks.map(\.playerId))) ?? []
+            let byId = Dictionary(uniqueKeysWithValues: people.map { ($0.id, $0) })
+            lateRequests = asks.map { ($0, byId[$0.playerId]) }
             error = nil
         } catch {
             self.error = "Couldn't load the roster. Pull to refresh."
@@ -110,6 +115,8 @@ struct AdminClinicDetailView: View {
                         Brand.Status.responseNeeded, model.responseNeeded,
                         empty: ""
                     ) { entry in AnyView(cancelInviteButton(entry)) }
+
+                    lateRequestSection
 
                     // Canceled stays visible: hard rule 4, and Screen 14 says
                     // "Keep canceled players visible to Tara."
@@ -212,6 +219,77 @@ struct AdminClinicDetailView: View {
                         .frame(minHeight: Brand.Layout.comfortableTapTarget)
 
                         if entry.id != entries.last?.id {
+                            Divider().background(Brand.hairline)
+                        }
+                    }
+                }
+                .padding(.horizontal, Brand.Spacing.cardPadding)
+                .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
+                .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
+            }
+        }
+    }
+
+    /// "Can I still get in?" asks, with the two answers Tara can give. Only
+    /// shown when there are any: an empty section would be noise on the
+    /// screen she uses most. Approving re-checks capacity server-side.
+    @ViewBuilder private var lateRequestSection: some View {
+        if !model.lateRequests.isEmpty {
+            VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
+                HStack {
+                    StatusChip(.responseNeeded)
+                    Text("asking to get in")
+                        .font(Brand.Typography.caption)
+                        .foregroundStyle(Brand.textSecondary)
+                    Spacer()
+                    Text("\(model.lateRequests.count)")
+                        .font(Brand.Typography.chip)
+                        .foregroundStyle(Brand.textSecondary)
+                }
+                VStack(spacing: 0) {
+                    ForEach(model.lateRequests, id: \.request.id) { item in
+                        HStack(spacing: Brand.Spacing.sm) {
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(item.player.map { "\($0.firstName) \($0.lastName)" } ?? "Unknown player")
+                                    .font(Brand.Typography.bodyEmphasis)
+                                    .foregroundStyle(Brand.textPrimary)
+                                if let m = item.request.message, !m.isEmpty {
+                                    Text("“\(m)”")
+                                        .font(Brand.Typography.caption)
+                                        .foregroundStyle(Brand.textSecondary)
+                                }
+                            }
+                            Spacer(minLength: Brand.Spacing.xs)
+                            Button {
+                                Task { await model.perform(item.request.id) {
+                                    try await AdminRepository.resolveLateRequest(id: item.request.id, approve: false)
+                                } }
+                            } label: {
+                                Text("No room")
+                                    .font(Brand.Typography.chip)
+                                    .foregroundStyle(Brand.Status.canceled.ink)
+                                    .frame(minHeight: Brand.Layout.minTapTarget)
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("admin.lateDecline")
+                            Button {
+                                Task { await model.perform(item.request.id) {
+                                    try await AdminRepository.resolveLateRequest(id: item.request.id, approve: true)
+                                } }
+                            } label: {
+                                Text("Put them in")
+                                    .font(Brand.Typography.chip)
+                                    .foregroundStyle(Brand.textOnNavy)
+                                    .padding(.horizontal, Brand.Spacing.sm)
+                                    .frame(minHeight: Brand.Layout.minTapTarget)
+                                    .background(Capsule().fill(Brand.navy))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("admin.lateApprove")
+                        }
+                        .padding(.vertical, Brand.Spacing.xs)
+                        .disabled(model.busy.contains(item.request.id))
+                        if item.request.id != model.lateRequests.last?.request.id {
                             Divider().background(Brand.hairline)
                         }
                     }

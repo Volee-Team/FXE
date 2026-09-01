@@ -34,6 +34,13 @@ struct CompleteProfileView: View {
     @State private var rating: NTRPRating?
     @State private var showNTRP = false
     @State private var saving = false
+    /// The keyboard covers Continue on every phone once a name field has focus,
+    /// and this ScrollView cannot scroll far enough to expose it. Found by the
+    /// sign-up XCUITest on 2026-09-01 ("Continue never became reachable"), which
+    /// is the exact experience of a real player. Leaving the text fields, by
+    /// answering the membership question or picking a rating, drops the keyboard;
+    /// so does dragging the form.
+    @FocusState private var typing: Bool
 
     /// Both names are required because they are NOT NULL on both tables and are
     /// what Tara reads in her roster. Membership is required because it decides
@@ -73,6 +80,7 @@ struct CompleteProfileView: View {
                 }
                 .padding(Brand.Spacing.pageMargin)
             }
+            .scrollDismissesKeyboard(.interactively)
         }
         .sheet(isPresented: $showNTRP) { NTRPExplainerSheet() }
     }
@@ -101,6 +109,7 @@ struct CompleteProfileView: View {
                 .font(Brand.Typography.subheadline)
                 .foregroundStyle(Brand.textSecondary)
             TextField("", text: text)
+                .focused($typing)
                 .font(Brand.Typography.body)
                 .foregroundStyle(Brand.textPrimary)
                 .textContentType(content)
@@ -132,8 +141,8 @@ struct CompleteProfileView: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             HStack(spacing: Brand.Spacing.sm) {
-                choice("Yes", selected: isMember == true, id: "profile.member.yes") { isMember = true }
-                choice("No", selected: isMember == false, id: "profile.member.no") { isMember = false }
+                choice("Yes", selected: isMember == true, id: "profile.member.yes") { isMember = true; typing = false }
+                choice("No", selected: isMember == false, id: "profile.member.no") { isMember = false; typing = false }
             }
         }
     }
@@ -190,6 +199,7 @@ struct CompleteProfileView: View {
                     ForEach(NTRPRating.displayOrdered) { level in
                         Button {
                             rating = (rating == level) ? nil : level
+                            typing = false
                         } label: {
                             Text(level.label)
                                 .font(Brand.Typography.chip)

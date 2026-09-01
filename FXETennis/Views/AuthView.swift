@@ -12,6 +12,7 @@ import SwiftUI
 struct AuthView: View {
     @Environment(SessionStore.self) private var session
 
+    @State private var resetSent = false
     @State private var mode: Mode = .signIn
     @State private var email = ""
     @State private var password = ""
@@ -125,6 +126,17 @@ struct AuthView: View {
                 // "Create an account" and "Sign in", so a UI test cannot query
                 // it by text without encoding which mode it is already in.
                 .accessibilityIdentifier("auth.toggleMode")
+
+                if mode == .signIn {
+                    Button(resetSent ? "Check your email for a reset link." : "Forgot password?") {
+                        guard !resetSent else { return }
+                        Task { resetSent = await session.sendPasswordReset(email: email) }
+                    }
+                    .font(Brand.Typography.caption)
+                    .foregroundStyle(resetSent ? Brand.Status.youreIn.ink : Brand.textSecondary)
+                    .frame(minHeight: Brand.Layout.minTapTarget)
+                    .accessibilityIdentifier("auth.forgot")
+                }
 
                 if mode == .signUp {
                     Text("Clinic updates come through the app. Keep notifications on so you don't miss them.")

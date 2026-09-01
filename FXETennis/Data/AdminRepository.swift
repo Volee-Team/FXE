@@ -259,6 +259,81 @@ enum AdminRepository {
     }
 }
 
+/// A player's "can I still get in?" ask, waiting on Tara (20260827000002).
+struct LateRequest: Codable, Identifiable, Sendable {
+    let id: UUID
+    let clinicId: UUID
+    let playerId: UUID
+    let message: String?
+    let status: String
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, message, status
+        case clinicId = "clinic_id"
+        case playerId = "player_id"
+        case createdAt = "created_at"
+    }
+}
+
+/// One unread thing addressed to the admin: a cancellation, a decline, an
+/// acceptance. The body is written server-side and already names the player.
+struct AdminNotice: Codable, Identifiable, Sendable {
+    let id: UUID
+    let type: String
+    let body: String
+    let createdAt: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, type, body
+        case createdAt = "created_at"
+    }
+}
+
+extension AdminRepository {
+
+    /// Pending late requests, oldest first, optionally for one clinic.
+    static func pendingLateRequests(clinic: UUID? = nil) async throws -> [LateRequest] {
+        var q = supabase.from("late_requests").select().eq("status", value: "pending")
+        if let clinic { q = q.eq("clinic_id", value: clinic) }
+        return try await q.order("created_at", ascending: true).execute().value
+    }
+
+    /// Tara answers a late request. Approving places the player via
+    /// place_player after the server re-checks capacity.
+    static func resolveLateRequest(id: UUID, approve: Bool) async throws {
+        struct P: Encodable { let p_request: UUID; let p_approve: Bool }
+        _ = try await supabase
+            .rpc("resolve_late_request", params: P(p_request: id, p_approve: approve))
+            .execute()
+    }
+
+    /// Unread admin notices. RLS scopes rows to the signed-in account, so a
+    /// non-admin simply sees their own (player) notifications here.
+    static func unreadNotices() async throws -> [AdminNotice] {
+        try await supabase
+            .from("notifications")
+            .select("id,type,body,created_at")
+            .is("read_at", value: nil)
+            .in("type", values: ["player_canceled", "invitation_declined", "invitation_accepted"])
+            .order("created_at", ascending: false)
+            .limit(30)
+            .execute()
+            .value
+    }
+
+    /// Mark one notice read. Column-scoped grant: read_at is the only field a
+    /// recipient may touch (20260901000001).
+    static func markRead(notice: UUID) async throws {
+        struct U: Encodable { let read_at: Date }
+        _ = try await supabase
+            .from("notifications")
+            .update(U(read_at: Date()))
+            .eq("id", value: notice)
+            .execute()
+    }
+}
+
 /// A row from `search_players`. Flatter than `PlayerProfile`: the RPC returns a
 /// table shaped for the directory, including a derived `age` for juniors and a
 /// `has_notes` flag so Tara can see who she has written about without exposing

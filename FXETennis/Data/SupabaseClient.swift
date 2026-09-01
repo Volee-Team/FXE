@@ -25,7 +25,15 @@ private enum SupabaseConfig {
     #endif
 }
 
+// flowType .implicit, deliberately. "Forgot password?" emails a link that opens
+// web/reset.html in a BROWSER, not this app (no Apple account yet, so no
+// universal links). With the default PKCE flow the link carries a one-time code
+// that only the client which started the flow can redeem, and that client is
+// this app, not the browser: the page would fail with "code verifier not found".
+// Implicit puts the recovery token in the URL fragment so any page can finish
+// it. Password sign-in is unaffected by flow type. (2026-09-01)
 let supabase = SupabaseClient(
     supabaseURL: SupabaseConfig.url,
-    supabaseKey: SupabaseConfig.anonKey
+    supabaseKey: SupabaseConfig.anonKey,
+    options: SupabaseClientOptions(auth: .init(flowType: .implicit))
 )

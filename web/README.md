@@ -15,6 +15,11 @@ weekly setup.
 * Publish a draft
 * Invite from the Player Pool, mark players paid, cancel an invitation
 * Message any audience on a clinic
+* **Action Needed** at the top: players asking in after the 3-hour close (Put
+  them in / No room) and cancellations or invitation replies she has not seen
+* **Money** at the bottom: the four counts, expected / collected / still owed,
+  and a line per clinic
+* Forgot password? on the sign-in card, landing on `reset.html`
 
 Registration windows are computed for her: members Thursday 8am, everyone else
 Friday 8am, for the whole service week the clinic falls in (decision 0001). She
@@ -64,6 +69,12 @@ account"). Her email self-promotes to admin at account creation
 the live URL, creates her account, and builds her week from templates. Her real
 clinics enter through this page, never a hand-written INSERT, so the path itself
 gets exercised.
+
+One setting remains for **password reset** (added 2026-09-01): Supabase only
+redirects to URLs on its allow-list and silently falls back to the Site URL
+otherwise. In the Supabase dashboard, Authentication → URL Configuration →
+Redirect URLs, add `https://fxe-tennis-admin.vercel.app/reset.html`. Until
+then "Forgot password?" sends an email whose link goes nowhere useful.
 
 ## Why the key in `config.js` is not a leak
 
