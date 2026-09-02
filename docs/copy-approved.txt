@@ -58,6 +58,7 @@ Message Players
 Message Tara
 Message players
 More
+My Clinics
 Need Help?
 New password
 No clinics yet. Use “New clinic” to add your first one.
