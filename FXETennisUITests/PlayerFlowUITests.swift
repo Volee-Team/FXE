@@ -286,6 +286,8 @@ final class PlayerFlowUITests: XCTestCase {
         XCTAssertTrue(bell.waitForExistence(timeout: 10))
         XCTAssertEqual(bell.label, "Notifications",
                        "Bell still reports unread after Mark all read: '\(bell.label)'")
+    }
+
     // MARK: - editing your own details
 
     /// Change the phone number, save, and see it on Profile. The value is
@@ -366,10 +368,6 @@ final class PlayerFlowUITests: XCTestCase {
         }
     }
 
-
-    /// Taps once the element is actually hittable. A card can exist while the
-    /// scroll view is still settling; tapping then throws "not hittable".
-    @discardableResult
     /// iOS offers to save the password after a successful sign-in. It is a
     /// SpringBoard sheet that covers the whole app, so every subsequent query
     /// finds nothing and the run dies with a misleading "not hittable" error.
