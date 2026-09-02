@@ -205,6 +205,27 @@ enum ProfileRepository {
             .value
     }
 
+    /// Edit the caller's own name, phone and rating. Two narrow UPDATEs on the
+    /// exact columns `authenticated` holds column-level UPDATE for
+    /// (20260802000003): first_name, last_name, phone on `accounts`;
+    /// first_name, last_name, adult_rating on `players`. RLS scopes both rows
+    /// to the caller. Membership is deliberately NOT here: it decides pricing
+    /// and the head-start window, and after sign-up it is Tara's to correct
+    /// (for-tara.md q5, hard rule 2).
+    static func updateMyProfile(firstName: String, lastName: String, phone: String?, adultRating: Double?, player: UUID) async throws {
+        guard let uid = supabase.auth.currentUser?.id else { return }
+        struct AccountPatch: Encodable { let first_name: String; let last_name: String; let phone: String? }
+        struct PlayerPatch: Encodable { let first_name: String; let last_name: String; let adult_rating: Double? }
+        _ = try await supabase.from("accounts")
+            .update(AccountPatch(first_name: firstName, last_name: lastName, phone: phone))
+            .eq("id", value: uid)
+            .execute()
+        _ = try await supabase.from("players")
+            .update(PlayerPatch(first_name: firstName, last_name: lastName, adult_rating: adultRating))
+            .eq("id", value: player)
+            .execute()
+    }
+
     /// The signed-in account row.
     static func myAccount() async throws -> Account? {
         guard let uid = supabase.auth.currentUser?.id else { return nil }

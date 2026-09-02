@@ -288,6 +288,37 @@ final class PlayerFlowUITests: XCTestCase {
                        "Bell still reports unread after Mark all read: '\(bell.label)'")
     }
 
+    // MARK: - editing your own details
+
+    /// Change the phone number, save, and see it on Profile. The value is
+    /// unique per run so the assertion cannot pass on a stale row, and the
+    /// test restores nothing: Maria's phone is display-only data.
+    func testPlayerCanEditTheirOwnDetails() {
+        app.launch()
+        signIn(as: memberEmail)
+        dismissSavePasswordSheetIfPresent()
+        app.buttons["Profile"].tap()
+
+        let edit = app.buttons["profile.edit"]
+        XCTAssertTrue(edit.waitForExistence(timeout: 20), "No Edit details button on Profile")
+        edit.tap()
+
+        let phone = app.textFields["edit.phone"]
+        XCTAssertTrue(phone.waitForExistence(timeout: 10))
+        let newPhone = "704-555-" + String(Int.random(in: 1000...9999))
+        phone.tap()
+        phone.press(forDuration: 1.0)
+        app.menuItems["Select All"].tap()
+        phone.typeText(newPhone)
+
+        app.buttons["edit.save"].tap()
+
+        // Back on Profile with the new value rendered from the reloaded session.
+        XCTAssertTrue(app.staticTexts[newPhone].waitForExistence(timeout: 20),
+                      "Profile never showed the new phone; the save did not reach the session")
+        signOut()
+    }
+
     // MARK: - pricing, which is money and therefore worth a UI test
 
     /// The same clinic must quote different prices to a member and a non-member.
@@ -337,10 +368,6 @@ final class PlayerFlowUITests: XCTestCase {
         }
     }
 
-
-    /// Taps once the element is actually hittable. A card can exist while the
-    /// scroll view is still settling; tapping then throws "not hittable".
-    @discardableResult
     /// iOS offers to save the password after a successful sign-in. It is a
     /// SpringBoard sheet that covers the whole app, so every subsequent query
     /// finds nothing and the run dies with a misleading "not hittable" error.

@@ -28,6 +28,7 @@ Decline
 Description (players see this under the “?”)
 Done
 Draft
+Edit details
 FROM TARA
 FXE TENNIS
 FXE Tennis
@@ -90,6 +91,7 @@ Saved. You can sign in with it now, on your phone or here.
 Search by name
 Search players by name
 Send reminder
+Set by Tara
 She will let you know if there is room.
 Sign Out
 Sign out
