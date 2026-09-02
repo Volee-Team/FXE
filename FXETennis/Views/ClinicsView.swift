@@ -70,10 +70,25 @@ struct ClinicsView: View {
         }
     }
 
+    /// Grouped by service week so the list reads the way Tara publishes it:
+    /// this week's clinics, then next week's, then the rest. The week is the
+    /// unit registration opens in (decision 0001), so it is the natural fold.
+    private var weeks: [(start: Date, items: [ClinicPublic])] {
+        ServiceWeek.grouped(model.clinics, startsAt: \.startsAt)
+    }
+
     private var list: some View {
         ScrollView {
-            LazyVStack(spacing: Brand.Spacing.md) {
-                ForEach(model.clinics) { clinic in
+            LazyVStack(alignment: .leading, spacing: Brand.Spacing.md) {
+                ForEach(weeks, id: \.start) { week in
+                    Text(ServiceWeek.label(forWeekStarting: week.start).uppercased())
+                        .font(Brand.Typography.chip)
+                        .foregroundStyle(Brand.textSecondary)
+                        .padding(.top, week.start == weeks.first?.start ? 0 : Brand.Spacing.sm)
+                        .accessibilityAddTraits(.isHeader)
+                        .accessibilityIdentifier("clinics.week")
+
+                ForEach(week.items) { clinic in
                     // The "?" is a SIBLING of the NavigationLink, not a child.
                     // A Button placed inside a NavigationLink's label does not
                     // reliably receive taps: the link swallows them, so the
@@ -105,6 +120,7 @@ struct ClinicsView: View {
                         .padding(.trailing, Brand.Spacing.xxs)
                         .padding(.bottom, Brand.Spacing.xxs)
                     }
+                }
                 }
             }
             .padding(Brand.Spacing.pageMargin)
