@@ -38,7 +38,18 @@ select 'app_can_read_' || t.relname,
        has_table_privilege('authenticated', ('public.' || t.relname)::regclass, 'SELECT')::text
 from (values ('accounts'), ('players'), ('app_settings'),
              ('clinics_public'), ('my_registrations'), ('my_clinic_messages'),
-             ('my_news'), ('clinics_admin'), ('registrations_admin')) as t(relname);
+             ('my_news'), ('clinics_admin'), ('registrations_admin'),
+             ('templates_admin'), ('late_requests'), ('notifications'),
+             ('revenue_by_clinic'), ('revenue_by_segment')) as t(relname);
+
+-- A recipient may mark their own notification read, and nothing else about it.
+insert into _probe_result
+select 'notification_read_at_is_self_writable', 'true',
+       has_column_privilege('authenticated', 'public.notifications'::regclass, 'read_at', 'UPDATE')::text;
+insert into _probe_result
+select 'notification_' || c || '_is_NOT_self_writable', 'false',
+       has_column_privilege('authenticated', 'public.notifications'::regclass, c, 'UPDATE')::text
+from unnest(array['body', 'type', 'account_id', 'entity_id']) as c;
 
 -- A player edits their own contact details. Column-scoped: `role` and `email`
 -- are deliberately absent, per hard rule 8.
@@ -98,7 +109,7 @@ from unnest(array['INSERT','UPDATE','DELETE','TRUNCATE']) as p
 cross join pg_class c
 join pg_namespace n on n.oid = c.relnamespace and n.nspname = 'public'
 where c.relkind = 'r'
-  and c.relname <> 'accounts'
+  and c.relname not in ('accounts', 'notifications')
   and has_table_privilege('authenticated', c.oid, p)
 group by p;
 
@@ -108,7 +119,7 @@ from unnest(array['INSERT','UPDATE','DELETE','TRUNCATE']) as p
 where not exists (
   select 1 from pg_class c
   join pg_namespace n on n.oid = c.relnamespace and n.nspname = 'public'
-  where c.relkind = 'r' and c.relname <> 'accounts'
+  where c.relkind = 'r' and c.relname not in ('accounts', 'notifications')
     and has_table_privilege('authenticated', c.oid, p)
 );
 

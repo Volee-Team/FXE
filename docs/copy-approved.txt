@@ -2,6 +2,7 @@ A clinic needs a name.
 ACTION NEEDED
 About this clinic
 Accept
+Action Needed
 Add a player
 Add your first and last name.
 Add your name and answer the membership question to continue.
@@ -14,8 +15,11 @@ Cancel Invite
 Cancel Registration
 Cancel invite
 Cancel the invitation to \(entry.displayName)
+Checking your reset link…
+Choose a new password
 Clinic updates come through the app. Keep notifications on so you don't miss them.
 Clinics
+Couldn't load the numbers.
 Couldn't reach the server. Check your connection.
 Date &amp; time
 Decline
@@ -27,8 +31,10 @@ FXE TENNIS
 FXE Tennis
 FXE Tennis · Admin
 FXE Tennis — Admin
+FXE Tennis — Reset password
 First time? Create your account
 For someone who called or grabbed you at the club. They go straight to You&rsquo;re In!
+Forgot password?
 Home
 Invite
 Invite \(entry.displayName)
@@ -38,18 +44,26 @@ Length (minutes)
 Length must be more than 0 minutes.
 Manage
 Max players must be at least 1.
+Members, 60 min
+Members, 90 min
 Message
 Message Players
 Message Tara
 Message players
 Need Help?
+New password
 No clinics yet. Use “New clinic” to add your first one.
 No description yet.
+No room
 Nobody by that name yet. They may need to sign up in the app first.
+Non-members, 60 min
+Non-members, 90 min
 Nothing open right now.
 Optional. Tara can set this for you later.
+Pick something you'll remember. At least 8 characters.
 Profile
 Put in clinic
+Put them in
 Rating Guide
 Register
 Registration has closed for this clinic.
@@ -57,19 +71,27 @@ Registration open
 Registration opens \(openMoment.formatted(.dateTime.month(.abbreviated).day()))
 Registration opens \(openMoment.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day().hour().minute()))
 Response Needed
+Save password
+Saved. You can sign in with it now, on your phone or here.
 Search by name
 She will let you know if there is room.
 Sign Out
 Sign out
 Signs you out. Your account is kept, and you can finish this later.
 Smart. Simple. Built for Tennis.
+Someone already handled that one.
 Start from a template
 Tara has your message.
 Tara uses this to build her clinic lists.
 That account is not an administrator.
+That clinic is full now.
+That didn’t save. Try again.
 That email or password didn't work.
 This clinic has been canceled.
+This link has expired or was already used. Go back and request a new one.
+Those don’t match.
 To
+Type it again
 USTA \(level.label)
 View All Clinics
 View Open Clinics
@@ -79,3 +101,5 @@ Write a message first.
 You can still ask Tara to fit you in.
 You're not in any clinics yet.
 Your tennis rating
+asking to get in
+“\(m)”

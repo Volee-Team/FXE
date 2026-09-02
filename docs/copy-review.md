@@ -17,6 +17,24 @@ Regenerate any time: `python3 scripts/extract-copy.py --report`
 
 ---
 
+## New since the last review — 2026-09-01, awaiting Alex
+
+Written by me for the Action Needed / Money / password-reset work. Rule 13:
+mine until Alex ticks them. Nothing here is attributed to Tara.
+
+| ✓ | String | Where |
+|---|---|---|
+| ☐ | Forgot password? · Check your email for a reset link. | Sign-in, iOS and web |
+| ☐ | Choose a new password · Checking your reset link… · Pick something you'll remember. At least 8 characters. · New password · Type it again · Save password | `web/reset.html` |
+| ☐ | Saved. You can sign in with it now, on your phone or here. | `web/reset.html` |
+| ☐ | This link has expired or was already used. Go back and request a new one. · Those don't match. · That didn't save. Try again. | `web/reset.html` |
+| ☐ | Put them in · No room · Seen | Action Needed buttons, web and iOS |
+| ☐ | N asking to get in after close · N cancellations or replies to see | Action Needed rows, iOS |
+| ☐ | That clinic is full now. · Someone already handled that one. | Web, when approving a late request fails |
+| ☐ | Members, 60 min · Members, 90 min · Non-members, 60 min · Non-members, 90 min · Expected · Collected · Still owed · Couldn't load the numbers. | Money panel, web |
+
+---
+
 ## A. Sentences a player reads (12) — the ones that matter most
 
 | ✓ | String | Where | Note |

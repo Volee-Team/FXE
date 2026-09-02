@@ -93,6 +93,7 @@
       <div id="signin-msg"></div>
       <button class="primary" id="dosignin" style="width:100%;margin-top:14px">Sign In</button>
       <button id="togglemode" style="width:100%;margin-top:8px">First time? Create your account</button>
+      <button id="forgot" style="width:100%;margin-top:8px;border:none;background:none;min-height:36px">Forgot password?</button>
     </div>
   </section>
 
@@ -102,7 +103,14 @@
       <button class="primary" id="new-clinic">New clinic</button>
     </div>
     <div id="msg"></div>
+    <div id="action" class="hide">
+      <h2>Action Needed</h2>
+      <div id="late" class="card hide"></div>
+      <div id="notes" class="card hide"></div>
+    </div>
     <div id="clinics"></div>
+    <h2>Money</h2>
+    <div id="money" class="card muted">Loading…</div>
   </section>
 </main>
 
@@ -195,7 +203,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { CONFIG } from "./config.js";
 
-const sb = createClient(CONFIG.url, CONFIG.key);
+// implicit flow: a reset started on one device (the phone) must finish on
+// another (this page). PKCE ties the emailed code to the device that asked.
+const sb = createClient(CONFIG.url, CONFIG.key, { auth: { flowType: "implicit" } });
 const $ = (id) => document.getElementById(id);
 
 // Locked terminology. These exact words appear in CLAUDE.md and Brand.swift and
@@ -227,6 +237,8 @@ function friendly(e) {
   if (m.includes("name_required")) return "A clinic needs a name.";
   if (m.includes("capacity_must_be_positive")) return "Max players must be at least 1.";
   if (m.includes("duration_must_be_positive")) return "Length must be more than 0 minutes.";
+  if (m.includes("clinic_full")) return "That clinic is full now.";
+  if (m.includes("request_not_pending")) return "Someone already handled that one.";
   if (m.includes("failed to fetch")) return "Couldn't reach the server. Check your connection.";
   return e?.message || "Something went wrong.";
 }
@@ -267,6 +279,68 @@ async function loadTemplates() {
     + templates.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join("");
 }
 
+// Tara's inbox: things the backend already records that no screen showed.
+// Late requests come from their own table (they have a lifecycle); the rest
+// are unread notifications addressed to the admin. Each row has exactly one
+// resolving action, and everything reloads from the server afterwards.
+async function loadActionNeeded(clinics, byPlayer) {
+  const byClinic = Object.fromEntries(clinics.map(c => [c.id, c]));
+  const { data: late } = await sb.from("late_requests").select("*")
+    .eq("status", "pending").order("created_at");
+  const { data: notes } = await sb.from("notifications").select("*")
+    .is("read_at", null)
+    .in("type", ["player_canceled", "invitation_declined", "invitation_accepted"])
+    .order("created_at", { ascending: false }).limit(30);
+
+  const lateEl = $("late"), notesEl = $("notes");
+  lateEl.classList.toggle("hide", !(late || []).length);
+  notesEl.classList.toggle("hide", !(notes || []).length);
+  $("action").classList.toggle("hide", !(late || []).length && !(notes || []).length);
+
+  lateEl.innerHTML = (late || []).map(r => {
+    const p = byPlayer[r.player_id], c = byClinic[r.clinic_id];
+    return `<div class="row">
+      <span class="grow"><span class="name">${esc(p ? p.first_name + " " + p.last_name : "Unknown player")}</span>
+        <span class="muted"> asked to join </span><span class="name">${esc(c ? c.name : "a clinic")}</span>
+        ${r.message ? `<br><span class="muted">“${esc(r.message)}”</span>` : ""}</span>
+      <button class="small primary" data-approve="${r.id}">Put them in</button>
+      <button class="small" data-decline="${r.id}">No room</button>
+    </div>`;
+  }).join("");
+
+  notesEl.innerHTML = (notes || []).map(n => `<div class="row">
+      <span class="grow">${esc(n.body)}<br><span class="muted">${fmtDate(n.created_at)}</span></span>
+      <button class="small" data-seen="${n.id}">Seen</button>
+    </div>`).join("");
+}
+
+// The four numbers Tara asked for, plus the money. revenue_summary() and the
+// per-clinic view were built and probe-covered on 2026-08-10; this is the
+// first screen to call them.
+async function loadMoney() {
+  const { data: sum, error } = await sb.rpc("revenue_summary");
+  if (error || !sum || !sum.length) { $("money").textContent = "Couldn't load the numbers."; return; }
+  const t = sum[0];
+  const { data: rows } = await sb.from("revenue_by_clinic").select("*").order("starts_at", { ascending: false }).limit(12);
+  $("money").classList.remove("muted");
+  $("money").innerHTML = `
+    <div class="grid" style="margin-bottom:8px">
+      <div><span class="muted">Members, 60 min</span><br><span class="name">${t.member_60_players}</span></div>
+      <div><span class="muted">Members, 90 min</span><br><span class="name">${t.member_90_players}</span></div>
+      <div><span class="muted">Non-members, 60 min</span><br><span class="name">${t.nonmember_60_players}</span></div>
+      <div><span class="muted">Non-members, 90 min</span><br><span class="name">${t.nonmember_90_players}</span></div>
+    </div>
+    <div class="row" style="border-top:1px solid var(--fxe-hairline);padding-top:10px">
+      <span class="grow"><span class="muted">Expected</span> <span class="name">${money(t.expected_cents)}</span></span>
+      <span class="grow"><span class="muted">Collected</span> <span class="name">${money(t.collected_cents)}</span></span>
+      <span class="grow"><span class="muted">Still owed</span> <span class="name" style="color:#992E22">${money(t.outstanding_cents)}</span></span>
+    </div>
+    ${(rows || []).map(r => `<div class="row">
+      <span class="grow"><span class="name">${esc(r.name)}</span><br><span class="muted">${fmtDate(r.starts_at)} · ${r.total_players} players</span></span>
+      <span class="muted">${money(r.collected_cents)} of ${money(r.expected_cents)}</span>
+    </div>`).join("")}`;
+}
+
 async function loadClinics() {
   note($("msg"), "");
   await loadTemplates();
@@ -280,6 +354,8 @@ async function loadClinics() {
   const { data: regs } = await sb.from("registrations_admin").select("*").in("clinic_id", ids);
   const { data: players } = await sb.from("players").select("id,first_name,last_name,is_member,adult_rating");
   const byPlayer = Object.fromEntries((players || []).map(p => [p.id, p]));
+  await loadActionNeeded(clinics, byPlayer);
+  loadMoney();
 
   $("clinics").innerHTML = clinics.map(c => {
     const mine = (regs || []).filter(r => r.clinic_id === c.id);
@@ -341,6 +417,12 @@ document.addEventListener("click", async (e) => {
   if (b.dataset.uninvite) return run(() => call("cancel_invitation",  { p_registration: b.dataset.uninvite }));
   if (b.dataset.paid)     return run(() => call("set_paid", { p_registration: b.dataset.paid, p_paid: b.dataset.now !== "true" }));
   if (b.dataset.publish)  return run(() => call("publish_clinic",     { p_clinic: b.dataset.publish }));
+  if (b.dataset.approve)  return run(() => call("resolve_late_request", { p_request: b.dataset.approve, p_approve: true }));
+  if (b.dataset.decline)  return run(() => call("resolve_late_request", { p_request: b.dataset.decline, p_approve: false }));
+  if (b.dataset.seen)     return run(async () => {
+    const { error } = await sb.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", b.dataset.seen);
+    if (error) throw error;
+  });
   if (b.dataset.message)  { messagingClinic = b.dataset.message; $("m-body").value = ""; note($("message-msg"), ""); $("message").showModal(); return; }
   if (b.dataset.walkup)   { walkupClinic = b.dataset.walkup; $("w-query").value = ""; $("w-results").innerHTML = ""; note($("walkup-msg"), ""); $("walkup").showModal(); $("w-query").focus(); return; }
   if (b.dataset.place)    return run(() => call("place_player", { p_clinic: walkupClinic, p_player: b.dataset.place, p_status: "in" }).then(() => $("walkup").close()));
@@ -440,6 +522,14 @@ $("message-send").onclick = async () => {
     $("message").close();
   } catch (err) { note($("message-msg"), friendly(err)); }
   finally { btn.disabled = false; }
+};
+
+$("forgot").onclick = async () => {
+  const email = $("email").value.trim();
+  if (!email) return note($("signin-msg"), "Type your email above first.");
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: location.origin + "/reset.html" });
+  note($("signin-msg"), error ? friendly(error) : "Check your email for a reset link.", !error);
 };
 
 $("togglemode").onclick = () => {

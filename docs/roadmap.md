@@ -29,7 +29,7 @@ handwritten court sheet. Nothing more.
 | ✅ | Court assignment 1–5, admin only |
 | ✅ | Clinic messages with audience targeting |
 | ✅ | News with audience and unread tracking |
-| ✅ | Automated SQL probe suite + a concurrency probe (the suite prints its own total; 285 checks across 12 probes as of 2026-09-01), green in CI on every push |
+| ✅ | Automated SQL probe suite + a concurrency probe (the suite prints its own total; 295 checks across 12 probes as of 2026-09-01), green in CI on every push |
 
 ### iOS app 🔨
 
@@ -63,7 +63,7 @@ itself the finding.
 
 | | |
 |---|---|
-| ✅ | SQL probe suite: 12 probes (285 checks as of 2026-09-01 — the suite prints its own total), plus the concurrency probe. Green in CI on every push |
+| ✅ | SQL probe suite: 12 probes (295 checks as of 2026-09-01 — the suite prints its own total), plus the concurrency probe. Green in CI on every push |
 | ✅ | Unit tests: 13, covering the pure logic the probes cannot see (price formatting, member rate selection, NTRP bucketing) |
 | ✅ | XCUITests: **5 of 5 green** as of 2026-08-15, including a sign-up regression test |
 
@@ -96,9 +96,10 @@ her email to admin, so the bootstrap is entirely hers.
 | ✅ | **Walk-up "Add player"**: forgiving search, one tap to You're In! |
 | ⬜ | **Court dropdown on every roster row**, re-arrangeable any time |
 | ⬜ | One-tap unpaid reminder (compose exists; the one-tap button does not) |
-| ⬜ | Revenue screen: the four numbers, the total, what is outstanding (`revenue_summary()` is built and probe-covered, no screen calls it) |
+| ✅ | **Money** (2026-09-01): the four numbers, expected / collected / still owed, and a per-clinic line. Web only; `revenue_summary()` + `revenue_by_clinic()` |
 | ⬜ | Player directory with forgiving search, private notes |
-| ⬜ | Late-request queue surfaced in Action Needed (backend done, notification row only) |
+| ✅ | **Action Needed** (2026-09-01): late requests with Put them in / No room, and unread cancellations and invitation replies with Seen. Web and iOS (iOS shows late requests on the roster) |
+| ✅ | **Forgot password?** (2026-09-01) on both sign-in screens, landing on `web/reset.html`. Works on hosted only once the reset URL is in Supabase Auth → URL Configuration (Alex, dashboard) |
 
 ### Ship ⬜
 

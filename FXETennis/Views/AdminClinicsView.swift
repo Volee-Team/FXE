@@ -21,6 +21,8 @@ import SwiftUI
 final class AdminClinicsModel {
     var clinics: [ClinicAdmin] = []
     var rosterCounts: [UUID: RosterCounts] = [:]
+    var lateRequests: [LateRequest] = []
+    var notices: [AdminNotice] = []
     var loading = false
     var error: String?
 
@@ -36,6 +38,11 @@ final class AdminClinicsModel {
         defer { loading = false }
         do {
             clinics = try await AdminRepository.allClinics()
+            // Both were recorded by the backend from day one and shown by no
+            // screen. A late request is an ask waiting on her; a notice is a
+            // cancellation, decline or acceptance she has not seen yet.
+            lateRequests = (try? await AdminRepository.pendingLateRequests()) ?? []
+            notices = (try? await AdminRepository.unreadNotices()) ?? []
             error = nil
             await loadCounts()
         } catch {
@@ -120,14 +127,19 @@ struct AdminClinicsView: View {
         let unpaid = model.rosterCounts.values.reduce(0) { $0 + $1.unpaid }
         let pool = model.rosterCounts.values.reduce(0) { $0 + $1.pool }
 
+        let asks = model.lateRequests.count
+        let news = model.notices.count
+
         return Group {
-            if waiting > 0 || unpaid > 0 || pool > 0 {
+            if waiting > 0 || unpaid > 0 || pool > 0 || asks > 0 || news > 0 {
                 VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
                     Text("ACTION NEEDED")
                         .font(Brand.Typography.chip)
                         .foregroundStyle(Brand.textSecondary)
 
                     VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
+                        if asks > 0 { needRow(Brand.Status.responseNeeded, "\(asks) asking to get in after close") }
+                        if news > 0 { needRow(Brand.Status.canceled, "\(news) cancellations or replies to see") }
                         if waiting > 0 { needRow(Brand.Status.responseNeeded, "\(waiting) waiting on a reply") }
                         if pool > 0 { needRow(Brand.Status.playerPool, "\(pool) in the Player Pool") }
                         if unpaid > 0 { needRow(Brand.Status.canceled, "\(unpaid) unpaid") }

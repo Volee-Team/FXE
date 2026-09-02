@@ -135,6 +135,27 @@ final class SessionStore {
         }
     }
 
+    /// Email a password-reset link. The link lands on the web admin's
+    /// reset.html, which is where the new password is chosen — one page serves
+    /// both clients. Same wording on success and on "no such account", on
+    /// purpose: confirming which emails exist is an enumeration leak.
+    func sendPasswordReset(email: String) async -> Bool {
+        authError = nil
+        guard !email.trimmingCharacters(in: .whitespaces).isEmpty else {
+            authError = "Type your email above first."
+            return false
+        }
+        do {
+            try await supabase.auth.resetPasswordForEmail(
+                email.trimmingCharacters(in: .whitespaces),
+                redirectTo: AppEnv.passwordResetURL)
+            return true
+        } catch {
+            authError = friendly(error)
+            return false
+        }
+    }
+
     func signOut() async {
         try? await supabase.auth.signOut()
         account = nil

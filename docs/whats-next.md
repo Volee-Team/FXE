@@ -1,6 +1,6 @@
 # What's next, and what we need from Tara
 
-Living file. Updated 2026-08-26. If something here is done, move it out; if
+Living file. Updated 2026-09-01. If something here is done, move it out; if
 something new blocks, add it. This exists because the answer to "what's next"
 kept living in chat and dying with the session.
 
@@ -10,9 +10,7 @@ kept living in chat and dying with the session.
 
 Ordered by what it unblocks, not by how hard it is to answer.
 
-| # | Question | Why it blocks | Our current assumption |
-|---|---|---|---|
-| 2 | **The late-request path.** Inside the 3-hour close, a player should be able to message her to ask in when the clinic is not full. What should that message say, and does she want it as a notification or in the app? | Half of her own answer to the close-time question | Not built. Registration simply closes |
+Nothing. Every question she has been asked is answered (2026-09-01).
 
 **Answered already, do not re-ask.** Six of the eight closed on 2026-08-27; see
 `docs/decisions/0007`.
@@ -32,6 +30,10 @@ Ordered by what it unblocks, not by how hard it is to answer.
 * **Notification tone** — first person approved, "personal but not cheesy"
 * **Registration close** — 3 hours before start, and she expects to adjust it
 * **Juniors** — November or the spring session, not a fall problem
+* **The late-request path** — built 2026-08-28 without waiting on her wording:
+  a player inside the 3-hour close taps "Message Tara" and types their own
+  message; she sees it under Action Needed with Put them in / No room
+  (2026-09-01). No invented copy, because the message is theirs
 
 ## Blocked on Apple / business
 
