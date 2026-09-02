@@ -233,6 +233,18 @@ enum ProfileRepository {
             .execute()
     }
 
+    /// Push address for THIS account on THIS phone (decision 0008). The
+    /// account is auth.uid() inside the RPC; the token is the only argument.
+    static func registerDevice(_ token: String) async throws {
+        struct P: Encodable { let p_token: String; let p_platform: String }
+        _ = try await supabase.rpc("register_device", params: P(p_token: token, p_platform: "ios")).execute()
+    }
+
+    static func unregisterDevice(_ token: String) async throws {
+        struct P: Encodable { let p_token: String }
+        _ = try await supabase.rpc("unregister_device", params: P(p_token: token)).execute()
+    }
+
     /// The signed-in account row.
     static func myAccount() async throws -> Account? {
         guard let uid = supabase.auth.currentUser?.id else { return nil }

@@ -54,7 +54,7 @@ whenever you touch it.
 | ✅ | **Admin tab** (2026-08-15): Action Needed, rosters, invite from Player Pool, mark paid, message audiences |
 | ✅ | **Late requests** (2026-08-28): registration closes 3h before start; inside the window a player can Message Tara to ask in |
 | ✅ | Confirmation dialogs on all destructive taps (2026-08-28) |
-| ⬜ | Notification permission with the warning Tara asked for. Zero code: no permission request, no APNs entitlement, no device registration, and no sender in `supabase/functions/` |
+| 🔨 | **Push, the client half** (2026-09-02, decision 0008): permission sheet with Tara's Screen-3 line, `aps-environment` entitlement, APNs registration on every signed-in launch, `register_device` / `unregister_device` RPCs (11-check probe), unregister on sign out. **Not built:** the sender (edge function + webhook) and the APNs key, which only the Apple Developer account can issue. Token delivery was not observable on the simulator (apsd held no sandbox token); the RPC path is probe-tested |
 | ⏸ | News. Model and repository exist, no screen. **Deferred**: decision 21 cut the tab (see `docs/decisions/0006`) |
 
 ### Test health 🔨

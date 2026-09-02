@@ -10,6 +10,7 @@ import SwiftUI
 
 @main
 struct FXETennisApp: App {
+    @UIApplicationDelegateAdaptor(PushAppDelegate.self) private var pushDelegate
     @State private var session = SessionStore()
 
     var body: some Scene {
@@ -57,6 +58,7 @@ struct RootView: View {
             CompleteProfileView()
         case .signedIn:
             MainTabView()
+                .pushPermissionPrompt()
         }
     }
 }

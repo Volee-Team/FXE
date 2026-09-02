@@ -56,7 +56,7 @@ EXECUTE lockdown, and the first real nightly backup artifact.
    `fxe-tennis-admin.vercel.app`; asked 2026-09-01.
 2. **Week grouping on the clinic list** (player side): the list is flat.
 3. **`docs/architecture.md` rewrite** from the live schema and file tree.
-4. **Push notifications** — zero code anywhere. `supabase/functions/` is empty.
+4. **Push notifications** — client half built 2026-09-02 (decision 0008). What remains needs the Apple Developer account: the APNs key, then the `push` edge function, the webhook, and the audit columns.
 5. **Crash reporting** — none, before real members are on it.
 6. **Privacy policy + account deletion** — required before children's data in v1.1.
 

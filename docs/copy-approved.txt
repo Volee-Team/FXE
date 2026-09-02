@@ -68,6 +68,7 @@ No room
 Nobody by that name yet. They may need to sign up in the app first.
 Non-members, 60 min
 Non-members, 90 min
+Not now
 Nothing open right now.
 Nothing yet.
 Notifications
@@ -115,6 +116,7 @@ This clinic has been canceled.
 This link has expired or was already used. Go back and request a new one.
 Those don’t match.
 To
+Turn on notifications
 Type at least two letters of a name.
 Type it again
 USTA \(level.label)
