@@ -227,3 +227,68 @@ enum ProfileRepository {
         return value
     }
 }
+
+// MARK: - Notifications (the bell)
+
+/// One row of `notifications`, as its owner sees it. The body was written by
+/// the RPC that caused it (an invitation, a cancellation, a clinic message),
+/// so the copy is already Tara's; this screen only lists it.
+struct PlayerNotification: Codable, Identifiable, Sendable {
+    let id: UUID
+    let type: String
+    let entityType: String?
+    let entityId: UUID?
+    let body: String
+    let createdAt: Date
+    let readAt: Date?
+
+    var isUnread: Bool { readAt == nil }
+
+    enum CodingKeys: String, CodingKey {
+        case id, type, body
+        case entityType = "entity_type"
+        case entityId = "entity_id"
+        case createdAt = "created_at"
+        case readAt = "read_at"
+    }
+}
+
+enum NotificationRepository {
+    /// Newest first. RLS scopes the table to the caller's own rows, and the
+    /// grant is SELECT plus UPDATE of `read_at` only (20260901000001).
+    static func all(limit: Int = 50) async throws -> [PlayerNotification] {
+        try await supabase
+            .from("notifications")
+            .select("id,type,entity_type,entity_id,body,created_at,read_at")
+            .order("created_at", ascending: false)
+            .limit(limit)
+            .execute()
+            .value
+    }
+
+    static func unreadCount() async throws -> Int {
+        let rows: [PlayerNotification] = try await supabase
+            .from("notifications")
+            .select("id,type,entity_type,entity_id,body,created_at,read_at")
+            .is("read_at", value: nil)
+            .execute()
+            .value
+        return rows.count
+    }
+
+    private struct ReadStamp: Encodable { let read_at: Date }
+
+    static func markRead(_ id: UUID) async throws {
+        _ = try await supabase.from("notifications")
+            .update(ReadStamp(read_at: Date()))
+            .eq("id", value: id)
+            .execute()
+    }
+
+    static func markAllRead() async throws {
+        _ = try await supabase.from("notifications")
+            .update(ReadStamp(read_at: Date()))
+            .is("read_at", value: nil)
+            .execute()
+    }
+}

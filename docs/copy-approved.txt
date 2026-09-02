@@ -46,6 +46,7 @@ Leave Player Pool
 Length (minutes)
 Length must be more than 0 minutes.
 Manage
+Mark all read
 Max players must be at least 1.
 Members, 60 min
 Members, 90 min
@@ -63,6 +64,8 @@ Nobody by that name yet. They may need to sign up in the app first.
 Non-members, 60 min
 Non-members, 90 min
 Nothing open right now.
+Nothing yet.
+Notifications
 Only you can see this.
 Optional. Tara can set this for you later.
 Pick something you'll remember. At least 8 characters.

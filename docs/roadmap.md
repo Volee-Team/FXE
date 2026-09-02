@@ -49,6 +49,7 @@ whenever you touch it.
 | ✅ | Clinic details: name, day, time, price for *this* player, description, Zelle/Venmo line, message board |
 | ✅ | Register / Cancel / Leave Player Pool |
 | ✅ | Accept or decline an invitation |
+| ✅ | **The bell** (2026-09-02): notification center behind the Home bell, badge from unread count, per-row and mark-all read, state in the database |
 | 🔨 | My Clinics: a three-row section on Home, no dedicated surface, and "View All Clinics" does not go there |
 | ✅ | **Admin tab** (2026-08-15): Action Needed, rosters, invite from Player Pool, mark paid, message audiences |
 | ✅ | **Late requests** (2026-08-28): registration closes 3h before start; inside the window a player can Message Tara to ask in |

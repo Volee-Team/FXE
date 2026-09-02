@@ -86,6 +86,15 @@ values
    now() + interval '3 days', now() + interval '4 days', 12, 'published', 90)
 on conflict (id) do nothing;
 
+-- Two notifications for Maria so the bell has something to show on a fresh
+-- reset (the notification-center XCUITest reads these). Bodies are the shape
+-- the RPCs write; they are not shown to Tara and carry nothing hidden.
+insert into public.notifications (account_id, type, entity_type, entity_id, body, created_at) values
+  ('22222222-2222-2222-2222-222222222222', 'invitation_received', 'clinic', 'd0000000-0000-0000-0000-000000000002',
+   'A spot opened up in Thursday Morning Cardio and it''s yours if you want it. Open the app to say yes or no.', now() - interval '2 hours'),
+  ('22222222-2222-2222-2222-222222222222', 'clinic_message', 'clinic', 'd0000000-0000-0000-0000-000000000001',
+   'Courts are wet, we start 15 minutes late tonight.', now() - interval '1 day');
+
 -- GoTrue login reads these token columns and cannot scan NULLs — a manual
 -- auth.users INSERT leaves them null, which fails real sign-in with "Database
 -- error querying schema" (the probes never hit GoTrue, so this stayed hidden
