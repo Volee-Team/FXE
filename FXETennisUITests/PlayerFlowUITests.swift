@@ -319,6 +319,35 @@ final class PlayerFlowUITests: XCTestCase {
         signOut()
     }
 
+    // MARK: - my clinics
+
+    /// "View All Clinics" under My Clinics opens MY clinics, not the browse
+    /// list. Either the empty state or a card is acceptable: which one depends
+    /// on whether an earlier test left Maria registered, and both are correct.
+    func testViewAllClinicsOpensMyClinics() {
+        app.launch()
+        signIn(as: memberEmail)
+        dismissSavePasswordSheetIfPresent()
+
+        let link = app.buttons["home.viewMyClinics"]
+        XCTAssertTrue(link.waitForExistence(timeout: 20), "No View All Clinics link on Home")
+        link.tap()
+
+        XCTAssertTrue(app.navigationBars["My Clinics"].waitForExistence(timeout: 10),
+                      "View All Clinics did not open My Clinics")
+        // Either state is a pass; which one depends on earlier tests. Query
+        // by identifier across every element type: SwiftUI reports a VStack
+        // with an identifier as a group, not an "other element", and a
+        // NavigationLink as a button or a cell depending on the container.
+        let card = app.descendants(matching: .any).matching(identifier: "myClinics.card").firstMatch
+        let empty = app.descendants(matching: .any).matching(identifier: "myClinics.empty").firstMatch
+        let either = NSPredicate { _, _ in card.exists || empty.exists }
+        expectation(for: either, evaluatedWith: nil)
+        waitForExpectations(timeout: 15)
+        XCTAssertFalse(app.buttons.matching(identifier: "clinic.card").firstMatch.exists,
+                       "My Clinics rendered the browse list's cards")
+    }
+
     // MARK: - pricing, which is money and therefore worth a UI test
 
     /// The same clinic must quote different prices to a member and a non-member.

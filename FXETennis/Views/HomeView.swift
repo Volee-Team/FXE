@@ -57,10 +57,11 @@ struct HomeView: View {
                                         row(clinic)
                                     }
                                 }
-                                NavigationLink { ClinicsView() } label: {
+                                NavigationLink { MyClinicsView() } label: {
                                     OutlinedButtonLabel("View All Clinics")
                                 }
                                 .buttonStyle(.plain)
+                                .accessibilityIdentifier("home.viewMyClinics")
                             }
 
                             SectionBlock(title: "Available Clinics") {
