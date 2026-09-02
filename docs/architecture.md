@@ -384,9 +384,11 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `capacity_race.sh` | Two racing registrations; invite-vs-accept |
 
 **Swift**: 18 unit tests (`FXETennisTests`: price formatting, per-viewer
-pricing, NTRP buckets, service-week edges) and 5 XCUITests
-(`FXETennisUITests`: sign in / browse / register, undo, sign-up end to end,
-member vs non-member prices, hidden information). The UI tests run against the
+pricing, NTRP buckets, service-week edges) and 12 XCUITests: 8 player flows
+(`PlayerFlowUITests`: sign in / browse / register, undo, sign-up end to end,
+the bell, profile edit, My Clinics, prices, hidden information) and 4 admin
+flows (`AdminFlowUITests`: court / reminder / paid, Pool → invite → Accept,
+directory note, cancel clinic). The UI tests run against the
 local stack and are order-dependent on a fresh seed.
 
 **Web admin**: 8 Playwright tests (`web/tests/admin.spec.mjs`) walk Tara's
