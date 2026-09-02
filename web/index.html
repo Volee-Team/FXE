@@ -65,6 +65,8 @@
   .hide { display: none !important; }
   .signin { max-width: 380px; margin: 12vh auto; }
 select.court { width: auto; flex: 0 0 auto; margin: 0; font: inherit; font-size: 13px; padding: 4px 6px; border: 1px solid var(--border, #d8d3c7); border-radius: 6px; background: #fff; color: inherit; }
+button.danger { border-color: #9B2C2C; color: #9B2C2C; }
+.chip.canceled { background: #F3E1E1; color: #7A1F1F; }
 </style>
 </head>
 <body>
@@ -270,6 +272,7 @@ function friendly(e) {
   if (m.includes("duration_must_be_positive")) return "Length must be more than 0 minutes.";
   if (m.includes("clinic_full")) return "That clinic is full now.";
   if (m.includes("request_not_pending")) return "Someone already handled that one.";
+  if (m.includes("already_canceled")) return "That clinic is already canceled.";
   if (m.includes("failed to fetch")) return "Couldn't reach the server. Check your connection.";
   return e?.message || "Something went wrong.";
 }
@@ -429,6 +432,7 @@ async function loadClinics() {
         <button class="small" data-walkup="${c.id}">Add player</button>
         ${unpaidIn(c).length ? `<button class="small" data-remind="${c.id}" data-n="${unpaidIn(c).length}">Remind unpaid (${unpaidIn(c).length})</button>` : ""}
         ${c.status === "draft" ? `<button class="small primary" data-publish="${c.id}">Publish</button>` : ""}
+        ${c.status !== "canceled" ? `<button class="small" data-cancelclinic="${c.id}">Cancel clinic</button>` : `<span class="chip canceled">Canceled</span>`}
       </div>
       ${section("in", r => `${courtSelect(r)}<button class="small" data-paid="${r.id}" data-now="${r.paid}">${r.paid ? "Paid" : "Unpaid"}</button>`)}
       ${section("pool", r => `<button class="small primary" data-invite="${r.id}">Invite</button>`)}
@@ -471,6 +475,17 @@ document.addEventListener("click", async (e) => {
   if (b.dataset.uninvite) return run(() => call("cancel_invitation",  { p_registration: b.dataset.uninvite }));
   if (b.dataset.paid)     return run(() => call("set_paid", { p_registration: b.dataset.paid, p_paid: b.dataset.now !== "true" }));
   if (b.dataset.publish)  return run(() => call("publish_clinic",     { p_clinic: b.dataset.publish }));
+  if (b.dataset.cancelclinic) {
+    // Two clicks, five seconds apart at most. Canceling notifies everyone in
+    // You're In!, the Player Pool and Response Needed, so a stray click must
+    // not do it; a native confirm() dialog is not styleable and blocks tests.
+    if (b.dataset.armed !== "1") {
+      b.dataset.armed = "1"; b.textContent = "Really cancel? Everyone is told."; b.classList.add("danger");
+      setTimeout(() => { if (b.isConnected) { b.dataset.armed = ""; b.textContent = "Cancel clinic"; b.classList.remove("danger"); } }, 5000);
+      return;
+    }
+    return run(() => call("cancel_clinic", { p_clinic: b.dataset.cancelclinic }));
+  }
   if (b.dataset.remind)   {
     // run() reloads the page state, which clears #msg, so the confirmation is
     // written after the reload rather than inside the action.
