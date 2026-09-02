@@ -16,7 +16,6 @@ Priority: 🔴 blocks a person · 🟡 should fix · 🟢 whenever
 | 🟡 | **20 unmerged commits: `main` is a pre-security-lockdown codebase** | 2026-08-27 | `origin/main` has neither the view-write lockdown, the explicit grants, sign-up, the admin tab, nor the web admin. `.github/workflows/backup.yml` is not on it either, which is why the nightly backup **has never run once**. Merging PRs #1-#3 fixes all of it |
 | 🟡 | Clinic list has no date bounds in either direction | 2026-08-13 | `clinics_public` has no date clause, `clinic_status` has no terminal state, and `ClinicRepository.upcoming()` only orders. Past clinics accumulate forever and sort to the TOP, so Home's `prefix(3)` shows the three oldest |
 | 🟢 | `anon` holds EXECUTE on 22 SECURITY DEFINER RPCs | 2026-08-13 | Not a live hole: `place_player` and `cancel_clinic` both return `not_authorized` to anon, verified. Revoke anyway as defence in depth, same reasoning as hard rule 11 |
-| 🟢 | `docs/architecture.md` needs a rewrite | 2026-09-01 | Banner added marking it partially stale; it predates sign-up, the admin tab, the web admin, late requests and templates. Regenerate from the live schema + file tree in one focused session |
 | 🟡 | Notification triggers with no producer | 2026-08-02 | `REGISTRATION IS OPEN` needs a scheduler that does not exist. Copy is written, nothing fires it |
 | 🟡 | Four "high" findings from the completeness review | 2026-08-02 | Docs drifted from code; probes asserting less than their comments claim |
 | 🟢 | Six "medium" / seven "low" findings from the same review | 2026-08-02 | Not security. Worth one focused pass |
@@ -26,6 +25,7 @@ Priority: 🔴 blocks a person · 🟡 should fix · 🟢 whenever
 
 | | Item | Fixed | Fix |
 |---|---|---|---|
+| 🟢 | ~~`docs/architecture.md` needs a rewrite~~ | 2026-09-01 | Regenerated from the live schema (`pg_class`, `pg_proc`), the file tree and the probe list. The 2026-08 version had six sections that were no longer true |
 | 🟡 | ~~**Late-request path is not built**~~ | 2026-08-28 | Built whole: `late_requests` table + `request_late_spot`/`resolve_late_request` (24-check probe, red-first), and the closed-clinic screen offers "Message Tara" instead of a dead end |
 | 🔴 | ~~**No app icon.** `AppIcon.appiconset` has a slot with no `filename` and no PNG, so the bundle has no `CFBundleIconName`~~ | 2026-08-16 | 1024x1024 opaque PNG of the crossed-racquets mark on Brand.navy. Verified `CFBundleIconName` in the built Info.plist, and CI now fails the build if it is ever missing again |
 | 🔴 | ~~**Sign-up cannot create a usable account**~~ | 2026-08-15 | `create_my_account` (SECURITY DEFINER; id is auth.uid(), email from auth.users, role hard-coded) plus a profile screen and a `.needsProfile` phase. 22-check probe, red first |
