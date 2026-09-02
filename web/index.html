@@ -110,6 +110,16 @@ select.court { width: auto; flex: 0 0 auto; margin: 0; font: inherit; font-size:
       <div id="notes" class="card hide"></div>
     </div>
     <div id="clinics"></div>
+    <h2>Players</h2>
+    <div class="card">
+      <div class="row">
+        <input id="p-query" class="grow" placeholder="Search by name" aria-label="Search players by name">
+        <label class="muted" style="white-space:nowrap;display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="p-inactive" style="width:auto;margin:0"> Show inactive</label>
+      </div>
+      <div id="p-results" style="margin-top:10px"></div>
+      <div id="players-msg"></div>
+    </div>
+
     <h2>Money</h2>
     <div id="money" class="card muted">Loading…</div>
   </section>
@@ -483,6 +493,29 @@ document.addEventListener("click", async (e) => {
   if (b.dataset.message)  { messagingClinic = b.dataset.message; $("m-body").value = ""; note($("message-msg"), ""); $("message").showModal(); return; }
   if (b.dataset.walkup)   { walkupClinic = b.dataset.walkup; $("w-query").value = ""; $("w-results").innerHTML = ""; note($("walkup-msg"), ""); $("walkup").showModal(); $("w-query").focus(); return; }
   if (b.dataset.place)    return run(() => call("place_player", { p_clinic: walkupClinic, p_player: b.dataset.place, p_status: "in" }).then(() => $("walkup").close()));
+  if (b.dataset.member || b.dataset.active || b.dataset.savenote || b.dataset.notes) {
+    b.disabled = true;
+    try {
+      if (b.dataset.member)   await call("admin_set_membership", { p_player: b.dataset.member, p_is_member: b.dataset.now !== "true" });
+      if (b.dataset.active)   await call("set_player_active",    { p_player: b.dataset.active, p_active: b.dataset.now !== "true" });
+      if (b.dataset.savenote) {
+        await call("admin_set_player_note", { p_player: b.dataset.savenote, p_body: document.querySelector(`[data-notebody="${b.dataset.savenote}"]`).value });
+        note($("players-msg"), "Saved.", true);
+      }
+      if (b.dataset.notes) {
+        const box = $("note-" + b.dataset.notes);
+        if (box.classList.contains("hide")) {
+          const { data, error } = await sb.rpc("admin_player_note", { p_player: b.dataset.notes }); if (error) throw error;
+          box.querySelector("textarea").value = data || "";
+          box.classList.remove("hide");
+        } else box.classList.add("hide");
+        return;
+      }
+      await searchPlayers();
+    } catch (err) { note($("players-msg"), friendly(err)); }
+    finally { b.disabled = false; }
+    return;
+  }
   if (b.dataset.edit)     return openEdit(b.dataset.edit);
 });
 
@@ -524,6 +557,36 @@ $("message-cancel").onclick = () => $("message").close();
 $("walkup-cancel").onclick = () => $("walkup").close();
 
 let searchTimer = null;
+// ── Player directory ──────────────────────────────────────────────────────
+// Everything Tara does to a PERSON rather than a registration: correct their
+// membership, retire them, keep a private note. Notes never reach a player
+// (information_hiding.sql check 7); they are read and written only through
+// admin-only RPCs added in 20260902000002.
+let playerTimer;
+const playerRow = (pl) => `<div class="row" data-player-row="${pl.id}">
+  <span class="grow"><span class="name">${esc(pl.first_name)} ${esc(pl.last_name)}</span>${pl.has_notes ? ' <span class="muted" title="Has a note">✎</span>' : ""}<br>
+    <span class="muted">${pl.adult_rating ?? "—"} · ${pl.is_member ? "Member" : "Non-member"}${pl.is_active ? "" : " · Inactive"}</span></span>
+  <button class="small" data-member="${pl.id}" data-now="${pl.is_member}">${pl.is_member ? "Make non-member" : "Make member"}</button>
+  <button class="small" data-active="${pl.id}" data-now="${pl.is_active}">${pl.is_active ? "Deactivate" : "Reactivate"}</button>
+  <button class="small" data-notes="${pl.id}">Note</button>
+</div>
+<div class="hide" id="note-${pl.id}" style="margin:0 0 10px 0">
+  <textarea rows="3" aria-label="Private note" data-notebody="${pl.id}" style="width:100%"></textarea>
+  <div class="row"><span class="muted grow">Only you can see this.</span><button class="small primary" data-savenote="${pl.id}">Save note</button></div>
+</div>`;
+
+async function searchPlayers() {
+  const q = $("p-query").value.trim();
+  if (q.length < 2) { $("p-results").innerHTML = ""; return; }
+  const { data, error } = await sb.rpc("search_players", { p_query: q, p_include_inactive: $("p-inactive").checked });
+  if (error) return note($("players-msg"), friendly(error));
+  $("p-results").innerHTML = (data || []).length
+    ? data.map(playerRow).join("")
+    : `<p class="muted">Nobody by that name yet. They may need to sign up in the app first.</p>`;
+}
+$("p-query").addEventListener("input", () => { clearTimeout(playerTimer); playerTimer = setTimeout(searchPlayers, 250); });
+$("p-inactive").addEventListener("change", searchPlayers);
+
 $("w-query").addEventListener("input", () => {
   clearTimeout(searchTimer);
   searchTimer = setTimeout(async () => {
