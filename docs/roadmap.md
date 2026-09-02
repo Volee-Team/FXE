@@ -64,7 +64,8 @@ itself the finding.
 
 | | |
 |---|---|
-| ✅ | SQL probe suite: 12 probes (299 checks as of 2026-09-01 — the suite prints its own total), plus the concurrency probe. Green in CI on every push |
+| ✅ | SQL probe suite: 13 probes (313 checks as of 2026-09-02 — the suite prints its own total), plus the concurrency probe. Green in CI on every push |
+| ✅ | **Web admin browser tests** (2026-09-02): 8 Playwright tests walk Tara's side against a fresh seed (sign-in and the non-admin door, prices, walk-up, courts, unpaid reminder, directory note round-trip, cancel clinic). Run in CI on every push |
 | ✅ | Unit tests: 13, covering the pure logic the probes cannot see (price formatting, member rate selection, NTRP bucketing) |
 | ✅ | XCUITests: **5 of 5 green** as of 2026-08-15, including a sign-up regression test |
 
