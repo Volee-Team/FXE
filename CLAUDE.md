@@ -192,6 +192,12 @@ That exercise is what exposed a defect in the probe harness itself: the pass con
     table and every new view is born with INSERT, UPDATE, DELETE and TRUNCATE
     for both roles.** Adding `grant select` on top of that changes nothing.
 
+    **Functions too, and the role is PUBLIC.** Postgres gives PUBLIC EXECUTE on
+    every new function, and anon inherits it. `revoke ... from anon` alone is a
+    no-op while PUBLIC still holds it; write `from public, anon`, then grant
+    `authenticated` explicitly. 30 of 41 functions were anon-executable until
+    2026-09-01 because of exactly this (migration 20260902000001).
+
     This matters more for a view than a table. Our views are single-table
     selects, so Postgres makes them **auto-updatable**; they were created without
     `security_invoker`, so they execute as their **owner** (postgres); and
@@ -654,6 +660,8 @@ obeyed.
   **The sign-up XCUITest then failed on a screen this branch never touched, and it was right.** "Continue never became reachable": with the software keyboard up, the profile form cannot scroll far enough to expose Continue, so a real player who types their name and taps Yes is looking at a button under the keyboard. The test's own comment predicted this. Fixed in the app, not the test: answering the membership question or picking a rating drops the keyboard (`@FocusState`), and dragging the form dismisses it interactively. A UI test that fails on a screen you did not change is the test doing its job; the reflex to widen its timeout is the one to resist.
 
   **First backup ever, and it failed on the first try, and it was worth it.** I claimed the nightly backup had never run because the `SUPABASE_DB_URL` secret was unset. Wrong: Alex set it two weeks ago. The true reason was that `backup.yml` only reached `main` when PR #3 merged. Dispatched by hand once `gh` was signed in: the keep-warm job passed and the dump failed with `server version: 17.6; pg_dump version: 16.15`. The install step really did install client 17, but Ubuntu's `pg_dump` is a wrapper that still picked the runner's preinstalled 16. Fixed by calling `/usr/lib/postgresql/17/bin/pg_dump` by path. Two lessons: a claim about CI state comes from `gh run list`, not from memory (hard rule 12 again), and a backup job that has never produced an artifact is not a backup.
+
+  **30 of 41 functions were executable by anon, and had been since July.** Found while checking `assign_court` before wiring it up. Postgres gives PUBLIC EXECUTE on every new function; several migrations revoked "from anon", which is a no-op while PUBLIC holds the privilege (20260815 said so about one function and the lesson stayed local). Nothing leaked: every one starts with `require_admin()` or an `auth.uid()` check. But the grants probe had enumerated relations since 08-16 and never asked the same question of functions, so the surface was one forgotten `require_admin()` away from mattering. Migration 20260902000001 revokes from PUBLIC and anon on all 41 and grants `authenticated` on the 34 client RPCs explicitly (trigger functions get nothing; Postgres checks EXECUTE at CREATE TRIGGER, not on fire). Four new enumerating checks, red first (299 across 12). Rule for the file: **`revoke from anon` without `revoke from public` is decoration.**
 
 
 - **2026-08-16** — **Tara's copy, the "?" explainer, and a diagnosable CI.** `docs/copy.md` finally exists: `CLAUDE.md` has pointed at it since the repo was created, which is exactly why clinic descriptions were invented placeholders for three weeks. It carries her verbatim text for **105** (a fast-paced doubles format, undefined anywhere until she explained it, and the answer to the one blocking question from `docs/taras-real-week.md`), Ladies 3.0+, All-Level Ladies, All-Level Men's, and a new **FXE Queen City Team Ladies Practice**. Built her own suggestion: a "?" on every clinic card opening an explainer, with the 105 definition appended when the name **or** category matches. Two deliberate non-fixes recorded: the two All-Level descriptions are identical apart from an exclamation mark and are *not* merged into a shared string, and Queen City's "team players only" is **not enforced**, because there is no team concept in the schema and inventing one is a schema decision, not a copy one.

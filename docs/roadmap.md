@@ -29,7 +29,7 @@ handwritten court sheet. Nothing more.
 | ✅ | Court assignment 1–5, admin only |
 | ✅ | Clinic messages with audience targeting |
 | ✅ | News with audience and unread tracking |
-| ✅ | Automated SQL probe suite + a concurrency probe (the suite prints its own total; 295 checks across 12 probes as of 2026-09-01), green in CI on every push |
+| ✅ | Automated SQL probe suite + a concurrency probe (the suite prints its own total; 299 checks across 12 probes as of 2026-09-01), green in CI on every push |
 
 ### iOS app 🔨
 
@@ -63,7 +63,7 @@ itself the finding.
 
 | | |
 |---|---|
-| ✅ | SQL probe suite: 12 probes (295 checks as of 2026-09-01 — the suite prints its own total), plus the concurrency probe. Green in CI on every push |
+| ✅ | SQL probe suite: 12 probes (299 checks as of 2026-09-01 — the suite prints its own total), plus the concurrency probe. Green in CI on every push |
 | ✅ | Unit tests: 13, covering the pure logic the probes cannot see (price formatting, member rate selection, NTRP bucketing) |
 | ✅ | XCUITests: **5 of 5 green** as of 2026-08-15, including a sign-up regression test |
 
