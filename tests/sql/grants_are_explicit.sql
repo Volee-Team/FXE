@@ -167,6 +167,55 @@ where not exists (
     and not exists (select 1 from unnest(coalesce(p.proconfig, '{}')) c where c like 'search_path=%')
 );
 
+-- ------------------------------------------------------ function grants
+-- Added 2026-09-01, the day the count was 30 of 41 functions executable by
+-- anon. Postgres gives PUBLIC EXECUTE on every new function, and "revoke from
+-- anon" alone is a no-op while PUBLIC still holds it. The same enumerate-
+-- everything approach as the relation checks above: a function added next
+-- month is covered before anyone remembers to add it here.
+
+-- 1. anon can call nothing. There is no anonymous feature in this product.
+insert into _probe_result
+select 'anon_executes_no_public_function', '',
+       coalesce(string_agg(p.proname, ', ' order by p.proname), '')
+from pg_proc p
+join pg_namespace n on n.oid = p.pronamespace and n.nspname = 'public'
+where p.prokind = 'f' and has_function_privilege('anon', p.oid, 'EXECUTE');
+
+-- 2. PUBLIC holds EXECUTE on nothing. A null proacl means "default", and the
+--    default is PUBLIC EXECUTE, so null counts as open.
+insert into _probe_result
+select 'public_role_holds_execute_on_no_function', '',
+       coalesce(string_agg(p.proname, ', ' order by p.proname), '')
+from pg_proc p
+join pg_namespace n on n.oid = p.pronamespace and n.nspname = 'public'
+where p.prokind = 'f'
+  and (p.proacl is null
+       or exists (select 1 from aclexplode(p.proacl) a
+                  where a.grantee = 0 and a.privilege_type = 'EXECUTE'));
+
+-- 3. Internal helpers stay internal: they only run inside other SECURITY
+--    DEFINER functions, as the owner, and a client has no business calling them.
+insert into _probe_result
+select 'internal_helpers_not_callable_by_clients', '',
+       coalesce(string_agg(p.proname, ', ' order by p.proname), '')
+from pg_proc p
+join pg_namespace n on n.oid = p.pronamespace and n.nspname = 'public'
+where p.proname in ('admin_account_ids', 'notify_account')
+  and has_function_privilege('authenticated', p.oid, 'EXECUTE');
+
+-- 4. TOO NARROW, the other direction: every function a signed-in client may
+--    call is granted explicitly, so a CLI upgrade cannot take it away again.
+insert into _probe_result
+select 'every_client_rpc_callable_by_authenticated', '',
+       coalesce(string_agg(p.proname, ', ' order by p.proname), '')
+from pg_proc p
+join pg_namespace n on n.oid = p.pronamespace and n.nspname = 'public'
+where p.prokind = 'f'
+  and p.prorettype <> 'trigger'::regtype
+  and p.proname not in ('admin_account_ids', 'notify_account')
+  and not has_function_privilege('authenticated', p.oid, 'EXECUTE');
+
 select
   check_name,
   expected,
