@@ -36,7 +36,11 @@ final class AdminClinicModel {
     let clinic: ClinicAdmin
     init(clinic: ClinicAdmin) { self.clinic = clinic }
 
-    var youreIn: [RosterEntry] { roster.filter { $0.registration.status == .in_ } }
+    /// Court order, no court last: the list IS her court sheet.
+    var youreIn: [RosterEntry] {
+        roster.filter { $0.registration.status == .in_ }
+            .sorted { ($0.registration.courtNumber ?? 99, $0.displayName) < ($1.registration.courtNumber ?? 99, $1.displayName) }
+    }
     var pool: [RosterEntry] { roster.filter { $0.registration.status == .pool } }
     var responseNeeded: [RosterEntry] { roster.filter { $0.registration.status == .responseNeeded } }
     var canceled: [RosterEntry] { roster.filter { $0.registration.status == .canceled } }
@@ -80,6 +84,8 @@ struct AdminClinicDetailView: View {
     let clinic: ClinicAdmin
     @State private var model: AdminClinicModel
     @State private var showMessage = false
+    @State private var confirmRemind = false
+    @State private var remindNote: String?
 
     init(clinic: ClinicAdmin) {
         self.clinic = clinic
@@ -103,7 +109,7 @@ struct AdminClinicDetailView: View {
                     rosterSection(
                         Brand.Status.youreIn, model.youreIn,
                         empty: "Nobody is in yet."
-                    ) { entry in AnyView(paidToggle(entry)) }
+                    ) { entry in AnyView(HStack(spacing: Brand.Spacing.xs) { courtMenu(entry); paidToggle(entry) }) }
 
                     rosterSection(
                         Brand.Status.playerPool, model.pool,
@@ -164,6 +170,47 @@ struct AdminClinicDetailView: View {
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("admin.messagePlayers")
+
+            // One tap plus a confirmation: it messages several people at once,
+            // and a mis-tap standing courtside should not do that.
+            if model.unpaidCount > 0 {
+                Button {
+                    confirmRemind = true
+                } label: {
+                    Label("Remind unpaid (\(model.unpaidCount))", systemImage: "bell")
+                        .font(Brand.Typography.button)
+                        .frame(maxWidth: .infinity)
+                        .frame(minHeight: Brand.Layout.comfortableTapTarget)
+                        .foregroundStyle(Brand.navy)
+                        .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.sm))
+                        .overlay(RoundedRectangle(cornerRadius: Brand.Radius.sm).stroke(Brand.navy, lineWidth: Brand.Layout.borderWidth))
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("admin.remindUnpaid")
+                .confirmationDialog(
+                    "Send a payment reminder to \(model.unpaidCount) unpaid?",
+                    isPresented: $confirmRemind, titleVisibility: .visible
+                ) {
+                    Button("Send reminder") {
+                        Task {
+                            do {
+                                try await AdminRepository.remindUnpaid(clinic: clinic)
+                                remindNote = "Reminder sent to \(model.unpaidCount)."
+                            } catch {
+                                remindNote = "The reminder didn't send. Check your connection and try again."
+                            }
+                        }
+                    }
+                    Button("Cancel", role: .cancel) {}
+                }
+            }
+
+            if let remindNote {
+                Text(remindNote)
+                    .font(Brand.Typography.caption)
+                    .foregroundStyle(Brand.textSecondary)
+                    .accessibilityIdentifier("admin.remindNote")
+            }
         }
     }
 
@@ -302,6 +349,33 @@ struct AdminClinicDetailView: View {
     }
 
     // MARK: - Row actions
+
+    /// Court 1-5 or none. A menu, not a picker wheel: one tap opens, one tap
+    /// chooses, standing courtside. The label always shows the current value so
+    /// the roster reads as her court sheet without opening anything.
+    private func courtMenu(_ entry: RosterEntry) -> some View {
+        let current = entry.registration.courtNumber
+        return Menu {
+            Button("No court") { assign(entry, nil) }
+            ForEach(1...5, id: \.self) { n in
+                Button("Court \(n)") { assign(entry, n) }
+            }
+        } label: {
+            Label(current.map { "Court \($0)" } ?? "Court", systemImage: "rectangle.split.2x1")
+                .font(Brand.Typography.chip)
+                .foregroundStyle(current == nil ? Brand.textSecondary : Brand.navy)
+                .frame(minHeight: Brand.Layout.minTapTarget)
+        }
+        .disabled(model.busy.contains(entry.id))
+        .accessibilityIdentifier("admin.court")
+        .accessibilityLabel("\(entry.displayName), \(current.map { "court \($0)" } ?? "no court"). Tap to change.")
+    }
+
+    private func assign(_ entry: RosterEntry, _ court: Int?) {
+        Task { await model.perform(entry.id) {
+            try await AdminRepository.assignCourt(registration: entry.id, court: court)
+        } }
+    }
 
     private func paidToggle(_ entry: RosterEntry) -> some View {
         let paid = entry.registration.paid
