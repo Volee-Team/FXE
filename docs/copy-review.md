@@ -37,6 +37,7 @@ mine until Alex ticks them. Nothing here is attributed to Tara.
 | ☐ | **Just a reminder that {clinic} ({date}) hasn't been paid yet. {Tara's payment line} Thanks!** | The reminder players receive. Sent in Tara's name, so this one matters most. Her payment line is her own text from the database |
 | ☐ | This week · Next week · Week of {date} | Clinic list headers, iOS |
 | ☐ | Notifications · Nothing yet. · Mark all read · Done · Couldn't load notifications. Pull to try again. | Notification center, iOS |
+| ☐ | Edit details · Set by Tara · Save · Cancel · Saving… | Profile editing, iOS |
 | ☐ | Players · Search by name · Show inactive players · Type at least two letters of a name. · Make member · Make non-member · Deactivate · Reactivate · Note · Save note · Private note · Only you can see this. · Saved. · Has a note · Couldn't search right now. Check your connection and try again. | Player directory, web and iOS |
 
 ---

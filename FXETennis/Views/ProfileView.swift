@@ -11,6 +11,7 @@ import SwiftUI
 struct ProfileView: View {
     @Environment(SessionStore.self) private var session
     @State private var showNTRP = false
+    @State private var editing = false
 
     var body: some View {
         NavigationStack {
@@ -20,6 +21,19 @@ struct ProfileView: View {
                     VStack(alignment: .leading, spacing: Brand.Spacing.lg) {
                         header
                         detailsCard
+
+                        Button {
+                            editing = true
+                        } label: {
+                            Text("Edit details")
+                                .font(Brand.Typography.button)
+                                .frame(maxWidth: .infinity)
+                                .frame(minHeight: Brand.Layout.comfortableTapTarget)
+                                .foregroundStyle(Brand.textOnNavy)
+                                .background(Brand.navy, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("profile.edit")
                         // Identifier on the BUTTON, not on the Text inside it.
                         // Set on the label, it lands on the inner static text
                         // and `app.buttons["profile.signOut"]` matches nothing,
@@ -51,6 +65,7 @@ struct ProfileView: View {
                 }
             }
             .sheet(isPresented: $showNTRP) { NTRPExplainerSheet() }
+            .sheet(isPresented: $editing) { EditProfileView() }
         }
     }
 

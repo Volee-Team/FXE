@@ -44,7 +44,7 @@ whenever you touch it.
 |---|---|
 | ✅ | Xcode project, brand tokens from Tara's palette, the gator mark, **and the app icon** (real crossed-racquets mark on navy, 2026-08-16; CI fails if it ever goes missing) |
 | ✅ | Sign in AND sign up (2026-08-15): profile screen with Tara's Screen-4 copy, `create_my_account`, `.needsProfile` routing, sign-up regression UI test |
-| 🔨 | Profile: populated after sign-up, NTRP "?" explainer done. Still read-only after creation — a player cannot edit their own details yet |
+| ✅ | Profile: populated after sign-up, NTRP "?" explainer, and **Edit details** (2026-09-02): name, phone, rating. Membership stays Tara's to correct |
 | 🔨 | Browse clinics: "Registration opens" state ✅, date floor ✅ (2026-08-28, finished clinics vanish), **closed state with "Message Tara"** ✅, **week grouping** ✅ (2026-09-01, This week / Next week / Week of …). The one-month horizon is still not built |
 | ✅ | Clinic details: name, day, time, price for *this* player, description, Zelle/Venmo line, message board |
 | ✅ | Register / Cancel / Leave Player Pool |
