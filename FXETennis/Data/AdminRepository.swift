@@ -27,6 +27,25 @@ import Supabase
 // MARK: - RPC parameter encodables
 
 private struct RegistrationParam: Encodable { let p_registration: UUID }
+/// `p_court` must be sent as an explicit JSON null when clearing a court.
+/// Swift's synthesized Encodable OMITS a nil optional, which makes PostgREST
+/// look for assign_court(p_registration) and answer 404 "function not found".
+/// That 404 is indistinguishable from a missing deploy (see CLAUDE.md,
+/// 2026-09-01), so the null is written by hand here.
+private struct AssignCourtParams: Encodable {
+    let p_registration: UUID
+    let p_court: Int?
+
+    enum CodingKeys: String, CodingKey { case p_registration, p_court }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(p_registration, forKey: .p_registration)
+        if let court = p_court { try c.encode(court, forKey: .p_court) }
+        else { try c.encodeNil(forKey: .p_court) }
+    }
+}
+
 private struct SetPaidParams: Encodable {
     let p_registration: UUID
     let p_paid: Bool
@@ -226,6 +245,16 @@ enum AdminRepository {
             .execute()
     }
 
+    /// Court 1-5, or nil for no court. This is Tara's court sheet: the value
+    /// is hers to change at any time and it is not a state transition, so the
+    /// RPC is an unconditional last-write-wins update by design
+    /// (docs/web-admin.md section 4).
+    static func assignCourt(registration: UUID, court: Int?) async throws {
+        _ = try await supabase
+            .rpc("assign_court", params: AssignCourtParams(p_registration: registration, p_court: court))
+            .execute()
+    }
+
     /// Put a player straight into a clinic without them using the app.
     ///
     /// Tara asked for this in `for-tara.md` question 3: "Someone calls you, or
@@ -247,6 +276,21 @@ enum AdminRepository {
                 p_clinic: clinic, p_audience: audience.rawValue, p_body: body
             ))
             .execute()
+    }
+
+    /// One tap, one reminder to everyone in You're In! who has not paid. The
+    /// body is built from things Tara owns: the clinic name, its date, and her
+    /// own payment line (`payment_instructions()`). The connective words are
+    /// ours and sit in docs/copy-review.md until Alex ticks them. Audience
+    /// 'unpaid' is resolved server-side, so the recipient list is the database's,
+    /// not this screen's. Web admin sends the identical sentence.
+    static func remindUnpaid(clinic: ClinicAdmin) async throws {
+        // Tara's payment line has no closing period; give it one so the sentences read.
+        var paymentLine = try await ProfileRepository.paymentInstructions().trimmingCharacters(in: .whitespacesAndNewlines)
+        if let last = paymentLine.last, !".!?".contains(last) { paymentLine += "." }
+        let when = clinic.startsAt.formatted(date: .abbreviated, time: .shortened)
+        let body = "Just a reminder that \(clinic.name) (\(when)) hasn't been paid yet. \(paymentLine) Thanks!"
+        try await sendMessage(clinic: clinic.id, audience: .unpaid, body: body)
     }
 
     /// Forgiving name search. "Ann" returns Anna, Ann, Annette and Joann, per

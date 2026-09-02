@@ -64,6 +64,7 @@
   dialog::backdrop { background: rgba(22,38,76,.45); }
   .hide { display: none !important; }
   .signin { max-width: 380px; margin: 12vh auto; }
+select.court { width: auto; flex: 0 0 auto; margin: 0; font: inherit; font-size: 13px; padding: 4px 6px; border: 1px solid var(--border, #d8d3c7); border-radius: 6px; background: #fff; color: inherit; }
 </style>
 </head>
 <body>
@@ -220,6 +221,26 @@ const STATUS = {
 const fmtDate = (iso) => new Date(iso).toLocaleString(undefined,
   { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 const money = (c) => c == null ? "" : "$" + (c % 100 === 0 ? c / 100 : (c / 100).toFixed(2));
+// Court 1-5 or unassigned, the same values assign_court accepts. A dropdown
+// rather than drag-and-drop on purpose: docs/web-admin.md section 4 says the
+// dropdown is the path that ships first and stays as the keyboard path.
+const COURTS = [1, 2, 3, 4, 5];
+
+// One-tap unpaid reminder. The body is assembled from things Tara owns: the
+// clinic name, its date, and her own payment line from payment_instructions().
+// The connective words are ours and sit in docs/copy-review.md until Alex ticks
+// them. Audience 'unpaid' is resolved server-side by send_clinic_message.
+let clinicIndex = {};
+let regsByClinic = {};
+const unpaidIn = (c) => (regsByClinic[c.id] || []).filter(r => r.status === "in" && !r.paid);
+// Tara's payment line has no closing period; give it one so the sentences read.
+const endSentence = (t) => /[.!?]$/.test(t.trim()) ? t.trim() : t.trim() + ".";
+const reminderBody = (c, paymentLine) =>
+  `Just a reminder that ${c.name} (${fmtDate(c.starts_at)}) hasn't been paid yet. ${endSentence(paymentLine)} Thanks!`;
+const courtSelect = (r) => `<select class="court" data-court="${r.id}" aria-label="Court">
+  <option value=""${r.court_number == null ? " selected" : ""}>No court</option>
+  ${COURTS.map(n => `<option value="${n}"${r.court_number === n ? " selected" : ""}>Court ${n}</option>`).join("")}
+</select>`;
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, m =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
 
@@ -354,12 +375,21 @@ async function loadClinics() {
   const { data: regs } = await sb.from("registrations_admin").select("*").in("clinic_id", ids);
   const { data: players } = await sb.from("players").select("id,first_name,last_name,is_member,adult_rating");
   const byPlayer = Object.fromEntries((players || []).map(p => [p.id, p]));
+  clinicIndex = Object.fromEntries(clinics.map(c => [c.id, c]));
+  regsByClinic = {};
+  for (const r of (regs || [])) (regsByClinic[r.clinic_id] ||= []).push(r);
   await loadActionNeeded(clinics, byPlayer);
   loadMoney();
 
   $("clinics").innerHTML = clinics.map(c => {
     const mine = (regs || []).filter(r => r.clinic_id === c.id);
-    const group = (s) => mine.filter(r => r.status === s);
+    // You're In! reads in court order, unassigned last, so the list on screen
+    // is her court sheet. Other sections keep registration order.
+    const group = (s) => {
+      const rows = mine.filter(r => r.status === s);
+      if (s !== "in") return rows;
+      return rows.sort((a, b) => (a.court_number ?? 99) - (b.court_number ?? 99));
+    };
     const section = (s, extra) => {
       const rows = group(s);
       if (!rows.length) return "";
@@ -387,9 +417,10 @@ async function loadClinics() {
         <button class="small" data-edit="${c.id}">Edit</button>
         <button class="small" data-message="${c.id}">Message</button>
         <button class="small" data-walkup="${c.id}">Add player</button>
+        ${unpaidIn(c).length ? `<button class="small" data-remind="${c.id}" data-n="${unpaidIn(c).length}">Remind unpaid (${unpaidIn(c).length})</button>` : ""}
         ${c.status === "draft" ? `<button class="small primary" data-publish="${c.id}">Publish</button>` : ""}
       </div>
-      ${section("in", r => `<button class="small" data-paid="${r.id}" data-now="${r.paid}">${r.paid ? "Paid" : "Unpaid"}</button>`)}
+      ${section("in", r => `${courtSelect(r)}<button class="small" data-paid="${r.id}" data-now="${r.paid}">${r.paid ? "Paid" : "Unpaid"}</button>`)}
       ${section("pool", r => `<button class="small primary" data-invite="${r.id}">Invite</button>`)}
       ${section("response_needed", r => `<button class="small" data-uninvite="${r.id}">Cancel invite</button>`)}
       ${section("canceled", () => "")}
@@ -401,6 +432,19 @@ async function loadClinics() {
 // patching the DOM: the server decides the resulting status (a player accepting
 // while Tara invites is a real race), so guessing locally would show her a state
 // the database disagrees with.
+document.addEventListener("change", async (e) => {
+  const sel = e.target.closest("select[data-court]"); if (!sel) return;
+  sel.disabled = true;
+  try {
+    const { error } = await sb.rpc("assign_court", {
+      p_registration: sel.dataset.court,
+      p_court: sel.value === "" ? null : Number(sel.value),
+    });
+    if (error) throw error;
+    await loadClinics();
+  } catch (err) { note($("msg"), friendly(err)); sel.disabled = false; }
+});
+
 document.addEventListener("click", async (e) => {
   const b = e.target.closest("button"); if (!b) return;
   const run = async (fn) => {
@@ -417,6 +461,19 @@ document.addEventListener("click", async (e) => {
   if (b.dataset.uninvite) return run(() => call("cancel_invitation",  { p_registration: b.dataset.uninvite }));
   if (b.dataset.paid)     return run(() => call("set_paid", { p_registration: b.dataset.paid, p_paid: b.dataset.now !== "true" }));
   if (b.dataset.publish)  return run(() => call("publish_clinic",     { p_clinic: b.dataset.publish }));
+  if (b.dataset.remind)   {
+    // run() reloads the page state, which clears #msg, so the confirmation is
+    // written after the reload rather than inside the action.
+    let sent = false;
+    await run(async () => {
+      const c = clinicIndex[b.dataset.remind];
+      const { data: paymentLine, error } = await sb.rpc("payment_instructions"); if (error) throw error;
+      await call("send_clinic_message", { p_clinic: c.id, p_audience: "unpaid", p_body: reminderBody(c, paymentLine || "") });
+      sent = true;
+    });
+    if (sent) note($("msg"), `Reminder sent to ${b.dataset.n}.`, true);
+    return;
+  }
   if (b.dataset.approve)  return run(() => call("resolve_late_request", { p_request: b.dataset.approve, p_approve: true }));
   if (b.dataset.decline)  return run(() => call("resolve_late_request", { p_request: b.dataset.decline, p_approve: false }));
   if (b.dataset.seen)     return run(async () => {

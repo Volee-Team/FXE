@@ -32,6 +32,9 @@ mine until Alex ticks them. Nothing here is attributed to Tara.
 | ☐ | N asking to get in after close · N cancellations or replies to see | Action Needed rows, iOS |
 | ☐ | That clinic is full now. · Someone already handled that one. | Web, when approving a late request fails |
 | ☐ | Members, 60 min · Members, 90 min · Non-members, 60 min · Non-members, 90 min · Expected · Collected · Still owed · Couldn't load the numbers. | Money panel, web |
+| ☐ | No court · Court 1 … Court 5 · Court | Court dropdown, web and iOS |
+| ☐ | Remind unpaid (N) · Send a payment reminder to N unpaid? · Send reminder · Reminder sent to N. · The reminder didn't send. Check your connection and try again. | Unpaid reminder button, web and iOS |
+| ☐ | **Just a reminder that {clinic} ({date}) hasn't been paid yet. {Tara's payment line} Thanks!** | The reminder players receive. Sent in Tara's name, so this one matters most. Her payment line is her own text from the database |
 
 ---
 

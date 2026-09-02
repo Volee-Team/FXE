@@ -21,6 +21,8 @@ Clinic updates come through the app. Keep notifications on so you don't miss the
 Clinics
 Couldn't load the numbers.
 Couldn't reach the server. Check your connection.
+Court
+Court \(n)
 Date &amp; time
 Decline
 Description (players see this under the “?”)
@@ -53,6 +55,7 @@ Message players
 Need Help?
 New password
 No clinics yet. Use “New clinic” to add your first one.
+No court
 No description yet.
 No room
 Nobody by that name yet. They may need to sign up in the app first.
@@ -70,10 +73,12 @@ Registration has closed for this clinic.
 Registration open
 Registration opens \(openMoment.formatted(.dateTime.month(.abbreviated).day()))
 Registration opens \(openMoment.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day().hour().minute()))
+Remind unpaid (\(model.unpaidCount))
 Response Needed
 Save password
 Saved. You can sign in with it now, on your phone or here.
 Search by name
+Send reminder
 She will let you know if there is room.
 Sign Out
 Sign out
