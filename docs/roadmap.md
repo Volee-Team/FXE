@@ -97,7 +97,7 @@ her email to admin, so the bootstrap is entirely hers.
 | ✅ | **Court dropdown on every roster row** (2026-09-01), web and iOS, re-arrangeable any time. You're In! reads in court order, so the list is the court sheet. `assign_court` had waited since July for a caller |
 | ✅ | **One-tap unpaid reminder** (2026-09-01), web and iOS. Body is the clinic name, its date and Tara's own payment line; the audience is resolved server-side. The connective words await Alex's tick in `docs/copy-review.md` |
 | ✅ | **Money** (2026-09-01): the four numbers, expected / collected / still owed, and a per-clinic line. Web only; `revenue_summary()` + `revenue_by_clinic()` |
-| ⬜ | Player directory with forgiving search, private notes |
+| ✅ | **Player directory** (2026-09-01), web and iOS: forgiving search, private notes, membership correction, deactivate/reactivate. Notes travel only through admin-only RPCs (20260902000002, 14-check probe, red first) |
 | ✅ | **Action Needed** (2026-09-01): late requests with Put them in / No room, and unread cancellations and invitation replies with Seen. Web and iOS (iOS shows late requests on the roster) |
 | ✅ | **Forgot password?** (2026-09-01) on both sign-in screens, landing on `web/reset.html`. Works on hosted only once the reset URL is in Supabase Auth → URL Configuration (Alex, dashboard) |
 

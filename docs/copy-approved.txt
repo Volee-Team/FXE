@@ -37,6 +37,7 @@ FXE Tennis — Reset password
 First time? Create your account
 For someone who called or grabbed you at the club. They go straight to You&rsquo;re In!
 Forgot password?
+Has a note
 Home
 Invite
 Invite \(entry.displayName)
@@ -62,12 +63,17 @@ Nobody by that name yet. They may need to sign up in the app first.
 Non-members, 60 min
 Non-members, 90 min
 Nothing open right now.
+Only you can see this.
 Optional. Tara can set this for you later.
 Pick something you'll remember. At least 8 characters.
+Player
+Players
+Private note
 Profile
 Put in clinic
 Put them in
 Rating Guide
+Rating \(bucket.label)
 Register
 Registration has closed for this clinic.
 Registration open
@@ -75,9 +81,11 @@ Registration opens \(openMoment.formatted(.dateTime.month(.abbreviated).day()))
 Registration opens \(openMoment.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day().hour().minute()))
 Remind unpaid (\(model.unpaidCount))
 Response Needed
+Save note
 Save password
 Saved. You can sign in with it now, on your phone or here.
 Search by name
+Search players by name
 Send reminder
 She will let you know if there is room.
 Sign Out
@@ -96,6 +104,7 @@ This clinic has been canceled.
 This link has expired or was already used. Go back and request a new one.
 Those don’t match.
 To
+Type at least two letters of a name.
 Type it again
 USTA \(level.label)
 View All Clinics

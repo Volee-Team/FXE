@@ -45,6 +45,10 @@ private struct AssignCourtParams: Encodable {
         else { try c.encodeNil(forKey: .p_court) }
     }
 }
+private struct PlayerParam: Encodable { let p_player: UUID }
+private struct NoteParams: Encodable { let p_player: UUID; let p_body: String }
+private struct MembershipParams: Encodable { let p_player: UUID; let p_is_member: Bool }
+private struct ActiveParams: Encodable { let p_player: UUID; let p_active: Bool }
 
 private struct SetPaidParams: Encodable {
     let p_registration: UUID
@@ -291,6 +295,39 @@ enum AdminRepository {
         let when = clinic.startsAt.formatted(date: .abbreviated, time: .shortened)
         let body = "Just a reminder that \(clinic.name) (\(when)) hasn't been paid yet. \(paymentLine) Thanks!"
         try await sendMessage(clinic: clinic.id, audience: .unpaid, body: body)
+    }
+
+    // MARK: - Player directory (20260902000002)
+    //
+    // Everything Tara does to a PERSON rather than a registration. Notes are
+    // one of the nine hidden facts: read and written only through admin-only
+    // RPCs, never through a view a player could reach.
+
+    static func playerNote(_ player: UUID) async throws -> String {
+        try await supabase
+            .rpc("admin_player_note", params: PlayerParam(p_player: player))
+            .execute()
+            .value
+    }
+
+    static func setPlayerNote(_ player: UUID, body: String) async throws {
+        _ = try await supabase
+            .rpc("admin_set_player_note", params: NoteParams(p_player: player, p_body: body))
+            .execute()
+    }
+
+    /// Membership is self-reported at sign-up; this is Tara's correction
+    /// (for-tara.md question 5). It decides the head-start window and the rate.
+    static func setMembership(_ player: UUID, isMember: Bool) async throws {
+        _ = try await supabase
+            .rpc("admin_set_membership", params: MembershipParams(p_player: player, p_is_member: isMember))
+            .execute()
+    }
+
+    static func setActive(_ player: UUID, isActive: Bool) async throws {
+        _ = try await supabase
+            .rpc("set_player_active", params: ActiveParams(p_player: player, p_active: isActive))
+            .execute()
     }
 
     /// Forgiving name search. "Ann" returns Anna, Ann, Annette and Joann, per

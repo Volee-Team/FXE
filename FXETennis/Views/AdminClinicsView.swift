@@ -118,6 +118,19 @@ struct AdminClinicsView: View {
                 .refreshable { await model.load() }
             }
             .navigationTitle("Clinics")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        PlayersDirectoryView()
+                    } label: {
+                        // Icon plus word: the toolbar would otherwise show the
+                        // icon alone (CLAUDE.md: icons always paired with text).
+                        Label("Players", systemImage: "person.2")
+                            .labelStyle(.titleAndIcon)
+                    }
+                    .accessibilityIdentifier("admin.players")
+                }
+            }
         }
         .task { await model.load() }
     }
