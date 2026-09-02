@@ -21,6 +21,8 @@ import SwiftUI
 struct HomeView: View {
     @Environment(SessionStore.self) private var session
     @State private var model = ClinicsViewModel()
+    @State private var showNotifications = false
+    @State private var unread = 0
 
     private var isMember: Bool { session.activePlayer?.isMember ?? false }
 
@@ -31,14 +33,18 @@ struct HomeView: View {
         model.clinics.filter { model.myRegistrationsByClinic[$0.id] == nil && !$0.isCanceled }
     }
 
+    private func refreshUnread() async {
+        unread = (try? await NotificationRepository.unreadCount()) ?? unread
+    }
+
     var body: some View {
         NavigationStack {
             ZStack(alignment: .top) {
                 Brand.surface.ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    NavyHeaderBar(title: greetingText)
-                        .accessibilityIdentifier("home.greeting")
+                    NavyHeaderBar(title: greetingText, unread: unread, onBell: { showNotifications = true },
+                                  titleIdentifier: "home.greeting")
 
                     ScrollView {
                         VStack(alignment: .leading, spacing: Brand.Spacing.lg) {
@@ -76,8 +82,11 @@ struct HomeView: View {
                 }
             }
             .navigationBarHidden(true)
-            .task { await model.load() }
-            .refreshable { await model.load() }
+            .task { await model.load(); await refreshUnread() }
+            .refreshable { await model.load(); await refreshUnread() }
+            .sheet(isPresented: $showNotifications, onDismiss: { Task { await refreshUnread() } }) {
+                NotificationsView { Task { await refreshUnread() } }
+            }
         }
     }
 
@@ -125,23 +134,47 @@ struct HomeView: View {
 struct NavyHeaderBar: View {
     let title: String
     var showsBell: Bool = true
+    /// Unread count for the badge; the bell is a button only when `onBell` is set.
+    var unread: Int = 0
+    var onBell: (() -> Void)? = nil
+    /// Identifier for the title text (Home passes "home.greeting"). It has to
+    /// sit on the Text, not the bar: once the bar held a button, SwiftUI
+    /// merged the whole bar into one button labelled by the bell, which broke
+    /// the greeting query AND made `app.buttons["Profile"]` match the Profile
+    /// screen's own header instead of the tab (found by the UI tests, 09-02).
+    var titleIdentifier: String? = nil
 
     var body: some View {
         HStack {
             Text(title)
                 .font(Brand.Typography.bodyEmphasis)
                 .foregroundStyle(Brand.textOnNavy)
+                .accessibilityIdentifier(titleIdentifier ?? "")
             Spacer()
             if showsBell {
-                Image(systemName: "bell")
-                    .font(.system(size: 17, weight: .medium))
-                    .foregroundStyle(Brand.textOnNavy)
+                Button {
+                    onBell?()
+                } label: {
+                    ZStack(alignment: .topTrailing) {
+                        Image(systemName: unread > 0 ? "bell.badge" : "bell")
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundStyle(Brand.textOnNavy)
+                            .symbolRenderingMode(.palette)
+                            .foregroundStyle(Brand.accent, Brand.textOnNavy)
+                    }
+                    .frame(minWidth: Brand.Layout.minTapTarget, minHeight: Brand.Layout.minTapTarget)
+                }
+                .buttonStyle(.plain)
+                .disabled(onBell == nil)
+                .accessibilityIdentifier("home.bell")
+                .accessibilityLabel(unread > 0 ? "Notifications, \(unread) unread" : "Notifications")
             }
         }
         .padding(.horizontal, Brand.Spacing.pageMargin)
         .padding(.vertical, Brand.Spacing.md)
         .frame(maxWidth: .infinity)
         .background(Brand.navy)
+        .accessibilityElement(children: .contain)
     }
 }
 

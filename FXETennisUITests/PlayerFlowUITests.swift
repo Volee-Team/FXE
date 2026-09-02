@@ -254,6 +254,40 @@ final class PlayerFlowUITests: XCTestCase {
                         "No price rendered for the new user, so their profile is not reaching the clinic list")
     }
 
+    // MARK: - the bell
+
+    /// The bell opens the notification center, rows are the seeded messages,
+    /// and reading them clears the badge. Read state lives in the database,
+    /// so the assertion at the end is that the bell's own label changed.
+    func testPlayerCanReadNotificationsFromTheBell() {
+        app.launch()
+        signIn(as: memberEmail)
+
+        let bell = app.buttons["home.bell"]
+        XCTAssertTrue(bell.waitForExistence(timeout: 20), "Home bell never appeared. Buttons on screen: \(app.buttons.allElementsBoundByIndex.map { "\($0.identifier)|\($0.label)" })")
+        bell.tap()
+
+        let rows = app.buttons.matching(identifier: "notifications.row")
+        XCTAssertTrue(rows.firstMatch.waitForExistence(timeout: 20),
+                      "No notification rows: the seed has two for Maria")
+        XCTAssertGreaterThanOrEqual(rows.count, 2)
+
+        let markAll = app.buttons["notifications.markAllRead"]
+        XCTAssertTrue(markAll.waitForExistence(timeout: 10))
+        if markAll.isEnabled {
+            markAll.tap()
+            // Disabled once nothing is unread: the database said so, not the view.
+            let cleared = NSPredicate(format: "isEnabled == false")
+            expectation(for: cleared, evaluatedWith: markAll)
+            waitForExpectations(timeout: 10)
+        }
+
+        app.buttons["notifications.done"].tap()
+        XCTAssertTrue(bell.waitForExistence(timeout: 10))
+        XCTAssertEqual(bell.label, "Notifications",
+                       "Bell still reports unread after Mark all read: '\(bell.label)'")
+    }
+
     // MARK: - pricing, which is money and therefore worth a UI test
 
     /// The same clinic must quote different prices to a member and a non-member.
