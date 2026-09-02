@@ -47,18 +47,15 @@ Nothing. Every question she has been asked is answered (2026-09-01).
 
 ## Blocked on nothing: what to build
 
-1. **Web admin** — the way Tara sees this NOW, with no Apple account involved.
-   Already an accepted ADR (`docs/web-admin.md`), approved by her as the laptop
-   half of a split admin surface. Hosted free, talks to the same Supabase.
-2. **Clinic and template CRUD** — the one remaining piece needing new backend.
-   She asked directly: *"show me how I can easily change the schedule within the
-   app as the super admin."* Today nothing can create or edit a clinic from any
-   client, and `clinic_templates` has no write path at all.
-3. **Tara's real admin account and clinics in hosted.** ~~Blocked~~ UNBLOCKED
-   2026-09-01: hosted now has every migration, the web admin is live at
-   `fxe-tennis-admin.vercel.app`, and her email self-promotes to admin on
-   sign-up. The remaining step is HERS: open the site, Create account, build
-   the week from templates.
+Done since the last edit (2026-09-01, all merged and live): web admin, clinic
+and template CRUD, Action Needed, Money, password reset, court dropdowns,
+one-tap unpaid reminder, player directory with private notes, the anon
+EXECUTE lockdown, and the first real nightly backup artifact.
+
+1. **Tara's real clinics in hosted.** Hers to create at
+   `fxe-tennis-admin.vercel.app`; asked 2026-09-01.
+2. **Week grouping on the clinic list** (player side): the list is flat.
+3. **`docs/architecture.md` rewrite** from the live schema and file tree.
 4. **Push notifications** — zero code anywhere. `supabase/functions/` is empty.
 5. **Crash reporting** — none, before real members are on it.
 6. **Privacy policy + account deletion** — required before children's data in v1.1.
