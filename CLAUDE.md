@@ -624,6 +624,8 @@ gets written down rather than silently resolved.
 
 ## Where things are written down
 
+- `docs/feature-review-2026-09-02.md` — every screen walked after the 09-02 merges; one finding per line with the change to make and a severity. The UI-testing pass targets its coverage table.
+
 Chat is not memory. Every session ends and takes its context with it. If it
 matters and it is not in the repo, it is gone.
 
