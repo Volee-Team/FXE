@@ -34,10 +34,17 @@ enum ClinicRepository {
     /// Every published or canceled clinic, soonest first. The month-ahead
     /// schedule filters this list by date in the view model; the server sends
     /// the whole published set, which is small.
+    /// Published clinics from now to five weeks out. The view already drops
+    /// finished clinics (the 2026-08-28 floor); this is the other edge, so a
+    /// season Tara publishes in bulk does not become one endless scroll. Five
+    /// weeks is this week plus a month, which is as far ahead as registration
+    /// windows make anything actionable (decision 0001).
     static func upcoming() async throws -> [ClinicPublic] {
-        try await supabase
+        let horizon = Calendar.current.date(byAdding: .day, value: 35, to: .now) ?? .now
+        return try await supabase
             .from("clinics_public")
             .select()
+            .lte("starts_at", value: ISO8601DateFormatter().string(from: horizon))
             .order("starts_at", ascending: true)
             .execute()
             .value

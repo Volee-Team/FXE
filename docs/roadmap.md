@@ -45,12 +45,12 @@ whenever you touch it.
 | ✅ | Xcode project, brand tokens from Tara's palette, the gator mark, **and the app icon** (real crossed-racquets mark on navy, 2026-08-16; CI fails if it ever goes missing) |
 | ✅ | Sign in AND sign up (2026-08-15): profile screen with Tara's Screen-4 copy, `create_my_account`, `.needsProfile` routing, sign-up regression UI test |
 | ✅ | Profile: populated after sign-up, NTRP "?" explainer, and **Edit details** (2026-09-02): name, phone, rating. Membership stays Tara's to correct |
-| 🔨 | Browse clinics: "Registration opens" state ✅, date floor ✅ (2026-08-28, finished clinics vanish), **closed state with "Message Tara"** ✅, **week grouping** ✅ (2026-09-01, This week / Next week / Week of …). The one-month horizon is still not built |
+| 🔨 | Browse clinics: "Registration opens" state ✅, date floor ✅ (2026-08-28, finished clinics vanish), **closed state with "Message Tara"** ✅, **week grouping** ✅ (2026-09-01, This week / Next week / Week of …). **five-week horizon** ✅ (2026-09-02) |
 | ✅ | Clinic details: name, day, time, price for *this* player, description, Zelle/Venmo line, message board |
 | ✅ | Register / Cancel / Leave Player Pool |
 | ✅ | Accept or decline an invitation |
 | ✅ | **The bell** (2026-09-02): notification center behind the Home bell, badge from unread count, per-row and mark-all read, state in the database |
-| 🔨 | My Clinics: a three-row section on Home, no dedicated surface, and "View All Clinics" does not go there |
+| ✅ | **My Clinics** (2026-09-02): "View All Clinics" opens a screen of the player's own clinics, grouped by week, each with its status chip; the empty state hands off to the open list |
 | ✅ | **Admin tab** (2026-08-15): Action Needed, rosters, invite from Player Pool, mark paid, message audiences |
 | ✅ | **Late requests** (2026-08-28): registration closes 3h before start; inside the window a player can Message Tara to ask in |
 | ✅ | Confirmation dialogs on all destructive taps (2026-08-28) |
