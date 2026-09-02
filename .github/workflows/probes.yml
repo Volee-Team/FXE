@@ -99,16 +99,27 @@ jobs:
           brew install xcodegen
           xcodegen generate
 
+      # A fixed device name is a coin flip: the macos-15 image ships with a
+      # different simulator set from run to run, and on 2026-09-01 "iPhone 17
+      # Pro" simply was not there ("Unable to find a device matching the
+      # provided destination specifier"). Pick whatever iPhone exists.
+      - name: Pick a simulator
+        run: |
+          UDID=$(xcrun simctl list devices available -j \
+            | python3 -c 'import json,sys; d=json.load(sys.stdin)["devices"]; print(next(x["udid"] for k in sorted(d, reverse=True) for x in d[k] if "iPhone" in x["name"]))')
+          echo "Using simulator $UDID"
+          echo "SIM_UDID=$UDID" >> "$GITHUB_ENV"
+
       - name: Build (Debug)
         run: |
           xcodebuild -project FXETennis.xcodeproj -scheme FXETennis \
-            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+            -destination "platform=iOS Simulator,id=$SIM_UDID" \
             -quiet build
 
       - name: Unit tests
         run: |
           xcodebuild -project FXETennis.xcodeproj -scheme FXETennis \
-            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
+            -destination "platform=iOS Simulator,id=$SIM_UDID" \
             -only-testing:FXETennisTests test
 
       # Release is what TestFlight ships, and it points at the hosted project
