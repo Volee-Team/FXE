@@ -31,10 +31,13 @@ test.describe("sign-in", () => {
   });
 });
 
+// Clinic cards live under #clinics. The Money panel repeats a clinic's name in
+// its own card once anyone is in, which made a bare ".card" locator ambiguous
+// the moment the walk-up test succeeded (strict mode violation, 2026-09-02).
 test.describe("the week", () => {
   test("every seeded clinic shows both prices and a capacity", async ({ page }) => {
     await signIn(page, TARA);
-    const cards = page.locator(".card", { hasText: "member /" });
+    const cards = page.locator("#clinics .card", { hasText: "member /" });
     await expect(cards.first()).toBeVisible();
     expect(await cards.count()).toBeGreaterThanOrEqual(3);
     await expect(cards.first()).toContainText(/\$\d+ member \/ \$\d+ non-member/);
@@ -42,7 +45,7 @@ test.describe("the week", () => {
 
   test("a walk-up can be put straight into a clinic", async ({ page }) => {
     await signIn(page, TARA);
-    const card = page.locator(".card", { hasText: "Thursday Morning Cardio" });
+    const card = page.locator("#clinics .card", { hasText: "Thursday Morning Cardio" });
     await card.getByRole("button", { name: "Add player" }).click();
     const dialog = page.locator("dialog#walkup");
     await dialog.getByLabel("Search by name").fill("Ken");
@@ -57,7 +60,7 @@ test.describe("the week", () => {
 
   test("courts are assigned from the dropdown and the list sorts by court", async ({ page }) => {
     await signIn(page, TARA);
-    const card = page.locator(".card", { hasText: "Thursday Morning Cardio" });
+    const card = page.locator("#clinics .card", { hasText: "Thursday Morning Cardio" });
     const select = card.getByLabel("Court").first();
     await select.selectOption("2");
     await expect(card.getByLabel("Court").first()).toHaveValue("2");
@@ -67,7 +70,7 @@ test.describe("the week", () => {
 
   test("the unpaid reminder goes to everyone unpaid", async ({ page }) => {
     await signIn(page, TARA);
-    const card = page.locator(".card", { hasText: "Thursday Morning Cardio" });
+    const card = page.locator("#clinics .card", { hasText: "Thursday Morning Cardio" });
     await card.getByRole("button", { name: /Remind unpaid/ }).click();
     await expect(page.getByText(/Reminder sent to \d+\./)).toBeVisible();
   });
@@ -97,7 +100,7 @@ test.describe("the directory", () => {
 test.describe("cancel clinic", () => {
   test("takes two clicks and leaves a Canceled chip", async ({ page }) => {
     await signIn(page, TARA);
-    const card = page.locator(".card", { hasText: "Sunday Social" });
+    const card = page.locator("#clinics .card", { hasText: "Sunday Social" });
     const btn = card.getByRole("button", { name: "Cancel clinic" });
     await btn.click();
     await expect(card.getByRole("button", { name: /Really cancel/ })).toBeVisible();
