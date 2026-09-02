@@ -38,6 +38,7 @@ mine until Alex ticks them. Nothing here is attributed to Tara.
 | ☐ | This week · Next week · Week of {date} | Clinic list headers, iOS |
 | ☐ | Notifications · Nothing yet. · Mark all read · Done · Couldn't load notifications. Pull to try again. | Notification center, iOS |
 | ☐ | Edit details · Set by Tara · Save · Cancel · Saving… | Profile editing, iOS |
+| ☐ | Cancel clinic · Really cancel? Everyone is told. · Canceled · Cancel {clinic}? Everyone registered or waiting is told. · Keep the clinic · More · Couldn't cancel · That clinic is already canceled. | Cancel clinic, web and iOS |
 | ☐ | Players · Search by name · Show inactive players · Type at least two letters of a name. · Make member · Make non-member · Deactivate · Reactivate · Note · Save note · Private note · Only you can see this. · Saved. · Has a note · Couldn't search right now. Check your connection and try again. | Player directory, web and iOS |
 
 ---

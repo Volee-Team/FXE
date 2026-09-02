@@ -82,13 +82,20 @@ final class AdminClinicModel {
 
 struct AdminClinicDetailView: View {
     let clinic: ClinicAdmin
+    /// Called after a change the list behind this screen must reflect.
+    let onChanged: () async -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var confirmCancelClinic = false
+    @State private var cancelError: String?
     @State private var model: AdminClinicModel
     @State private var showMessage = false
     @State private var confirmRemind = false
     @State private var remindNote: String?
 
-    init(clinic: ClinicAdmin) {
+    init(clinic: ClinicAdmin, onChanged: @escaping () async -> Void = {}) {
         self.clinic = clinic
+        self.onChanged = onChanged
         _model = State(initialValue: AdminClinicModel(clinic: clinic))
     }
 
@@ -135,6 +142,41 @@ struct AdminClinicDetailView: View {
             .refreshable { await model.load() }
         }
         .navigationTitle(clinic.name)
+        .toolbar {
+            if clinic.status != "canceled" {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Button("Cancel clinic", role: .destructive) { confirmCancelClinic = true }
+                    } label: {
+                        Label("More", systemImage: "ellipsis.circle")
+                    }
+                    .accessibilityIdentifier("admin.more")
+                }
+            }
+        }
+        // Canceling tells everyone in You're In!, the Player Pool and Response
+        // Needed. A confirmation with the consequence spelled out, because a
+        // courtside mis-tap must not send that message.
+        .confirmationDialog(
+            "Cancel \(clinic.name)? Everyone registered or waiting is told.",
+            isPresented: $confirmCancelClinic, titleVisibility: .visible
+        ) {
+            Button("Cancel clinic", role: .destructive) {
+                Task {
+                    do {
+                        try await AdminRepository.cancelClinic(clinic.id)
+                        await onChanged()
+                        dismiss()
+                    } catch {
+                        cancelError = "That didn't save. Check your connection and try again."
+                    }
+                }
+            }
+            Button("Keep the clinic", role: .cancel) {}
+        }
+        .alert("Couldn't cancel", isPresented: Binding(get: { cancelError != nil }, set: { if !$0 { cancelError = nil } })) {
+            Button("OK") { cancelError = nil }
+        } message: { Text(cancelError ?? "") }
         .navigationBarTitleDisplayMode(.inline)
         .task { await model.load() }
         .sheet(isPresented: $showMessage) {

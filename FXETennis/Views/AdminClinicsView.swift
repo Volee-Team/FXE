@@ -196,7 +196,7 @@ struct AdminClinicsView: View {
             } else {
                 ForEach(clinics) { clinic in
                     NavigationLink {
-                        AdminClinicDetailView(clinic: clinic)
+                        AdminClinicDetailView(clinic: clinic, onChanged: { await model.load() })
                     } label: {
                         AdminClinicRow(clinic: clinic, counts: model.rosterCounts[clinic.id])
                     }

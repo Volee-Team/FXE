@@ -50,6 +50,8 @@ private struct NoteParams: Encodable { let p_player: UUID; let p_body: String }
 private struct MembershipParams: Encodable { let p_player: UUID; let p_is_member: Bool }
 private struct ActiveParams: Encodable { let p_player: UUID; let p_active: Bool }
 
+private struct CancelClinicParams: Encodable { let p_clinic: UUID }
+
 private struct SetPaidParams: Encodable {
     let p_registration: UUID
     let p_paid: Bool
@@ -238,6 +240,16 @@ enum AdminRepository {
     static func cancelInvitation(registration: UUID) async throws {
         _ = try await supabase
             .rpc("cancel_invitation", params: RegistrationParam(p_registration: registration))
+            .execute()
+    }
+
+    /// Cancel a clinic. The RPC flips status, stamps canceled_at, and notifies
+    /// everyone in You're In!, the Player Pool and Response Needed; it raises
+    /// already_canceled on a second call, so the UI never double-notifies.
+    /// Archive, never delete (hard rule 4): the row and its registrations stay.
+    static func cancelClinic(_ clinic: UUID) async throws {
+        _ = try await supabase
+            .rpc("cancel_clinic", params: CancelClinicParams(p_clinic: clinic))
             .execute()
     }
 

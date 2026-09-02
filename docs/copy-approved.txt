@@ -13,6 +13,7 @@ Are you currently a Foxcroft East Racquet & Swim Club member?
 Cancel
 Cancel Invite
 Cancel Registration
+Cancel clinic
 Cancel invite
 Cancel the invitation to \(entry.displayName)
 Checking your reset link…
@@ -43,6 +44,7 @@ Home
 Invite
 Invite \(entry.displayName)
 Keep my spot
+Keep the clinic
 Leave Player Pool
 Length (minutes)
 Length must be more than 0 minutes.
@@ -55,6 +57,7 @@ Message
 Message Players
 Message Tara
 Message players
+More
 Need Help?
 New password
 No clinics yet. Use “New clinic” to add your first one.
@@ -78,6 +81,7 @@ Put in clinic
 Put them in
 Rating Guide
 Rating \(bucket.label)
+Really cancel? Everyone is told.
 Register
 Registration has closed for this clinic.
 Registration open
@@ -102,6 +106,7 @@ Start from a template
 Tara has your message.
 Tara uses this to build her clinic lists.
 That account is not an administrator.
+That clinic is already canceled.
 That clinic is full now.
 That didn’t save. Try again.
 That email or password didn't work.
