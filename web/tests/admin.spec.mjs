@@ -47,7 +47,11 @@ test.describe("the week", () => {
     const dialog = page.locator("dialog#walkup");
     await dialog.getByLabel("Search by name").fill("Ken");
     await dialog.getByRole("button", { name: "Put in clinic" }).first().click();
-    await expect(card).toContainText("Ken Whitfield");
+    // The page closes the dialog and reloads every clinic from the server
+    // before the roster shows the new name; on a CI runner that is slower
+    // than the default 5 s expectation.
+    await expect(dialog).toBeHidden({ timeout: 15_000 });
+    await expect(card).toContainText("Ken Whitfield", { timeout: 15_000 });
     await expect(card).toContainText("You're In!");
   });
 
