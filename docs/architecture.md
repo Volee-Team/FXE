@@ -389,10 +389,16 @@ pricing, NTRP buckets, service-week edges) and 5 XCUITests
 member vs non-member prices, hidden information). The UI tests run against the
 local stack and are order-dependent on a fresh seed.
 
+**Web admin**: 8 Playwright tests (`web/tests/admin.spec.mjs`) walk Tara's
+side against a fresh seed: sign-in and the non-admin door, prices, walk-up,
+courts, unpaid reminder, a note round-trip, cancel clinic. One worker, file
+order, no test depends on another's writes.
+
 **GitHub Actions** on every push and PR (`probes.yml`): `sql-probes`
 (pinned CLI, `db reset`, the suite), `ios-build-and-test` (XcodeGen, Debug
 and Release builds, unit tests, app-icon gate, simulator chosen at run time),
-`copy-gate`, `secret-scan`, `migration-immutability`. Nightly (`backup.yml`):
+`web-browser-tests` (the same pinned stack, then Playwright), `copy-gate`,
+`secret-scan`, `migration-immutability`. Nightly (`backup.yml`):
 `pg_dump` of hosted to an artifact, with a size floor so an empty dump fails
 loudly, and a keep-warm query.
 

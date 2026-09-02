@@ -38,6 +38,21 @@ local stack automatically, so testing never requires editing a file that could
 get committed aimed at the wrong project. Sign in as `tara@fxe.test` /
 `password`.
 
+## Test it
+
+Eight Playwright tests walk this page the way Tara does, against the LOCAL
+stack on a fresh seed. They are the only automated check on the web admin,
+so they run in CI on every push (`web-browser-tests` in `probes.yml`).
+
+```bash
+supabase start && supabase db reset
+cd web && npm ci && npx playwright install chromium && npx playwright test
+```
+
+`playwright.config.mjs` starts a `python3 -m http.server` on port 8790 for
+you. Tests share one database, so they run in one worker, in file order, and
+none depends on another's writes; run them after a reset.
+
 ## Deploy it (free, ~5 minutes)
 
 There is no build step and no server — just the static files in this folder.

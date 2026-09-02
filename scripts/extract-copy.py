@@ -64,7 +64,10 @@ def extract():
     for root, exts in ROOTS:
         if not os.path.isdir(root):
             continue
-        for dirpath, _, files in os.walk(root):
+        for dirpath, dirnames, files in os.walk(root):
+            # Dependencies and test tooling are not the product's copy.
+            # web/node_modules alone would add tens of thousands of strings.
+            dirnames[:] = [d for d in dirnames if d not in ("node_modules", "test-results", "playwright-report", "tests", ".vercel")]
             for f in sorted(files):
                 if not f.endswith(exts):
                     continue
