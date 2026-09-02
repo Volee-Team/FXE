@@ -157,6 +157,7 @@ final class SessionStore {
     }
 
     func signOut() async {
+        await PushRegistrar.shared.unregisterForSignOut()
         try? await supabase.auth.signOut()
         account = nil
         players = []

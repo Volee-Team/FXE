@@ -37,6 +37,7 @@ mine until Alex ticks them. Nothing here is attributed to Tara.
 | ☐ | **Just a reminder that {clinic} ({date}) hasn't been paid yet. {Tara's payment line} Thanks!** | The reminder players receive. Sent in Tara's name, so this one matters most. Her payment line is her own text from the database |
 | ☐ | This week · Next week · Week of {date} | Clinic list headers, iOS |
 | ☐ | My Clinics (screen title) | My Clinics screen, iOS |
+| ☐ | Turn on notifications · Not now | Permission sheet, iOS. The sentence above the buttons is Tara's (Screen 3) |
 | ☐ | Notifications · Nothing yet. · Mark all read · Done · Couldn't load notifications. Pull to try again. | Notification center, iOS |
 | ☐ | Edit details · Set by Tara · Save · Cancel · Saving… | Profile editing, iOS |
 | ☐ | Cancel clinic · Really cancel? Everyone is told. · Canceled · Cancel {clinic}? Everyone registered or waiting is told. · Keep the clinic · More · Couldn't cancel · That clinic is already canceled. | Cancel clinic, web and iOS |

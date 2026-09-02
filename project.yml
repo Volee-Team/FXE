@@ -29,6 +29,13 @@ targets:
     dependencies:
       - package: Supabase
         product: Supabase
+    # Push (decision 0008). XcodeGen writes this file and wires it into the
+    # target; "development" until a distribution profile exists, and Xcode
+    # flips it to production in an App Store archive.
+    entitlements:
+      path: FXETennis/FXETennis.entitlements
+      properties:
+        aps-environment: development
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.fxetennis.app
