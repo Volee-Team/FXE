@@ -39,6 +39,18 @@ enum ClinicRepository {
     /// season Tara publishes in bulk does not become one endless scroll. Five
     /// weeks is this week plus a month, which is as far ahead as registration
     /// windows make anything actionable (decision 0001).
+    /// One clinic, for a notification that names it. nil once it has ended:
+    /// the view drops finished clinics, so there is nothing to open.
+    static func clinic(id: UUID) async throws -> ClinicPublic? {
+        let rows: [ClinicPublic] = try await supabase
+            .from("clinics_public")
+            .select()
+            .eq("id", value: id)
+            .execute()
+            .value
+        return rows.first
+    }
+
     static func upcoming() async throws -> [ClinicPublic] {
         let horizon = Calendar.current.date(byAdding: .day, value: 35, to: .now) ?? .now
         return try await supabase

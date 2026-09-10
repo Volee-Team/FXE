@@ -64,7 +64,7 @@ itself the finding.
 
 | | |
 |---|---|
-| ✅ | SQL probe suite: 13 probes (313 checks as of 2026-09-02 — the suite prints its own total), plus the concurrency probe. Green in CI on every push |
+| ✅ | SQL probe suite: 14 probes (324 checks as of 2026-09-10 — the suite prints its own total), plus the concurrency probe. Green in CI on every push |
 | ✅ | **Web admin browser tests** (2026-09-02): 8 Playwright tests walk Tara's side against a fresh seed (sign-in and the non-admin door, prices, walk-up, courts, unpaid reminder, directory note round-trip, cancel clinic). Run in CI on every push |
 | ✅ | SQL probe suite: 12 probes (299 checks as of 2026-09-01 — the suite prints its own total), plus the concurrency probe. Green in CI on every push |
 | ✅ | **Admin XCUITests** (2026-09-02): four flows on Tara's side of the phone: register → court → unpaid reminder → paid; Player Pool → invite → the player's own Accept (hard rule 2 end to end); directory note round-trip; cancel clinic with confirmation. The phone's UI suite is now 12 tests, 8 player + 4 admin |

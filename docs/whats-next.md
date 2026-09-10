@@ -1,6 +1,6 @@
 # What's next, and what we need from Tara
 
-Living file. Updated 2026-09-01. If something here is done, move it out; if
+Living file. Updated 2026-09-10. If something here is done, move it out; if
 something new blocks, add it. This exists because the answer to "what's next"
 kept living in chat and dying with the session.
 

@@ -123,10 +123,11 @@ struct AdminClinicsView: View {
                     NavigationLink {
                         PlayersDirectoryView()
                     } label: {
-                        // Icon plus word: the toolbar would otherwise show the
-                        // icon alone (CLAUDE.md: icons always paired with text).
-                        Label("Players", systemImage: "person.2")
-                            .labelStyle(.titleAndIcon)
+                        // The word alone. A Label in a toolbar renders icon-only
+                        // on iOS 26 whatever the label style says (seen 09-02),
+                        // and an unlabelled icon breaks the icons-with-text rule.
+                        Text("Players")
+                            .font(Brand.Typography.button)
                     }
                     .accessibilityIdentifier("admin.players")
                 }
@@ -232,8 +233,9 @@ private struct AdminClinicRow: View {
                 .font(Brand.Typography.subheadline)
                 .foregroundStyle(Brand.textSecondary)
 
-            // Admin-only counts. Never render this on a player screen.
-            if let c = counts {
+            // Admin-only counts. Never render this on a player screen. A
+            // canceled clinic has nothing to count; the chip is the message.
+            if let c = counts, !clinic.isCanceled {
                 HStack(spacing: Brand.Spacing.sm) {
                     countPill(Brand.Status.youreIn, c.youreIn, of: clinic.internalCapacity)
                     if c.pool > 0 { countPill(Brand.Status.playerPool, c.pool, of: nil) }

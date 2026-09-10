@@ -16,7 +16,10 @@ import SwiftUI
 
 struct NotificationsView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(SessionStore.self) private var session
     @State private var items: [PlayerNotification] = []
+    /// The clinic a tapped row is about, once fetched; drives navigation.
+    @State private var openClinic: ClinicPublic?
     @State private var loading = true
     @State private var error: String?
 
@@ -46,7 +49,7 @@ struct NotificationsView: View {
                         VStack(spacing: 0) {
                             ForEach(items) { item in
                                 Button {
-                                    Task { await markRead(item) }
+                                    Task { await open(item) }
                                 } label: {
                                     row(item)
                                 }
@@ -75,6 +78,10 @@ struct NotificationsView: View {
             }
             .navigationTitle("Notifications")
             .navigationBarTitleDisplayMode(.inline)
+            .navigationDestination(item: $openClinic) { clinic in
+                ClinicDetailView(clinic: clinic, isMember: session.activePlayer?.isMember ?? false,
+                                 onChanged: {})
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") { dismiss() }
@@ -122,14 +129,20 @@ struct NotificationsView: View {
         loading = false
     }
 
-    private func markRead(_ item: PlayerNotification) async {
-        guard item.isUnread else { return }
-        do {
-            try await NotificationRepository.markRead(item.id)
-            await load()
-            onChange()
-        } catch {
-            self.error = "That didn't save. Check your connection and try again."
+    /// Tap: mark read, then go to the clinic if there is one to go to. A
+    /// notification about a clinic that has since ended stays a note.
+    private func open(_ item: PlayerNotification) async {
+        if item.isUnread {
+            do {
+                try await NotificationRepository.markRead(item.id)
+                await load()
+                onChange()
+            } catch {
+                self.error = "That didn't save. Check your connection and try again."
+            }
+        }
+        if item.entityType == "clinic", let id = item.entityId {
+            openClinic = try? await ClinicRepository.clinic(id: id)
         }
     }
 
