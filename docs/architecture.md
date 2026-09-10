@@ -53,7 +53,7 @@ most important thing to understand here, and it is section 5.
 | Postgres schema, RLS, narrow views, RPCs | **Built**, 20 migrations, all applied to hosted |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | **Built**, enumerated by probes |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | **Built** |
-| SQL probe suite (13 probes, 313 checks) + concurrency probe, in CI | **Built** |
+| SQL probe suite (14 probes, 324 checks) + concurrency probe, in CI | **Built** |
 | iOS: sign-in, sign-up with profile, password reset, three tabs | **Built** |
 | iOS: browse by week, per-viewer pricing, register / cancel / leave pool / respond, closed-clinic "Message Tara" | **Built** |
 | iOS admin tab: rosters, invite, courts, paid, unpaid reminder, message audiences, late requests, Action Needed, player directory | **Built** |
@@ -364,7 +364,7 @@ dropdown has been used for real.
 
 ## 9. Testing and CI
 
-**SQL probes** in `tests/sql/`, 13 files, 313 checks, each printing
+**SQL probes** in `tests/sql/`, 14 files, 324 checks, each printing
 PASS/FAIL rows, plus the concurrency probe. `tests/run-probes.sh` prints its
 own total and fails on silent SQL errors or a probe with zero assertions.
 Every migration that adds a rule adds a probe that is **red first**.

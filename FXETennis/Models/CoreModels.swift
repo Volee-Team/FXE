@@ -39,7 +39,7 @@ enum RegistrationStatus: String, Codable, Sendable {
 
 /// A published clinic as a player may see it. Carries both published rates; the
 /// UI picks one via `price(forMember:)`. Never carries capacity or any count.
-struct ClinicPublic: Codable, Identifiable, Sendable {
+struct ClinicPublic: Codable, Identifiable, Sendable, Hashable {
     let id: UUID
     let name: String
     let audience: String

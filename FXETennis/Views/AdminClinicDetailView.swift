@@ -87,6 +87,7 @@ struct AdminClinicDetailView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var confirmCancelClinic = false
+    @State private var removing: RosterEntry?
     @State private var cancelError: String?
     @State private var model: AdminClinicModel
     @State private var showMessage = false
@@ -173,6 +174,21 @@ struct AdminClinicDetailView: View {
                 }
             }
             Button("Keep the clinic", role: .cancel) {}
+        }
+        .confirmationDialog(
+            "Remove \(removing?.displayName ?? "this player") from \(clinic.name)?",
+            isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button("Remove", role: .destructive) {
+                if let entry = removing {
+                    Task { await model.perform(entry.id) {
+                        try await RegistrationRepository.cancelRegistration(registrationId: entry.id)
+                    } }
+                }
+                removing = nil
+            }
+            Button("Keep", role: .cancel) { removing = nil }
         }
         .alert("Couldn't cancel", isPresented: Binding(get: { cancelError != nil }, set: { if !$0 { cancelError = nil } })) {
             Button("OK") { cancelError = nil }
@@ -402,6 +418,11 @@ struct AdminClinicDetailView: View {
             ForEach(1...5, id: \.self) { n in
                 Button("Court \(n)") { assign(entry, n) }
             }
+            Divider()
+            // A walk-up placed on the wrong clinic, or a player who told Tara
+            // in person. Same RPC the player's own Cancel uses; the row is
+            // kept as canceled, never deleted (hard rule 4).
+            Button("Remove from clinic", role: .destructive) { removing = entry }
         } label: {
             Label(current.map { "Court \($0)" } ?? "Court", systemImage: "rectangle.split.2x1")
                 .font(Brand.Typography.chip)

@@ -9,13 +9,9 @@ Priority: 🔴 blocks a person · 🟡 should fix · 🟢 whenever
 
 | | Item | Found | Note |
 |---|---|---|---|
-| 🟡 | **Hosted password reset needs one dashboard setting** | 2026-09-01 | Supabase only redirects to allow-listed URLs, otherwise it silently falls back to the Site URL. Locally that is fixed in `config.toml`. On hosted, Alex must add `https://fxe-tennis-admin.vercel.app/reset.html` under Authentication → URL Configuration → Redirect URLs, or "Forgot password?" emails a link that lands nowhere useful |
 | 🟢 | `extract-copy.py` captures a Swift interpolation (`“\(m)”`) as a string | 2026-09-01 | Harmless, but it is not copy. Teach the extractor to skip strings that are only an interpolation |
 | 🟡 | **Tara's real clinic descriptions are not in the database** | 2026-08-16 | She sent verbatim copy for 105, Ladies 3.0+, All-Level Ladies, All-Level Men's and a new Queen City team practice. All transcribed in `docs/copy.md`; none of it is in `clinic_templates` or `clinics` yet. This is the content that makes a TestFlight build feel real to her instead of a demo |
 | 🟡 | **UI tests are order-dependent on the probe suite** | 2026-08-27 | `capacity_race.sh` is the one probe that writes real rows and is not transactional, so running `run-probes.sh` immediately before `xcodebuild test` leaves the database dirty and a UI test fails. Both are green independently from a clean seed. Fix: have the concurrency probe clean up after itself, or make the UI suite reset first |
-| 🟡 | **20 unmerged commits: `main` is a pre-security-lockdown codebase** | 2026-08-27 | `origin/main` has neither the view-write lockdown, the explicit grants, sign-up, the admin tab, nor the web admin. `.github/workflows/backup.yml` is not on it either, which is why the nightly backup **has never run once**. Merging PRs #1-#3 fixes all of it |
-| 🟡 | Clinic list has no date bounds in either direction | 2026-08-13 | `clinics_public` has no date clause, `clinic_status` has no terminal state, and `ClinicRepository.upcoming()` only orders. Past clinics accumulate forever and sort to the TOP, so Home's `prefix(3)` shows the three oldest |
-| 🟢 | `anon` holds EXECUTE on 22 SECURITY DEFINER RPCs | 2026-08-13 | Not a live hole: `place_player` and `cancel_clinic` both return `not_authorized` to anon, verified. Revoke anyway as defence in depth, same reasoning as hard rule 11 |
 | 🟡 | Notification triggers with no producer | 2026-08-02 | `REGISTRATION IS OPEN` needs a scheduler that does not exist. Copy is written, nothing fires it |
 | 🟡 | Four "high" findings from the completeness review | 2026-08-02 | Docs drifted from code; probes asserting less than their comments claim |
 | 🟢 | Six "medium" / seven "low" findings from the same review | 2026-08-02 | Not security. Worth one focused pass |
@@ -25,6 +21,10 @@ Priority: 🔴 blocks a person · 🟡 should fix · 🟢 whenever
 
 | | Item | Fixed | Fix |
 |---|---|---|---|
+| 🟢 | ~~`anon` holds EXECUTE on 22 SECURITY DEFINER RPCs~~ | 2026-09-01 | It was 30 of 41 by then. 20260902000001 revokes from PUBLIC and anon on every function; `grants_are_explicit.sql` enumerates `pg_proc` so it cannot regress silently |
+| 🟡 | ~~Clinic list has no date bounds in either direction~~ | 2026-09-02 | Floor: `clinics_public` drops ended clinics (08-28). Ceiling: the client stops five weeks out (09-02) |
+| 🟡 | ~~20 unmerged commits: `main` is a pre-security-lockdown codebase~~ | 2026-09-01 | PRs #1–#3 merged by Alex; everything since merges on green under branch protection (21 PRs by 2026-09-02) |
+| 🟡 | ~~Hosted password reset needs one dashboard setting~~ | 2026-09-01 | Alex added `https://fxe-tennis-admin.vercel.app/reset.html` to Supabase Auth redirect URLs the same evening; verified in the audit of 2026-09-10 |
 | 🟢 | ~~`docs/architecture.md` needs a rewrite~~ | 2026-09-01 | Regenerated from the live schema (`pg_class`, `pg_proc`), the file tree and the probe list. The 2026-08 version had six sections that were no longer true |
 | 🟡 | ~~**Late-request path is not built**~~ | 2026-08-28 | Built whole: `late_requests` table + `request_late_spot`/`resolve_late_request` (24-check probe, red-first), and the closed-clinic screen offers "Message Tara" instead of a dead end |
 | 🔴 | ~~**No app icon.** `AppIcon.appiconset` has a slot with no `filename` and no PNG, so the bundle has no `CFBundleIconName`~~ | 2026-08-16 | 1024x1024 opaque PNG of the crossed-racquets mark on Brand.navy. Verified `CFBundleIconName` in the built Info.plist, and CI now fails the build if it is ever missing again |

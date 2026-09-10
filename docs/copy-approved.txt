@@ -43,6 +43,7 @@ Has a note
 Home
 Invite
 Invite \(entry.displayName)
+Keep
 Keep my spot
 Keep the clinic
 Leave Player Pool
@@ -90,6 +91,8 @@ Registration open
 Registration opens \(openMoment.formatted(.dateTime.month(.abbreviated).day()))
 Registration opens \(openMoment.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day().hour().minute()))
 Remind unpaid (\(model.unpaidCount))
+Remove
+Remove from clinic
 Response Needed
 Save note
 Save password
