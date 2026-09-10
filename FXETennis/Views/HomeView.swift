@@ -73,7 +73,8 @@ struct HomeView: View {
                                     }
                                 }
                                 NavigationLink { ClinicsView() } label: {
-                                    FilledButtonLabel("View Open Clinics")
+                                    // "(7)" so three rows never read as the whole list.
+                                    FilledButtonLabel(available.count > 3 ? "View Open Clinics (\(available.count))" : "View Open Clinics")
                                 }
                                 .buttonStyle(.plain)
                             }
