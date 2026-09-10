@@ -36,6 +36,7 @@ mine until Alex ticks them. Nothing here is attributed to Tara.
 | ☐ | Remind unpaid (N) · Send a payment reminder to N unpaid? · Send reminder · Reminder sent to N. · The reminder didn't send. Check your connection and try again. | Unpaid reminder button, web and iOS |
 | ☐ | **Just a reminder that {clinic} ({date}) hasn't been paid yet. {Tara's payment line} Thanks!** | The reminder players receive. Sent in Tara's name, so this one matters most. Her payment line is her own text from the database |
 | ☐ | This week · Next week · Week of {date} | Clinic list headers, iOS |
+| ☐ | More · View Open Clinics (N) | Admin roster toolbar; Home button with the open count |
 | ☐ | Remove from clinic · Remove · Keep · Remove {name} from {clinic}? | Roster row menu, iOS admin |
 | ☐ | This week · Players · Money · Sections | Web admin tabs |
 | ☐ | My Clinics (screen title) | My Clinics screen, iOS |

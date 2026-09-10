@@ -149,7 +149,11 @@ struct AdminClinicDetailView: View {
                     Menu {
                         Button("Cancel clinic", role: .destructive) { confirmCancelClinic = true }
                     } label: {
-                        Label("More", systemImage: "ellipsis.circle")
+                        // The word, not an ellipsis: a Label in a toolbar renders
+                        // icon-only on iOS 26 (seen 09-10), and an unlabelled icon
+                        // breaks the icons-with-text rule.
+                        Text("More")
+                            .font(Brand.Typography.button)
                     }
                     .accessibilityIdentifier("admin.more")
                 }
@@ -297,28 +301,22 @@ struct AdminClinicDetailView: View {
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
-                        HStack(spacing: Brand.Spacing.sm) {
-                            // Registration order is visible for the Player Pool
-                            // specifically: the guide requires it, and it is
-                            // what makes the queue legible to Tara.
-                            if numbered {
-                                Text("\(index + 1)")
-                                    .font(Brand.Typography.chip)
-                                    .foregroundStyle(Brand.textSecondary)
-                                    .frame(width: 18, alignment: .trailing)
+                        // One line when the name and its controls fit side by
+                        // side; two when they do not (a long name, court plus
+                        // paid, a 4.7-inch phone). ViewThatFits picks per row.
+                        ViewThatFits(in: .horizontal) {
+                            HStack(spacing: Brand.Spacing.sm) {
+                                rosterIdentity(entry, index: numbered ? index + 1 : nil)
+                                Spacer(minLength: Brand.Spacing.xs)
+                                trailing(entry)
                             }
-
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(entry.displayName)
-                                    .font(Brand.Typography.bodyEmphasis)
-                                    .foregroundStyle(Brand.textPrimary)
-                                Text(entry.subtitle)
-                                    .font(Brand.Typography.caption)
-                                    .foregroundStyle(Brand.textSecondary)
+                            VStack(alignment: .leading, spacing: Brand.Spacing.xxs) {
+                                rosterIdentity(entry, index: numbered ? index + 1 : nil)
+                                HStack(spacing: Brand.Spacing.sm) {
+                                    Spacer(minLength: 0)
+                                    trailing(entry)
+                                }
                             }
-
-                            Spacer(minLength: Brand.Spacing.xs)
-                            trailing(entry)
                         }
                         .padding(.vertical, Brand.Spacing.xs)
                         .frame(minHeight: Brand.Layout.comfortableTapTarget)
@@ -402,6 +400,29 @@ struct AdminClinicDetailView: View {
                 .padding(.horizontal, Brand.Spacing.cardPadding)
                 .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
                 .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
+            }
+        }
+    }
+
+    /// Name and subtitle, with the Player Pool's queue number when asked for:
+    /// the guide requires registration order to be visible, and it is what
+    /// makes the queue legible to Tara.
+    private func rosterIdentity(_ entry: RosterEntry, index: Int?) -> some View {
+        HStack(spacing: Brand.Spacing.sm) {
+            if let index {
+                Text("\(index)")
+                    .font(Brand.Typography.chip)
+                    .foregroundStyle(Brand.textSecondary)
+                    .frame(width: 18, alignment: .trailing)
+            }
+            VStack(alignment: .leading, spacing: 1) {
+                Text(entry.displayName)
+                    .font(Brand.Typography.bodyEmphasis)
+                    .foregroundStyle(Brand.textPrimary)
+                    .lineLimit(1)
+                Text(entry.subtitle)
+                    .font(Brand.Typography.caption)
+                    .foregroundStyle(Brand.textSecondary)
             }
         }
     }
