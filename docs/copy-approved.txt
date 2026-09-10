@@ -66,6 +66,7 @@ No clinics yet. Use “New clinic” to add your first one.
 No court
 No description yet.
 No room
+No templates yet.
 Nobody by that name yet. They may need to sign up in the app first.
 Non-members, 60 min
 Non-members, 90 min

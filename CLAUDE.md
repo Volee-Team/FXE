@@ -657,6 +657,8 @@ obeyed.
 
 - **2026-09-10** — **Web admin hides canceled clinics.** They stayed in the week forever wearing their chip (review 09-02). Now hidden by default with a one-line count and a Show canceled toggle; nothing is deleted (hard rule 4). The cancel browser test ticks the toggle to find the chip.
 
+- **2026-09-10** — **Templates can be archived, and come back.** `archived_at` had existed since 08-28 with nothing writing it; the only retirement was a delete (hard rule 4 says archive). `admin_set_template_archived` stamps once and restores; `templates_admin` now carries the column and no longer hides archived rows, so the web admin's new Templates card offers Archive, Show archived and Restore, and the picker lists only live ones. Probe `template_archive.sql`, 10 checks, red first. Browser suite: 10.
+
 - **2026-09-10** — **Remove from clinic has a UI test.** Fifth admin flow: Maria registers, Tara removes her from the row menu behind the confirmation, the roster reads "Nobody is in yet." and the row is gone from the screen (and kept as canceled in the database, hard rule 4). 13 XCUITests.
 
 - **2026-09-10** — **Phone polish from the review.** Roster rows use `ViewThatFits`: one line when the name and its controls fit, two when they do not (long names, small phones). Home's open-clinics button carries the count once more than three are open, so three rows never read as the whole list. The roster's More menu is the word rather than an ellipsis, for the same reason Players became a word this morning: a `Label` in a toolbar ignores its label style on iOS 26.

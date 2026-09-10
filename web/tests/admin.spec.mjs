@@ -100,6 +100,25 @@ test.describe("the directory", () => {
   });
 });
 
+test.describe("templates", () => {
+  test("archive removes a template from the picker; restore brings it back", async ({ page }) => {
+    await signIn(page, TARA);
+    const row = page.locator("[data-template-row]", { hasText: "Coed Cardio" });
+    await row.getByRole("button", { name: "Archive" }).click();
+    await expect(page.locator("[data-template-row]", { hasText: "Coed Cardio" })).toHaveCount(0);
+    await page.getByRole("button", { name: "New clinic" }).click();
+    await expect(page.locator("#f-template option", { hasText: "Coed Cardio" })).toHaveCount(0);
+    await page.locator("#edit-cancel").click();   // not "Cancel clinic" on the cards
+
+    await page.getByLabel("Show archived").check();
+    const archived = page.locator("[data-template-row]", { hasText: "Coed Cardio" });
+    await expect(archived).toContainText("archived");
+    await archived.getByRole("button", { name: "Restore" }).click();
+    await page.getByRole("button", { name: "New clinic" }).click();
+    await expect(page.locator("#f-template option", { hasText: "Coed Cardio" })).toHaveCount(1);
+  });
+});
+
 test.describe("money", () => {
   test("the Money tab shows the four counts and the totals", async ({ page }) => {
     await signIn(page, TARA);

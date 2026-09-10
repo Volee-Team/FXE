@@ -288,7 +288,7 @@ Enums: `account_type`, `account_role`, `player_kind`, `clinic_audience`
 
 | RPC | What it does |
 |---|---|
-| `admin_upsert_clinic`, `admin_upsert_template`, `admin_delete_template`, `create_clinic_from_template` | Build the week. Templates are copy-on-create. |
+| `admin_upsert_clinic`, `admin_upsert_template`, `admin_set_template_archived`, `create_clinic_from_template` | Build the week. Templates are copy-on-create; archived, never deleted (`admin_delete_template` remains but the web admin no longer offers it). |
 | `publish_clinic`, `cancel_clinic` | Draft to published; cancel and notify everyone live. |
 | `invite_from_pool`, `cancel_invitation` | Tara's hand-pick, and taking it back. |
 | `resolve_late_request` | Put a late asker in, or say no room. |

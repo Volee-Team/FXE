@@ -38,6 +38,7 @@ mine until Alex ticks them. Nothing here is attributed to Tara.
 | ☐ | This week · Next week · Week of {date} | Clinic list headers, iOS |
 | ☐ | More · View Open Clinics (N) | Admin roster toolbar; Home button with the open count |
 | ☐ | Show canceled · N canceled clinics hidden. | Web admin, This week |
+| ☐ | Templates · Show archived · Archive · Restore · archived · No templates yet. | Web admin, templates card |
 | ☐ | Remove from clinic · Remove · Keep · Remove {name} from {clinic}? | Roster row menu, iOS admin |
 | ☐ | This week · Players · Money · Sections | Web admin tabs |
 | ☐ | My Clinics (screen title) | My Clinics screen, iOS |

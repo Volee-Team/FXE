@@ -126,6 +126,15 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
       <div id="notes" class="card hide"></div>
     </div>
     <div id="clinics"></div>
+
+    <h2>Templates</h2>
+    <div class="card">
+      <div class="row">
+        <span class="grow"></span>
+        <label class="muted" style="white-space:nowrap;display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="show-archived" style="width:auto;margin:0"> Show archived</label>
+      </div>
+      <div id="tpl-list" style="margin-top:8px"></div>
+    </div>
     </div>
 
     <div id="tab-players" role="tabpanel" class="hide">
@@ -329,10 +338,22 @@ async function showApp() {
 
 async function loadTemplates() {
   const { data } = await sb.from("templates_admin").select("*").order("name");
-  templates = data || [];
+  const all = data || [];
+  // The picker offers only live templates; archived ones stay in the
+  // database (hard rule 4) and come back with Restore.
+  templates = all.filter(t => !t.archived_at);
   $("f-template").innerHTML = '<option value="">— blank —</option>'
     + templates.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join("");
+  const shown = $("show-archived").checked ? all : templates;
+  $("tpl-list").innerHTML = shown.length ? shown.map(t => `<div class="row" data-template-row="${t.id}">
+    <span class="grow"><span class="name">${esc(t.name)}</span>${t.archived_at ? ' <span class="muted">· archived</span>' : ""}<br>
+      <span class="muted">${t.duration_minutes} min · ${t.internal_capacity} players · ${money(t.member_price_cents)} member / ${money(t.nonmember_price_cents)} non-member</span></span>
+    ${t.archived_at
+      ? `<button class="small" data-restoretpl="${t.id}">Restore</button>`
+      : `<button class="small" data-archivetpl="${t.id}">Archive</button>`}
+  </div>`).join("") : `<p class="muted">No templates yet.</p>`;
 }
+$("show-archived").addEventListener("change", () => loadTemplates());
 
 // Tara's inbox: things the backend already records that no screen showed.
 // Late requests come from their own table (they have a lifecycle); the rest
@@ -513,6 +534,8 @@ document.addEventListener("click", async (e) => {
   if (b.dataset.uninvite) return run(() => call("cancel_invitation",  { p_registration: b.dataset.uninvite }));
   if (b.dataset.paid)     return run(() => call("set_paid", { p_registration: b.dataset.paid, p_paid: b.dataset.now !== "true" }));
   if (b.dataset.publish)  return run(() => call("publish_clinic",     { p_clinic: b.dataset.publish }));
+  if (b.dataset.archivetpl) return run(() => call("admin_set_template_archived", { p_id: b.dataset.archivetpl, p_archived: true }));
+  if (b.dataset.restoretpl) return run(() => call("admin_set_template_archived", { p_id: b.dataset.restoretpl, p_archived: false }));
   if (b.dataset.cancelclinic) {
     // Two clicks, five seconds apart at most. Canceling notifies everyone in
     // You're In!, the Player Pool and Response Needed, so a stray click must
