@@ -653,6 +653,8 @@ obeyed.
 
 ## Changelog
 
+- **2026-09-10** — **Copy extractor: an interpolation is not a sentence.** `“\(m)”` had sat in the approved snapshot since 09-01 as if it were words; the noise filter now drops strings that are nothing but an interpolation. Backlog row closed.
+
 - **2026-09-10** — **Remove from clinic has a UI test.** Fifth admin flow: Maria registers, Tara removes her from the row menu behind the confirmation, the roster reads "Nobody is in yet." and the row is gone from the screen (and kept as canceled in the database, hard rule 4). 13 XCUITests.
 
 - **2026-09-10** — **Docs-freshness pass (nine days overdue by the hook's own count) and the first review fixes.** Backlog: four rows had been fixed for a week without moving (hosted reset URL, the unmerged-main row, the date bounds, anon EXECUTE); moved with dates. Counts corrected to 14 probes / 324 checks. From `docs/feature-review-2026-09-02.md`, the four "fix now" items on the phone: a notification row now opens the clinic it is about (marks read first; a clinic that has since ended stays a note), the Players toolbar button is the word rather than an icon that ignored its label style, a canceled clinic no longer wears a green count chip, and Tara can remove a player from a clinic from the same per-row menu as the court, behind a confirmation, using the same RPC the player's own Cancel uses. Also observed: the nightly backup ran green every night of the week it was unattended, except the one night GitHub Actions was billing-blocked.
