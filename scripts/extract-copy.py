@@ -53,6 +53,7 @@ NOISE = re.compile(
     r'^(clinic|home|auth|profile|admin|tab|status)\.'
     r'|^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$'
     r'|^\\\('
+    r'|^[^A-Za-z]*\\\([^)]*\)[^A-Za-z]*$'   # only an interpolation, e.g. “\(m)”
     r'|^[%$#]'
     r'|^[A-Z_]+$'
     r'|^\s*$'

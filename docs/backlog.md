@@ -9,7 +9,6 @@ Priority: 🔴 blocks a person · 🟡 should fix · 🟢 whenever
 
 | | Item | Found | Note |
 |---|---|---|---|
-| 🟢 | `extract-copy.py` captures a Swift interpolation (`“\(m)”`) as a string | 2026-09-01 | Harmless, but it is not copy. Teach the extractor to skip strings that are only an interpolation |
 | 🟡 | **Tara's real clinic descriptions are not in the database** | 2026-08-16 | She sent verbatim copy for 105, Ladies 3.0+, All-Level Ladies, All-Level Men's and a new Queen City team practice. All transcribed in `docs/copy.md`; none of it is in `clinic_templates` or `clinics` yet. This is the content that makes a TestFlight build feel real to her instead of a demo |
 | 🟡 | **UI tests are order-dependent on the probe suite** | 2026-08-27 | `capacity_race.sh` is the one probe that writes real rows and is not transactional, so running `run-probes.sh` immediately before `xcodebuild test` leaves the database dirty and a UI test fails. Both are green independently from a clean seed. Fix: have the concurrency probe clean up after itself, or make the UI suite reset first |
 | 🟡 | Notification triggers with no producer | 2026-08-02 | `REGISTRATION IS OPEN` needs a scheduler that does not exist. Copy is written, nothing fires it |
@@ -21,6 +20,7 @@ Priority: 🔴 blocks a person · 🟡 should fix · 🟢 whenever
 
 | | Item | Fixed | Fix |
 |---|---|---|---|
+| 🟢 | ~~`extract-copy.py` captures a Swift interpolation (`“\(m)”`) as a string~~ | 2026-09-10 | A string that is nothing but an interpolation is not copy; the extractor's noise filter now says so |
 | 🟢 | ~~`anon` holds EXECUTE on 22 SECURITY DEFINER RPCs~~ | 2026-09-01 | It was 30 of 41 by then. 20260902000001 revokes from PUBLIC and anon on every function; `grants_are_explicit.sql` enumerates `pg_proc` so it cannot regress silently |
 | 🟡 | ~~Clinic list has no date bounds in either direction~~ | 2026-09-02 | Floor: `clinics_public` drops ended clinics (08-28). Ceiling: the client stops five weeks out (09-02) |
 | 🟡 | ~~20 unmerged commits: `main` is a pre-security-lockdown codebase~~ | 2026-09-01 | PRs #1–#3 merged by Alex; everything since merges on green under branch protection (21 PRs by 2026-09-02) |
