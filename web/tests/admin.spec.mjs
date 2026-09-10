@@ -17,9 +17,10 @@ async function signIn(page, who) {
 }
 
 test.describe("sign-in", () => {
-  test("Tara lands on the clinic list", async ({ page }) => {
+  test("Tara lands on this week's clinics", async ({ page }) => {
     await signIn(page, TARA);
-    await expect(page.getByRole("heading", { name: "Clinics" })).toBeVisible();
+    await expect(page.getByRole("tab", { name: "This week" })).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByRole("heading", { name: "This week" })).toBeVisible();
     await expect(page.getByRole("button", { name: "New clinic" })).toBeVisible();
   });
 
@@ -79,6 +80,7 @@ test.describe("the week", () => {
 test.describe("the directory", () => {
   test("search finds a player and a note round-trips", async ({ page }) => {
     await signIn(page, TARA);
+    await page.getByRole("tab", { name: "Players" }).click();
     await page.getByLabel("Search players by name").fill("Mar");
     const row = page.locator("[data-player-row]", { hasText: "Maria Alvarez" });
     await expect(row).toBeVisible();
@@ -91,9 +93,22 @@ test.describe("the directory", () => {
     await expect(page.getByText("Saved.")).toBeVisible();
     // Reload and read it back: the database has it, not the page.
     await page.reload();
+    await page.getByRole("tab", { name: "Players" }).click();
     await page.getByLabel("Search players by name").fill("Mar");
     await page.locator("[data-player-row]", { hasText: "Maria Alvarez" }).getByRole("button", { name: "Note" }).click();
     await expect(page.getByLabel("Private note")).toHaveValue(stamp);
+  });
+});
+
+test.describe("money", () => {
+  test("the Money tab shows the four counts and the totals", async ({ page }) => {
+    await signIn(page, TARA);
+    await page.getByRole("tab", { name: "Money" }).click();
+    const money = page.locator("#money");
+    await expect(money).toContainText("Members, 60 min");
+    await expect(money).toContainText("Non-members, 90 min");
+    await expect(money).toContainText("Expected");
+    await expect(money).toContainText("Still owed");
   });
 });
 

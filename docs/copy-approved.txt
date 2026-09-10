@@ -99,6 +99,7 @@ Save password
 Saved. You can sign in with it now, on your phone or here.
 Search by name
 Search players by name
+Sections
 Send reminder
 Set by Tara
 She will let you know if there is room.

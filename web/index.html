@@ -67,6 +67,9 @@
 select.court { width: auto; flex: 0 0 auto; margin: 0; font: inherit; font-size: 13px; padding: 4px 6px; border: 1px solid var(--border, #d8d3c7); border-radius: 6px; background: #fff; color: inherit; }
 button.danger { border-color: #9B2C2C; color: #9B2C2C; }
 .chip.canceled { background: #F3E1E1; color: #7A1F1F; }
+.tabs { display: flex; gap: 6px; margin: 0 0 14px 0; border-bottom: 1px solid var(--border, #d8d3c7); }
+.tabs [role=tab] { background: none; border: none; border-bottom: 2px solid transparent; border-radius: 0; padding: 8px 12px; font: inherit; font-weight: 600; color: #6E6552; cursor: pointer; min-height: 40px; }
+.tabs [role=tab][aria-selected=true] { color: #16264C; border-bottom-color: #16264C; }
 </style>
 </head>
 <body>
@@ -101,17 +104,30 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
   </section>
 
   <section id="app" class="hide">
+    <!-- Three panels, one page. Tara's first question on a Monday is money,
+         and it used to sit at the bottom of a list that grew every week
+         (docs/feature-review-2026-09-02.md). -->
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button role="tab" data-tab="week" aria-selected="true">This week</button>
+      <button role="tab" data-tab="players" aria-selected="false">Players</button>
+      <button role="tab" data-tab="money" aria-selected="false">Money</button>
+    </nav>
+    <div id="msg"></div>
+
+    <div id="tab-week" role="tabpanel">
     <div class="row">
-      <h2 style="margin:0" class="grow">Clinics</h2>
+      <h2 style="margin:0" class="grow">This week</h2>
       <button class="primary" id="new-clinic">New clinic</button>
     </div>
-    <div id="msg"></div>
     <div id="action" class="hide">
       <h2>Action Needed</h2>
       <div id="late" class="card hide"></div>
       <div id="notes" class="card hide"></div>
     </div>
     <div id="clinics"></div>
+    </div>
+
+    <div id="tab-players" role="tabpanel" class="hide">
     <h2>Players</h2>
     <div class="card">
       <div class="row">
@@ -122,8 +138,12 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
       <div id="players-msg"></div>
     </div>
 
+    </div>
+
+    <div id="tab-money" role="tabpanel" class="hide">
     <h2>Money</h2>
     <div id="money" class="card muted">Loading…</div>
+    </div>
   </section>
 </main>
 
@@ -446,6 +466,16 @@ async function loadClinics() {
 // patching the DOM: the server decides the resulting status (a player accepting
 // while Tara invites is a real race), so guessing locally would show her a state
 // the database disagrees with.
+// Tabs. The last one opened is remembered per browser; a reload lands where
+// she was. Everything still loads on sign-in, so switching is instant.
+const showTab = (name) => {
+  for (const b of document.querySelectorAll(".tabs [role=tab]")) b.setAttribute("aria-selected", String(b.dataset.tab === name));
+  for (const n of ["week", "players", "money"]) $("tab-" + n).classList.toggle("hide", n !== name);
+  try { localStorage.setItem("fxe.tab", name); } catch {}
+};
+for (const b of document.querySelectorAll(".tabs [role=tab]")) b.addEventListener("click", () => showTab(b.dataset.tab));
+try { const t = localStorage.getItem("fxe.tab"); if (t) showTab(t); } catch {}
+
 document.addEventListener("change", async (e) => {
   const sel = e.target.closest("select[data-court]"); if (!sel) return;
   sel.disabled = true;

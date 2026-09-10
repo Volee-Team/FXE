@@ -17,8 +17,9 @@ weekly setup.
 * Message any audience on a clinic
 * **Action Needed** at the top: players asking in after the 3-hour close (Put
   them in / No room) and cancellations or invitation replies she has not seen
-* **Money** at the bottom: the four counts, expected / collected / still owed,
-  and a line per clinic
+* **Money** on its own tab: the four counts, expected / collected / still owed,
+  and a line per clinic. Three tabs across the top: This week · Players · Money;
+  the last one opened is remembered
 * Forgot password? on the sign-in card, landing on `reset.html`
 
 Registration windows are computed for her: members Thursday 8am, everyone else
