@@ -181,6 +181,36 @@ final class AdminFlowUITests: XCTestCase {
                       "List did not show a Canceled chip after cancel")
     }
 
+    // MARK: - E. removing a player, from the same menu as the court
+
+    /// A walk-up placed on the wrong clinic, or a player who told Tara in
+    /// person. Behind a confirmation; the row is kept as canceled, never
+    /// deleted (hard rule 4), so the count drops and nothing vanishes from
+    /// the database.
+    func testAdminE_RemovesAPlayerWithConfirmation() {
+        app.launch()
+        signIn(as: member)
+        ensureRegistered(forClinicContaining: "Saturday Members")
+        signOut()
+
+        signIn(as: admin)
+        openAdminClinic(containing: "Saturday Members")
+        let court = app.descendants(matching: .any).matching(identifier: "admin.court").firstMatch
+        XCTAssertTrue(court.waitForExistence(timeout: 20), "Maria is not on the roster")
+        court.tap()
+        let remove = app.buttons["Remove from clinic"]
+        XCTAssertTrue(remove.waitForExistence(timeout: 10), "No Remove from clinic in the row menu")
+        remove.tap()
+        let confirm = app.buttons["Remove"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 10), "No confirmation before removing a player")
+        confirm.tap()
+
+        // Nobody in, and no court control left to tap.
+        XCTAssertTrue(app.staticTexts["Nobody is in yet."].waitForExistence(timeout: 20),
+                      "Roster still shows someone in You're In! after Remove")
+        XCTAssertFalse(court.exists, "The removed player's row is still on the roster")
+    }
+
     // MARK: - helpers (mirrors PlayerFlowUITests; kept local so each file reads alone)
 
     private func signIn(as email: String) {
