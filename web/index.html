@@ -117,6 +117,7 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
     <div id="tab-week" role="tabpanel">
     <div class="row">
       <h2 style="margin:0" class="grow">This week</h2>
+      <label class="muted" style="white-space:nowrap;display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="show-canceled" style="width:auto;margin:0"> Show canceled</label>
       <button class="primary" id="new-clinic">New clinic</button>
     </div>
     <div id="action" class="hide">
@@ -414,7 +415,12 @@ async function loadClinics() {
   await loadActionNeeded(clinics, byPlayer);
   loadMoney();
 
-  $("clinics").innerHTML = clinics.map(c => {
+  // Canceled clinics stay in the database (hard rule 4) and out of the way:
+  // hidden unless she asks, so the week reads as the week.
+  const visible = $("show-canceled").checked ? clinics : clinics.filter(c => c.status !== "canceled");
+  const hiddenCount = clinics.length - visible.length;
+  $("clinics").innerHTML = (hiddenCount && !$("show-canceled").checked
+    ? `<p class="muted">${hiddenCount} canceled ${hiddenCount === 1 ? "clinic" : "clinics"} hidden.</p>` : "") + visible.map(c => {
     const mine = (regs || []).filter(r => r.clinic_id === c.id);
     // You're In! reads in court order, unassigned last, so the list on screen
     // is her court sheet. Other sections keep registration order.
@@ -475,6 +481,8 @@ const showTab = (name) => {
 };
 for (const b of document.querySelectorAll(".tabs [role=tab]")) b.addEventListener("click", () => showTab(b.dataset.tab));
 try { const t = localStorage.getItem("fxe.tab"); if (t) showTab(t); } catch {}
+
+$("show-canceled").addEventListener("change", () => loadClinics());
 
 document.addEventListener("change", async (e) => {
   const sel = e.target.closest("select[data-court]"); if (!sel) return;

@@ -21,6 +21,8 @@ weekly setup.
   and a line per clinic. Three tabs across the top: This week · Players · Money;
   the last one opened is remembered
 * Forgot password? on the sign-in card, landing on `reset.html`
+* Canceled clinics are hidden until "Show canceled" is ticked; they stay in
+  the database (archive, never delete)
 
 Registration windows are computed for her: members Thursday 8am, everyone else
 Friday 8am, for the whole service week the clinic falls in (decision 0001). She
