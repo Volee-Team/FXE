@@ -120,7 +120,10 @@ test.describe("cancel clinic", () => {
     await btn.click();
     await expect(card.getByRole("button", { name: /Really cancel/ })).toBeVisible();
     await card.getByRole("button", { name: /Really cancel/ }).click();
-    await expect(card.getByText("Canceled")).toBeVisible();
+    // Hidden by default once canceled; the toggle brings it back with its chip.
+    await expect(page.getByText(/1 canceled clinic hidden/)).toBeVisible();
+    await page.getByLabel("Show canceled").check();
+    await expect(page.locator("#clinics .card", { hasText: "Sunday Social" }).getByText("Canceled")).toBeVisible();
     await expect(card.getByRole("button", { name: "Cancel clinic" })).toHaveCount(0);
   });
 });
