@@ -167,6 +167,22 @@ where not exists (
     and not exists (select 1 from unnest(coalesce(p.proconfig, '{}')) c where c like 'search_path=%')
 );
 
+-- --------------------------------------------------- service_role DML
+-- Added 2026-09-12 after stripe-setup-intent got "permission denied for
+-- table accounts": the PUBLIC revokes had taken service_role's DML with
+-- them. The platform's trusted role must hold DML on every table, or every
+-- edge function is dead on arrival.
+insert into _probe_result
+select 'service_role_holds_dml_on_every_table', '',
+       coalesce(string_agg(c.relname, ', ' order by c.relname), '')
+from pg_class c
+join pg_namespace n on n.oid = c.relnamespace and n.nspname = 'public'
+where c.relkind in ('r', 'p')
+  and not (has_table_privilege('service_role', c.oid, 'SELECT')
+       and has_table_privilege('service_role', c.oid, 'INSERT')
+       and has_table_privilege('service_role', c.oid, 'UPDATE')
+       and has_table_privilege('service_role', c.oid, 'DELETE'));
+
 -- ------------------------------------------------------ function grants
 -- Added 2026-09-01, the day the count was 30 of 41 functions executable by
 -- anon. Postgres gives PUBLIC EXECUTE on every new function, and "revoke from

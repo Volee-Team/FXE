@@ -230,7 +230,8 @@ JSON. The hiding is done in the database by three mechanisms:
 
    Views run with owner rights (not `security_invoker`), which is why writes
    through them are revoked outright: an auto-updatable view would bypass RLS.
-3. **RLS on the base tables** as defense in depth. The grants are the
+3. **`service_role` is the one trusted writer.** Edge functions use it to write what no client may (ledger status, card summaries). It bypasses RLS by design and holds DML on every table by explicit grant (20260912000002) after the PUBLIC revokes had silently taken that away; the grants probe pins it.
+4. **RLS on the base tables** as defense in depth. The grants are the
    load-bearing control; the policies catch what a grant mistake would miss.
 
 ### Who is an admin, who owns a player
