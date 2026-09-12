@@ -90,6 +90,9 @@ private struct PendingAction: Identifiable {
 
 struct ClinicDetailView: View {
     @State private var pending: PendingAction?
+    /// Inside the cutoff the cancel needs the player's note first (0010).
+    @State private var lateCancel: MyRegistration?
+    @State private var cutoffHours = 4
     let clinic: ClinicPublic
     let isMember: Bool
     var onChanged: () async -> Void = {}
@@ -120,6 +123,14 @@ struct ClinicDetailView: View {
         .navigationTitle(clinic.name)
         .navigationBarTitleDisplayMode(.inline)
         .task { if !model.loaded { await model.load(clinicId: clinic.id) } }
+        .task { cutoffHours = (try? await RegistrationRepository.cancelCutoffHours()) ?? 4 }
+        .sheet(item: $lateCancel) { reg in
+            LateCancelSheet(cutoffHours: cutoffHours) { note in
+                await model.act(clinicId: clinic.id, {
+                    try await RegistrationRepository.cancelRegistration(registrationId: reg.id, note: note)
+                }, onChanged: onChanged)
+            }
+        }
         .refreshable { await model.load(clinicId: clinic.id) }
     }
 
@@ -238,8 +249,18 @@ struct ClinicDetailView: View {
         } else if let reg = model.registration {
             switch reg.status {
             case .in_:
-                destructiveButton("Cancel Registration") {
-                    try await RegistrationRepository.cancelRegistration(registrationId: reg.id)
+                if CancelPolicy.isInsideCutoff(startsAt: clinic.startsAt, cutoffHours: cutoffHours) {
+                    // Same button, different path: the server refuses a late
+                    // cancel without a note, so ask for it before the tap.
+                    Button(role: .destructive) { lateCancel = reg } label: {
+                        actionLabel("Cancel Registration", fg: Brand.Status.canceled.ink, bg: Brand.surfaceRaised)
+                            .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
+                    }
+                    .disabled(model.working)
+                } else {
+                    destructiveButton("Cancel Registration") {
+                        try await RegistrationRepository.cancelRegistration(registrationId: reg.id)
+                    }
                 }
             case .pool:
                 destructiveButton("Leave Player Pool") {
@@ -391,5 +412,58 @@ struct ClinicDetailView: View {
     private var durationLine: String {
         if let d = clinic.durationMinutes { return "\(d) min" }
         return "Clinic"
+    }
+}
+
+/// The prompt inside the cutoff (decision 0010). The sentence Tara wants the
+/// player to read above the box is hers to write (question 40); until then
+/// only chrome shows, and the note is the player's own words.
+private struct LateCancelSheet: View {
+    let cutoffHours: Int
+    let confirm: (String) async -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var note = ""
+    @State private var sending = false
+    @FocusState private var focused: Bool
+
+    private var trimmed: String { note.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: Brand.Spacing.md) {
+                TextField("Reason (required)", text: $note, axis: .vertical)
+                    .lineLimit(3...6)
+                    .textFieldStyle(.roundedBorder)
+                    .focused($focused)
+                    .accessibilityIdentifier("lateCancel.note")
+                Button {
+                    sending = true
+                    Task { await confirm(trimmed); sending = false; dismiss() }
+                } label: {
+                    Group {
+                        if sending { ProgressView().tint(Brand.textOnNavy) }
+                        else { Text("Send and cancel my spot").font(Brand.Typography.button) }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .frame(minHeight: Brand.Layout.comfortableTapTarget)
+                    .foregroundStyle(Brand.textOnNavy)
+                    .background(trimmed.isEmpty ? Brand.disabled : Brand.navy, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
+                }
+                .buttonStyle(.plain)
+                .disabled(trimmed.isEmpty || sending)
+                .accessibilityIdentifier("lateCancel.confirm")
+                Spacer()
+            }
+            .padding(Brand.Spacing.pageMargin)
+            .background(Brand.surface)
+            .navigationTitle("Cancel Registration")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Keep my spot") { dismiss() }
+                }
+            }
+            .onAppear { focused = true }
+        }
     }
 }

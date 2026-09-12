@@ -132,6 +132,54 @@ jobs:
           path: web/test-results/
           if-no-files-found: ignore
 
+  stripe-pipeline:
+    name: Stripe pipeline (mocked)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.115.0
+
+      # Edge runtime stays ON here: the three Stripe functions are the thing
+      # under test. Everything else optional is off, as in the other jobs.
+      - name: Start local stack (auth, rest, edge runtime)
+        run: supabase start -x realtime,storage-api,imgproxy,studio,logflare,vector,supavisor
+
+      - name: Reset to the seed
+        run: supabase db reset
+
+      # Stripe's official mock server, on the same docker network as the
+      # edge runtime so the functions reach it as http://stripe-mock:12111.
+      - name: Start stripe-mock
+        run: |
+          docker run -d --name stripe-mock --network supabase_network_FXE-Tennis stripe/stripe-mock:latest
+          for i in $(seq 1 20); do
+            docker exec supabase_edge_runtime_FXE-Tennis sh -c 'wget -q -O- http://stripe-mock:12111/ >/dev/null 2>&1' && break || sleep 2
+          done
+
+      - name: Serve the edge functions against the mock
+        run: |
+          bash tests/stripe/make-env.sh stripe-mock > mock.env
+          nohup supabase functions serve --env-file mock.env > functions.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -s -o /dev/null -X POST http://127.0.0.1:54321/functions/v1/stripe-webhook && break || sleep 2
+          done
+
+      - name: Run the pipeline harness
+        run: bash tests/stripe/run.sh
+
+      - name: Function logs on failure
+        if: failure()
+        run: |
+          tail -100 functions.log || true
+          docker logs --tail 100 supabase_edge_runtime_FXE-Tennis || true
+          docker logs --tail 30 stripe-mock || true
+
   ios-changes:
     name: Did Swift change?
     runs-on: ubuntu-latest

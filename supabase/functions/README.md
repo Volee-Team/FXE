@@ -49,3 +49,41 @@ supabase functions deploy stripe-setup-intent
 supabase functions deploy stripe-webhook --no-verify-jwt
 supabase functions deploy stripe-charge
 ```
+
+## Testing without a Stripe account
+
+`tests/stripe/run.sh` drives the whole pipeline against
+[stripe-mock](https://github.com/stripe/stripe-mock), Stripe's own mock server:
+SetupIntent → signed webhook writes the card summary → Tara's charge goes
+pending → processing → succeeded and marks the registration paid → refund
+unmarks it → a decline lands as failed with the reason → unsigned or
+wrongly signed webhooks change nothing. Same PASS/FAIL lines as the probes.
+CI runs it on every PR ("Stripe pipeline (mocked)").
+
+```bash
+docker run -d --name stripe-mock --network supabase_network_FXE-Tennis stripe/stripe-mock
+bash tests/stripe/make-env.sh > /tmp/mock.env
+supabase functions serve --env-file /tmp/mock.env   # another shell
+bash tests/stripe/run.sh
+```
+
+On a Mac where the image will not pull (Docker Hub hung for an hour on
+2026-09-12), run the binary on the host instead and point the functions at
+`host.docker.internal`:
+
+```bash
+brew install stripe/stripe-mock/stripe-mock && stripe-mock -http-port 12111 &
+bash tests/stripe/make-env.sh host.docker.internal > /tmp/mock.env
+supabase functions serve --env-file /tmp/mock.env
+bash tests/stripe/run.sh
+```
+
+`make-env.sh` invents the secret key each run (stripe-mock takes any
+`sk_test_` plus letters and digits) so no key-shaped string is ever in the
+repo: GitHub's push protection refused the first draft, which carried Stripe's
+public example key, and that refusal was the right call. `STRIPE_API_HOST`
+is honoured by `_shared/stripe.ts` only when set; hosted never sets it. What the
+mock cannot prove: Stripe's real decisions (3-D Secure, declines, real ids).
+That needs the test keys and a test card, the same script with
+`stripe listen --forward-to` for the webhooks.
+

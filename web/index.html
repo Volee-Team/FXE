@@ -275,6 +275,19 @@ const COURTS = [1, 2, 3, 4, 5];
 let clinicIndex = {};
 let regsByClinic = {};
 const unpaidIn = (c) => (regsByClinic[c.id] || []).filter(r => r.status === "in" && !r.paid);
+// Tara's tap (decision 0010): a charge is never automatic. The button exists
+// only while payments are on; without a card there is nothing to charge and
+// the row says so instead.
+let cutoffHours = 4;
+const chargeButton = (r, kind, label) => {
+  if (!paymentsOn) return "";
+  if (kind === "clinic_fee" && r.paid) return "";
+  // A live or finished charge shows its state; only a failed one offers the
+  // button again (the ledger row stays as the record of the decline).
+  if (["pending", "processing", "succeeded"].includes(r.charge_status)) return `<span class="muted">${PAY_STATUS[r.charge_status]}</span>`;
+  if (!r.has_card) return `<span class="muted">No card</span>`;
+  return `${r.charge_status === "failed" ? `<span class="muted" style="color:#992E22">Failed</span>` : ""}<button class="small" data-charge="${r.id}" data-kind="${kind}">${label}</button>`;
+};
 // Tara's payment line has no closing period; give it one so the sentences read.
 const endSentence = (t) => /[.!?]$/.test(t.trim()) ? t.trim() : t.trim() + ".";
 const reminderBody = (c, paymentLine) =>
@@ -303,6 +316,12 @@ function friendly(e) {
   if (m.includes("clinic_full")) return "That clinic is full now.";
   if (m.includes("request_not_pending")) return "Someone already handled that one.";
   if (m.includes("already_canceled")) return "That clinic is already canceled.";
+  if (m.includes("payments_disabled")) return "Payments are switched off.";
+  if (m.includes("no_card_on_file")) return "No card on file for that player.";
+  if (m.includes("already_charged")) return "That one is already charged.";
+  if (m.includes("already_refunded")) return "That one is already refunded.";
+  if (m.includes("not_refundable")) return "Only a paid charge can be refunded.";
+  if (m.includes("stripe_not_configured")) return "Stripe isn't connected yet.";
   if (m.includes("failed to fetch")) return "Couldn't reach the server. Check your connection.";
   return e?.message || "Something went wrong.";
 }
@@ -425,6 +444,14 @@ async function loadMoney() {
 // are the Paid checkbox on the roster.
 const KIND = { clinic_fee: "Clinic fee", late_cancel: "Late cancel", no_show: "No-show", refund: "Refund" };
 const PAY_STATUS = { pending: "Pending", processing: "Processing", succeeded: "Paid", failed: "Failed", canceled: "Canceled" };
+// Every pending ledger row becomes one Stripe call (decision 0009). The
+// function needs the admin JWT the client already holds.
+async function settleLedger() {
+  const { data, error } = await sb.functions.invoke("stripe-charge", { body: {} });
+  if (error) throw new Error(error.message || "stripe_charge_failed");
+  return data;
+}
+
 async function loadLedger() {
   const box = $("ledger");
   if (!box) return;
@@ -442,13 +469,26 @@ async function loadLedger() {
       <span class="grow"><span class="name">${esc(who)}</span> <span class="muted">${KIND[r.kind] || esc(r.kind)}</span><br>
         <span class="muted">${clinic ? esc(clinic.name) + " · " + fmtDate(clinic.starts_at) : ""}${r.failure_reason ? " · " + esc(r.failure_reason) : ""}</span></span>
       <span><span class="name">${r.kind === "refund" ? "−" : ""}${money(r.amount_cents)}</span><br><span class="muted"${bad}>${status}</span></span>
+      ${paymentsOn && r.kind !== "refund" && r.status === "succeeded" ? `<button class="small" data-refund="${r.id}">Refund</button>` : ""}
     </div>`;
   }).join("");
+}
+
+// Decision 0009/0010: nothing charges while payments_enabled is 'false'.
+// Read on every load so flipping the setting in the dashboard shows up on
+// the next refresh, no deploy.
+let paymentsOn = false;
+async function loadPaymentsSwitch() {
+  const { data } = await sb.from("app_settings").select("key, value").in("key", ["payments_enabled", "cancel_cutoff_hours"]);
+  const byKey = Object.fromEntries((data || []).map(r => [r.key, r.value]));
+  paymentsOn = byKey.payments_enabled === "true";
+  cutoffHours = parseInt(byKey.cancel_cutoff_hours, 10) || 4;
 }
 
 async function loadClinics() {
   note($("msg"), "");
   await loadTemplates();
+  await loadPaymentsSwitch();
   const { data: clinics, error } = await sb.from("clinics_admin").select("*").order("starts_at");
   if (error) return note($("msg"), friendly(error));
   if (!clinics.length) {
@@ -510,10 +550,12 @@ async function loadClinics() {
         ${c.status === "draft" ? `<button class="small primary" data-publish="${c.id}">Publish</button>` : ""}
         ${c.status !== "canceled" ? `<button class="small" data-cancelclinic="${c.id}">Cancel clinic</button>` : `<span class="chip canceled">Canceled</span>`}
       </div>
-      ${section("in", r => `${courtSelect(r)}<button class="small" data-paid="${r.id}" data-now="${r.paid}">${r.paid ? "Paid" : "Unpaid"}</button>`)}
+      ${section("in", r => `${courtSelect(r)}<button class="small" data-paid="${r.id}" data-now="${r.paid}">${r.paid ? "Paid" : "Unpaid"}</button>${chargeButton(r, "clinic_fee", "Charge fee")}`)}
       ${section("pool", r => `<button class="small primary" data-invite="${r.id}">Invite</button>`)}
       ${section("response_needed", r => `<button class="small" data-uninvite="${r.id}">Cancel invite</button>`)}
-      ${section("canceled", () => "")}
+      ${section("canceled", r => r.late_cancel
+        ? `<span class="chip canc" title="Canceled inside ${cutoffHours} hours">Late</span><span class="muted">“${esc(r.cancel_note || "")}”</span>${chargeButton(r, "late_cancel", "Charge late cancel")}`
+        : "")}
     </div>`;
   }).join("");
 }
@@ -562,6 +604,20 @@ document.addEventListener("click", async (e) => {
   if (b.dataset.invite)   return run(() => call("invite_from_pool",   { p_registration: b.dataset.invite }));
   if (b.dataset.uninvite) return run(() => call("cancel_invitation",  { p_registration: b.dataset.uninvite }));
   if (b.dataset.paid)     return run(() => call("set_paid", { p_registration: b.dataset.paid, p_paid: b.dataset.now !== "true" }));
+  if (b.dataset.charge)   return run(async () => {
+    // Two steps, both idempotent: the ledger row (pending, one per
+    // registration and kind), then stripe-charge turns every pending row
+    // into one Stripe call. If the second step fails the row stays pending
+    // and the next tap, on any row, picks it up.
+    await call("admin_charge_registration", { p_registration: b.dataset.charge, p_kind: b.dataset.kind });
+    await settleLedger();
+    await loadMoney();
+  });
+  if (b.dataset.refund)   return run(async () => {
+    await call("admin_refund_payment", { p_payment: b.dataset.refund });
+    await settleLedger();
+    await loadMoney();
+  });
   if (b.dataset.publish)  return run(() => call("publish_clinic",     { p_clinic: b.dataset.publish }));
   if (b.dataset.archivetpl) return run(() => call("admin_set_template_archived", { p_id: b.dataset.archivetpl, p_archived: true }));
   if (b.dataset.restoretpl) return run(() => call("admin_set_template_archived", { p_id: b.dataset.restoretpl, p_archived: false }));

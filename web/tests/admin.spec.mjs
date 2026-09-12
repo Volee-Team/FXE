@@ -144,6 +144,20 @@ test.describe("money", () => {
   });
 });
 
+test.describe("payments switch", () => {
+  test("with payments off there is nothing to charge or refund anywhere", async ({ page }) => {
+    // Decision 0009: payments_enabled is 'false' until Tara answers. The
+    // seed keeps it that way, so the honest page has no Charge or Refund
+    // button on any roster row or ledger row.
+    await signIn(page, TARA);
+    await expect(page.locator("#clinics .card").first()).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Charge/ })).toHaveCount(0);
+    await page.getByRole("tab", { name: "Money" }).click();
+    await expect(page.locator("#ledger")).toContainText("Card payments");
+    await expect(page.getByRole("button", { name: "Refund" })).toHaveCount(0);
+  });
+});
+
 test.describe("cancel clinic", () => {
   test("takes two clicks and leaves a Canceled chip", async ({ page }) => {
     await signIn(page, TARA);

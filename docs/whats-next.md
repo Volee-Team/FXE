@@ -12,7 +12,7 @@ Ordered by what it unblocks, not by how hard it is to answer.
 
 | # | Question | Why it blocks | Our current assumption |
 |---|---|---|---|
-| 27–37 | **Payments and cancellations** (2026-09-12, `questions-for-tara.md` §I): cutoff, fee, no-shows, refunds on her cancel, card required at sign-up, when the fee is charged, what waits for her tap, Zelle, her Stripe account, the card-entry sentence | Nothing can charge anyone until she answers: `payments_enabled` stays false | The defaults written beside each question |
+| 28–42 | **Payments and cancellations** (`questions-for-tara.md` §I and §J). Answered 2026-09-12: the cutoff is 4 hours and it is an honor system with a concise emergency note (decision 0010). Still open: the late charge amount, no-shows, whether the regular fee goes on the card, card required at sign-up, refunds on her cancel, her Stripe account, and the two sentences | Nothing can charge anyone until she answers: `payments_enabled` stays false | The defaults written beside each question |
 
 **Blocked on Alex, same feature (2026-09-12):** a Stripe *test-mode* account, its secret key and webhook secret set as Supabase Edge Function secrets (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PUBLISHABLE_KEY`, dashboard only, never the repo), and a tick through `docs/copy-review.md`. Everything else on the payments path is built and deployed: schema, ledger, RPCs, three edge functions, the card screen on Profile, the Money tab ledger. Until the key exists, Add a card answers "Cards aren't set up yet."
 

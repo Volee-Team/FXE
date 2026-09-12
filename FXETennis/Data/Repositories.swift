@@ -22,6 +22,10 @@ private struct ClinicPlayerParams: Encodable {
 private struct RegistrationParam: Encodable {
     let p_registration: UUID
 }
+private struct CancelParams: Encodable {
+    let p_registration: UUID
+    let p_note: String?
+}
 private struct RespondParams: Encodable {
     let p_registration: UUID
     let p_accept: Bool
@@ -96,10 +100,19 @@ enum RegistrationRepository {
             .value
     }
 
-    static func cancelRegistration(registrationId: UUID) async throws {
+    /// `note` is the player's own concise message, required by the server
+    /// inside the cutoff (decision 0010); nil otherwise.
+    static func cancelRegistration(registrationId: UUID, note: String? = nil) async throws {
         try await supabase
-            .rpc("cancel_registration", params: RegistrationParam(p_registration: registrationId))
+            .rpc("cancel_registration", params: CancelParams(p_registration: registrationId, p_note: note))
             .execute()
+    }
+
+    /// Hours before a clinic after which a cancellation needs a note.
+    /// `app_settings.cancel_cutoff_hours`, 4 by Tara's word.
+    static func cancelCutoffHours() async throws -> Int {
+        let value: Int = try await supabase.rpc("cancel_cutoff_hours").execute().value
+        return value
     }
 
     static func leavePool(registrationId: UUID) async throws {

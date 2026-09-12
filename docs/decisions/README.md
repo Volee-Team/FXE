@@ -19,6 +19,7 @@ The history of what we believed is part of the record.
 | [0007](0007-tara-answers-2026-08-27.md) | Tara's answers: 3h close, 24h member head start, juniors to Nov/spring | 2026-08-27 | Active |
 | [0008](0008-push-notifications.md) | Push: APNs from an edge function on a notifications webhook; device registration now, delivery when Apple issues the key | 2026-09-02 | Active |
 | [0009](0009-payments-stripe-card-on-file.md) | Stripe direct with a card on file; every money event a row; policy as settings pending Tara's answers | 2026-09-12 | Active |
+| [0010](0010-cancellation-four-hour-honor-system.md) | Cancellation is a 4-hour honor system: free before, a concise emergency note after, charging is Tara's tap | 2026-09-12 | Partial |
 
 **Keeping this index complete is part of writing the record.** 0005 sat
 unindexed from the day it was written until 2026-08-13, which meant the one place
