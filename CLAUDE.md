@@ -472,6 +472,22 @@ The local Supabase dev image segfaults the Postgres backend when a role without 
     standing inventory of everything we wrote rather than her, with the 34 items
     that still need her marked.
 
+14. **When a decision is Tara's, ask Tara before building, even at five percent
+    doubt.** Anything that encodes how she runs her clinics — a price, a fee, a
+    window, who pays what, what a message says, what happens when someone
+    cancels — is her call, not a sensible default. Alex, 2026-09-12: *"help me
+    get the info from TARA before we do things ALWAYS ... always ask tara if
+    you're unsure even 5%."*
+
+    Mechanically: write the questions into `questions-for-tara.md` (in the docs
+    folder beside this repo), numbered, each answerable in one line, with the
+    default we would otherwise pick stated so she can just say "yes". Hand them
+    to Alex to relay. While waiting, build only the policy-independent parts.
+    When the answers come back, record them as a dated decision record (the way
+    0007 records 2026-08-27) and pin any rule with a DB consequence in a probe.
+    The cost of asking is a text message; the cost of guessing is a rebuild and
+    her trust.
+
 
 ---
 
