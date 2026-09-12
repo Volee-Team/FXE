@@ -17,7 +17,15 @@ export function getStripe(): Stripe {
   const key = Deno.env.get("STRIPE_SECRET_KEY");
   if (!key) throw new Error("stripe_not_configured");
   if (!_stripe) {
-    _stripe = new Stripe(key, { apiVersion: "2024-12-18.acacia", httpClient: Stripe.createFetchHttpClient() });
+    // STRIPE_API_HOST points the SDK at stripe-mock (tests/stripe/run.sh and
+    // CI) instead of api.stripe.com. Never set on hosted: the harness sets it
+    // in a local env file, and the Supabase secrets dashboard does not carry it.
+    const mockHost = Deno.env.get("STRIPE_API_HOST");
+    _stripe = new Stripe(key, {
+      apiVersion: "2024-12-18.acacia",
+      httpClient: Stripe.createFetchHttpClient(),
+      ...(mockHost ? { host: mockHost, port: Number(Deno.env.get("STRIPE_API_PORT") ?? "12111"), protocol: "http" as const } : {}),
+    });
   }
   return _stripe;
 }

@@ -16,6 +16,7 @@ Cancel Registration
 Cancel clinic
 Cancel invite
 Cancel the invitation to \(entry.displayName)
+Canceled inside ${cutoffHours} hours
 Card payments
 Checking your reset link…
 Choose a new password
@@ -64,6 +65,7 @@ More
 My Clinics
 Need Help?
 New password
+No card on file for that player.
 No card payments yet.
 No clinics yet. Use “New clinic” to add your first one.
 No court
@@ -77,9 +79,11 @@ Not now
 Nothing open right now.
 Nothing yet.
 Notifications
+Only a paid charge can be refunded.
 Only you can see this.
 Optional. Tara can set this for you later.
 Payment method
+Payments are switched off.
 Pick something you'll remember. At least 8 characters.
 Player
 Players
@@ -105,6 +109,7 @@ Saved. You can sign in with it now, on your phone or here.
 Search by name
 Search players by name
 Sections
+Send and cancel my spot
 Send reminder
 Set by Tara
 She will let you know if there is room.
@@ -114,6 +119,7 @@ Signs you out. Your account is kept, and you can finish this later.
 Smart. Simple. Built for Tennis.
 Someone already handled that one.
 Start from a template
+Stripe isn't connected yet.
 Tara has your message.
 Tara uses this to build her clinic lists.
 That account is not an administrator.
@@ -121,6 +127,8 @@ That clinic is already canceled.
 That clinic is full now.
 That didn’t save. Try again.
 That email or password didn't work.
+That one is already charged.
+That one is already refunded.
 This clinic has been canceled.
 This link has expired or was already used. Go back and request a new one.
 Those don’t match.

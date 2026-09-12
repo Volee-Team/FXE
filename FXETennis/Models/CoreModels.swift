@@ -92,11 +92,15 @@ struct MyRegistration: Codable, Identifiable, Sendable {
     let invitedAt: Date?
     let respondedAt: Date?
     let canceledAt: Date?
+    /// Canceled inside the cutoff with a note (decision 0010). Optional so
+    /// a row from before the column existed still decodes.
+    let lateCancel: Bool?
 
     enum CodingKeys: String, CodingKey {
         case id, status, paid
         case clinicId = "clinic_id"
         case playerId = "player_id"
+        case lateCancel = "late_cancel"
         case registeredAt = "registered_at"
         case invitedAt = "invited_at"
         case respondedAt = "responded_at"

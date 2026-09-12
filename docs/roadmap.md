@@ -140,7 +140,7 @@ one, and conflating the two is what made this section look like a wall.
 | | |
 |---|---|
 | 🔨 | **Stripe, card on file** (decision 0009, 2026-09-12). Built: schema (Stripe customer + card summary on accounts, a `payments` ledger with RLS), `admin_charge_registration` / `admin_refund_payment`, the ledger-drives-Paid trigger, policy as `app_settings`, 21-check probe. `payments_enabled` is false until Tara answers Q27–Q37. Edge functions deployed (setup-intent, webhook, charge) and the Payment method section on Profile with Stripe's PaymentSheet (2026-09-12). Next: test keys from Alex, then Tara's answers → settings, the card-entry sentence, Charge / Refund on Tara's surfaces, Money tab column. Target October 1 |
-| 🔨 | **Stripe, card on file** (decision 0009, 2026-09-12). Built: schema (Stripe customer + card summary on accounts, a `payments` ledger with RLS), `admin_charge_registration` / `admin_refund_payment`, the ledger-drives-Paid trigger, policy as `app_settings`, 21-check probe. `payments_enabled` is false until Tara answers Q27–Q37. Also built: the three edge functions, the card screen on Profile (PaymentSheet), `payments_ledger` and its read-only list on the Money tab. Next, once Alex adds Stripe test keys: end-to-end with test cards. Once Tara answers: Charge and Refund buttons on the roster and Money tab, refunds on her cancel, her card-entry sentence. Target October 1 |
+| 🔨 | **Stripe, card on file** (decision 0009, 2026-09-12). Built: schema (Stripe customer + card summary on accounts, a `payments` ledger with RLS), `admin_charge_registration` / `admin_refund_payment`, the ledger-drives-Paid trigger, policy as `app_settings`, 21-check probe. `payments_enabled` is false until Tara answers Q27–Q37. Also built: the three edge functions, the card screen on Profile (PaymentSheet), `payments_ledger` and its read-only list on the Money tab, the 4-hour honor-system cancel (decision 0010), Charge/Refund as Tara's tap on the web (hidden while the switch is off), and the stripe-mock harness in CI. Next, once Alex adds Stripe test keys: end-to-end with test cards. Once Tara answers: Charge and Refund buttons on the roster and Money tab, refunds on her cancel, her card-entry sentence. Target October 1 |
 | ⬜ | **Juniors.** Deferred by Tara "before winter time". Enum values already in the schema so this is UI work, not a migration |
 | ⬜ | Parent accounts managing children, junior age groups |
 | ⬜ | Duplicate an entire week and adjust dates |
@@ -150,6 +150,27 @@ one, and conflating the two is what made this section look like a wall.
 ---
 
 ## v2 and beyond
+
+### The dream, in Tara's words (2026-09-12, relayed by Alex)
+
+Logged exactly as Alex wrote it, so the direction is never paraphrased away:
+
+> rn they use 500/yr for reservemycourt.com to reserve courts, and for now they
+> use that but we'd LOVE to someday integrate that into the app, then we could
+> white label sell this to many other clubs ... - she said we can sign up and
+> tara will approve me as an FXE member so I can play around with it
+> ^she said the DREAM is having everything on the app: pay for treats, barcode
+> to scan when you enter the pool to scan it, buy merch on the app, reserve
+> pool cabana for $150 for a bday, etc etc like truly comprehensive - then this
+> would TRULY be amazing to go to other clubs
+
+What that means for how we build now: keep the club, not the tennis program,
+as the unit the schema can grow into (accounts and payments already are
+club-level; clinics are one product line). Court reservations stay on
+reservemycourt.com ($500/yr) until v2; Alex can get an FXE member account
+there to study it. White-labelling later means nothing FXE-specific hard-coded
+where a setting would do (the payment instructions, the club name, the logo).
+
 
 Multiple admins or coaches. Reminder for unanswered invitations. Schedule
 conflict warnings. Advanced player search. Multiple locations.

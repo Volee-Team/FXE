@@ -29,6 +29,35 @@ mine. Nothing here is attributed to Tara.
 | ☐ | Couldn't load card payments. | web/index.html, Money tab, load error |
 | ☐ | Clinic fee · Late cancel · No-show · Refund | web/index.html, kind labels per row |
 | ☐ | Pending · Processing · Paid · Failed · Canceled | web/index.html, status labels per row |
+## New since the last review — 2026-09-12 (charging, decision 0010), awaiting Alex
+
+Web admin roster and Money tab. Chrome, mine. None of it shows until
+`payments_enabled` is true, except "Late" and the player's own note.
+
+| ✓ | String | Where |
+|---|--------|-------|
+| ☐ | Charge fee | roster, You're In! row, when a card exists and it is unpaid |
+| ☐ | Charge late cancel | roster, Canceled row flagged late |
+| ☐ | Late | chip on a late cancellation |
+| ☐ | No card | in place of a Charge button |
+| ☐ | Refund | Money tab, on a paid charge |
+| ☐ | Pending · Processing · Paid · Failed | roster, beside a charged row, instead of the button |
+| ☐ | Payments are switched off. | error |
+| ☐ | No card on file for that player. | error |
+| ☐ | That one is already charged. | error |
+| ☐ | That one is already refunded. | error |
+| ☐ | Only a paid charge can be refunded. | error |
+| ☐ | Stripe isn't connected yet. | error |
+
+iOS, the late-cancel prompt. The sentence Tara reads above the box is hers
+(question 40) and does not exist yet; only chrome shows.
+
+| ✓ | String | Where |
+|---|--------|-------|
+| ☐ | Reason (required) | text field placeholder inside 4 hours |
+| ☐ | Send and cancel my spot | the confirm button inside 4 hours |
+| ☐ | A reason is required inside 4 hours. | error when the note is blank |
+
 ## New since the last review — 2026-09-12 (notes stamp, version line), awaiting Alex
 
 Chrome, mine. The interpolated strings do not appear in the snapshot, so they
