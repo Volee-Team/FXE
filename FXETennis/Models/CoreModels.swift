@@ -179,15 +179,28 @@ struct Account: Codable, Identifiable, Sendable {
     let phone: String?
     let accountType: String
     let role: String
+    /// Display only ("Visa ···4242"); written by the Stripe webhook, never by
+    /// the app. Nil until a card has been added (decision 0009).
+    let cardBrand: String?
+    let cardLast4: String?
 
     enum CodingKeys: String, CodingKey {
         case id, email, phone, role
         case firstName = "first_name"
         case lastName = "last_name"
         case accountType = "account_type"
+        case cardBrand = "card_brand"
+        case cardLast4 = "card_last4"
     }
 
     var isAdmin: Bool { role == "admin" }
+    var hasCard: Bool { cardLast4 != nil }
+    /// "Visa ···4242", or nil.
+    var cardLabel: String? {
+        guard let last4 = cardLast4 else { return nil }
+        let brand = (cardBrand ?? "Card").prefix(1).uppercased() + (cardBrand ?? "card").dropFirst()
+        return "\(brand) ···\(last4)"
+    }
 }
 
 // MARK: - Money formatting

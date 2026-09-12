@@ -139,7 +139,7 @@ one, and conflating the two is what made this section look like a wall.
 
 | | |
 |---|---|
-| 🔨 | **Stripe, card on file** (decision 0009, 2026-09-12). Built: schema (Stripe customer + card summary on accounts, a `payments` ledger with RLS), `admin_charge_registration` / `admin_refund_payment`, the ledger-drives-Paid trigger, policy as `app_settings`, 21-check probe. `payments_enabled` is false until Tara answers Q27–Q37. Next: SetupIntent + PaymentSheet in the app, the two edge functions, Money tab column. Target October 1 |
+| 🔨 | **Stripe, card on file** (decision 0009, 2026-09-12). Built: schema (Stripe customer + card summary on accounts, a `payments` ledger with RLS), `admin_charge_registration` / `admin_refund_payment`, the ledger-drives-Paid trigger, policy as `app_settings`, 21-check probe. `payments_enabled` is false until Tara answers Q27–Q37. Edge functions deployed (setup-intent, webhook, charge) and the Payment method section on Profile with Stripe's PaymentSheet (2026-09-12). Next: test keys from Alex, then Tara's answers → settings, the card-entry sentence, Charge / Refund on Tara's surfaces, Money tab column. Target October 1 |
 | ⬜ | **Juniors.** Deferred by Tara "before winter time". Enum values already in the schema so this is UI work, not a migration |
 | ⬜ | Parent accounts managing children, junior age groups |
 | ⬜ | Duplicate an entire week and adjust dates |

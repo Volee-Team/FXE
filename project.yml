@@ -19,6 +19,9 @@ packages:
   Supabase:
     url: https://github.com/supabase/supabase-swift
     exactVersion: "2.41.1"             # pinned to match Volee, a known-good version on this backend stack
+  Stripe:
+    url: https://github.com/stripe/stripe-ios
+    from: "24.0.0"                     # PaymentSheet only (decision 0009); card numbers never touch our code
 
 targets:
   FXETennis:
@@ -29,6 +32,8 @@ targets:
     dependencies:
       - package: Supabase
         product: Supabase
+      - package: Stripe
+        product: StripePaymentSheet
     # Push (decision 0008). XcodeGen writes this file and wires it into the
     # target; "development" until a distribution profile exists, and Xcode
     # flips it to production in an App Store archive.

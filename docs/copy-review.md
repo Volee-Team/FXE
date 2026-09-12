@@ -36,6 +36,7 @@ mine until Alex ticks them. Nothing here is attributed to Tara.
 | ☐ | Remind unpaid (N) · Send a payment reminder to N unpaid? · Send reminder · Reminder sent to N. · The reminder didn't send. Check your connection and try again. | Unpaid reminder button, web and iOS |
 | ☐ | **Just a reminder that {clinic} ({date}) hasn't been paid yet. {Tara's payment line} Thanks!** | The reminder players receive. Sent in Tara's name, so this one matters most. Her payment line is her own text from the database |
 | ☐ | This week · Next week · Week of {date} | Clinic list headers, iOS |
+| ☐ | Payment method · No card on file · Add a card · Change card · Cards aren't set up yet. · Saved. It may take a moment to show here. · That didn't work. Check your connection and try again. | Profile, card on file (decision 0009). The consent sentence at card entry is Tara's (Q37) and is not written |
 | ☐ | More · View Open Clinics (N) | Admin roster toolbar; Home button with the open count |
 | ☐ | Show canceled · N canceled clinics hidden. | Web admin, This week |
 | ☐ | Templates · Show archived · Archive · Restore · archived · No templates yet. | Web admin, templates card |
