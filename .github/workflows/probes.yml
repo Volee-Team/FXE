@@ -157,10 +157,11 @@ jobs:
       # edge runtime so the functions reach it as http://stripe-mock:12111.
       - name: Start stripe-mock
         run: |
-          docker run -d --name stripe-mock --network supabase_network_FXE-Tennis stripe/stripe-mock:latest
+          docker run -d --name stripe-mock --network supabase_network_FXE-Tennis -p 12111:12111 stripe/stripe-mock:latest
           for i in $(seq 1 20); do
-            docker exec supabase_edge_runtime_FXE-Tennis sh -c 'wget -q -O- http://stripe-mock:12111/ >/dev/null 2>&1' && break || sleep 2
+            curl -s -o /dev/null http://127.0.0.1:12111/ && break || sleep 2
           done
+          curl -s -o /dev/null -w "stripe-mock answers with http %{http_code}\n" http://127.0.0.1:12111/v1/customers -H "Authorization: Bearer sk_test_ci"
 
       - name: Serve the edge functions against the mock
         run: |
