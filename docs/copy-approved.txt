@@ -76,6 +76,7 @@ Nothing yet.
 Notifications
 Only you can see this.
 Optional. Tara can set this for you later.
+Payment method
 Pick something you'll remember. At least 8 characters.
 Player
 Players

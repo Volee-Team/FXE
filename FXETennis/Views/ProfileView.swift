@@ -21,6 +21,7 @@ struct ProfileView: View {
                     VStack(alignment: .leading, spacing: Brand.Spacing.lg) {
                         header
                         detailsCard
+                        CardOnFileView()
 
                         Button {
                             editing = true
