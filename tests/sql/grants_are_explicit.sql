@@ -40,7 +40,7 @@ from (values ('accounts'), ('players'), ('app_settings'),
              ('clinics_public'), ('my_registrations'), ('my_clinic_messages'),
              ('my_news'), ('clinics_admin'), ('registrations_admin'),
              ('templates_admin'), ('late_requests'), ('notifications'),
-             ('revenue_by_clinic'), ('revenue_by_segment')) as t(relname);
+             ('revenue_by_clinic'), ('revenue_by_segment'), ('payments_ledger')) as t(relname);
 
 -- A recipient may mark their own notification read, and nothing else about it.
 insert into _probe_result

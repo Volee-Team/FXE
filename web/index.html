@@ -414,7 +414,36 @@ async function loadMoney() {
     ${(rows || []).map(r => `<div class="row">
       <span class="grow"><span class="name">${esc(r.name)}</span><br><span class="muted">${fmtDate(r.starts_at)} · ${r.total_players} players</span></span>
       <span class="muted">${money(r.collected_cents)} of ${money(r.expected_cents)}</span>
-    </div>`).join("")}`;
+    </div>`).join("")}
+    <div id="ledger"></div>`;
+  loadLedger();
+}
+
+// Card payments (decision 0009). Read-only until Tara answers questions 27–37:
+// nothing charges while app_settings.payments_enabled is 'false', so today
+// this list is empty and says so. Zelle payments are not in this ledger; they
+// are the Paid checkbox on the roster.
+const KIND = { clinic_fee: "Clinic fee", late_cancel: "Late cancel", no_show: "No-show", refund: "Refund" };
+const PAY_STATUS = { pending: "Pending", processing: "Processing", succeeded: "Paid", failed: "Failed", canceled: "Canceled" };
+async function loadLedger() {
+  const box = $("ledger");
+  if (!box) return;
+  const { data: rows, error } = await sb.from("payments_ledger").select("*")
+    .order("created_at", { ascending: false }).limit(50);
+  const head = `<div class="row" style="border-top:1px solid var(--fxe-hairline);margin-top:10px;padding-top:10px"><span class="grow name">Card payments</span></div>`;
+  if (error) { box.innerHTML = head + `<div class="muted">Couldn't load card payments.</div>`; return; }
+  if (!rows || !rows.length) { box.innerHTML = head + `<div class="muted">No card payments yet.</div>`; return; }
+  box.innerHTML = head + rows.map(r => {
+    const who = `${r.first_name} ${r.last_name}`;
+    const clinic = r.clinic_name ? { name: r.clinic_name, starts_at: r.clinic_starts_at } : null;
+    const status = PAY_STATUS[r.status] || r.status;
+    const bad = r.status === "failed" ? ` style="color:#992E22"` : "";
+    return `<div class="row">
+      <span class="grow"><span class="name">${esc(who)}</span> <span class="muted">${KIND[r.kind] || esc(r.kind)}</span><br>
+        <span class="muted">${clinic ? esc(clinic.name) + " · " + fmtDate(clinic.starts_at) : ""}${r.failure_reason ? " · " + esc(r.failure_reason) : ""}</span></span>
+      <span><span class="name">${r.kind === "refund" ? "−" : ""}${money(r.amount_cents)}</span><br><span class="muted"${bad}>${status}</span></span>
+    </div>`;
+  }).join("");
 }
 
 async function loadClinics() {

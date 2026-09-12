@@ -227,6 +227,7 @@ JSON. The hiding is done in the database by three mechanisms:
    | `my_news` | Published news for your audience with a per-account read flag | scoped to the caller |
    | `clinics_admin`, `registrations_admin`, `templates_admin` | Explicit column lists (never `select *`, which freezes at creation) `where is_admin()` | admin only, else zero rows |
    | `revenue_by_clinic`, `revenue_by_segment` | Reconciliation aggregates | admin only |
+   | `payments_ledger` | Card payments with player and clinic named (2026-09-12) | admin only |
 
    Views run with owner rights (not `security_invoker`), which is why writes
    through them are revoked outright: an auto-updatable view would bypass RLS.
@@ -343,6 +344,11 @@ duration are **snapshotted** onto the row (decision 0002), so editing a clinic
 or correcting a membership never rewrites history. `revenue_summary()` returns
 the four counts, expected, collected and outstanding; `revenue_by_clinic` and
 `revenue_by_segment` break it down. Only `status = 'in'` counts.
+
+Decision 0009 (2026-09-12) adds card payments alongside Zelle: a `payments`
+ledger, admin RPCs that charge and refund, and `payments_ledger`, the admin's
+read of it with the player and clinic named. Switched off (`payments_enabled`)
+until Tara answers questions 27–37.
 
 ---
 

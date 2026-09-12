@@ -14,6 +14,25 @@ if ! docker exec "$DB" pg_isready -U postgres >/dev/null 2>&1; then
   exit 1
 fi
 
+# Freshness. The probes assume the deterministic seed and nothing else. Browser
+# tests and simulator runs leave rows behind, and a probe that fails on those
+# rows looks exactly like a real regression. This cost an afternoon on
+# 2026-09-12 (three "failures" that vanished after a reset). Every seed row is
+# stamped inside the same reset, so anything created well after the first seed
+# account was added later, by something other than the seed.
+STRAY=$(docker exec "$DB" psql -U postgres -d postgres -Atc "
+  with seed as (select min(created_at) + interval '60 seconds' as t from public.accounts)
+  select (select count(*) from public.accounts, seed where created_at > seed.t)
+       + (select count(*) from public.players, seed where created_at > seed.t)
+       + (select count(*) from public.clinics, seed where created_at > seed.t)
+       + (select count(*) from public.registrations, seed where registered_at > seed.t)
+       + (select count(*) from public.payments, seed where created_at > seed.t)" 2>/dev/null)
+if [ -n "$STRAY" ] && [ "$STRAY" != "0" ]; then
+  echo "DIRTY DATABASE: $STRAY rows were added after the seed. Failures below may be"
+  echo "false. Reset first and rerun:  supabase db reset --yes"
+  echo ""
+fi
+
 FAILED=0
 # Grand total, printed by the suite itself so documentation points here instead
 # of hardcoding a number. "142 checks" sat in three docs while the suite grew
