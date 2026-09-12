@@ -10,7 +10,9 @@ kept living in chat and dying with the session.
 
 Ordered by what it unblocks, not by how hard it is to answer.
 
-Nothing. Every question she has been asked is answered (2026-09-01).
+| # | Question | Why it blocks | Our current assumption |
+|---|---|---|---|
+| 27–37 | **Payments and cancellations** (2026-09-12, `questions-for-tara.md` §I): cutoff, fee, no-shows, refunds on her cancel, card required at sign-up, when the fee is charged, what waits for her tap, Zelle, her Stripe account, the card-entry sentence | Nothing can charge anyone until she answers: `payments_enabled` stays false | The defaults written beside each question |
 
 **Answered already, do not re-ask.** Six of the eight closed on 2026-08-27; see
 `docs/decisions/0007`.

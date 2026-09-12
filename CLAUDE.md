@@ -669,6 +669,8 @@ obeyed.
 
 ## Changelog
 
+- **2026-09-12** — **Payments: the foundation, with the switch off.** Tara: *"I just wanna charge them"* (seven late cancellations, an hour before a clinic). Decision 0009: Stripe direct with a card on file, Apple takes nothing (real-world service), every money event a row. Built today without a Stripe account: `stripe_customer_id` and a card *summary* on accounts (written only by the webhook, so a player cannot forge one), the `payments` ledger with owner/admin RLS and no client writes, `admin_charge_registration` (amount defaults to the price snapshot; a double tap is one fee) and `admin_refund_payment` (whole, once), and a trigger so a succeeded fee marks the registration paid and a succeeded refund unmarks it. Policy is `app_settings`, defaults matching the eleven questions sent to Tara, and `payments_enabled` is false: per hard rule 14 nothing charges anyone until she has answered. 21-check probe, red first, including "nothing charges while disabled" and "a player cannot write the ledger".
+
 - **2026-09-10** — **Copy extractor: an interpolation is not a sentence.** `“\(m)”` had sat in the approved snapshot since 09-01 as if it were words; the noise filter now drops strings that are nothing but an interpolation. Backlog row closed.
 
 - **2026-09-10** — **Web admin hides canceled clinics.** They stayed in the week forever wearing their chip (review 09-02). Now hidden by default with a one-line count and a Show canceled toggle; nothing is deleted (hard rule 4). The cancel browser test ticks the toggle to find the chip.
