@@ -21,7 +21,9 @@ packages:
     exactVersion: "2.41.1"             # pinned to match Volee, a known-good version on this backend stack
   Stripe:
     url: https://github.com/stripe/stripe-ios
-    from: "24.0.0"                     # PaymentSheet only (decision 0009); card numbers never touch our code
+    exactVersion: "24.25.0"            # PaymentSheet only (decision 0009); card numbers never touch our code.
+                                       # Exact, like Supabase above: a floating "from" resolved to 24.25.0 on
+                                       # 2026-09-12 and would silently move under CI on the next release.
 
 targets:
   FXETennis:
