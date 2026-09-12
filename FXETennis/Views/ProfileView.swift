@@ -52,6 +52,15 @@ struct ProfileView: View {
                                 .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
                         }
                         .accessibilityIdentifier("profile.signOut")
+
+                        // Which build is this? The first question in every
+                        // "it looks wrong on my phone" text from Tara or a
+                        // tester, and TestFlight installs several a week.
+                        Text(Self.versionLine)
+                            .font(Brand.Typography.caption)
+                            .foregroundStyle(Brand.textSecondary)
+                            .frame(maxWidth: .infinity)
+                            .accessibilityIdentifier("profile.version")
                     }
                     .padding(Brand.Spacing.pageMargin)
                 }
@@ -68,6 +77,15 @@ struct ProfileView: View {
             .sheet(isPresented: $showNTRP) { NTRPExplainerSheet() }
             .sheet(isPresented: $editing) { EditProfileView() }
         }
+    }
+
+    /// "Version 0.1.0 (1)", from the bundle so it can never drift from what
+    /// was actually shipped.
+    static var versionLine: String {
+        let info = Bundle.main.infoDictionary ?? [:]
+        let short = info["CFBundleShortVersionString"] as? String ?? "?"
+        let build = info["CFBundleVersion"] as? String ?? "?"
+        return "Version \(short) (\(build))"
     }
 
     private var header: some View {

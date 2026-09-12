@@ -97,6 +97,9 @@ test.describe("the directory", () => {
     await page.getByLabel("Search players by name").fill("Mar");
     await page.locator("[data-player-row]", { hasText: "Maria Alvarez" }).getByRole("button", { name: "Note" }).click();
     await expect(page.getByLabel("Private note")).toHaveValue(stamp);
+    // Saving re-lists the players and closes the box, so the stamp is read on
+    // reopen: it exists once a note exists, and it is a date, not a slogan.
+    await expect(page.locator("[id^=note-]:not(.hide) [data-noteedited]")).toContainText(/Edited .*\d/);
   });
 });
 

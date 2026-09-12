@@ -613,6 +613,7 @@ document.addEventListener("click", async (e) => {
           const { data, error } = await sb.rpc("admin_player_note", { p_player: b.dataset.notes }); if (error) throw error;
           box.querySelector("textarea").value = data || "";
           box.classList.remove("hide");
+          await showNoteEdited(b.dataset.notes);
         } else box.classList.add("hide");
         return;
       }
@@ -623,6 +624,16 @@ document.addEventListener("click", async (e) => {
   }
   if (b.dataset.edit)     return openEdit(b.dataset.edit);
 });
+
+// "Edited <date>" beside a note, so an old note reads as old. Empty when there
+// is no note (the RPC returns null) or when the stamp cannot be read; a missing
+// date must never block the note itself.
+async function showNoteEdited(playerId) {
+  const el = document.querySelector(`[data-noteedited="${playerId}"]`);
+  if (!el) return;
+  const { data } = await sb.rpc("admin_player_note_edited", { p_player: playerId });
+  el.textContent = data ? `Edited ${fmtDate(data)}.` : "";
+}
 
 async function openEdit(id) {
   editingId = id || null;
@@ -677,7 +688,7 @@ const playerRow = (pl) => `<div class="row" data-player-row="${pl.id}">
 </div>
 <div class="hide" id="note-${pl.id}" style="margin:0 0 10px 0">
   <textarea rows="3" aria-label="Private note" data-notebody="${pl.id}" style="width:100%"></textarea>
-  <div class="row"><span class="muted grow">Only you can see this.</span><button class="small primary" data-savenote="${pl.id}">Save note</button></div>
+  <div class="row"><span class="muted grow">Only you can see this. <span data-noteedited="${pl.id}"></span></span><button class="small primary" data-savenote="${pl.id}">Save note</button></div>
 </div>`;
 
 async function searchPlayers() {

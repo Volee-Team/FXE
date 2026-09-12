@@ -29,6 +29,15 @@ mine. Nothing here is attributed to Tara.
 | ☐ | Couldn't load card payments. | web/index.html, Money tab, load error |
 | ☐ | Clinic fee · Late cancel · No-show · Refund | web/index.html, kind labels per row |
 | ☐ | Pending · Processing · Paid · Failed · Canceled | web/index.html, status labels per row |
+## New since the last review — 2026-09-12 (notes stamp, version line), awaiting Alex
+
+Chrome, mine. The interpolated strings do not appear in the snapshot, so they
+are listed here by hand.
+
+| ✓ | String | Where |
+|---|--------|-------|
+| ☐ | Edited <date>. | web/index.html, under a player note |
+| ☐ | Version 0.1.0 (1) | ProfileView, under Sign Out, from the bundle |
 
 ## New since the last review — 2026-09-01, awaiting Alex
 

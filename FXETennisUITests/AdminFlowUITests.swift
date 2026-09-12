@@ -228,9 +228,21 @@ final class AdminFlowUITests: XCTestCase {
         dismissSavePasswordSheetIfPresent()
     }
 
+    /// Open the Profile tab. On the iOS 26 simulator the floating tab bar
+    /// drops the first tap now and then (2026-09-12: two of three runs, and
+    /// a hand-driven session needed two taps too), so wait briefly and tap
+    /// once more before calling it a failure. Backlog has the note.
+    private func openProfileTab() {
+        app.buttons["Profile"].tap()
+        if !app.buttons["profile.signOut"].waitForExistence(timeout: 5) {
+            app.buttons["Profile"].tap()
+        }
+        XCTAssertTrue(app.buttons["profile.signOut"].waitForExistence(timeout: 15), "Profile never opened")
+    }
+
     private func signOut() {
         dismissSavePasswordSheetIfPresent()
-        app.buttons["Profile"].tap()
+        openProfileTab()
         let out = app.buttons["profile.signOut"]
         XCTAssertTrue(out.waitForExistence(timeout: 10), "No sign-out control on Profile")
         out.tap()

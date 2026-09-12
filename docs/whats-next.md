@@ -1,6 +1,6 @@
 # What's next, and what we need from Tara
 
-Living file. Updated 2026-09-10. If something here is done, move it out; if
+Living file. Updated 2026-09-12. If something here is done, move it out; if
 something new blocks, add it. This exists because the answer to "what's next"
 kept living in chat and dying with the session.
 
@@ -13,6 +13,8 @@ Ordered by what it unblocks, not by how hard it is to answer.
 | # | Question | Why it blocks | Our current assumption |
 |---|---|---|---|
 | 27–37 | **Payments and cancellations** (2026-09-12, `questions-for-tara.md` §I): cutoff, fee, no-shows, refunds on her cancel, card required at sign-up, when the fee is charged, what waits for her tap, Zelle, her Stripe account, the card-entry sentence | Nothing can charge anyone until she answers: `payments_enabled` stays false | The defaults written beside each question |
+
+**Blocked on Alex, same feature (2026-09-12):** a Stripe *test-mode* account, its secret key and webhook secret set as Supabase Edge Function secrets (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PUBLISHABLE_KEY`, dashboard only, never the repo), and a tick through `docs/copy-review.md`. Everything else on the payments path is built and deployed: schema, ledger, RPCs, three edge functions, the card screen on Profile, the Money tab ledger. Until the key exists, Add a card answers "Cards aren't set up yet."
 
 **Answered already, do not re-ask.** Six of the eight closed on 2026-08-27; see
 `docs/decisions/0007`.
