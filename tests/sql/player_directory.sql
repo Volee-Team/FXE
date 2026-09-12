@@ -21,6 +21,7 @@ declare
   MARIA_P constant uuid := 'a0000000-0000-0000-0000-000000000001';
   ROB_P   constant uuid := 'a0000000-0000-0000-0000-000000000003';
   v_text  text;
+  v_stamp text;
   v_bool  boolean;
   n       int;
 begin
@@ -39,12 +40,23 @@ begin
   v_text := public.admin_player_note(ROB_P);
   insert into _probe_result values ('admin_note_saved_and_trimmed', 'Left-handed. Prefers court 2.', v_text);
 
+  -- The stamp (20260912000004): a saved note has one, a missing one has none,
+  -- and it is the row's updated_at, not "now" at read time.
+  perform set_config('role', 'postgres', true);
+  select updated_at::text into v_stamp from public.player_notes where player_id = ROB_P;
+  perform set_config('role', 'authenticated', true);
+  insert into _probe_result values ('edited_stamp_matches_row', v_stamp, public.admin_player_note_edited(ROB_P)::text);
+  insert into _probe_result values ('edited_stamp_null_without_note', 'true',
+    (public.admin_player_note_edited('a0000000-0000-0000-0000-00000000000f') is null)::text);
+
   -- Saving blank removes the row, so search_players.has_notes stays honest.
   perform public.admin_set_player_note(ROB_P, '   ');
   perform set_config('role', 'postgres', true);
   select count(*) into n from public.player_notes where player_id = ROB_P;
   insert into _probe_result values ('blank_note_deletes_row', '0', n::text);
   perform set_config('role', 'authenticated', true);
+  insert into _probe_result values ('edited_stamp_gone_after_blank', 'true',
+    (public.admin_player_note_edited(ROB_P) is null)::text);
 
   select has_notes into v_bool from public.search_players('Rob', false);
   insert into _probe_result values ('has_notes_false_after_blank', 'false', v_bool::text);

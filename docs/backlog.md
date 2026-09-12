@@ -16,7 +16,10 @@ Priority: 🔴 blocks a person · 🟡 should fix · 🟢 whenever
 | 🟡 | Notification triggers with no producer | 2026-08-02 | `REGISTRATION IS OPEN` needs a scheduler that does not exist. Copy is written, nothing fires it |
 | 🟡 | Four "high" findings from the completeness review | 2026-08-02 | Docs drifted from code; probes asserting less than their comments claim |
 | 🟢 | Six "medium" / seven "low" findings from the same review | 2026-08-02 | Not security. Worth one focused pass |
-| 🟢 | `clinics.price_cents` is dead | 2026-08-10 | Superseded by the two price columns. Drop once the Swift client and web admin are both off it |
+| 🟢 | `clinics.price_cents` is dead | 2026-08-10 | Superseded by the two price columns. Swift and web are off it (checked 2026-09-12). Blast radius of the drop: `clinics_public` and `clinics_admin` select it (drop + recreate + regrant, since a view cannot lose a column in place), `create_clinic_from_template` copies it, `clinic_templates.price_cents` too, and `seed.sql` inserts it. One migration, one seed edit, then `information_hiding` and `admin_clinic_crud` confirm the views |
+| 🟢 | **Local auth answers 504 for a while after `supabase db reset`** | 2026-09-12 | GoTrue keeps its connection pool across the reset and the stale connections time out at 10s (`context deadline exceeded` in `docker logs supabase_auth_FXE-Tennis`), so browser sign-in flakes for a few minutes. `docker restart supabase_auth_FXE-Tennis` clears it |
+| 🟡 | **Profile tab drops the first tap on the iOS 26 simulator** | 2026-09-12 | `testPlayerCanEditTheirOwnDetails` failed two runs of three at the tab tap, and a hand-driven session on iPhone 16e needed two taps too. The UI tests now retry once (`openProfileTab()`); nobody has seen it on a device. Check on Tara's phone at TestFlight time; if real, it is the floating tab bar, not our code |
+| 🟡 | **The browser suite is not idempotent** | 2026-09-12 | `cancel clinic` cancels Sunday Social for good, so the second full run on one database fails it and two neighbours. Locally: reset between runs. Fix: have the test create its own clinic to cancel, or restore state at the end |
 
 ## Fixed
 

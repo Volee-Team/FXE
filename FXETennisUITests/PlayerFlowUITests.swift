@@ -297,7 +297,7 @@ final class PlayerFlowUITests: XCTestCase {
         app.launch()
         signIn(as: memberEmail)
         dismissSavePasswordSheetIfPresent()
-        app.buttons["Profile"].tap()
+        openProfileTab()
 
         let edit = app.buttons["profile.edit"]
         XCTAssertTrue(edit.waitForExistence(timeout: 20), "No Edit details button on Profile")
@@ -316,6 +316,13 @@ final class PlayerFlowUITests: XCTestCase {
         // Back on Profile with the new value rendered from the reloaded session.
         XCTAssertTrue(app.staticTexts[newPhone].waitForExistence(timeout: 20),
                       "Profile never showed the new phone; the save did not reach the session")
+
+        // The build line lives at the bottom of Profile and reads from the
+        // bundle, so it can only be wrong if the bundle is.
+        let version = app.staticTexts["profile.version"]
+        app.swipeUp()
+        XCTAssertTrue(version.waitForExistence(timeout: 10), "No version line on Profile")
+        XCTAssertTrue(version.label.hasPrefix("Version "), "Version line reads: \(version.label)")
         signOut()
     }
 
@@ -486,6 +493,18 @@ final class PlayerFlowUITests: XCTestCase {
         }
     }
 
+    /// Open the Profile tab. On the iOS 26 simulator the floating tab bar
+    /// drops the first tap now and then (2026-09-12: two of three runs, and
+    /// a hand-driven session needed two taps too), so wait briefly and tap
+    /// once more before calling it a failure. Backlog has the note.
+    private func openProfileTab() {
+        app.buttons["Profile"].tap()
+        if !app.buttons["profile.signOut"].waitForExistence(timeout: 5) {
+            app.buttons["Profile"].tap()
+        }
+        XCTAssertTrue(app.buttons["profile.signOut"].waitForExistence(timeout: 15), "Profile never opened")
+    }
+
     private func signOut() {
         // The save-password sheet can land late, after sign-in has already
         // returned. Clear it defensively before touching the tab bar.
@@ -493,7 +512,7 @@ final class PlayerFlowUITests: XCTestCase {
         // SwiftUI's TabView replaces a tab item's accessibilityIdentifier with
         // the SF Symbol name ('person.fill'), so querying by identifier finds
         // nothing. The visible label is stable and is what a user reads.
-        app.buttons["Profile"].tap()
+        openProfileTab()
         let out = app.buttons["profile.signOut"]
         XCTAssertTrue(out.waitForExistence(timeout: 10), "No sign-out control on Profile")
         out.tap()
