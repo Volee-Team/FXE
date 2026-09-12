@@ -16,10 +16,12 @@ Cancel Registration
 Cancel clinic
 Cancel invite
 Cancel the invitation to \(entry.displayName)
+Card payments
 Checking your reset link…
 Choose a new password
 Clinic updates come through the app. Keep notifications on so you don't miss them.
 Clinics
+Couldn't load card payments.
 Couldn't load the numbers.
 Couldn't reach the server. Check your connection.
 Court
@@ -62,6 +64,7 @@ More
 My Clinics
 Need Help?
 New password
+No card payments yet.
 No clinics yet. Use “New clinic” to add your first one.
 No court
 No description yet.

@@ -129,6 +129,16 @@ test.describe("money", () => {
     await expect(money).toContainText("Expected");
     await expect(money).toContainText("Still owed");
   });
+
+  test("the Money tab lists card payments, and says so when there are none", async ({ page }) => {
+    await signIn(page, TARA);
+    await page.getByRole("tab", { name: "Money" }).click();
+    const ledger = page.locator("#ledger");
+    await expect(ledger).toContainText("Card payments");
+    // The seed has no payments and payments are switched off, so the honest
+    // state is the empty one. Nothing invents a row here.
+    await expect(ledger).toContainText("No card payments yet.");
+  });
 });
 
 test.describe("cancel clinic", () => {

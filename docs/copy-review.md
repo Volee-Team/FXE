@@ -17,6 +17,19 @@ Regenerate any time: `python3 scripts/extract-copy.py --report`
 
 ---
 
+## New since the last review — 2026-09-12, awaiting Alex
+
+Web admin Money tab, the read-only card-payments list (decision 0009). Chrome,
+mine. Nothing here is attributed to Tara.
+
+| ✓ | String | Where |
+|---|--------|-------|
+| ☐ | Card payments | web/index.html, Money tab heading |
+| ☐ | No card payments yet. | web/index.html, Money tab, empty state |
+| ☐ | Couldn't load card payments. | web/index.html, Money tab, load error |
+| ☐ | Clinic fee · Late cancel · No-show · Refund | web/index.html, kind labels per row |
+| ☐ | Pending · Processing · Paid · Failed · Canceled | web/index.html, status labels per row |
+
 ## New since the last review — 2026-09-01, awaiting Alex
 
 Written by me for the Action Needed / Money / password-reset work. Rule 13:
