@@ -1,4 +1,14 @@
 # Developer Practices for John
+<!-- check-doc-paths: skip -->
+<!-- This file describes the Volee repo, so the repo path checker
+     (scripts/check-doc-paths.sh, added 2026-09-12) skips it: every path it
+     names is Volee's unless prefixed FXE-Tennis/. -->
+
+**Who John is:** the Volee developer, whose Apple Developer account holds Volee
+(`docs/questions-for-tara.md`, the Apple enrollment question). This pack is
+addressed to him, not to Kat. **Every file path and command below is Volee's
+unless it is prefixed `FXE-Tennis/`.** The FXE facts were refreshed 2026-09-12;
+the Volee facts were re-checked the same day and hold.
 
 A portable pack of the SWE and AI-workflow practices this team now uses, so you
 can apply them to Volee. Every practice below is one we actually run, in this
@@ -10,9 +20,11 @@ Two repos, one developer, shared patterns:
 
 * **Volee** (`/Users/alex/Documents/GITHUB/Volee`) is live on the App Store.
 * **FXE Tennis** (`/Users/alex/Documents/GITHUB/FXE-Tennis`) is a separate app,
-  separate Supabase project, separate bundle id. Backend is further along;
-  the iOS client is not started. It is where several of these practices were
-  hardened, because a backend with no UI is where SQL discipline gets tested.
+  separate Supabase project, separate bundle id. The iOS app and a web admin
+  are built (as of 2026-09-12: 30 Swift files, 23 unit tests, 13 XCUITests,
+  12 Playwright tests); release waits on Apple Developer enrollment. It is
+  where several of these practices were hardened, because the first month was a
+  backend with no UI, which is where SQL discipline gets tested.
 
 The one sentence under all of it: **chat is not memory, and a clean build is not
 proof.** If a rule or a decision is not written into the repo, it is gone at the
@@ -143,6 +155,13 @@ independent of whether the model decides to cooperate. Wiring is in
 | Session start | `.claude/hooks/session-start.sh` | `SessionStart` | Prints branch, dirty-tree, and recent commits into context. Warns if you are on `main`. Warns not to touch someone else's in-flight files |
 | Destructive-SQL guard | `.claude/hooks/guard-destructive-sql.sh` | `PreToolUse` | **Blocks** catastrophic SQL before it reaches the live DB |
 | Guard self-test | `.claude/hooks/test-guard.sh` | run in CI | Proves the guard blocks the bad shapes and allows every real probe |
+
+FXE has three hooks of its own, wired the same way in its `.claude/settings.json`
+(2026-08-14): `FXE-Tennis/.claude/hooks/session-start.sh` (`SessionStart`, the
+same branch and dirty-tree report), `log-prompt.sh` (`UserPromptSubmit`) and
+`log-response.sh` (`Stop`), which append every prompt and reply to
+`docs/prompt-log/`, added after a `/clear` destroyed a session and cost a day.
+FXE has no destructive-SQL guard.
 
 **The destructive-SQL guard is the concept to understand and protect.** FXE does
 not have it; Volee invented it, and it is the cleanest example in either repo of
@@ -431,20 +450,33 @@ different halves, and each should learn from the other.
 What Volee CI does **not** do is run the SQL probes. They only ever run manually,
 via `/probes`, against the live database.
 
-**FXE CI** (`FXE-Tennis/.github/workflows/probes.yml`) does the opposite and is
-the model to copy for the SQL half:
+**FXE CI** (`FXE-Tennis/.github/workflows/probes.yml`) runs the probes on a
+throwaway database and is the model to copy for the SQL half. As of 2026-09-12
+it has eight jobs (`grep -nE "^  [a-z-]+:$"` on the workflow):
 
 * `sql-probes`: install the Supabase CLI, `supabase start` a local stack,
   `supabase db reset` to apply every migration and seed onto a **fresh, empty
-  Postgres**, then `bash tests/run-probes.sh` for the full suite (it prints its own count; 285 checks as of 2026-09-01) plus the
+  Postgres**, then `bash tests/run-probes.sh` for the full suite (18 `.sql`
+  probes; it prints its own check total, never quote one from prose) plus the
   concurrency probe. The database is disposable and is thrown away when the runner
   ends.
+* `ios-build-and-test`: XcodeGen, build, and the `FXETennisTests` unit target
+  on whichever iPhone simulator the runner has (picked by UDID, after a pinned
+  name failed on a runner image that lacked it). `ios-changes` gates it to PRs
+  that touch Swift.
+* `web-browser-tests`: 12 Playwright tests against the same local stack.
+* `stripe-pipeline`: the payments harness (`tests/stripe/run.sh`, 27 checks)
+  against `stripe-mock`.
+* `copy-gate`: fails on any user-visible string not in `docs/copy-approved.txt`.
+* `secret-scan`: fails on any key-shaped string in the repo.
 * `migration-immutability`: on pull requests, fail if any *already-committed*
   migration file was modified rather than superseded. A migration that may
   already be applied to the hosted database must never be edited in place.
 
 The throwaway-DB principle is a hard rule in FXE's CLAUDE.md and it is the right
-one for Volee too: *"The hosted database is not seeded and must not be."* Probes
+one for Volee too: *"No test fixtures in hosted, ever. Tara's real data is not a
+fixture"* (reworded 2026-08-13 from "the hosted database is not seeded", which
+read as a ban on real content). Probes
 verify against a database you can destroy: locally via `supabase db reset`, in CI
 on a fresh runner. You never point an attack probe (section 5) or a
 capacity-overfill probe at production.

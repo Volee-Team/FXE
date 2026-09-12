@@ -12,9 +12,14 @@ Ordered by what it unblocks, not by how hard it is to answer.
 
 | # | Question | Why it blocks | Our current assumption |
 |---|---|---|---|
-| 28–42 | **Payments and cancellations** (`questions-for-tara.md` §I and §J). Answered 2026-09-12: the cutoff is 4 hours and it is an honor system with a concise emergency note (decision 0010). Still open: the late charge amount, no-shows, whether the regular fee goes on the card, card required at sign-up, refunds on her cancel, her Stripe account, and the two sentences | Nothing can charge anyone until she answers: `payments_enabled` stays false | The defaults written beside each question |
+| 27–42 | **Payments and cancellations** (`questions-for-tara.md` §I is 27–37, §J is 38–42). Answered 2026-09-12: the cutoff is 4 hours and it is an honor system with a concise emergency note (decision 0010). Still open: the late charge amount, no-shows, whether the regular fee goes on the card, card required at sign-up, refunds on her cancel, her Stripe account, and the two sentences | Nothing can charge anyone until she answers: `payments_enabled` stays false | The defaults written beside each question |
 
-**Blocked on Alex, same feature (2026-09-12):** a Stripe *test-mode* account, its secret key and webhook secret set as Supabase Edge Function secrets (`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PUBLISHABLE_KEY`, dashboard only, never the repo), and a tick through `docs/copy-review.md`. Everything else on the payments path is built and deployed: schema, ledger, RPCs, three edge functions, the card screen on Profile, the Money tab ledger. Until the key exists, Add a card answers "Cards aren't set up yet."
+**Blocked on Alex (2026-09-12), two asks, both spelled out in `docs/launch-checklist.md`:**
+
+1. **Stripe test keys** (§B): a Stripe *test-mode* account, its secret key and webhook secret set as Supabase Edge Function secrets (dashboard only, never the repo). Everything else on the payments path is built and deployed: schema, ledger, RPCs, three edge functions, the card screen on Profile, the Money tab ledger. Until the key exists, Add a card answers "Cards aren't set up yet."
+2. **A `fxe-ci` Supabase project in the FXE org** (§F): the only way the 13 XCUITests can run on every PR, because the macOS runner has no Docker for the local stack. Two minutes in the dashboard and two GitHub secrets; the workflow is ours to write once they exist.
+
+Also his: a tick through `docs/copy-review.md` for the connective words in the unpaid reminder.
 
 **Answered already, do not re-ask.** Six of the eight closed on 2026-08-27; see
 `docs/decisions/0007`.
@@ -43,7 +48,7 @@ Ordered by what it unblocks, not by how hard it is to answer.
 
 | | Status |
 |---|---|
-| FXE Tennis, LLC Developer Program enrollment | **In review.** Tara sending photo ID, employment verification, and a business doc (Certificate of Formation is usually easiest) |
+| FXE Tennis, LLC Developer Program enrollment | **In review.** fersc.com email accepted; ID and business docs submitted (same state as `docs/roadmap.md`) |
 | Company email at own domain | **Done.** `fersc.com` accepted |
 | D-U-N-S 11-654-7195 | Done |
 | Team ID, bundle id, App Store Connect record | Waiting on enrollment |
@@ -51,24 +56,49 @@ Ordered by what it unblocks, not by how hard it is to answer.
 
 ## Blocked on nothing: what to build
 
-Done since the last edit (2026-09-01, all merged and live): web admin, clinic
-and template CRUD, Action Needed, Money, password reset, court dropdowns,
-one-tap unpaid reminder, player directory with private notes, the anon
-EXECUTE lockdown, and the first real nightly backup artifact.
+Done since 2026-09-01 (all merged; hosted pushed through 20260912000005):
+on the phone, the bell opens a notification center with read state in the
+database, My Clinics is its own screen grouped by week, players edit their own
+name, phone and rating, Tara cancels a clinic or removes a player from the
+roster's More menu, a notification row opens the clinic it is about, the push
+client half (permission sheet, APNs registration, `register_device` /
+`unregister_device`, decision 0008), week grouping on the clinic list with a
+five-week ceiling, and the 4-hour cancel note sheet (decision 0010). On the
+web, three tabs (This week · Players · Money), canceled clinics hidden behind
+a toggle, templates archived and restored instead of deleted, "Edited <date>"
+under every note, the card-payments ledger on the Money tab, and Charge fee /
+Charge late cancel / Refund as Tara's tap, rendered only while
+`payments_enabled` is true. Underneath: the whole payments foundation
+(decision 0009: ledger, card summary on accounts, `admin_charge_registration`
+/ `admin_refund_payment`, the ledger-drives-Paid trigger, `service_role`
+grants), the three Stripe edge functions deployed, the card screen on Profile
+with PaymentSheet, `payments_ledger`, and `cancel_registration` refusing a late
+You're In! cancel without a note. Testing: 12 Playwright tests, 13 XCUITests
+(5 on Tara's side), 23 unit tests, 18 SQL probes, and a 27-check Stripe
+pipeline against stripe-mock in CI. `docs/architecture.md` was regenerated
+2026-09-01 and refreshed 2026-09-12. Nothing charges anyone: the switch is off.
 
 1. **Tara's real clinics in hosted.** Hers to create at
    `fxe-tennis-admin.vercel.app`; asked 2026-09-01.
-2. **Week grouping on the clinic list** (player side): the list is flat.
-3. **`docs/architecture.md` rewrite** from the live schema and file tree.
-4. **Push notifications** — client half built 2026-09-02 (decision 0008). What remains needs the Apple Developer account: the APNs key, then the `push` edge function, the webhook, and the audit columns.
-5. **Crash reporting** — none, before real members are on it.
-6. **Privacy policy + account deletion** — required before children's data in v1.1.
+2. **Push notifications** — client half built 2026-09-02 (decision 0008). What remains needs the Apple Developer account: the APNs key, then the `push` edge function, the webhook, and the audit columns.
+3. **Crash reporting** — none, before real members are on it.
+4. **Account deletion in the app** — App Store guideline 5.1.1(v); what it deletes is a Tara question (`docs/launch-checklist.md` §C). Privacy policy needs a URL (Volee's can be reused, decision 16).
+5. **XCUITests in CI** — waits on the `fxe-ci` project above.
 
 ## The honest state of the iOS app
 
-Works: sign in, sign up, browse, register, cancel, leave pool, accept/decline,
-clinic messages, the "?" explainer, and an admin tab where Tara can invite from
-the Player Pool, mark paid, and message a clinic.
+Works: sign in, sign up, forgot password, browse by week with a date floor
+and a five-week ceiling, register, cancel (with the 4-hour note inside the
+cutoff), leave pool, accept/decline, the late request ("Message Tara" after
+the close), clinic messages, the "?" explainer, the bell and its notification
+center, My Clinics, profile editing, a card on file behind Stripe's
+PaymentSheet (answers "Cards aren't set up yet." until the key exists), and an
+admin tab where Tara can invite from the Player Pool, cancel an invitation,
+assign courts, mark paid, send the unpaid reminder, message a clinic, answer
+late requests, remove a player, cancel a clinic, and search the directory with
+private notes.
 
-Missing: creating or editing a clinic, push notifications, News, profile
-editing, a date floor on the clinic list.
+Missing on the phone: creating or editing a clinic (web only), push delivery
+(rows are written, nothing sends), News (deferred, decision 0006), and the
+persistent notice while notification permission is denied (decision 0008
+item 3, not built).

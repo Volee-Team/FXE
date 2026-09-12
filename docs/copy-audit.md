@@ -4,17 +4,25 @@
 opposite: everything a player can read that **we** invented, so she can approve,
 edit, or reject it. Extracted from the source on 2026-08-16, not from memory.
 
-138 user-visible strings across 16 files. Most are chrome and do not need her.
-The ones that do are marked, and there are 34 of them.
+**This is the 2026-08-16 baseline.** The live inventory is `docs/copy-review.md`,
+regenerated from `scripts/extract-copy.py`; on 2026-09-12 that reports 164
+user-visible strings across 19 files, and `docs/copy-approved.txt` holds 148
+lines (`wc -l`). The numbers below are the August ones and are kept for the
+record.
+
+138 user-visible strings across 16 files (2026-08-16). Most are chrome and do
+not need her. The ones that do are marked, and there are 34 of them.
 
 **How to use this:** walk the "Needs Tara" sections with her. Anything she
 changes moves into `docs/copy.md` under her name, and the code changes to match.
 Do not edit her words here; this file is the inventory, not the source.
 
-Regenerate after any UI work:
+Regenerate after any UI work (the grep this file first used scanned Swift only,
+which is how a web-page string reached Tara on 2026-08-27; the script scans
+`FXETennis/` and `web/`):
 
 ```bash
-grep -rnE 'Text\(\s*"|Label\(\s*"|Button\(\s*"|\.navigationTitle\(\s*"' FXETennis/ | grep -v '"[a-z.]*\."'
+python3 scripts/extract-copy.py --report
 ```
 
 ---
@@ -84,8 +92,13 @@ Three of these speak **in her voice, first person** ("I personally create each
 clinic based on playing levels"). That is a claim about how she works, written
 by us. It needs her sign-off more than the others do.
 
-Two are **not wired to anything**: Invitation Expired (no expiry mechanism
-exists) and Registration Open (needs a scheduled job). See `docs/backlog.md`.
+Only two of these fire today, and neither with her words: Invitation Received
+and Clinic Canceled are written by SQL with our own bodies. The payment reminder
+ships as a clinic message. The other eight (You're In, Invitation Accepted,
+Invitation Expired, Added to Player Pool, Removed from Player Pool, New
+Announcement, Registration Open, Registration Canceled) have **no producer in
+the database** (`pg_get_functiondef` over every `notify_account` caller,
+2026-09-12; the "What fires today" table in `docs/notifications.md`).
 
 ## 3. Needs Tara: player-facing sentences we made up
 

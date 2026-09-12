@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>FXE Tennis — Admin</title>
+<title>FXE Tennis · Admin</title>
 <link rel="stylesheet" href="./tokens.css">
 <style>
   /* Layout only. Every colour, radius and space comes from tokens.css, which
@@ -162,7 +162,7 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
   <form method="dialog" id="edit-form">
     <div id="template-row">
       <label for="f-template">Start from a template</label>
-      <select id="f-template"><option value="">— blank —</option></select>
+      <select id="f-template"><option value="">Blank</option></select>
     </div>
     <label for="f-name">Name</label>
     <input id="f-name" required>
@@ -361,7 +361,7 @@ async function loadTemplates() {
   // The picker offers only live templates; archived ones stay in the
   // database (hard rule 4) and come back with Restore.
   templates = all.filter(t => !t.archived_at);
-  $("f-template").innerHTML = '<option value="">— blank —</option>'
+  $("f-template").innerHTML = '<option value="">Blank</option>'
     + templates.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join("");
   const shown = $("show-archived").checked ? all : templates;
   $("tpl-list").innerHTML = shown.length ? shown.map(t => `<div class="row" data-template-row="${t.id}">

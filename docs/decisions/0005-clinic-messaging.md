@@ -45,5 +45,7 @@ because they cannot reply in the app.
 
 ## Pinned by
 
-`tests/sql/information_hiding.sql` — a targeted message stays visible only to
-its audience (decision 12 of the 2026-08-02 set).
+Nothing yet. `my_clinic_messages` filters through `clinic_message_recipients`,
+but no probe sends a targeted message and asserts a non-recipient cannot read
+it. Test gap (hard rule 9); backlog. (Until 2026-09-12 this section claimed
+`tests/sql/information_hiding.sql` pinned it; that probe has no message check.)

@@ -33,7 +33,7 @@ if [ "$DIRTY" -gt 0 ]; then
   echo '```'
   echo ""
   echo "Some of this may be someone else's in-flight work. Do not revert, clean"
-  echo "up, or commit files you did not change (CLAUDE.md hard rule 7)."
+  echo "up, or commit files you did not change (CLAUDE.md hard rule 6)."
 fi
 
 echo ""

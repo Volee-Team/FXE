@@ -5,7 +5,7 @@ exists right now: the iOS app is stuck behind Developer Program enrollment and
 she can use this today.
 
 Approved as the laptop half of a split admin surface (`docs/web-admin.md`,
-`for-tara.md` question 1). The phone app keeps the courtside work; this does
+`docs/for-tara.md` question 1). The phone app keeps the courtside work; this does
 weekly setup.
 
 ## What she can do here
@@ -43,8 +43,9 @@ get committed aimed at the wrong project. Sign in as `tara@fxe.test` /
 
 ## Test it
 
-Eight Playwright tests walk this page the way Tara does, against the LOCAL
-stack on a fresh seed. They are the only automated check on the web admin,
+Twelve Playwright tests (`grep -c 'test(' web/tests/admin.spec.mjs`,
+2026-09-12) walk this page the way Tara does, against the LOCAL stack on a
+fresh seed. They are the only automated check on the web admin,
 so they run in CI on every push (`web-browser-tests` in `probes.yml`).
 
 ```bash
@@ -88,11 +89,10 @@ the live URL, creates her account, and builds her week from templates. Her real
 clinics enter through this page, never a hand-written INSERT, so the path itself
 gets exercised.
 
-One setting remains for **password reset** (added 2026-09-01): Supabase only
-redirects to URLs on its allow-list and silently falls back to the Site URL
-otherwise. In the Supabase dashboard, Authentication → URL Configuration →
-Redirect URLs, add `https://fxe-tennis-admin.vercel.app/reset.html`. Until
-then "Forgot password?" sends an email whose link goes nowhere useful.
+**Password reset** works on hosted: `https://fxe-tennis-admin.vercel.app/reset.html`
+was added to the Supabase redirect allow-list on 2026-09-01 (`docs/backlog.md`).
+If the URL ever changes, add the new one there first: Supabase silently falls
+back to the Site URL for anything not on that list.
 
 ## Why the key in `config.js` is not a leak
 

@@ -1,7 +1,12 @@
 # FXE Tennis: Notification Catalogue
 
-Source of truth for code: `FXETennis/Models/NotificationCopy.swift`.
 Source of truth for copy: Tara, 2026-08-02.
+
+`FXETennis/Models/NotificationCopy.swift` transcribes this catalogue, but as of
+2026-09-12 nothing calls it (`grep -rl 'FXENotification\|NotificationCopy\|FXEPayment' FXETennis FXETennisTests` finds only the file itself). Every
+notification that actually reaches a player is a `notifications` row written
+by a SQL RPC with its own hardcoded body, and those bodies are not her wording.
+See "What fires today" below before trusting the trigger column.
 
 All player-facing copy below is hers, verbatim. Punctuation, capitalisation, and
 the missing terminal periods are reproduced as she wrote them. Admin-facing copy
@@ -21,6 +26,38 @@ the database layer as well. Do not add a count to a body string here.
 
 ---
 
+## What fires today (2026-09-12)
+
+The catalogue below is what she wrote and what should fire. This table is what
+the database does, from `pg_get_functiondef` on every function in `public`
+that calls `notify_account`. Everything else in the catalogue is **not wired**,
+whichever the trigger column says. The bodies here are ours, written in SQL
+before her copy arrived; per rule 13 each one needs either her wording or her
+yes before it reaches a real player.
+
+| Producer (RPC) | `type` | Recipient | Body as written in SQL | Catalogue # |
+|---|---|---|---|---|
+| `invite_from_pool` | `invitation_received` | The invited player | `A spot opened in {clinic}. Accept or decline.` | 2 (different words) |
+| `cancel_clinic` | `clinic_canceled` | Every live registration | `{clinic} has been canceled.` | 7 (different words) |
+| `send_clinic_message` | `clinic_message` | The audience she picked | Her typed body, pass-through | 12 |
+| `respond_to_invitation` | `invitation_accepted` / `invitation_declined` | Every admin | `{player} accepted.` / `{player} declined.` | 13, 14 (shorter) |
+| `cancel_registration` | `player_canceled` | Every admin | `{player} canceled.` plus ` Note: "{cancel_note}"` on a late cancel | 15 |
+| `request_late_spot` | `LATE_REQUEST` | Every admin | `{player} is asking to join {clinic}.` plus the quoted message if any | not in her list |
+| `resolve_late_request` | `LATE_REQUEST_APPROVED` / `LATE_REQUEST_DECLINED` | The requesting player | `You're in for {clinic}.` / `Tara couldn't fit you into {clinic} this time.` | not in her list |
+
+No producer exists for 1 (You're In: neither `register_for_clinic` nor
+`place_player` notifies), 3, 4, 5, 6 (admin `cancel_registration` notifies
+only the admins, contradiction (b)), 9 (`publish_news` notifies nobody), 10,
+or 11 (a player's own `cancel_registration` notifies only the admins).
+`cancel_invitation` and `leave_pool` notify nobody. The payment reminder (8)
+is not a `notify_account` call at all: it is a clinic message, see below.
+
+Push delivery is a separate question: these rows are readable in the app's
+notification center (2026-09-02) and nothing sends an APNs push yet (decision
+0008, waiting on the signing key).
+
+---
+
 ## The catalogue
 
 `{clinic}`, `{day}`, `{time}`, `{date}`, and `{player}` are substituted at send
@@ -31,26 +68,26 @@ player travelling out of state must still read the court time.
 
 | # | Notification | Trigger event | Recipient | Exact copy |
 |---|---|---|---|---|
-| 1 | You're In | Registration resolves to You're In!, by member priority or by Tara placing the player by hand. Does **not** fire on invitation accept. | The registering player's account | `You're all set for {clinic} on {day} at {time}. Looking forward to seeing you on court!` |
-| 2 | Invitation Received | Tara invites a player out of the Player Pool (`invite_from_pool`). | The invited player's account | `Good News! A spot is available for {clinic}. Tap below to accept before it expires` |
-| 3 | Invitation Accepted | Player taps Accept (`respond_to_invitation`, accept). | The accepting player's account | `Awesome! Your spot is confirmed. See you soon!` |
+| 1 | You're In | **Not wired.** Should fire when registration resolves to You're In!, by member priority or by Tara placing the player by hand, and **not** on invitation accept. `register_for_clinic` and `place_player` notify nobody today. | The registering player's account | `You're all set for {clinic} on {day} at {time}. Looking forward to seeing you on court!` |
+| 2 | Invitation Received | Tara invites a player out of the Player Pool (`invite_from_pool`). Wired, but with our body, not hers: see What fires today. | The invited player's account | `Good News! A spot is available for {clinic}. Tap below to accept before it expires` |
+| 3 | Invitation Accepted | **Not wired.** Should fire on Accept (`respond_to_invitation`), which today notifies only the admins. | The accepting player's account | `Awesome! Your spot is confirmed. See you soon!` |
 | 4 | Invitation Expired | **Not wired.** No expiry mechanism exists. See contradiction (a). | The invited player's account | `Your invitation has expired, but we hope to see you next time!` |
-| 5 | Added to Player Pool | First registration resolves to Player Pool. Not on decline, not on invitation cancel. See finding (i). | The registering player's account | `Thanks for registering! I personally create each clinic based on playing levels and will send confirmations once lineups are set ASAP` |
-| 6 | Removed from Player Pool | Tara removes a pooled player (admin `cancel_registration`). | The removed player's account | `You've been removed from the Player Pool for {clinic}. Hope to see you at another clinic soon!` |
-| 7 | Clinic Canceled | Tara cancels a clinic (`cancel_clinic`). Sent to You're In!, Player Pool, and Response Needed. | Every account with a live registration | `Unfortunately today's {clinic} has been canceled due to weather.` |
-| 8 | Payment Reminder | Tara taps the unpaid reminder. Sent only where `paid = false`. | Unpaid registrants | `Just a quick reminder for payment from {clinic} on {date}. Thank you!` |
-| 9 | New Announcement | Tara publishes a news post (`publish_news`). | Accounts matching the post's audience | `News from FXE!` |
+| 5 | Added to Player Pool | **Not wired.** Should fire when a first registration resolves to Player Pool; not on decline, not on invitation cancel. See finding (i). | The registering player's account | `Thanks for registering! I personally create each clinic based on playing levels and will send confirmations once lineups are set ASAP` |
+| 6 | Removed from Player Pool | **Not wired.** Should fire when Tara removes a pooled player (admin `cancel_registration`), which today notifies only the admins. See contradiction (b). | The removed player's account | `You've been removed from the Player Pool for {clinic}. Hope to see you at another clinic soon!` |
+| 7 | Clinic Canceled | Tara cancels a clinic (`cancel_clinic`). Sent to You're In!, Player Pool, and Response Needed. Wired, but with our body, not hers: see What fires today and contradiction (d). | Every account with a live registration | `Unfortunately today's {clinic} has been canceled due to weather.` |
+| 8 | Payment Reminder | Tara taps Remind unpaid (web and iOS, 2026-09-01). Built as a `send_clinic_message` with audience `unpaid`, so it is a clinic message, not a push body. | Unpaid registrants | Her sentence was `Just a quick reminder for payment from {clinic} on {date}. Thank you!`. What ships is `Just a reminder that {clinic} ({date}) hasn't been paid yet. {payment line} Thanks!` (`web/index.html`, `AdminRepository.swift`), with the Zelle line inside; the connective words await Alex's tick in `copy-review.md`. See (g). |
+| 9 | New Announcement | **Not wired.** `publish_news` notifies nobody, and News has no surface (decision 0006). | Accounts matching the post's audience | `News from FXE!` |
 | 10 | Registration Is Open | **Not wired.** Requires a scheduled job at window open. See contradiction (c). | Undecided, see (c) | `Registration is LIVE!! Hope to see you on the court` |
-| 11 | Registration Canceled | Player cancels their own registration. | The cancelling player's account | `You've canceled your registration for {clinic}. Hope to see you back on the court soon!` |
+| 11 | Registration Canceled | **Not wired.** A player's own `cancel_registration` notifies only the admins. See (h), which recommends in-app only. | The cancelling player's account | `You've canceled your registration for {clinic}. Hope to see you back on the court soon!` |
 | 12 | Clinic Message | Tara sends a clinic message (`send_clinic_message`). | The audience she selected | Pass-through. Tara's typed body is the copy. |
 
 ### Admin-facing (to Tara)
 
 | # | Notification | Trigger event | Recipient | Exact copy |
 |---|---|---|---|---|
-| 13 | Player Accepted | Player accepts an invitation. | Every admin account | `{player} accepted their spot in {clinic}.` |
-| 14 | Player Declined | Player declines an invitation. | Every admin account | `{player} declined {clinic} and is back in the Player Pool.` |
-| 15 | Player Canceled | Player cancels a registration. Also raises Action Needed. | Every admin account | `{player} canceled {clinic}.` |
+| 13 | Player Accepted | Player accepts an invitation. Wired as `{player} accepted.` | Every admin account | `{player} accepted their spot in {clinic}.` |
+| 14 | Player Declined | Player declines an invitation. Wired as `{player} declined.` | Every admin account | `{player} declined {clinic} and is back in the Player Pool.` |
+| 15 | Player Canceled | Player cancels a registration. Also raises Action Needed. Wired as `{player} canceled.` plus the late-cancel note (2026-09-12). | Every admin account | `{player} canceled {clinic}.` |
 
 ### Measured lengths
 
@@ -300,14 +337,23 @@ That is 89 characters. Her payment reminder is 80. Together they are 169, well
 past what a lock screen shows, and the Zelle address is the part that would be
 cut.
 
-The catalogue keeps them apart: notification 8 is the short push, and
-`FXEPayment.line` is the exact required string for Clinic Details and for the
-persisted in-app message body, where there is room. This preserves both of her
+The catalogue keeps them apart: notification 8 is the short push, and the
+payment line is a separate string for Clinic Details and for the persisted
+in-app message body, where there is room. This preserves both of her
 requirements but it is an inference, not something she said.
 
-**Question for her.** Should the Zelle line ride inside the payment reminder
-itself, where the lock screen will cut it off, or sit on the clinic page and in
-the message the player opens?
+**What was built (2026-09-01).** The reminder is a clinic message, not a push,
+so the lock-screen budget did not apply, and the Zelle line rides inside it:
+`Just a reminder that {clinic} ({date}) hasn't been paid yet. {payment line}
+Thanks!`. Both clients read the line through the `payment_instructions()` RPC
+(`FXETennis/Data/Repositories.swift`, `web/index.html`), as CLAUDE.md requires;
+`FXEPayment.line` in `NotificationCopy.swift` is a second, unused copy of the
+same string (`grep -rn FXEPayment.line FXETennis` finds no caller) and should
+go when that file is either wired or deleted.
+
+**Question for her, still open for the push.** When a push exists, should the
+Zelle line ride inside it, where the lock screen will cut it off, or sit on the
+clinic page and in the message the player opens?
 
 ### (h) Notification 11 confirms an action the player just took
 
@@ -352,10 +398,13 @@ removed. Two documents still specify it:
 - `questions-for-tara.md` question 19, whose default was that marker, now
   overruled.
 
-`accounts.push_enabled` should stay in the schema: the app still needs to know
+~~`accounts.push_enabled` should stay in the schema: the app still needs to know
 its own permission state to nag the user, which is what she asked for instead.
-What has to go is any admin surface reading it. Both documents need updating so
-the next session does not rebuild the indicator from the spec.
+What has to go is any admin surface reading it.~~ **Resolved.** The column was
+dropped in 20260802000002 (`information_schema.columns` has no `push_enabled`
+on `accounts`, 2026-09-12) and the nag is client-side, where iOS already knows
+its own permission state: `FXETennis/Views/NotificationPermissionView.swift`
+(2026-09-02). CLAUDE.md's decision 13 records the overrule of both documents.
 
 ### (l) "Tap below" is an actionable push, not a plain alert
 

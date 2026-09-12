@@ -37,8 +37,7 @@ FROM TARA
 FXE TENNIS
 FXE Tennis
 FXE Tennis · Admin
-FXE Tennis — Admin
-FXE Tennis — Reset password
+FXE Tennis · Reset password
 First time? Create your account
 For someone who called or grabbed you at the club. They go straight to You&rsquo;re In!
 Forgot password?

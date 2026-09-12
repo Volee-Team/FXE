@@ -133,7 +133,6 @@ Kept here so it is not re-invented by someone who does not know it was quoted.
 | Profile setup | "Are you currently a Foxcroft East Racquet & Swim Club member?" | Developer Guide, Screen 4 |
 | Profile setup | "Need Help?" (the rating explainer link) | Developer Guide, Screen 4 |
 | Sign-up | "Clinic updates come through the app. Keep notifications on so you don't miss them." | Developer Guide, Screen 3 |
-| Splash | "Smart. Simple. Built for Tennis." | Wireframe mockups |
 
 ## Locked terminology
 
@@ -151,9 +150,15 @@ Never substitute a synonym. Full table in `docs/design-system.md`.
 2. **Notification wording**, question 14. Tone settled 2026-08-27 ("First person
    is ok. I want it to sound personal but not cheesy") — the exact words in
    `docs/notifications.md` still deserve her eye. See `docs/copy-review.md` §E.
-3. **The Venmo / Zelle payment line**, question 11. Served from the database via
-   `payment_instructions()`; current string reads like hers but was never
-   explicitly confirmed.
+3. ~~The Venmo / Zelle payment line~~ **CLOSED 2026-08-02** (decision 11 in
+   `CLAUDE.md`): her exact string, lower-case "zelle" and no terminal period,
+   lives in `app_settings.payment_instructions` and is pinned character for
+   character by `tests/sql/schema_decisions.sql`. Read it through
+   `payment_instructions()`, never hardcode it.
+5. **The splash line "Smart. Simple. Built for Tennis."** came from the
+   wireframe mockups, which she made with AI, so it is not hers either
+   (`copy-audit.md` section 3, `copy-review.md` section A). Moved out of
+   "already hers" 2026-09-12; needs her yes or no.
 4. **Clinic categories**, question 8. Her real schedule suggests the axis is
    format and level ("105", "3.0+"), not "Drill / Cardio / Match Play". Worth
    re-asking now that "105" is understood.

@@ -29,7 +29,7 @@ handwritten court sheet. Nothing more.
 | ✅ | Court assignment 1–5, admin only |
 | ✅ | Clinic messages with audience targeting |
 | ✅ | News with audience and unread tracking |
-| ✅ | Automated SQL probe suite + a concurrency probe (the suite prints its own total; 299 checks across 12 probes as of 2026-09-01), green in CI on every push |
+| ✅ | Automated SQL probe suite + a concurrency probe (18 probes as of 2026-09-12; the suite prints its own total), green in CI on every push |
 
 ### iOS app 🔨
 
@@ -45,7 +45,7 @@ whenever you touch it.
 | ✅ | Xcode project, brand tokens from Tara's palette, the gator mark, **and the app icon** (real crossed-racquets mark on navy, 2026-08-16; CI fails if it ever goes missing) |
 | ✅ | Sign in AND sign up (2026-08-15): profile screen with Tara's Screen-4 copy, `create_my_account`, `.needsProfile` routing, sign-up regression UI test |
 | ✅ | Profile: populated after sign-up, NTRP "?" explainer, and **Edit details** (2026-09-02): name, phone, rating. Membership stays Tara's to correct |
-| 🔨 | Browse clinics: "Registration opens" state ✅, date floor ✅ (2026-08-28, finished clinics vanish), **closed state with "Message Tara"** ✅, **week grouping** ✅ (2026-09-01, This week / Next week / Week of …). **five-week horizon** ✅ (2026-09-02) |
+| ✅ | Browse clinics: "Registration opens" state (2026-08-12), date floor (2026-08-28, finished clinics vanish), closed state with "Message Tara" (2026-08-28), week grouping (2026-09-01, This week / Next week / Week of …), five-week horizon (2026-09-02) |
 | ✅ | Clinic details: name, day, time, price for *this* player, description, Zelle/Venmo line, message board |
 | ✅ | Register / Cancel / Leave Player Pool |
 | ✅ | Accept or decline an invitation |
@@ -64,12 +64,12 @@ itself the finding.
 
 | | |
 |---|---|
-| ✅ | SQL probe suite: 14 probes (324 checks as of 2026-09-10 — the suite prints its own total), plus the concurrency probe. Green in CI on every push |
-| ✅ | **Web admin browser tests** (2026-09-02): 8 Playwright tests walk Tara's side against a fresh seed (sign-in and the non-admin door, prices, walk-up, courts, unpaid reminder, directory note round-trip, cancel clinic). Run in CI on every push |
-| ✅ | SQL probe suite: 12 probes (299 checks as of 2026-09-01 — the suite prints its own total), plus the concurrency probe. Green in CI on every push |
+| ✅ | SQL probe suite: 18 probes as of 2026-09-12 (the suite prints its own total), plus the concurrency probe. Green in CI on every push |
+| ✅ | **Web admin browser tests** (2026-09-02): 12 Playwright tests as of 2026-09-12 walk Tara's side against a fresh seed (sign-in and the non-admin door, prices, walk-up, courts, unpaid reminder, directory note round-trip, cancel clinic, template archive and restore, Money counts, the card-payments ledger, payments off). Run in CI on every push |
+| ✅ | **Stripe pipeline against a mock** (2026-09-12): `tests/stripe/run.sh`, 27 checks from SetupIntent through webhook, charge, refund and decline, with the switch off proving nothing charges. Runs in CI on every PR |
 | ✅ | **Admin XCUITests** (2026-09-02): four flows on Tara's side of the phone: register → court → unpaid reminder → paid; Player Pool → invite → the player's own Accept (hard rule 2 end to end); directory note round-trip; cancel clinic with confirmation. The phone's UI suite is now 13 tests, 8 player + 5 admin (Remove from clinic added 2026-09-10) |
-| ✅ | Unit tests: 13, covering the pure logic the probes cannot see (price formatting, member rate selection, NTRP bucketing) |
-| ✅ | XCUITests: **5 of 5 green** as of 2026-08-15, including a sign-up regression test |
+| ✅ | Unit tests: 23 as of 2026-09-12, covering the pure logic the probes cannot see (price formatting, member rate selection, NTRP bucketing, service-week edges, the 4-hour cancel policy) |
+| ⬜ | **XCUITests do not run in CI**: the macOS runner has no Docker for the local stack. Needs a `fxe-ci` Supabase project in the FXE org (`docs/launch-checklist.md` §F, Alex) |
 
 The XCUITest suite was 0 of 4, not the "2 of 4" claimed in `ed88c1f`. Three
 causes, all worth remembering because two are the same mistake:
@@ -86,7 +86,7 @@ causes, all worth remembering because two are the same mistake:
    now asserts the documented strings from `docs/design-system.md`, which pins
    the accessibility contract too.
 
-### Web admin 🔨 — LIVE at `fxe-tennis-admin.vercel.app` (2026-08-28)
+### Web admin ✅ — LIVE at `fxe-tennis-admin.vercel.app` (2026-08-28)
 
 Tara's weekly setup, on a laptop (her call, 2026-08-02). Sign-up self-promotes
 her email to admin, so the bootstrap is entirely hers.
@@ -104,7 +104,13 @@ her email to admin, so the bootstrap is entirely hers.
 | ✅ | **Money** (2026-09-01): the four numbers, expected / collected / still owed, and a per-clinic line. Web only; `revenue_summary()` + `revenue_by_clinic()` |
 | ✅ | **Player directory** (2026-09-01), web and iOS: forgiving search, private notes, membership correction, deactivate/reactivate. Notes travel only through admin-only RPCs (20260902000002, 14-check probe, red first) |
 | ✅ | **Action Needed** (2026-09-01): late requests with Put them in / No room, and unread cancellations and invitation replies with Seen. Web and iOS (iOS shows late requests on the roster) |
-| ✅ | **Forgot password?** (2026-09-01) on both sign-in screens, landing on `web/reset.html`. Works on hosted only once the reset URL is in Supabase Auth → URL Configuration (Alex, dashboard) |
+| ✅ | **Forgot password?** (2026-09-01) on both sign-in screens, landing on `web/reset.html`. Reset URL added to the hosted redirect list 2026-09-01, verified 2026-09-10 |
+| ✅ | **Three tabs** (2026-09-10): This week · Players · Money, the last tab remembered per browser, because Tara's first question on a Monday is money |
+| ✅ | **Show canceled** (2026-09-10): canceled clinics hidden by default behind a one-line count and a toggle; nothing deleted (hard rule 4) |
+| ✅ | **Template archive and restore** (2026-09-10): `admin_set_template_archived`, a Templates card with Archive / Show archived / Restore, and the picker lists only live ones. 10-check probe, red first |
+| ✅ | **"Edited <date>" under every note** (2026-09-12): `admin_player_note_edited` returns the note's `updated_at`, so a note from March no longer reads like one from yesterday |
+| ✅ | **Card payments on the Money tab** (2026-09-12): `payments_ledger` listed newest first, or "No card payments yet." while `payments_enabled` is false |
+| ✅ | **Charge fee / Charge late cancel / Refund** (2026-09-12): Tara's tap on the roster row, rendered only while `payments_enabled` is true; the late-cancel note shows always |
 
 ### Ship ⬜
 
@@ -122,6 +128,8 @@ one, and conflating the two is what made this section look like a wall.
 | ⬜ | App Store Connect app record; the bundle id is still the placeholder `com.fxetennis.app` |
 | ✅ | ~~Sign-up that produces a usable account~~ Done 2026-08-15, regression-tested |
 | 🔨 | Tara's real clinics in hosted — the path is open (live web admin + her self-promoting sign-up, 2026-09-01); the step is hers |
+| ✅ | **Privacy manifest** (`PrivacyInfo.xcprivacy` under FXETennis/Resources), 2026-09-12, PR #37 on `main`. Apple rejects builds that touch required-reason APIs without one |
+| ⬜ | **Account deletion in the app.** App Store guideline 5.1.1(v) requires it for any app with account creation. What it deletes (history and ledger rows vs. name and contact) is a Tara question, then a build |
 
 **Gates an external round and App Store release, but NOT an internal one:**
 
@@ -139,9 +147,8 @@ one, and conflating the two is what made this section look like a wall.
 
 | | |
 |---|---|
-| 🔨 | **Stripe, card on file** (decision 0009, 2026-09-12). Built: schema (Stripe customer + card summary on accounts, a `payments` ledger with RLS), `admin_charge_registration` / `admin_refund_payment`, the ledger-drives-Paid trigger, policy as `app_settings`, 21-check probe. `payments_enabled` is false until Tara answers Q27–Q37. Edge functions deployed (setup-intent, webhook, charge) and the Payment method section on Profile with Stripe's PaymentSheet (2026-09-12). Next: test keys from Alex, then Tara's answers → settings, the card-entry sentence, Charge / Refund on Tara's surfaces, Money tab column. Target October 1 |
 | 🔨 | **Stripe, card on file** (decision 0009, 2026-09-12). Built: schema (Stripe customer + card summary on accounts, a `payments` ledger with RLS), `admin_charge_registration` / `admin_refund_payment`, the ledger-drives-Paid trigger, policy as `app_settings`, 21-check probe. `payments_enabled` is false until Tara answers Q27–Q37. Also built: the three edge functions, the card screen on Profile (PaymentSheet), `payments_ledger` and its read-only list on the Money tab, the 4-hour honor-system cancel (decision 0010), Charge/Refund as Tara's tap on the web (hidden while the switch is off), and the stripe-mock harness in CI. Next, once Alex adds Stripe test keys: end-to-end with test cards. Once Tara answers: Charge and Refund buttons on the roster and Money tab, refunds on her cancel, her card-entry sentence. Target October 1 |
-| ⬜ | **Juniors.** Deferred by Tara "before winter time". Enum values already in the schema so this is UI work, not a migration |
+| ⬜ | **Juniors.** Deferred by Tara to November or the spring session (decision 0007 §6). Enum values already in the schema so this is UI work, not a migration |
 | ⬜ | Parent accounts managing children, junior age groups |
 | ⬜ | Duplicate an entire week and adjust dates |
 | ⬜ | Add to Calendar |

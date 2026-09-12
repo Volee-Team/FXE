@@ -32,13 +32,26 @@ name: nightly backup
 # It contains the database password, so it goes in Secrets and NOWHERE else.
 # Never paste it into a file, a prompt, or a commit.
 #
+# ENCRYPTION (added 2026-09-12, required)
+# ---------------------------------------
+# The repo is public, and GitHub lets any signed-in user download the
+# artifacts of a public repo. The dump includes auth.users: emails and bcrypt
+# password hashes. So the dump is encrypted with `age` to a public key kept in
+# the repo at .github/backup-recipient.txt; the matching PRIVATE key lives only
+# with Alex (his password manager). Without a real recipient the job fails
+# rather than upload another readable dump.
+#   age-keygen -o fxe-backup-key.txt        # once, on Alex's Mac; keep the file
+#   grep 'public key' fxe-backup-key.txt    # paste the age1... line into
+#                                           #   .github/backup-recipient.txt
+#
 # RESTORING (read this before you need it)
 # ----------------------------------------
-# A backup nobody has restored is a hypothesis, not a backup. To verify one:
-#   gh run download <run-id> -n fxe-db-backup-<date>
-#   gunzip -c fxe-*.sql.gz | psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
-# against the LOCAL stack, never against hosted. Do this once so the procedure
-# is known rather than improvised during an incident.
+# A backup nobody has restored is a hypothesis, not a backup. Drilled once on
+# 2026-09-12 (docs/launch-checklist.md D4). To verify one:
+#   gh run download <run-id> -n fxe-db-backup-<run-id>
+#   age -d -i fxe-backup-key.txt fxe-*.sql.gz.age | gunzip -c \
+#     | psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+# against the LOCAL stack, never against hosted. Repeat monthly.
 
 on:
   schedule:
@@ -55,6 +68,9 @@ jobs:
     timeout-minutes: 15
 
     steps:
+      # Only for .github/backup-recipient.txt; the dump itself needs no source.
+      - uses: actions/checkout@v4
+
       # The hosted database is Postgres 17. Ubuntu's default client is older,
       # and pg_dump refuses to dump a server newer than itself, so install the
       # matching major version rather than relying on the runner image.
@@ -95,9 +111,12 @@ jobs:
           # stack whose roles differ from Supabase's. Schema and data only.
           # Roles and grants are reproduced by the migrations, which are the
           # source of truth for them.
+          # supabase_migrations holds the ledger that `db push` reads. The first
+          # restore drill (2026-09-12) found it missing: a dump restored into a
+          # fresh project would have taken every migration again on the next push.
           /usr/lib/postgresql/17/bin/pg_dump "$DB_URL" \
             --no-owner --no-privileges \
-            --schema=public --schema=auth \
+            --schema=public --schema=auth --schema=supabase_migrations \
             --file="backups/fxe-$STAMP.sql"
 
           gzip -9 "backups/fxe-$STAMP.sql"
@@ -113,6 +132,20 @@ jobs:
             exit 1
           fi
 
+      - name: Encrypt to the recipient in the repo
+        run: |
+          sudo apt-get install -y -qq age
+          RECIPIENT=$(grep -E '^age1[a-z0-9]+$' .github/backup-recipient.txt | head -1 || true)
+          if [ -z "$RECIPIENT" ]; then
+            echo "::error::.github/backup-recipient.txt holds no age public key."
+            echo "The repo is public and artifacts are downloadable by any signed-in"
+            echo "GitHub user, so an unencrypted dump is not uploaded. See the"
+            echo "ENCRYPTION notes at the top of this workflow."
+            exit 1
+          fi
+          for f in backups/*.sql.gz; do age -r "$RECIPIENT" -o "$f.age" "$f" && rm "$f"; done
+          ls -lh backups/
+
       # Artifacts are free and retained 90 days. When real member data lands,
       # move this off GitHub: a backup living in the same account as the code
       # shares a failure mode with it.
@@ -120,12 +153,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: fxe-db-backup-${{ github.run_id }}
-          path: backups/*.sql.gz
+          path: backups/*.sql.gz.age
           retention-days: 90
           if-no-files-found: error
 
   # Supabase free-tier projects PAUSE after roughly a week without activity,
-  # and resuming needs a manual dashboard click. A tennis club has quiet weeks
+  # and resuming needs a manual restore (dashboard, or the management API as on
+# 2026-09-01). A tennis club has quiet weeks
   # between sessions by design, so the realistic failure is Tara opening the app
   # on a Thursday at 08:00 and the backend being asleep.
   #

@@ -2,6 +2,10 @@
 
 **Date:** 2026-08-10 · **Status:** Active
 
+**Superseded in part, 2026-09-12:** the Stripe-in-v1.1 half is replaced by
+0009 (card on file, Stripe direct, switch off until Tara answers). Zelle plus
+`revenue_summary()` stays true until that ships.
+
 ## Decision
 
 v1 moves no money. Tara keeps taking Zelle (preferred) and Venmo, and the app

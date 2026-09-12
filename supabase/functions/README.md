@@ -24,7 +24,7 @@ injected by the platform.
 |---|---|---|---|
 | `stripe-setup-intent` | the iOS app, once per card | caller's JWT | creates or reuses the Stripe customer, returns a SetupIntent client secret + ephemeral key for PaymentSheet |
 | `stripe-webhook` | Stripe | Stripe signature (`verify_jwt = false`) | records the card summary on `setup_intent.succeeded`, and ledger outcomes on payment / refund events |
-| `stripe-charge` | the admin surfaces after `admin_charge_registration` / `admin_refund_payment` | admin JWT | turns every `pending` ledger row into one PaymentIntent (off-session) or Refund, with an idempotency key per row |
+| `stripe-charge` | the admin surfaces after `admin_charge_registration` / `admin_refund_payment` | admin JWT | turns up to 25 `pending` ledger rows per call (`.limit(25)`) into one PaymentIntent (off-session) or Refund each, with an idempotency key per row; safe to call again for the rest |
 
 The database never talks to Stripe; the app never holds a key that can move
 money; the only writer of ledger status is the webhook (plus `stripe-charge`

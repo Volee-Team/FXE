@@ -81,6 +81,8 @@ clinic record rather than in her communication.
    once alone. It is not in the Developer Guide, the spec, or any of our docs.
    It looks like a program or format name rather than a level. **This is
    question 1 for Tara** and it blocks naming the templates correctly.
+   **Closed 2026-08-15:** a fast-paced doubles format, six per court, pro
+   feeds. Her definition is in `docs/copy.md` under "What 105 is".
 2. **Is "ladies clinic" with no level a distinct offering** from "all level
    ladies clinic", or the same thing written two ways? Affects whether they are
    one template or two.
@@ -91,7 +93,9 @@ clinic record rather than in her communication.
 4. **What do members receive?** She says this list is non-members. Members
    presumably get a separate mail, or the club sends it. The app assumes one
    published schedule both tiers see, differing only in when they may register.
-   Worth confirming that is right.
+   Worth confirming that is right. **Closed 2026-08-27:** "Same exact email,
+   same exact schedule," 24 hours earlier (decision 0007, section 2). The
+   assumption was right.
 5. **"This will change come end of August."** The non-member list turns over.
    Ask what changes: the people, the schedule, or both.
 
@@ -106,6 +110,8 @@ Two consequences:
   Her own fall session starts **2026-08-24**, which is sooner than that framing
   implies. Juniors are not a winter problem. Worth confirming whether the app is
   expected to handle the fall junior session or whether that one stays on email.
+  **Closed 2026-08-27:** "Juniors we will figure out for November or spring
+  session" (decision 0007, section 6). The 08-24 session stays on email.
 * **fersc.com exists.** Foxcroft East Racquet & Swim Club has a live site. That
   is relevant to the Apple Developer Program organisation enrollment, which
   wants a website for the legal entity, and it is worth checking whether FXE

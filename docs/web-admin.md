@@ -1,11 +1,17 @@
 # Web Admin: Architecture Decision Record
 
 **Status:** BUILT and LIVE at `fxe-tennis-admin.vercel.app` (2026-08-28),
-with one recorded deviation: plain HTML + supabase-js from a CDN instead of the
-Vite/React/Cloudflare stack below. One user, five screens, zero build step; the
-reasoning is in commit dd55e36 and stands until the surface outgrows it. The
-architecture arguments below (static SPA, no server, RPC-only authority) all
-still hold and are what the shipped page does.
+with these recorded deviations from the plan below: plain HTML + supabase-js
+from a CDN instead of Vite/React (one user, five screens, zero build step; the
+reasoning is in commit dd55e36 and stands until the surface outgrows it); the
+folder is `web/`, not `web-admin/`; the host is Vercel, not Cloudflare Pages,
+deployed by hand with `vercel --prod` and deliberately not connected to the
+repo (`web/README.md`); there is no `_headers` file and no CSP; there is no
+generated `db.types.ts` and no `dist/` for CI to grep. The architecture
+arguments below (static SPA, no server, RPC-only authority) all still hold and
+are what the shipped page does. Verified 2026-09-12: `ls web` shows
+`index.html`, `reset.html`, `config.js`, `tokens.css` plus the Playwright
+tooling.
 **Date:** 2026-08-02
 **Decision owner:** Alex
 **Approved by:** Tara (split admin surface, per `for-tara.md` question 1)
@@ -19,11 +25,13 @@ Tara approved splitting the admin surface in two.
 * **Phone (existing iOS app):** courtside work. Invitations from the Player Pool, clinic messages, marking players paid, walk-up placement. Things done standing on a court with one hand free.
 * **Laptop (this document):** weekly setup and court assignment. Creating a week of clinics from templates, editing templates, working the player directory, dragging players across courts 1 to 5.
 
-The database is already built and locked down. Three migrations exist:
+The database is already built and locked down. When this was written, three migrations existed:
 
 * `supabase/migrations/20260728000001_core_schema.sql`
 * `supabase/migrations/20260728000002_helpers_views_rls.sql`
 * `supabase/migrations/20260728000003_rpcs.sql`
+
+The schema has since grown to 27 migrations (`ls supabase/migrations | wc -l`, 2026-09-12); the security model is unchanged.
 
 The security model is settled and this document does not reopen it. Clients have no direct table access to `clinics`, `registrations`, `player_notes`, `clinic_templates`, `clinic_messages`, `clinic_message_recipients`, or `news_posts`. Reads go through narrow views. Writes go through `SECURITY DEFINER` RPCs that call `require_admin()`, which calls `is_admin()`, which reads `accounts.role` for `auth.uid()`.
 
@@ -116,9 +124,9 @@ select exists (
 );
 ```
 
-The web app calls `is_admin()` once at startup to decide whether to render the admin UI or an "access denied" panel. **That call is cosmetic.** It controls pixels, not permissions. If someone patched the JavaScript to skip the check, they would see the admin chrome and every single request behind it would fail in the database. This distinction is worth stating in a code comment at the call site, because the next person to read it will assume it is the gate.
+The web app reads `accounts.role` once at startup (`web/index.html`, the `sb.from("accounts")` select) to decide whether to render the admin UI or an "access denied" panel. **That read is cosmetic.** It controls pixels, not permissions. If someone patched the JavaScript to skip the check, they would see the admin chrome and every single request behind it would fail in the database. This distinction is worth stating in a code comment at the call site, because the next person to read it will assume it is the gate.
 
-The admin views work the same way. `clinics_admin` and `registrations_admin` are `select * from <table> where public.is_admin()`. Postgres views default to `security_invoker = false`, so they execute with the owner's rights and can read base tables the client cannot. **The `where public.is_admin()` predicate is therefore the entire access control on those views.** Delete it and the view leaks the full roster to every authenticated player. That is worth an explicit probe assertion, not just a comment.
+The admin views work the same way. `clinics_admin` and `registrations_admin` select an explicit column list from their base table `where public.is_admin()` (explicit since 20260816000001, because `select *` in a view is expanded once at creation and went stale; `registrations_admin` also computes `has_card` and `charge_status` since 20260912000003). Postgres views default to `security_invoker = false`, so they execute with the owner's rights and can read base tables the client cannot. **The `where public.is_admin()` predicate is therefore the entire access control on those views.** Delete it and the view leaks the full roster to every authenticated player. That is worth an explicit probe assertion, not just a comment.
 
 ### Why the same gate covers both surfaces
 
@@ -154,10 +162,10 @@ Mapped to the admin screens in the developer guide. "Primary" means that surface
 | **Dashboard / Action Needed** | Read plus act | **Primary** | This is a glance-and-tap surface. Pool invitations, cancellations to acknowledge, unanswered invitations. It happens between courts, not at a desk. Web shows the same list because if she has the laptop open she should not have to reach for her phone, but the phone is the one that gets push notifications. |
 | **Clinic Management** | **Primary for setup:** create from template, edit details, set capacity, adjust windows, publish, cancel. | **Primary for day-of:** open a clinic, see the roster, place a walk-up, invite from the Pool. | This is the split that motivated the whole project. Building next week's schedule is ten forms and a lot of typing. Running today's clinic is a list and some buttons. |
 | **Templates** | **Web only** | Not present | Templates are pure configuration, edited rarely, mostly at the start of a season. Long text fields, prices, durations, capacities. Zero reason to build this twice, and no reason it ever gets touched courtside. |
-| **Player Directory** | **Primary.** Full search, filters, member status, activate and deactivate, and the private coaching notes editor. | Search plus view. Read notes, but composing a paragraph of notes belongs on a keyboard. | `search_players` already exists and is admin-gated. Note that it deliberately returns `has_notes` as a boolean and never the note body: the note body needs its own RPC, see section 6. |
-| **Court Assignment** | **Web only for editing.** Drag and drop across courts 1 to 5. | Read-only view of today's assignment. | Detailed below in section 4. Editing five columns of players is a laptop task. Glancing at "who is on court 3" while standing on court 3 is a phone task, and the phone should never let her drag by accident. |
+| **Player Directory** | **Primary.** Full search, filters, member status, activate and deactivate, and the private coaching notes editor. | Search, the member and active switches, and the note editor too (built 2026-09-01; `PlayersDirectoryView.swift` has the `TextEditor` and Save note, and `AdminFlowUITests` round-trips a note on the phone). | `search_players` already exists and is admin-gated. Note that it deliberately returns `has_notes` as a boolean and never the note body: the note body needs its own RPC, see section 6. |
+| **Court Assignment** | **Both surfaces, as built.** A court dropdown on every You're In! row; drag-and-drop was not built (section 4, Outcome). | The same menu on the roster row (`AdminClinicDetailView.swift`, `AdminRepository.assignCourt`). | Detailed below in section 4. Editing five columns of players is a laptop task. Glancing at "who is on court 3" while standing on court 3 is a phone task, and the phone should never let her drag by accident. |
 | **Messaging** | Present, same audiences | **Primary** | "Running fifteen minutes late" is typed on a phone, from a car. The web version exists because composing a longer message is nicer with a keyboard, and both call the same `send_clinic_message` RPC with the same `message_audience` enum. |
-| **News** | **Primary for compose and publish** | Read the published list | News posts are paragraphs. Nobody writes a club announcement on a phone if a laptop is open. |
+| **News** | Deferred: no News surface anywhere (decision 0006; `grep -ci news web/index.html` is 0). | Deferred. | News posts are paragraphs. Nobody writes a club announcement on a phone if a laptop is open. Not v1. |
 
 Two rules that fall out of this table:
 
@@ -216,6 +224,10 @@ One flat payload per clinic: registration id, player first and last name, curren
 
 Only `status = 'in'` players appear on the board. Pool and Response Needed players are not on a court, by definition.
 
+### Outcome (2026-09-01, recorded 2026-09-12)
+
+Shipped as the dropdown path only: a per-row `<select>` on every You're In! row calling `assign_court`, with the list sorted by court so it reads as Tara's court sheet. No drag-and-drop (`grep -c drag web/index.html` finds only the comment saying so), and none is planned until the dropdown has been used for real. No `admin_clinic_roster` RPC was built: the roster is composed client-side from `registrations_admin` plus a `players` lookup (`web/index.html`, the `registrations_admin` select). The same dropdown exists as a menu on the phone roster, so the "phone is read-only" decision above did not survive contact with the courtside use.
+
 ---
 
 ## 5. Deployment and how Tara opens it
@@ -241,8 +253,8 @@ Being genuinely blunt about the one downside: because there is no install step, 
 ### Build hygiene
 
 * `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` set in the Pages dashboard. Both are public values by design and both end up in the bundle. That is expected.
-* CI greps `dist/` for `service_role` and fails on a hit. See section 2.
-* `public/_headers` sets a CSP restricting `connect-src` to the Supabase project origin, `default-src 'self'`, and `frame-ancestors 'none'`. Cheap and it makes an injected script's exfiltration options much worse.
+* CI greps `dist/` for `service_role` and fails on a hit. See section 2. **As built:** there is no `dist/`; the `secret-scan` job in `.github/workflows/probes.yml` greps the whole repo for `sb_secret_` and `service_role` key shapes instead.
+* `public/_headers` sets a CSP restricting `connect-src` to the Supabase project origin, `default-src 'self'`, and `frame-ancestors 'none'`. Cheap and it makes an injected script's exfiltration options much worse. **As built:** not done. `web/` has no `_headers` and no `vercel.json`, so no CSP is set. Still worth doing; a backlog item, not a decision.
 * No analytics. No error reporting service. One user who can be texted directly does not need Sentry.
 * Preview deployments on pull requests are on by default and point at the same production Supabase project. Either turn them off or point them at a separate project. Do not leave PR previews writing to Tara's live data.
 
@@ -252,12 +264,14 @@ Being genuinely blunt about the one downside: because there is no install step, 
 
 The current migrations do not yet support the full web admin. These gaps are real and should be scoped before the UI work starts, because several screens are unbuildable without them. Every one follows the existing pattern: `SECURITY DEFINER`, `set search_path = public, pg_temp`, opening with `perform public.require_admin()`, and `grant execute ... to authenticated`.
 
-1. **`admin_upsert_template` and `archive_template`.** `clinic_templates` is revoked from `authenticated` and no RPC writes it. The Templates screen cannot exist today. Blocking.
-2. **`admin_upsert_clinic`.** `create_clinic_from_template` is the only path that creates a clinic, and nothing edits one after creation. Tara needs to adjust a time, a capacity, or an override window. Blocking for Clinic Management.
-3. **`admin_upsert_news`.** `publish_news` transitions a draft to published, but nothing creates the draft. Blocking for News.
-4. **`admin_get_player_note` and `admin_set_player_note`.** `player_notes` is revoked and RLS-admin-only, so it is currently unreachable from any client. `search_players` correctly returns only `has_notes`. Blocking for the notes feature on Player Directory.
-5. **`admin_clinic_roster(p_clinic uuid)`.** A flat join of registrations and player names for one clinic. Needed by both the roster view and the court board. Blocking for Court Assignment.
-6. **`admin_action_needed()`.** Optional. The dashboard can be composed client-side from `registrations_admin` plus `notifications`. Build the RPC only if the client-side composition turns into three round trips.
+1. **`admin_upsert_template` and `archive_template`.** `clinic_templates` is revoked from `authenticated` and no RPC writes it. The Templates screen cannot exist today. Blocking. **Status:** built as `admin_upsert_template` (20260828000001) and `admin_set_template_archived` (20260910000001), which archives and restores.
+2. **`admin_upsert_clinic`.** `create_clinic_from_template` is the only path that creates a clinic, and nothing edits one after creation. Tara needs to adjust a time, a capacity, or an override window. Blocking for Clinic Management. **Status:** built (20260826000001).
+3. **`admin_upsert_news`.** `publish_news` transitions a draft to published, but nothing creates the draft. Blocking for News. **Status:** not built; News is deferred (decision 0006).
+4. **`admin_get_player_note` and `admin_set_player_note`.** `player_notes` is revoked and RLS-admin-only, so it is currently unreachable from any client. `search_players` correctly returns only `has_notes`. Blocking for the notes feature on Player Directory. **Status:** built as `admin_player_note` and `admin_set_player_note` (20260902000002), plus `admin_player_note_edited` (20260912000004) for the date.
+5. **`admin_clinic_roster(p_clinic uuid)`.** A flat join of registrations and player names for one clinic. Needed by both the roster view and the court board. Blocking for Court Assignment. **Status:** not built; both clients compose the roster from `registrations_admin` plus `players` (section 4, Outcome).
+6. **`admin_action_needed()`.** Optional. The dashboard can be composed client-side from `registrations_admin` plus `notifications`. Build the RPC only if the client-side composition turns into three round trips. **Status:** not built; composed client-side, as predicted.
+
+(Statuses checked 2026-09-12 against `select proname from pg_proc` on the local stack.)
 
 Every one of these gets a probe in `tests/sql/`, and `information_hiding.sql` gets re-run afterward, because each new RPC is a new potential leak path. The note RPCs in particular deserve an explicit probe asserting a non-admin cannot call them.
 
@@ -268,23 +282,23 @@ Every one of these gets a probe in `tests/sql/`, and `information_hiding.sql` ge
 Each of these is a decision, not an oversight.
 
 * **No offline support, no service worker, no PWA install.** The phone is the offline-tolerant surface.
-* **No realtime subscriptions.** One admin means nothing changes underneath her except a player registering or answering an invitation. Refetch on tab focus via `visibilitychange`, plus a visible refresh button. Realtime on RLS-protected tables also needs publication configuration that would have to be audited against the information-hiding rules, which is real work for a benefit of "the number updates without clicking."
+* **No realtime subscriptions.** One admin means nothing changes underneath her except a player registering or answering an invitation. As built, the page reloads its data after each action; there is no focus refetch and no refresh button (`grep -c visibilitychange web/index.html` is 0). Realtime on RLS-protected tables also needs publication configuration that would have to be audited against the information-hiding rules, which is real work for a benefit of "the number updates without clicking."
 * **No admin-side push or email.** Notifications reach her phone. The laptop page is opened deliberately.
 * **No multi-admin UI, no roles beyond `member` and `admin`, no permission editor.** `accounts.role` already supports a second admin as an `UPDATE` statement. Do not build a screen for it before a second admin exists.
-* **No CSV import or export, no reporting, no charts.** Nobody has asked. The data is in Postgres and can be queried directly if a one-off question comes up.
-* **No payment processing.** `registrations.paid` is a checkbox Tara ticks. It stays a checkbox.
+* **No CSV import or export, no charts.** The Money tab is the one report: `revenue_summary()`, `revenue_by_clinic`, and the `payments_ledger` list (2026-09-01, 2026-09-12). The data is in Postgres and can be queried directly if a one-off question comes up.
+* **Payment processing, revised.** Zelle stays the Paid checkbox Tara ticks. Card charges are her tap: Charge fee, Charge late cancel and Refund exist on the card only while `app_settings.payments_enabled` is true, which it is not yet (decision 0009, 2026-09-12).
 * **No print stylesheet or printable court sheet.** Flagged as the most likely first request after launch, because a paper sheet on a clipboard is a real thing at tennis clubs. Cheap to add later, roughly a `@media print` block. Not built until asked.
 * **No undo, no audit log, no change history.** `canceled_at`, `canceled_by`, `invited_at`, and `responded_at` already record the transitions that matter. A general audit trail is a different project.
 * **No touch or keyboard drag-and-drop.** The dropdown covers both, permanently.
 * **No dark mode, no theming, no internationalization.** Navy and cream, English, as specified in `CLAUDE.md`.
 * **No component library and no design system package.** Plain CSS custom properties in one `tokens.css`, matching the iOS palette by hand. Seven screens do not amortize a design system.
-* **No test framework for the web UI.** The invariants that matter are in Postgres and are covered by `tests/run-probes.sh`. A React component test suite for a one-user internal tool is effort spent in the wrong place. This is a deliberate trade and it should be revisited the moment a second admin or a second developer appears.
+* **No test framework for the web UI.** The invariants that matter are in Postgres and are covered by `tests/run-probes.sh`. A React component test suite for a one-user internal tool is effort spent in the wrong place. This is a deliberate trade and it should be revisited the moment a second admin or a second developer appears. **Superseded 2026-09-02:** 12 Playwright tests (`grep -c 'test(' web/tests/admin.spec.mjs`) walk the page as Tara against a fresh seed, in the `web-browser-tests` CI job.
 
 ---
 
 ## 8. Open questions
 
 * **Custom domain now or later?** Defaulting to the `*.pages.dev` URL. Trivial to change.
-* **Do PR preview deploys get their own Supabase project, or are they disabled?** Must be resolved before the first pull request, not after.
+* **Do PR preview deploys get their own Supabase project, or are they disabled?** Must be resolved before the first pull request, not after. **Resolved:** the repo is not connected to Vercel; deploys are manual `vercel --prod` from `web/`, so there are no previews (`web/README.md`).
 * **Does Tara want the court board grouped by anything within a court,** for example rating or age, or is a flat list per court correct? Assuming flat until told otherwise.
-* **Adult rating value list** is still open in `for-tara.md` question 6 and blocks the Player Directory filter UI, though not the rest of the screen.
+* **Adult rating value list** is still open in `for-tara.md` question 6 and blocks the Player Directory filter UI, though not the rest of the screen. **Resolved 2026-08-02:** NTRP 2.0 to 5.0 in half steps, stored as `numeric(2,1)` (CLAUDE.md decisions 6+7).
