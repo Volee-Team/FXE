@@ -139,7 +139,7 @@ one, and conflating the two is what made this section look like a wall.
 
 | | |
 |---|---|
-| ⬜ | **Stripe.** Tara wants card-on-file so she can charge it. Allowed by Apple: tennis clinics are a real-world service, so no IAP required. Real work: Customers, SetupIntents, off-session charges, declines on cards charged days later. See `docs/decisions/0003-payments.md` |
+| 🔨 | **Stripe, card on file** (decision 0009, 2026-09-12). Built: schema (Stripe customer + card summary on accounts, a `payments` ledger with RLS), `admin_charge_registration` / `admin_refund_payment`, the ledger-drives-Paid trigger, policy as `app_settings`, 21-check probe. `payments_enabled` is false until Tara answers Q27–Q37. Next: SetupIntent + PaymentSheet in the app, the two edge functions, Money tab column. Target October 1 |
 | ⬜ | **Juniors.** Deferred by Tara "before winter time". Enum values already in the schema so this is UI work, not a migration |
 | ⬜ | Parent accounts managing children, junior age groups |
 | ⬜ | Duplicate an entire week and adjust dates |

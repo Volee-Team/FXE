@@ -270,7 +270,8 @@ the attack and asserts it fails.
 | `news_posts` + `news_reads` | Announcements; read state per account. |
 | `notifications` | In-app rows written by RPCs (players and Tara). Readable by the owner; only `read_at` is writable. |
 | `devices` | APNs tokens (groundwork; nothing delivers yet). |
-| `app_settings` | Small admin-editable strings, e.g. Tara's payment line. Never anything hidden. |
+| `payments` | The money ledger (decision 0009): one row per clinic fee, late cancel, no show or refund, with Stripe ids and a status only the edge functions or admin RPCs change. Players read their own rows. |
+| `app_settings` | Small admin-editable strings, e.g. Tara's payment line, and the payment policy keys (`payments_enabled`, `cancel_cutoff_hours`, …). Never anything hidden. |
 
 Enums: `account_type`, `account_role`, `player_kind`, `clinic_audience`
 (`juniors` kept, not offered), `clinic_status`, `registration_status`
@@ -297,6 +298,7 @@ Enums: `account_type`, `account_role`, `player_kind`, `clinic_audience`
 | `send_clinic_message` | Audiences `everyone` / `in` / `pool` / `response_needed` / `unpaid`, resolved server-side. The one-tap unpaid reminder is this with a fixed body. |
 | `search_players`, `admin_player_note`, `admin_set_player_note`, `admin_set_membership`, `set_player_active` | The directory. `search_players` returns `has_notes`, never the note. |
 | `publish_news` | Publish a draft post. |
+| `admin_charge_registration`, `admin_refund_payment` | Insert `pending` ledger rows for the Stripe edge functions to execute; refuse while `payments_enabled` is false. |
 | `revenue_summary` | The four numbers and the money (section 7). |
 
 **Internal** (`notify_account`, `admin_account_ids`) is executable by no
