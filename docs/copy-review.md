@@ -1,13 +1,15 @@
 # Copy review checklist
 
 **Every word in the product that Tara did not write.** Tick each one: keep,
-reword, or replace with her words. Generated from source on 2026-08-27, not from
-memory.
+reword, or replace with her words. First generated from source on 2026-08-27,
+last reconciled against source on 2026-09-12, not from memory.
 
 Regenerate any time: `python3 scripts/extract-copy.py --report`
 
-70 user-visible strings across 12 files. Most are chrome and need nothing. The
-**34 below are prose we invented** and are the ones to actually read.
+164 user-visible strings across 19 files (`extract-copy.py --report`,
+2026-09-12; 148 lines in `docs/copy-approved.txt`). Most are chrome and need
+nothing. The prose we invented is what to actually read: sections A to D below,
+plus every "New since" block.
 
 > **Why this exists.** Alex, 2026-08-16: *"text should either come straight from
 > tara or made by u and checked by me first."* Then on 2026-08-27 Tara read
@@ -56,7 +58,6 @@ iOS, the late-cancel prompt. The sentence Tara reads above the box is hers
 |---|--------|-------|
 | ☐ | Reason (required) | text field placeholder inside 4 hours |
 | ☐ | Send and cancel my spot | the confirm button inside 4 hours |
-| ☐ | A reason is required inside 4 hours. | error when the note is blank |
 
 ## New since the last review — 2026-09-12 (notes stamp, version line), awaiting Alex
 
@@ -99,6 +100,30 @@ mine until Alex ticks them. Nothing here is attributed to Tara.
 | ☐ | Edit details · Set by Tara · Save · Cancel · Saving… | Profile editing, iOS |
 | ☐ | Cancel clinic · Really cancel? Everyone is told. · Canceled · Cancel {clinic}? Everyone registered or waiting is told. · Keep the clinic · More · Couldn't cancel · That clinic is already canceled. | Cancel clinic, web and iOS |
 | ☐ | Players · Search by name · Show inactive players · Type at least two letters of a name. · Make member · Make non-member · Deactivate · Reactivate · Note · Save note · Private note · Only you can see this. · Saved. · Has a note · Couldn't search right now. Check your connection and try again. | Player directory, web and iOS |
+
+## In the snapshot but in no copy doc — found 2026-09-12, awaiting Alex
+
+These are in `docs/copy-approved.txt` (so the gate accepted them at some point)
+but were never listed here or in `copy.md` / `copy-audit.md`. Found by checking
+every snapshot line against the three docs. The first three speak for Tara
+(rule 13); the last two carry an em-dash, which `CLAUDE.md` bans in app copy.
+
+| ✓ | String | Where | Note |
+|---|---|---|---|
+| ☐ | **She will let you know if there is room.** | `ClinicDetailView.swift`, after a late request | Speaks for Tara |
+| ☐ | **Tara has your message.** | `ClinicDetailView.swift`, late request sent | Speaks for Tara |
+| ☐ | **You can still ask Tara to fit you in.** | `ClinicDetailView.swift`, after close | Speaks for Tara |
+| ☐ | Registration has closed for this clinic. | `ClinicDetailView.swift` | Chrome |
+| ☐ | Keep my spot · Message Tara | `ClinicDetailView.swift` buttons | Chrome |
+| ☐ | Canceled inside {N} hours | `CoreModels.swift`, `web/index.html` | Chrome, interpolated |
+| ☐ | For someone who called or grabbed you at the club. They go straight to You're In! | `web/index.html`, Add a player card | Ours, explains walk-ups |
+| ☐ | Nobody by that name yet. They may need to sign up in the app first. | `web/index.html`, `PlayersDirectoryView.swift` | Ours |
+| ☐ | Ann finds Anna, Annette, Joann… | `web/index.html`, search hint | Ours |
+| ☐ | Add your first and last name. | `web/index.html`, sign-up | Chrome |
+| ☐ | First time? Create your account | `web/index.html`, sign-in | Chrome |
+| ☐ | Add a player · Put in clinic · Start from a template | `web/index.html` | Chrome |
+| ☐ | FXE Tennis · Admin | `web/index.html` page title | **Em-dash.** Reword to a colon or split |
+| ☐ | FXE Tennis · Reset password | `web/reset.html` page title | **Em-dash.** Reword to a colon or split |
 
 ---
 
@@ -180,7 +205,22 @@ The one most worth her eye, because it is the longest and most "her":
 
 ## The rule going forward
 
-`docs/copy-approved.txt` snapshots all 66 strings. The `copy-gate` CI job fails
-on any addition or edit and prints the diff. Regenerating it is not a formality:
-read the new lines, decide whether each is Tara's or plain chrome, and commit the
-snapshot with the change so the words appear in review.
+`docs/copy-approved.txt` snapshots every string the extractor can see: 148
+lines on 2026-09-12. The `copy-gate` CI job fails on any addition or edit to
+that set and prints the diff. Regenerating it is not a formality: read the new
+lines, decide whether each is Tara's or plain chrome, and commit the snapshot
+with the change so the words appear in review.
+
+**Known gap, 2026-09-12.** The extractor matches direct literals only:
+`Text("…")`, `Button("…")`, `Label("…")` and a few wrappers in Swift, HTML
+text nodes of twelve characters or more, and JS strings that start with a
+capital. A string in a ternary, a returned `String`, a `.alert` title, a
+short HTML button label, or an interpolation is invisible to it. Eighteen
+strings listed as pending in this file are in code and absent from the
+snapshot, so the gate never saw them (checked with `grep -qxF` per string):
+Seen, Show canceled, Archive, Restore, Money, Templates, Add a card, Charge
+fee, Refund, Reason (required), Saving…, Make member, Deactivate, Reactivate,
+Something went wrong. Please try again., Cards aren't set up yet., Check your
+email for a reset link., Unknown player. Until the extractor widens, this file
+is the only record of those; keep listing them by hand. Tracked in
+`docs/backlog.md`.

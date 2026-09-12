@@ -16,6 +16,9 @@
    with Tara's own line from the Developer Guide (Screen 3): *"Clinic updates
    come through the app. Keep notifications on so you don't miss them."* If a
    player declines, the app shows a quiet reminder on Home; nothing more.
+   (**Not built as of 2026-09-12.** The sheet exists; nothing reads
+   `PushRegistrar.status == .denied`. Decision 13's persistent in-app
+   disclosure is still owed: backlog.)
 4. **No admin marker** of who has notifications off. Tara's decision 13
    (2026-08-02): she does not want to monitor it, and the earlier design's
    "notifications off" indicator on the player profile is withdrawn.

@@ -1,6 +1,6 @@
 # FXE Tennis - Project Context
 
-iOS native app (Swift / SwiftUI). Backend is Supabase (Postgres + Auth + Edge Functions + APNs). Clinic registration and roster management for the FXE tennis program.
+iOS native app (Swift / SwiftUI). Backend is Supabase (Postgres + Auth + Edge Functions; APNs delivery is designed in decision 0008 and not yet built). Clinic registration and roster management for the FXE tennis program.
 
 **This is NOT Volee.** Separate repo, separate Supabase project, separate bundle ID, separate App Store listing. They share patterns and a developer, nothing else.
 
@@ -12,7 +12,7 @@ The digital front door for the FXE tennis program. It replaces repetitive texts,
 
 **The product rule that settles most arguments:** the app organizes information. Tara makes all coaching, player-selection, clinic-balance, and court-placement decisions. When unsure whether to automate a decision or leave it to Tara, leave it to Tara.
 
-Source spec: the FXE Tennis Version 1 Developer Guide. Engineering decisions derived from it: `~/Documents/FXE Tennis/engineering-design.md`. Open questions for Tara: `~/Documents/FXE Tennis/for-tara.md`.
+Source spec: the FXE Tennis Version 1 Developer Guide. Engineering decisions derived from it: `docs/engineering-design.md`. Questions for Tara, each marked with the decision that answered it: `docs/questions-for-tara.md` (the August version she was first sent is `docs/for-tara.md`; the 2026-09-12 short list is `docs/for-tara-2026-09-12.md`). These four lived in a folder beside the repo until 2026-09-12, when Alex moved them in: a doc outside the repo is a doc nobody can find or version.
 
 ---
 
@@ -198,8 +198,10 @@ That exercise is what exposed a defect in the probe harness itself: the pass con
     `authenticated` explicitly. 30 of 41 functions were anon-executable until
     2026-09-01 because of exactly this (migration 20260902000001).
 
-    This matters more for a view than a table. Our views are single-table
-    selects, so Postgres makes them **auto-updatable**; they were created without
+    This matters more for a view than a table. Four of our views
+    (`clinics_public`, `my_registrations`, `clinics_admin`, `templates_admin`)
+    are single-table selects, so Postgres makes them **auto-updatable**; the
+    joined ones are not, but revoke-before-grant applies to all ten; they were created without
     `security_invoker`, so they execute as their **owner** (postgres); and
     `relforcerowsecurity` is false, so the owner is **exempt from RLS**. A write
     through a view therefore runs as postgres with RLS switched off. The
@@ -217,10 +219,11 @@ That exercise is what exposed a defect in the probe harness itself: the pass con
     **Do not "fix" this with `security_invoker`.** It is the obvious-looking
     answer and it breaks the product: `authenticated` has no SELECT on the
     locked base tables, so the entire information-hiding model depends on these
-    views reading with owner rights. The four `sanity_*` rows in that probe
-    exist to fail loudly if anyone tries it. For the same reason the eight
-    `security_definer_view` ERROR lints in Supabase's advisor are **permanent and
-    accepted**, not a to-do list.
+    views reading with owner rights. The five `sanity_*` rows in that probe
+    exist to fail loudly if anyone tries it. For the same reason the
+    `security_definer_view` ERROR lints in Supabase's advisor (one per
+    owner-rights view; ten views today) are **permanent and accepted**, not a
+    to-do list.
 
     The general shape, and the third time this project has been bitten by an
     implicit privilege: **enumerate what a role can do, never assume what it
@@ -250,7 +253,49 @@ That exercise is what exposed a defect in the probe harness itself: the pass con
     the database instead of restating it.
 
     In practice: run it, paste the output, then say what it means. "Tests pass"
-    is not evidence. `Executed 13 tests, with 0 failures` is.
+    is not evidence. `Executed 23 tests, with 0 failures (0 unexpected)` is.
+
+13. **Never put a word in front of a player that Tara did not write or Alex did
+    not approve.** Copy is either hers, or plain functional chrome, and there is
+    no third category.
+
+    Earned 2026-08-16. Alex: *"text should either come straight from tara or
+    made by u and checked by me first"*, after finding cliche AI filler of the
+    *"Press play — Start Hitting!"* kind. The danger is not one bad sentence: it
+    is that a generated line reads as plausible, arrives as one green line in a
+    large diff, and ends up in front of a real club's members in a voice that is
+    not their coach's.
+
+    **Chrome** is a button that says Save, a field labelled Phone, an error that
+    says the connection failed. Keep it plain and boring. **Everything else** —
+    anything with tone, encouragement, a promise, or a claim about how FXE works
+    — is Tara's, and if she has not written it yet the correct move is to ask,
+    not to draft something plausible.
+
+    Mechanically enforced. `docs/copy-approved.txt` snapshots every user-visible
+    string; the `copy-gate` CI job fails on any addition or edit and prints the
+    diff. Regenerating the snapshot is not a formality: read the new lines,
+    decide which of the two categories each belongs to, and commit it alongside
+    the change so a human sees the words in review. `docs/copy-audit.md` is the
+    2026-08-16 inventory of everything we wrote rather than her (its "34" predates
+    her 2026-08-27 answers; §1 and §2's tone are settled), and
+    `docs/copy-review.md` is the live checklist Alex ticks.
+
+14. **When a decision is Tara's, ask Tara before building, even at five percent
+    doubt.** Anything that encodes how she runs her clinics — a price, a fee, a
+    window, who pays what, what a message says, what happens when someone
+    cancels — is her call, not a sensible default. Alex, 2026-09-12: *"help me
+    get the info from TARA before we do things ALWAYS ... always ask tara if
+    you're unsure even 5%."*
+
+    Mechanically: write the questions into `docs/questions-for-tara.md`,
+    numbered, each answerable in one line, with the
+    default we would otherwise pick stated so she can just say "yes". Hand them
+    to Alex to relay. While waiting, build only the policy-independent parts.
+    When the answers come back, record them as a dated decision record (the way
+    0007 records 2026-08-27) and pin any rule with a DB consequence in a probe.
+    The cost of asking is a text message; the cost of guessing is a rebuild and
+    her trust.
 
 ---
 
@@ -267,7 +312,7 @@ Use these exact words in all UI copy. Do not substitute synonyms.
 | **Action Needed** | Admin work requiring Tara's attention. |
 | **My Clinics** | The player's upcoming registered clinics and Player Pool entries. |
 | **Service week** | Sunday through Saturday, America/New_York. The unit registration opens for. Internal vocabulary, not player-facing copy. |
-| **Ladies / Men / Coed** | The three v1 audiences. Juniors return in the fall. |
+| **Ladies / Men / Coed** | The three v1 audiences. Juniors return in November or the spring session (decision 0007 §6). |
 
 ---
 
@@ -281,7 +326,7 @@ Use these exact words in all UI copy. Do not substitute synonyms.
 | Non-member, after public opening | Player Pool |
 | Non-member, inside member-only window | Rejected |
 | Anyone, before member opening | Rejected |
-| Anyone, after `closes_at` | Rejected |
+| Anyone, after `closes_at` | Rejected by `register_for_clinic`; may file a late request (`request_late_spot`) that Tara approves or declines by hand |
 | Same player twice | Rejected, exactly one live row survives |
 
 ### The window rule (corrected 2026-08-02, was wrong before that)
@@ -306,9 +351,9 @@ Two implementation traps, both pinned by probes:
 
 **Do not reintroduce the per-clinic rule.** "The most recent Thursday strictly before the clinic date" is right on five weekdays out of seven and wrong on Friday and Saturday, the two days where seats are scarcest. On Tara's own Friday 2026-09-11 example it opens members a week late, and its public-side counterpart lands six days *before* the members: an inversion.
 
-**Blocking non-members during the member window is our decision, not the guide's.** The guide only states their opening is Friday 8 AM. Tara sees the Pool in registration order, so letting non-members queue on Thursday would place them ahead of members in her list and quietly subvert the priority. Flagged for her review.
+**Blocking non-members during the member window is our decision, not the guide's.** The guide only states their opening is Friday 8 AM. Tara sees the Pool in registration order, so letting non-members queue on Thursday would place them ahead of members in her list and quietly subvert the priority. Confirmed by Tara 2026-08-27 (decision 0007 §2: members "get first dibs for 24 hours"); pinned by `tara_member_head_start_is_24h` in `tests/sql/schema_decisions.sql`.
 
-Capacity is decided in exactly one place: `register_for_clinic`, which locks the clinic row with `FOR UPDATE`. Pinned by `tests/sql/capacity_race.sh` (verified at 24-way concurrency). `place_player` deliberately performs **no** capacity check: capacity never blocks Tara (decision 4).
+Capacity is decided in exactly one place: `register_for_clinic`, which locks the clinic row with `FOR UPDATE`. Pinned by `tests/sql/capacity_race.sh` (12-way on every suite run; verified once at 24-way on 2026-07-28 with `bash tests/sql/capacity_race.sh 24`). `place_player` deliberately performs **no** capacity check: capacity never blocks Tara (decision 4).
 
 ### Open questions on the window rule
 
@@ -318,7 +363,7 @@ Tara's example is consistent with more than one reading. The most defensible rea
 2. **Anchor point.** Her example cannot distinguish week-start-anchored (`Sunday - 3`) from week-end-anchored (`last clinic day - 8`); both give 9/3 for a full week. Start-anchored is implemented, because end-anchoring only agrees with the Guide's "Thursday / Friday" on full weeks: on a Sunday-to-Wednesday holiday week it would open on a Tuesday and a Wednesday. Ask her: if a week has clinics on only some days, does registration still open that same Thursday and Friday?
 3. **Holidays.** The rule has no holiday awareness. Christmas Day 2026 is a Friday public open, and Christmas Eve is its Thursday member open. Ask her whether registration still opens at 8:00 that morning.
 4. **"Member"** means an FXE club member, not a paying app subscriber. `players.is_member`. Confirm with her if it ever becomes ambiguous.
-5. **`closes_at` is still unset by `create_clinic_from_template`.** Nothing decides when registration closes. Ask her: at clinic start, some hours before, or only when it fills?
+5. **`closes_at`: answered 2026-08-27 (decision 0007 §5).** Registration closes 3 hours before start by default (`default_closes_at()` plus trigger `apply_default_clinic_close`, migration 20260827000001); Tara can override any clinic through `admin_upsert_clinic`. Inside the window a player can file a late request (`request_late_spot`, 20260827000002) that she resolves by hand.
 
 ---
 
@@ -331,7 +376,7 @@ Answered and now binding. Numbering is hers. Only the ones with a lasting conseq
 | 1 | Admin surface splits in two: a phone app for courtside work (invites, messages, marking paid) and a laptop/web page for weekly setup and court assignment. | Client |
 | 3 | Tara can add anyone to any clinic directly, and move anyone between You're In! and Player Pool by hand. | `place_player()` |
 | 4 | **Capacity never blocks Tara.** Show counts, never block an invite. | `place_player()` does no capacity check. Pinned. |
-| 5 | Member status is **self-reported**, and Tara can override it on the profile. Both already work: `players.is_member` is writable by the owning account and by any admin. A player can tick the box and gain the Thursday window. That is what self-reported means. | `players_update_own` policy |
+| 5 | Member status is **self-reported** once at sign-up, and Tara can override it on the profile (`admin_set_membership`, web and iOS). Since 2026-09-02 the player's own Profile shows it as "Set by Tara" with no control. Note `players.is_member` is still column-writable by the owning account at the DB level, so that restriction is UI-only (backlog). | `players_update_own` policy, `admin_set_membership()` |
 | 6+7 | Adult rating uses the **same NTRP scale and the same chart as Volee**, behind a tappable "?" button. Stored as `numeric(2,1)`, 2.0 to 5.0 in half steps, exactly as Volee stores it, so a rating crosses between the apps untranslated. **"5.0+" is a display label, never a stored value.** | `players.adult_rating`, `docs/ntrp-chart.md` |
 | 8 | Audience is **Ladies / Men / Coed** in v1. **No category filter**: Tara said there is no need to filter anything, because there are not many clinics weekly and they are simply listed by week. | See below |
 | 9 | Junior age groups deferred to the fall. Do not build. | none |
@@ -340,7 +385,7 @@ Answered and now binding. Numbering is hers. Only the ones with a lasting conseq
 | 12 | Targeted messages are visible only to the group they were sent to. | Already built: `clinic_message_recipients` |
 | 13 | **Notifications-off is not Tara's problem.** See below. | Client |
 | 14 | Every notification is 1 to 2 sentences and readable on a lock screen. Her drafts are verbatim. | `docs/notifications.md` |
-| 15 | Brand is navy blue and a nice green, country-club feel, **not** the current royal blue and green. Same gator-with-tennis-ball mark. | `web/tokens.css`, `FXETennis/Resources/Brand.swift` |
+| 15 | Brand is navy blue and a nice green, country-club feel, **not** the current royal blue and green. Same gator-with-tennis-ball mark. **Mark superseded by decision 22 (2026-08-12): crossed racquets, not the tennis ball.** | `web/tokens.css`, `FXETennis/Resources/Brand.swift` |
 | 16 | Apple Developer account must be "FXE Tennis, LLC". Privacy policy reuses Volee's. Waiver wording pending. | Business |
 
 ### The `juniors` enum value stays
@@ -353,7 +398,7 @@ Decision 8 limits v1 to three audiences, but `clinic_audience` keeps all four. P
 
 ### Decision 13: the notifications-off disclosure is a client requirement, not a column
 
-Tara explicitly does **not** want to manage or monitor who has notifications on or off. `accounts.push_enabled` is dropped, and no admin surface may display anything of the kind. Do not re-add it, and note that `engineering-design.md` §4 and `questions-for-tara.md` Q19 both still specify the old "notifications off" marker and are **overruled**.
+Tara explicitly does **not** want to manage or monitor who has notifications on or off. `accounts.push_enabled` is dropped, and no admin surface may display anything of the kind. Do not re-add it, and note that `docs/engineering-design.md` §4 and `docs/questions-for-tara.md` Q19 both still specify the old "notifications off" marker and carry an overruled note.
 
 What replaces it is app behaviour, and it is a real requirement, not a nicety:
 
@@ -370,7 +415,7 @@ What replaces it is app behaviour, and it is a real requirement, not a nicety:
 | 18 | **Capacity is never shown to a player.** The wireframe's "Max: 12 Players" is not built |
 | 19 | **Adults only, confirmed again.** Juniors return in the fall. The wireframe's child-profile screen is not v1 |
 | 20 | **Clinic messaging: three audiences.** You're In!, Player Pool, or Both. Her example: a pro calls in sick. See `docs/decisions/0005-clinic-messaging.md` |
-| 21 | **Three tabs, no Community tab.** Home, Clinics, Profile |
+| 21 | **Three tabs, no Community tab.** Home, Clinics, Profile for players. An admin account also gets a Manage tab (Alex, 2026-08-15; `MainTabView.swift`) |
 | 22 | **The gator-with-crossed-racquets mark**, not the tennis-ball one. Gets redrawn in whichever palette she picks |
 | 23 | **Palette: racquet club / country club.** Her `#6dbe45` green kept but restrained; navy warms; cream ground. Three options sent for her to choose |
 
@@ -403,7 +448,7 @@ Micro-animations last about one second, never delay interaction, and are optiona
 
 Minimal everywhere. Short sentences, one thought per line. Button labels 1-2 words. **No em-dashes** anywhere in app copy: use a colon, a comma, or split the sentence.
 
-Friendly empty states, each with one useful next action. Friendly errors: "We couldn't complete your registration. Please check your connection and try again."
+Friendly empty states, each with one useful next action. Friendly errors, one sentence: "Couldn't load clinics." (see "Rules for the chrome you do write" below).
 
 ---
 
@@ -421,7 +466,7 @@ Never apply a migration to a hosted project without running the probe suite loca
 
 ### `app_settings`
 
-A small key/value table for **player-safe, admin-editable strings**. Read by any authenticated user, written only by an admin. Currently holds one row, `payment_instructions`, whose value is Tara's exact wording:
+A small key/value table for **player-safe strings and switches**. Read by any authenticated user. **No client can write it today** (2026-09-12 audit): `authenticated` holds SELECT only and no RPC updates it, so the `app_settings_admin_write` policy is unreachable and every value is set by migration; an admin edit path is a backlog item, and until it exists the "no migration for a typo" benefit below is not real. Holds `payment_instructions`, Tara's exact wording, plus the six payment-policy keys added 2026-09-12 (`payments_enabled`, `cancel_cutoff_hours`, `late_cancel_fee`, `charge_fee_at`, `late_charge_needs_tap`, `zelle_allowed`):
 
 ```
 Payment can be made via zelle to fersctennispro@gmail.com (preferred) or Venmo FXE Tennis
@@ -446,48 +491,6 @@ The local Supabase dev image segfaults the Postgres backend when a role without 
 * Before touching any query: read the live schema. Never assume a table or column exists.
 * Ask clarifying questions before building anything non-trivial. A 60-second clarification beats half a day of rework.
 * Update this file when a rule is earned. A correction that only lives in a transcript is lost.
-
-13. **Never put a word in front of a player that Tara did not write or Alex did
-    not approve.** Copy is either hers, or plain functional chrome, and there is
-    no third category.
-
-    Earned 2026-08-16. Alex: *"text should either come straight from tara or
-    made by u and checked by me first"*, after finding cliche AI filler of the
-    *"Press play — Start Hitting!"* kind. The danger is not one bad sentence: it
-    is that a generated line reads as plausible, arrives as one green line in a
-    large diff, and ends up in front of a real club's members in a voice that is
-    not their coach's.
-
-    **Chrome** is a button that says Save, a field labelled Phone, an error that
-    says the connection failed. Keep it plain and boring. **Everything else** —
-    anything with tone, encouragement, a promise, or a claim about how FXE works
-    — is Tara's, and if she has not written it yet the correct move is to ask,
-    not to draft something plausible.
-
-    Mechanically enforced. `docs/copy-approved.txt` snapshots every user-visible
-    string; the `copy-gate` CI job fails on any addition or edit and prints the
-    diff. Regenerating the snapshot is not a formality: read the new lines,
-    decide which of the two categories each belongs to, and commit it alongside
-    the change so a human sees the words in review. `docs/copy-audit.md` is the
-    standing inventory of everything we wrote rather than her, with the 34 items
-    that still need her marked.
-
-14. **When a decision is Tara's, ask Tara before building, even at five percent
-    doubt.** Anything that encodes how she runs her clinics — a price, a fee, a
-    window, who pays what, what a message says, what happens when someone
-    cancels — is her call, not a sensible default. Alex, 2026-09-12: *"help me
-    get the info from TARA before we do things ALWAYS ... always ask tara if
-    you're unsure even 5%."*
-
-    Mechanically: write the questions into `questions-for-tara.md` (in the docs
-    folder beside this repo), numbered, each answerable in one line, with the
-    default we would otherwise pick stated so she can just say "yes". Hand them
-    to Alex to relay. While waiting, build only the policy-independent parts.
-    When the answers come back, record them as a dated decision record (the way
-    0007 records 2026-08-27) and pin any rule with a DB consequence in a probe.
-    The cost of asking is a text message; the cost of guessing is a rebuild and
-    her trust.
-
 
 ---
 
@@ -590,8 +593,9 @@ unnatural."*
 **Player-facing words are Tara's, not yours.** Every notification body, every
 piece of guidance, anything with a voice, comes from her. When a screen needs a
 sentence nobody has written, do not invent one and move on: write the shortest
-literal thing that works, add it to `docs/copy.md` marked **PENDING**, and tell
-Alex it needs her words.
+literal thing that works, add it to `docs/copy.md` under "Still open with Tara"
+and as a numbered question in `docs/questions-for-tara.md`, and tell Alex it
+needs her words.
 
 ### Rules for the chrome you do write
 
@@ -652,6 +656,12 @@ matters and it is not in the repo, it is gone.
 | `docs/decisions/` | One file per decision that would otherwise be re-litigated. What we chose, why, what we rejected, how we would know we were wrong |
 | `docs/backlog.md` | Bugs and chores. Anything noticed and not fixed goes here in the same breath |
 | `CLAUDE.md` changelog | One entry per session. The diary |
+| `docs/questions-for-tara.md` | Every question for Tara, numbered, with the default we would pick and the decision that answered it |
+| `docs/whats-next.md` | What is blocked on whom, and what is buildable now |
+| `docs/launch-checklist.md` | Every row between today and a real member using the app, with an owner |
+| `docs/copy.md` / `docs/copy-review.md` / `docs/copy-approved.txt` | Her words verbatim / ours awaiting Alex's tick / the CI snapshot |
+| `docs/notifications.md` | Her notification drafts and what fires today |
+| `docs/prompt-log/` | Every prompt and reply, written by hooks |
 
 **The habit that makes it work:** when Tara says something new, it goes in the
 roadmap before it goes in a migration. When a decision gets made, it gets a
@@ -669,8 +679,9 @@ obeyed.
 
 ## Changelog
 
+- **2026-09-12** — **The docs audit, and a backup that anyone could read.** Alex: *"do a complete audit of every doc and make sure nothing's slipping/slowly drifting."* Four read-only agents in parallel, each with a disjoint file set and orders to re-derive every claim by command; three editing agents applied about 150 drifts across 20 files. The pattern in the drift: counts copied forward (probe files, tests, migrations), status markers never moved after the work landed (roadmap, whats-next, backlog, feature review), decisions superseded without a note (0003 by 0009, decision 15 by 22, three tabs by the Manage tab), and Volee's `sql-auditor` agent unchanged since 2026-08-08, still auditing age brackets and reading a folder that does not exist (rewritten for FXE). Also found by the audit, not by any test: **the nightly backup artifacts were downloadable by any signed-in GitHub user** (public repo) and carry `auth.users`, so Tara's email and bcrypt hash were one click from anyone; `backup.yml` now encrypts with `age` to a public key in `.github/backup-recipient.txt` and refuses to upload without one, so the job fails until Alex adds his key. `app_settings` turned out to have no client write path at all (SELECT only, no RPC), so the "no migration for a typo" story in this file was untrue until today's correction. Hard rules 13 and 14 now sit under Hard rules rather than Working style, where a reader stopped at twelve. Mechanism, per the standing instruction: `scripts/check-doc-paths.sh` fails when any backtick-quoted repo path in a doc does not exist (19 such references found), and runs as the **Doc paths exist** CI job. Also today: the first restore drill (a backup nobody has restored is a hypothesis) found the dump omitted `supabase_migrations`, fixed; the four Tara docs moved into `docs/` from a folder beside the repo that Alex has since deleted; `docs/launch-checklist.md` is the single list between today and a real member, with owners.
 - **2026-09-12** — **The Money tab reads the ledger, and the probe runner knows a dirty database.** `payments_ledger` (20260912000003): an admin-only view that names the player and the clinic on every card payment, because `registrations` is unreadable to `authenticated` on purpose and PostgREST cannot embed through it. Same shape as `revenue_by_clinic`: owner-run, `is_admin()` inside, select only, 8-check probe (Maria sees nothing through it, anon has no grant, a four-table join is not updatable). The web Money tab lists it newest first, or says "No card payments yet." while `payments_enabled` is false; Zelle stays the Paid checkbox. `run-probes.sh` now prints DIRTY DATABASE when any row was created after the seed, because three false failures on 2026-09-12 came from rows the browser tests left behind and looked exactly like regressions. Suite: 365 checks, 17 probes; 11 browser tests.
-- **2026-09-12** — **The 4-hour honor system, Tara's tap on the web, and the whole Stripe pipeline proven against a mock.** Tara, via Alex: *"honor system for canceling ... the threshold will be 4 hours ... after that you have to say it's an emergency to cancel."* Decision 0010 (partial; her exact words in it, plus the club-wide vision and the white-label dream, logged verbatim). 20260912000005: `cancel_cutoff_hours` becomes 4, `registrations.late_cancel` + `cancel_note`, and `cancel_registration(p_registration, p_note)` refuses a You're In! late cancel without a note (old signature dropped so the call cannot be ambiguous); pool drop-outs and Tara's removals are never late; the note rides in her notification. 17-check probe. Web: `payments_enabled` read on every load; Charge fee / Charge late cancel / Refund buttons exist only while it is true, the late note shows always; `stripe-charge` is invoked right after the RPC. iOS: `CancelPolicy` (5 unit tests) and a note sheet inside the cutoff; the sentence above the box is Tara's (Q40) and does not exist yet. **`tests/stripe/run.sh`**: SetupIntent, signed and unsigned webhooks, charge → processing → succeeded → paid, refund → unpaid, decline → failed with reason, switch off → nothing, 27 checks against stripe-mock, and a CI job that runs it on every PR. On this Mac Docker Hub pulls hung for an hour, so locally the mock is the Homebrew binary reached as `host.docker.internal`; CI uses the image on the Supabase network. GitHub's push protection refused the first push because the mock env carried Stripe's public example key; now `make-env.sh` invents one per run and nothing key-shaped is in the repo. Nothing charges anyone: the switch is still off.
+- **2026-09-12** — **The 4-hour honor system, Tara's tap on the web, and the whole Stripe pipeline proven against a mock.** Tara, via Alex: *"honor system for canceling ... the threshold will be 4 hours ... after that you have to say it's an emergency to cancel."* Decision 0010 (partial; her exact words in it, plus the club-wide vision and the white-label dream, logged verbatim). 20260912000005: `cancel_cutoff_hours` becomes 4, `registrations.late_cancel` + `cancel_note`, and `cancel_registration(p_registration, p_note)` refuses a You're In! late cancel without a note (old signature dropped so the call cannot be ambiguous); pool drop-outs and Tara's removals are never late; the note rides in her notification. 18-check probe. Web: `payments_enabled` read on every load; Charge fee / Charge late cancel / Refund buttons exist only while it is true, the late note shows always; `stripe-charge` is invoked right after the RPC. iOS: `CancelPolicy` (5 unit tests) and a note sheet inside the cutoff; the sentence above the box is Tara's (Q40) and does not exist yet. **`tests/stripe/run.sh`**: SetupIntent, signed and unsigned webhooks, charge → processing → succeeded → paid, refund → unpaid, decline → failed with reason, switch off → nothing, 27 checks against stripe-mock, and a CI job that runs it on every PR. On this Mac Docker Hub pulls hung for an hour, so locally the mock is the Homebrew binary reached as `host.docker.internal`; CI uses the image on the Supabase network. GitHub's push protection refused the first push because the mock env carried Stripe's public example key; now `make-env.sh` invents one per run and nothing key-shaped is in the repo. Nothing charges anyone: the switch is still off.
 - **2026-09-12** — **A date on every note, a version on Profile.** `admin_player_note_edited` (20260912000004) returns the note's `updated_at` or null; the web admin shows "Edited <date>." under the note and refreshes it on save, because a note without a date reads the same whether it is from March or yesterday. Three probe checks (matches the row, null without a note, gone after a blank save). Profile ends with "Version 0.1.0 (1)" from the bundle, the first thing to ask for when a TestFlight build looks wrong. Local lesson: after `supabase db reset` the auth container kept stale connections and answered 504 for ten-second stretches, which made browser sign-in flake; `docker restart supabase_auth_FXE-Tennis` fixed it. Also: the browser suite is not idempotent (it cancels Sunday Social), so a second full run on the same database fails three tests. Reset between runs; the runner's DIRTY warning is the tell. And the iOS 26 simulator's tab bar dropped the first tap on Profile in two of three UI runs (a hand-driven session needed two taps as well), so both UI test files open Profile through `openProfileTab()`, which taps once more after five quiet seconds. Not seen on a device; in the backlog to check on Tara's phone.
 - **2026-09-12** — **The Stripe edge functions, and the trusted role that could not read a table.** Three Deno functions: `stripe-setup-intent` (customer + SetupIntent for PaymentSheet), `stripe-webhook` (the only writer of card summaries and ledger outcomes, Stripe-signature auth, JWT verification off for it alone), `stripe-charge` (every pending ledger row becomes one off-session PaymentIntent or Refund, idempotency key per row, claim-then-call so a crash never double-charges). The Stripe client is built lazily so an unconfigured deploy answers `stripe_not_configured` instead of dying at load. First real call found that **`service_role` held no DML on any table**: the August PUBLIC revokes had taken it, and nothing noticed for a month because no server-side code existed. 20260912000002 grants it explicitly with default privileges for future tables, and `grants_are_explicit.sql` now asserts it on every table (red first). Hosted needs that push before any edge function can work.
 - **2026-09-12** — **The card screen.** "Payment method" on Profile: the summary the webhook recorded ("Visa ···4242") or Add a card, which asks `stripe-setup-intent` for a SetupIntent and opens Stripe's PaymentSheet; the app never sees a number. Verified on the simulator up to the missing key: the tap reaches the function and comes back "Cards aren't set up yet." The consent sentence at card entry is Tara's (Q37) and does not exist until she writes it; only chrome shows. Stripe iOS SDK added (PaymentSheet product only).

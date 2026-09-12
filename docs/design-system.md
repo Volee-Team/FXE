@@ -3,7 +3,13 @@
 Single source of truth: **`FXETennis/Resources/Brand.swift`**. This document
 transcribes that file. If a value here disagrees with `Brand.swift`, the Swift
 file wins and this document is stale. The web admin mirrors the same tokens at
-`web/tokens.css` (Brand.swift header: "Change one, change both").
+`web/tokens.css` (Brand.swift header: "Change one, change both"). That mirror
+was only partly true until 2026-09-12: the 2026-08-26 transcription moved the
+brand core, surfaces and most text tokens to palette B but left the on-fill
+text (`--fxe-text-on-court`, `--fxe-text-on-accent`) and all four status
+ink/tint pairs on palette A. Re-transcribed value for value on 2026-09-12 and
+checked by script against `Brand.swift`; nothing enforces it, so re-check
+whenever either file changes.
 
 **Palette:** B, "full country club." Chosen by Tara on 2026-08-12 ("lets do b for
 now"). Softer navy, forest green, a brass accent, a cream ground.
@@ -283,8 +289,9 @@ and re-run this table. Nothing else changes.
 ## Brand mark (logo)
 
 Files:
-- `FXETennis/Resources/Brand/gator-x.png` (raster)
+- `FXETennis/Resources/Assets.xcassets/gator-x.imageset/gator-x.png` (raster, the asset the app draws)
 - `FXETennis/Resources/Brand/gator-x.pdf` (vector source)
+- `FXETennis/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png` (the icon, same mark on `Brand.navy`)
 
 The mark Tara chose (decision 22, 2026-08-12): **the gator with crossed
 racquets**, not the tennis-ball-only one. Composition in the current asset:
@@ -321,7 +328,7 @@ in `Brand.swift` too.)
 | **Action Needed** | Admin work requiring Tara's attention. |
 | **My Clinics** | The player's upcoming registered clinics and Player Pool entries. |
 | **Service week** | Sunday through Saturday, America/New_York. Internal vocabulary, not player-facing. |
-| **Ladies / Men / Coed** | The three v1 audiences. Juniors return in the fall. |
+| **Ladies / Men / Coed** | The three v1 audiences. Juniors return in November or the spring session (decision 0007, section 6). |
 
 ---
 

@@ -1,8 +1,10 @@
-// stripe-charge: executes what Tara asked for. Every 'pending' row in the
-// ledger becomes one Stripe call: a PaymentIntent (off-session, on the
-// customer's default card) for a fee, or a Refund for a refund row. The
-// outcome is recorded by the webhook; here we only move pending → processing
-// and store the Stripe id, so a crash between the two never double-charges.
+// stripe-charge: executes what Tara asked for. Up to 25 'pending' rows per
+// call (.limit(25) below; call again for the rest) each become one Stripe
+// call: a PaymentIntent (off-session, on the customer's default card) for a
+// fee, or a Refund for a refund row. The outcome is recorded by the webhook;
+// here we only move pending → processing and store the Stripe id, so a crash
+// between the two never double-charges, and, on a synchronous decline, mark
+// the row 'failed' with the reason.
 //
 // Invoked by the admin surfaces right after admin_charge_registration /
 // admin_refund_payment returns, and safe to invoke again at any time (it

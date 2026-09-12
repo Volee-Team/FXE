@@ -72,7 +72,6 @@ done
 echo ""
 echo "════ Concurrency probes ════"
 for f in tests/sql/*.sh; do
-  [ "$(basename "$f")" = "run-probes.sh" ] && continue
   name=$(basename "$f" .sh)
   out=$(bash "$f" 2>&1)
   if echo "$out" | grep -q "^PASS"; then

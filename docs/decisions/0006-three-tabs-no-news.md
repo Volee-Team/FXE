@@ -2,6 +2,9 @@
 
 **Date:** 2026-08-12 · **Status:** Active
 
+**Amended 2026-08-15 (Alex):** an administrator account sees a fourth tab,
+Manage; players still see three. See the `MainTabView.swift` header.
+
 ## Decision
 
 The player app has exactly **three** tabs: **Home, Clinics, Profile**.
@@ -64,6 +67,6 @@ should then arrive with its admin half, not before.
 
 ## Pinned by
 
-Nothing mechanical yet. `MainTabView.swift` has three tabs and a comment saying
-admin is a separate surface. **Gap:** no test asserts the tab count, so a future
+Nothing mechanical yet. `MainTabView.swift` renders three tabs for a player and
+a fourth, Manage, for an admin; its header records why (2026-08-15). **Gap:** no test asserts the tab count, so a future
 session could add a fourth without anything going red.

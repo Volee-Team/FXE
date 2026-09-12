@@ -1,0 +1,5 @@
+# age public key that the nightly backup is encrypted to (see backup.yml).
+# Replace this file's contents with the single age1... line from
+#   age-keygen -o fxe-backup-key.txt
+# Keep fxe-backup-key.txt (the PRIVATE key) out of the repo, in Alex's password
+# manager. Until a real key is here the backup job fails on purpose.

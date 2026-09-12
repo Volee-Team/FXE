@@ -73,20 +73,11 @@ jobs:
         run: |
           echo "===== containers ====="
           docker ps -a || true
-          echo "===== supabase logs db ====="
-          supabase logs db 2>&1 | tail -100 || true
           echo "===== raw db container logs ====="
           docker logs "$(docker ps -aqf name=supabase_db)" 2>&1 | tail -100 || true
           echo "===== migrations present ====="
           ls -1 supabase/migrations/ || true
 
-  # The app itself. Until 2026-08-13 CI never compiled a line of Swift, which
-  # is exactly how a test target with zero sources survived for days while the
-  # suite reported green: nothing here ever tried to run it.
-  # macOS minutes cost 10x. A docs-only or web-only change cannot break the
-  # iOS build, so the job runs only when something under FXETennis*/ or the
-  # project definition changed (and always on main, so main's history is a
-  # full record). A skipped job satisfies the required check on main.
   web-browser-tests:
     name: Web admin browser tests
     runs-on: ubuntu-latest
@@ -181,6 +172,14 @@ jobs:
           docker logs --tail 100 supabase_edge_runtime_FXE-Tennis || true
           docker logs --tail 30 stripe-mock || true
 
+  # The app itself. Until 2026-08-13 CI never compiled a line of Swift, which
+  # is exactly how a test target with zero sources survived for days while the
+  # suite reported green: nothing here ever tried to run it.
+  # macOS minutes cost 10x. On a pull request the job runs only when something
+  # under FXETennis*/ or the project definition changed; on a push event it
+  # runs on every branch (the gate below says so), so every branch's history is
+  # a full record. A skipped job satisfies the required check on main.
+  # (Comment moved here 2026-09-12; it had sat above the browser-tests job.)
   ios-changes:
     name: Did Swift change?
     runs-on: ubuntu-latest
@@ -269,6 +268,18 @@ jobs:
   # first", after finding AI filler like "Press play - Start Hitting!" in an
   # app a real club will use. docs/copy-approved.txt is the snapshot; this job
   # is the gate.
+  # Every repo path a doc names must exist. The 2026-09-12 docs audit found 19
+  # references to 15 files that had been renamed or never existed, one of them
+  # in an agent definition that told the model to read a folder that is not
+  # there. Cheapest rot to detect, most expensive to obey.
+  doc-paths:
+    name: Doc paths exist
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/check-doc-paths.sh
+
   copy-gate:
     name: No unapproved copy
     runs-on: ubuntu-latest
