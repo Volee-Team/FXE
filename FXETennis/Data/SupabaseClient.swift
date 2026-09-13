@@ -17,8 +17,14 @@ import Supabase
 
 private enum SupabaseConfig {
     #if DEBUG
-    static let url = URL(string: "http://localhost:54321")!
-    static let anonKey = "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH"
+    // A Debug build can be pointed at another backend for CI: the UI-test job
+    // has no Docker, so it cannot host the local stack, and forwards a
+    // throwaway hosted project's URL and publishable key through the launch
+    // environment (see FXETennisUITests setUp). Never read in Release, so a
+    // shipped build cannot be redirected by an environment variable.
+    private static let env = ProcessInfo.processInfo.environment
+    static let url = URL(string: env["FXE_SUPABASE_URL"] ?? "http://localhost:54321")!
+    static let anonKey = env["FXE_SUPABASE_ANON_KEY"] ?? "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH"
     #else
     static let url = URL(string: "https://amnaxvznkadkgzdxzegw.supabase.co")!
     static let anonKey = "sb_publishable_J-UBIJSqeljvVuyb4P27Jg_jLngLuBW"

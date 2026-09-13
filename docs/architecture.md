@@ -481,11 +481,24 @@ network, then `tests/stripe/run.sh`), `ios-changes` (did any Swift or
 `project.yml` change? gates the next job so a docs PR does not wait on Xcode),
 `ios-build-and-test` (XcodeGen, Debug and Release builds, unit tests, app-icon
 gate, simulator chosen at run time), `copy-gate`, `secret-scan`,
-`migration-immutability`, and `doc-paths` ("Doc paths exist", runs
-`scripts/check-doc-paths.sh`: every backtick-quoted repo path named in a
-Markdown file must exist, added 2026-09-12 because a doc pointing at a renamed
-file is the cheapest rot to detect and the most expensive to obey). Nightly (`backup.yml`): `pg_dump` of hosted (`public`, `auth`
-and `supabase_migrations`, so a restore keeps the ledger `db push` reads) to
+`migration-immutability`, `ios-ui-tests` (the 13 XCUITests against a
+throwaway CI Supabase project, reset to the seed first; green with a notice
+until that project's secrets exist, see `docs/launch-checklist.md` §F, added
+2026-09-13), and `doc-paths` ("Docs are consistent": `scripts/check-doc-paths.sh`,
+every backtick-quoted repo path named in a Markdown file must exist, added
+2026-09-12 because a doc pointing at a renamed file is the cheapest rot to
+detect and the most expensive to obey; and `scripts/check-doc-claims.sh`,
+added 2026-09-13: every probe, test and migration count in the current-state
+docs equals the derived number, every decision is indexed, every Tara question
+carries a status, and the human docs audit is not older than 45 days). The
+`sql-probes` job also runs `scripts/check-doc-inventory.sh`: every table,
+view, enum, client RPC, edge function, probe, CI job and Swift file that
+exists must be named in this file. Monthly and opt-in (`docs-audit.yml`): a
+read-only model audit with the brief in `docs/audit-brief.md`, which opens an
+issue with its findings; it runs only once `ANTHROPIC_API_KEY` is set as a
+repository secret. Nightly (`backup.yml`): `pg_dump` of hosted (`public`, `auth`
+and `supabase_migrations`, so a restore keeps the ledger `db push` reads),
+encrypted with `age` to the public key in `.github/backup-recipient.txt`, to
 an artifact, with a size floor so an empty dump fails loudly, and a keep-warm
 query.
 

@@ -65,6 +65,12 @@ jobs:
       - name: Run probe suite
         run: bash tests/run-probes.sh
 
+      # Every table, view, enum, client RPC, probe, edge function, CI job and
+      # Swift file must be named in docs/architecture.md (2026-09-13). Needs
+      # the database, which is why it lives here and not in doc-paths.
+      - name: Architecture doc names every object that exists
+        run: bash scripts/check-doc-inventory.sh
+
       # Diagnostics on failure. Each falls back rather than short-circuiting,
       # because the most useful case is the one where the stack never started
       # and `supabase logs` itself cannot run.
@@ -272,13 +278,104 @@ jobs:
   # references to 15 files that had been renamed or never existed, one of them
   # in an agent definition that told the model to read a folder that is not
   # there. Cheapest rot to detect, most expensive to obey.
+  # The 13 XCUITests walk the app the way a member and Tara do. The macOS
+  # runner has no Docker, so it cannot host the local stack; instead the Debug
+  # app is pointed at a throwaway hosted project (never production: CLAUDE.md,
+  # "no test fixtures in hosted") that this job resets to the seed first.
+  # Until that project exists (it needs a paid slot or another owner: see
+  # docs/launch-checklist.md §F) the secrets are unset and every step below
+  # the check is skipped, so the job stays green and says why.
+  ios-ui-tests:
+    name: iOS UI tests on a CI project
+    needs: ios-changes
+    if: needs.ios-changes.outputs.ios == 'true'
+    runs-on: macos-15
+    timeout-minutes: 45
+    # One project, one seed: two PRs resetting it at once would corrupt each
+    # other's run. Queue, never cancel.
+    concurrency:
+      group: fxe-ci-supabase
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: cfg
+        name: Is the CI project configured?
+        env:
+          DB_URL: ${{ secrets.CI_SUPABASE_DB_URL }}
+          ANON: ${{ secrets.CI_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -n "$DB_URL" ] && [ -n "$ANON" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::CI_SUPABASE_DB_URL / CI_SUPABASE_ANON_KEY are not set; the XCUITests still run only on a laptop. See docs/launch-checklist.md §F."
+          fi
+
+      - name: Install Supabase CLI
+        if: steps.cfg.outputs.configured == 'true'
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.115.0
+
+      # Same command the laptop uses, aimed at the CI project: drops and
+      # recreates the schema, applies every migration, loads the seed.
+      - name: Reset the CI project to the seed
+        if: steps.cfg.outputs.configured == 'true'
+        env:
+          DB_URL: ${{ secrets.CI_SUPABASE_DB_URL }}
+        run: supabase db reset --db-url "$DB_URL" --yes
+
+      - name: Generate Xcode project
+        if: steps.cfg.outputs.configured == 'true'
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Pick a simulator
+        if: steps.cfg.outputs.configured == 'true'
+        run: |
+          UDID=$(xcrun simctl list devices available -j \
+            | python3 -c 'import json,sys; d=json.load(sys.stdin)["devices"]; print(next(x["udid"] for k in sorted(d, reverse=True) for x in d[k] if "iPhone" in x["name"]))')
+          echo "SIM_UDID=$UDID" >> "$GITHUB_ENV"
+
+      # TEST_RUNNER_ variables reach the test runner as FXE_SUPABASE_*, and
+      # setUp forwards them into the app's launch environment. One retry
+      # absorbs the two known simulator flakes (first tap on the Profile tab,
+      # sign-in timing after a cold start), both in docs/backlog.md.
+      - name: XCUITests
+        if: steps.cfg.outputs.configured == 'true'
+        env:
+          TEST_RUNNER_FXE_SUPABASE_URL: ${{ vars.CI_SUPABASE_URL }}
+          TEST_RUNNER_FXE_SUPABASE_ANON_KEY: ${{ secrets.CI_SUPABASE_ANON_KEY }}
+        run: |
+          xcodebuild -project FXETennis.xcodeproj -scheme FXETennis \
+            -destination "platform=iOS Simulator,id=$SIM_UDID" \
+            -only-testing:FXETennisUITests \
+            -retry-tests-on-failure -test-iterations 2 \
+            -resultBundlePath /tmp/ui.xcresult test
+
+      - name: Keep the result bundle on failure
+        if: failure() && steps.cfg.outputs.configured == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcuitest-results
+          path: /tmp/ui.xcresult
+          if-no-files-found: ignore
+
   doc-paths:
-    name: Doc paths exist
+    name: Docs are consistent
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - run: bash scripts/check-doc-paths.sh
+      - name: Every repo path a doc names exists
+        run: bash scripts/check-doc-paths.sh
+      # Counts match the repo, decisions are indexed, every Tara question has
+      # a status, and the human audit is not overdue (warning at 21 days,
+      # failure at 45). 2026-09-13.
+      - name: Counts, index, question statuses, audit age
+        run: bash scripts/check-doc-claims.sh
 
   copy-gate:
     name: No unapproved copy
