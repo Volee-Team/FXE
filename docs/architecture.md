@@ -111,6 +111,8 @@ them apart and does not need to, because it never trusts the caller.
 
 ## 4. The client (iOS app)
 
+Tara's two AI-made mockups live in `media/` (`FXE 1@2x.png`, `FXE 2@2x.png`, with PDFs). They are a style guide, never a spec (CLAUDE.md, "On the wireframe mockups"); there are no wireframes of the screens as built, and the screenshot set per TestFlight upload (`docs/launch-checklist.md` §C) will be the record of what shipped.
+
 SwiftUI, deployment target **iOS 17.0**. iPhone only for v1. Two dependencies
 (`project.yml`): **supabase-swift** (2.41.1, pinned), configured for the
 *implicit* auth flow because the password-reset email must be finishable in a

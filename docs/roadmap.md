@@ -118,6 +118,8 @@ Split by what actually gates what. An **internal** TestFlight round (Tara added
 as an App Store Connect user on our own team) needs far less than an external
 one, and conflating the two is what made this section look like a wall.
 
+Alex, 2026-08-19: *"we're not in a big rush, I can do it as an org from the start"*: the LLC account from day one, no personal-account TestFlight shortcut, and John's Volee login (which Alex holds) is not used for FXE.
+
 **Gates an internal TestFlight build:**
 
 | | |
@@ -185,6 +187,11 @@ conflict warnings. Advanced player search. Multiple locations.
 ---
 
 ## Parked — raised but not scheduled
+
+- **Analytics: an `events` table, no third-party SDK** (promised to Kat's list on 2026-08-15, never built). Whether her "tagged / tag spec / what tool" meant release tags or analytics tagging is unresolved; `docs/kat-due-diligence.md` row 8. If analytics, it is a Tara question first (what she wants to know) and a privacy line in the policy second.
+- **UTR / USTA APIs** (Kat's list): never explored; the NTRP scale is self-reported. A Tara question before any integration.
+- **Recording Tara's calls and FaceTimes so the transcript reaches the model** (Alex, 2026-08-15). Not answered, not built; a consent and storage question before it is a feature.
+- **The model texting Tara directly during the day** (Alex, 2026-08-15). Same day; the answer is the relay through Alex (hard rule 14) until she asks for it.
 
 Things Tara has mentioned that are real but have no version yet. Parked is not
 rejected; it means nobody has decided when.

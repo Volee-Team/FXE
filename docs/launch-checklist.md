@@ -16,7 +16,7 @@ Owners: **[me]** built by the model, **[Alex]** needs his hands or his accounts,
 
 | | Item | Owner | Status 2026-09-12 |
 |---|---|---|---|
-| 1 | Stripe test-mode account and the three keys in Supabase secrets (steps in section B) | [Alex] | not started |
+| 1 | Stripe test-mode account and the three keys in Supabase secrets (steps in section B) | [Alex] | deferred by Alex 2026-09-13 ("figure that stuff out then I'll do the stripe stuff later"): after the CI project and the doc mechanisms |
 | 2 | Run `tests/stripe/run.sh` against real Stripe with test cards, `stripe listen` for webhooks, fix what the mock could not show | [me] | blocked on 1 |
 | 3 | Tara's answers to questions 28–42 (`docs/for-tara-2026-09-12.md`), recorded as decision 0011 | [Tara] | sent 2026-09-12 |
 | 4 | Flip `payments_enabled`, set the fee policy settings, add her two sentences (card entry, inside 4 hours) | [me] | blocked on 3 |
@@ -44,7 +44,7 @@ What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision 00
 
 | | Item | Owner | Status |
 |---|---|---|---|
-| 1 | Apple Developer Program enrollment as FXE Tennis, LLC | [Tara]/[Apple] | in review (docs/whats-next.md) |
+| 1 | Apple Developer Program enrollment as FXE Tennis, LLC. Apple asked (2026-08-26) for the applicant's government photo ID, employment verification, and one business document (Articles of Incorporation, business license, Certificate of Formation, charter, or notarized partnership papers); Tara is sending them. Alex's own Apple ID has no developer account; he holds John's Volee login and it will not be used (an Individual account would show John as the seller; decided 2026-08-16 and 08-19: the LLC from the start) | [Tara]/[Apple] | in review (docs/whats-next.md) |
 | 2 | Bundle id (replaces `com.fxetennis.app` placeholder), Team ID, App Store Connect record, APNs key | [Alex] | blocked on 1 |
 | 3 | Push delivery: the `push` edge function on the notifications webhook, audit columns (decision 0008) | [me] | blocked on the APNs key |
 | 4 | **Privacy manifest** (`PrivacyInfo.xcprivacy`): Apple rejects builds that use required-reason APIs without it | [me] | **done 2026-09-12** (PR #37) |
@@ -52,12 +52,14 @@ What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision 00
 | 6 | Privacy policy at a URL, terms, waiver wording (Tara said Volee's privacy policy can be reused, decision 16) | [Alex]/[Tara] | needs a place to host it (fersc.com?) |
 | 7 | App Store listing: name, subtitle, description (Tara's words), screenshots on the required sizes, age rating, support URL, review notes with a test account | [Alex]+[me] | not started |
 | 8 | TestFlight internal build to Tara's phone, then external testers (external needs the privacy URL) | [Alex] | blocked on 1 |
+| 10 | **An annotated git tag and a changelog line at every TestFlight upload** (`git tag -a v0.1.0-tf1 -m ...`), so a build on a phone can always be matched to a commit. Alex asked for tags and patch notes on 2026-08-13; Volee once shipped a build no commit matched. No tags exist yet | [me] | at the first upload |
 | 9 | Real-device pass: the two simulator flakes (Profile tab first tap, sign-in timing) checked on an iPhone | [Alex]/[me] | blocked on 8 |
 
 ## D. Backend and operations
 
 | | Item | Owner | Status |
 |---|---|---|---|
+| 0 | **Hosted Auth has "Confirm email" switched OFF**, set by hand in the dashboard on 2026-08-16 (Alex: "I'd rather just have no verification right now"; Tara's Screen 2 says no email verification in v1; decision 0011). Local `config.toml` has `enable_confirmations = false`. **Any new project (the CI one, a restore into a fresh project, a plan change) comes with it ON**, and sign-up then hangs exactly as it did on 2026-08-13; it is the first thing to check on any new project | [Alex] | done on production; re-check on every new project |
 | 1 | **Auth email delivery.** Hosted uses Supabase's built-in email, which is rate-limited to a handful per hour and lands in spam. Password resets and any sign-up confirmation need custom SMTP (Resend or Postmark, free tiers cover a club) with DNS records on the club's domain | [Alex] | not done; blocks a real password reset |
 | 2 | Password reset redirect URL allow-listed in the hosted dashboard | [Alex] | done 2026-09-01 per whats-next; re-verify with one real reset |
 | 3 | Supabase plan: free tier pauses after 7 idle days and has no point-in-time recovery. Nightly `pg_dump` exists and the keep-warm job runs. Pro ($25/mo) removes both risks; decide before members are on it | [Alex] | decide |
@@ -67,7 +69,7 @@ What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision 00
 | 7 | Rate limits on the public functions (`stripe-setup-intent`) and on sign-up | [me] | none; low risk at club scale, note it |
 | 8 | Drop dead `clinics.price_cents` (blast radius in backlog) | [me] | whenever |
 | 9 | Data retention and export: what Tara gets if she leaves the app (CSV of players and payments) | [me] | v1.1 |
-| 10 | **Backup artifacts are readable by any signed-in GitHub user** because the repo is public and the dump carries `auth.users` (emails, bcrypt password hashes). Found 2026-09-12 by the docs audit. Fix in the same PR: the job now encrypts with `age` to a public key in `.github/backup-recipient.txt` and refuses to upload without one. Needs Alex: run `age-keygen`, keep the private key in his password manager, paste the public line into that file. Then decide on the ten existing unencrypted artifacts (delete via `gh api -X DELETE`, or accept until they expire in December) and whether the repo goes private | [Alex] | **key needed; job fails until then** |
+| 10 | **Backup artifacts are readable by any signed-in GitHub user** because the repo is public and the dump carries `auth.users` (emails, bcrypt password hashes). Found 2026-09-12 by the docs audit. Fix in the same PR: the job now encrypts with `age` to a public key in `.github/backup-recipient.txt` and refuses to upload without one. Alex generated the key on 2026-09-13 and keeps the private half in LastPass; the public `age1...` line still has to go into that file. The repo stays public (Alex, 2026-09-13: it was made public for free CI minutes). Still open: the ten existing unencrypted artifacts (delete via `gh api -X DELETE`, or let them expire in December) | [Alex] | **public line needed; job fails until then** |
 
 ## E. Testing: what exists, what is missing, what to build
 
@@ -99,7 +101,7 @@ Missing kinds of testing, in the order they matter:
 
 ## F. The CI Supabase project (Alex asked 2026-09-12; corrected 2026-09-13)
 
-Would it help a lot? Yes: it is the only way to run the 13 XCUITests on every PR, which is the layer that walks the app like a member does. The macOS runner has no Docker, so it cannot host the local stack; a small hosted project it can reset to the seed is the practical answer. Everything on our side is built and waiting (2026-09-13): the Debug app accepts `FXE_SUPABASE_URL` / `FXE_SUPABASE_ANON_KEY`, the UI tests forward them, and the `ios-ui-tests` job resets the project with `supabase db reset --db-url` and runs the suite with one retry. The job stays green with a notice until the secrets exist.
+Alex gave the go-ahead on 2026-09-13 ("exact steps for me or can you do it all?"); the create was attempted the same day and refused, see below. Would it help a lot? Yes: it is the only way to run the 13 XCUITests on every PR, which is the layer that walks the app like a member does. The macOS runner has no Docker, so it cannot host the local stack; a small hosted project it can reset to the seed is the practical answer. Everything on our side is built and waiting (2026-09-13): the Debug app accepts `FXE_SUPABASE_URL` / `FXE_SUPABASE_ANON_KEY`, the UI tests forward them, and the `ios-ui-tests` job resets the project with `supabase db reset --db-url` and runs the suite with one retry. The job stays green with a notice until the secrets exist.
 
 **Does it use the Volee slot? Yes, and Alex was right.** The 2026-09-12 version of this section said the free plan is two projects per organization. It is two active free projects per *user* across every org they own: `supabase projects create fxe-ci` on 2026-09-13 was refused with "Alex-Epstein (2 project limit)", because Volee and `fxe-tennis` already fill it. Three ways out, cheapest first:
 
