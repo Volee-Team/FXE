@@ -20,6 +20,7 @@ The history of what we believed is part of the record.
 | [0008](0008-push-notifications.md) | Push: APNs from an edge function on a notifications webhook; device registration now, delivery when Apple issues the key | 2026-09-02 | Active |
 | [0009](0009-payments-stripe-card-on-file.md) | Stripe direct with a card on file; every money event a row; policy as settings pending Tara's answers | 2026-09-12 | Active |
 | [0010](0010-cancellation-four-hour-honor-system.md) | Cancellation is a 4-hour honor system: free before, a concise emergency note after, charging is Tara's tap | 2026-09-12 | Partial |
+| [0011](0011-no-email-verification-v1.md) | No email verification in v1; hosted "Confirm email" is OFF by hand, and every new project needs the same flip | 2026-08-16 | Active |
 
 Tara's own numbered decisions (1–23, calls of 2026-08-02 and 2026-08-12) are
 tabled in CLAUDE.md; a bare "decision 17" in a record means that list. Not yet

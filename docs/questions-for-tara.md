@@ -141,7 +141,7 @@ Not building it now either way. We just want to know whether to design for it so
 
 **23. Whose Apple Developer account does this app live under, and who owns the App Store listing?**
 Volee is under John's account. FXE should probably be its own, under FXE or under you. This has to be settled before we can submit.
-*ANSWERED 2026-08-02 (decision 16): FXE Tennis, LLC. Enrollment in review.*
+*ANSWERED 2026-08-02 (decision 16): FXE Tennis, LLC. Enrollment in review. Alex's own Apple ID has no developer account; he holds John's Volee login and it is deliberately not used for FXE (an Individual account shows John as the seller). Decided 2026-08-16 and 08-19.*
 
 **24. The app stores children's first name, last name, and age under a parent account. Does FXE have parent consent language already, from club registration forms or waivers?**
 Apple requires a privacy policy URL and an accurate privacy declaration, and apps handling kids' data get looked at more carefully. We need to know what already exists so we are not writing policy from scratch.

@@ -1,6 +1,6 @@
 # What's next, and what we need from Tara
 
-Living file. Updated 2026-09-12. If something here is done, move it out; if
+Living file. Updated 2026-09-13. Alex's target (2026-09-10): *"in the next week or two, get 95% of everything regarding the app/distribution/users"*, so about 2026-09-24; payments by October 1 (Tara). If something here is done, move it out; if
 something new blocks, add it. This exists because the answer to "what's next"
 kept living in chat and dying with the session.
 
@@ -43,6 +43,10 @@ Also his: a tick through `docs/copy-review.md` for the connective words in the u
   a player inside the 3-hour close taps "Message Tara" and types their own
   message; she sees it under Action Needed with Put them in / No room
   (2026-09-01). No invented copy, because the message is theirs
+
+## Ask Kat (via Alex)
+
+- Her "tagged / tag spec / what tool" line: release tags (answered: one per TestFlight upload, launch-checklist §C10) or analytics tagging (not built; roadmap Parked)? `docs/kat-due-diligence.md` maps all 18 of her questions to where each answer lives.
 
 ## Blocked on Apple / business
 
