@@ -97,15 +97,17 @@ Missing kinds of testing, in the order they matter:
 9. **Dependency audit**: `npm audit` for the web tests. Swift packages: Stripe SDK pinned exactly 2026-09-12 (PR #37); supabase-swift was already exact.
 10. **Copy review with Tara**: the 60-odd chrome strings in `docs/copy-review.md` and every sentence marked hers.
 
-## F. The CI Supabase project (Alex asked 2026-09-12)
+## F. The CI Supabase project (Alex asked 2026-09-12; corrected 2026-09-13)
 
-Would it help a lot? Yes: it is the only way to run the 13 XCUITests on every PR, which is the layer that walks the app like a member does. The macOS runner has no Docker, so it cannot host the local stack; a small hosted project it can reset to the seed is the practical answer.
+Would it help a lot? Yes: it is the only way to run the 13 XCUITests on every PR, which is the layer that walks the app like a member does. The macOS runner has no Docker, so it cannot host the local stack; a small hosted project it can reset to the seed is the practical answer. Everything on our side is built and waiting (2026-09-13): the Debug app accepts `FXE_SUPABASE_URL` / `FXE_SUPABASE_ANON_KEY`, the UI tests forward them, and the `ios-ui-tests` job resets the project with `supabase db reset --db-url` and runs the suite with one retry. The job stays green with a notice until the secrets exist.
 
-Does it use the Volee slot? No. Supabase's free plan is per organization, two active projects each. `supabase orgs list` shows two orgs: Volee (one project) and FXE (one project, `fxe-tennis`). A `fxe-ci` project goes in the FXE org, next to production, and Volee is untouched.
+**Does it use the Volee slot? Yes, and Alex was right.** The 2026-09-12 version of this section said the free plan is two projects per organization. It is two active free projects per *user* across every org they own: `supabase projects create fxe-ci` on 2026-09-13 was refused with "Alex-Epstein (2 project limit)", because Volee and `fxe-tennis` already fill it. Three ways out, cheapest first:
 
-What it costs: nothing. Free projects pause after a week idle; CI resetting it nightly keeps it awake.
+1. **Pro on the FXE org, $25/month.** Removes the pause-after-a-week risk and adds point-in-time recovery for production (row D3 wanted this before real members anyway). The extra `fxe-ci` micro project on a Pro org bills about $10/month on top. Roughly $35/month total.
+2. **A second free owner.** A free org owned by someone else (Tara's own Supabase account, or an account Alex creates for the club) gets its own two free slots. Zero cost; one more login to keep track of, and Alex would need to be invited as an admin.
+3. **No project: keep running the UI suite on a laptop before every TestFlight build**, and record the run in the changelog. Free, honest, and the weakest of the three.
 
-What it needs from Alex: create the project in the FXE org (dashboard, two minutes, choose us-east-1, any database password: the password is a credential and stays with Alex), then set two GitHub secrets: `CI_SUPABASE_DB_URL` (the connection string) and `CI_SUPABASE_ANON_KEY`. I do the rest: a workflow job that runs `supabase db reset --linked` against it, points the UI tests at it through the existing `AppEnv`, and serializes runs with a concurrency group so two PRs never share a seed. Guardrail: the CI project holds seed data only, never Tara's (CLAUDE.md, "no test fixtures in hosted" applies to production, not to a throwaway).
+What it needs from Alex once a project exists: its database password stays with him; set three things in GitHub, Settings → Secrets and variables → Actions: secret `CI_SUPABASE_DB_URL` (the session-pooler connection string, port 5432), secret `CI_SUPABASE_ANON_KEY` (the project's publishable key), and variable `CI_SUPABASE_URL` (`https://<ref>.supabase.co`). The next Swift change then runs the suite. Guardrail: the CI project holds seed data only, never Tara's.
 
 ---
 

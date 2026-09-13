@@ -1,0 +1,60 @@
+name: docs audit (monthly, opt-in)
+
+# The deterministic checks (paths, counts, index, inventory) run on every PR.
+# This is the other half: the reading a person or a model has to do, asking of
+# every claim "is that still true?". It runs Claude Code in read-only mode with
+# the same brief the 2026-09-12 audit used, and opens an issue with the table.
+#
+# OPT-IN: it does nothing until a repository secret ANTHROPIC_API_KEY exists
+# (Alex's key; usage is billed to it, roughly one long session per run). Until
+# then the job exits green with a notice, and the human audit that
+# scripts/check-doc-claims.sh enforces at 45 days is the fallback.
+
+on:
+  schedule:
+    - cron: "0 12 1 * *"   # the 1st of each month, 12:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: cfg
+        env:
+          KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -n "$KEY" ]; then echo "on=true" >> "$GITHUB_OUTPUT"; else
+            echo "on=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::ANTHROPIC_API_KEY is not set; the monthly model audit is off. The 45-day human audit (check-doc-claims.sh) still applies."
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.cfg.outputs.on == 'true'
+        with:
+          node-version: 22
+
+      - name: Run the audit brief, read-only
+        if: steps.cfg.outputs.on == 'true'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          npm install -g @anthropic-ai/claude-code
+          claude -p "$(cat docs/audit-brief.md)" \
+            --allowedTools "Read,Grep,Glob,Bash(ls:*),Bash(grep:*),Bash(git log:*),Bash(git diff:*),Bash(wc:*),Bash(cat:*),Bash(sed:*)" \
+            --output-format text > audit-report.md
+          head -c 60000 audit-report.md > audit-body.md
+
+      - name: Open an issue with the findings
+        if: steps.cfg.outputs.on == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create --title "Docs audit $(date -u +%Y-%m-%d)" --body-file audit-body.md --label documentation || \
+          gh issue create --title "Docs audit $(date -u +%Y-%m-%d)" --body-file audit-body.md

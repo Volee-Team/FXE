@@ -47,6 +47,13 @@ final class PlayerFlowUITests: XCTestCase {
         // otherwise covers the UI mid-flow.
         app.launchArguments += ["-UITestMode", "-AppleKeyboardsAutocorrection", "0"]
         app.launchEnvironment["UITEST_SIGNED_OUT"] = "1"
+        // CI has no local stack. xcodebuild hands TEST_RUNNER_FXE_SUPABASE_URL
+        // to this process as FXE_SUPABASE_URL; pass it on so the Debug app
+        // talks to the throwaway CI project instead of localhost. Absent
+        // locally, so nothing changes on a laptop.
+        for key in ["FXE_SUPABASE_URL", "FXE_SUPABASE_ANON_KEY"] {
+            if let value = ProcessInfo.processInfo.environment[key] { app.launchEnvironment[key] = value }
+        }
     }
 
     override func tearDown() {
