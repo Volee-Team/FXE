@@ -143,6 +143,35 @@ Never substitute a synonym. Full table in `docs/design-system.md`.
 
 ---
 
+## Her cancellation policy and the two payment sentences (2026-09-16)
+
+Verbatim from Tara's message of 2026-09-16 (decision 0012). The policy text is
+the player-facing rule and ships word for word. The two sentences are hers
+too; she said "you draft, I edit" and then wrote them, so they ship as written
+and are marked for her edit. Question 46 flags the card sentence.
+
+**Cancellation policy**
+
+> FXE Tennis Cancellation Policy
+>
+> We understand that plans change! Please cancel as early as possible so we have time to adjust courts, players, and coaching staff.
+>
+> • Cancel more than 4 hours before clinic: No charge.
+> • Cancel within 4 hours of clinic: Full clinic fee will be charged.
+> • No-shows: Full clinic fee will be charged.
+>
+> Each player receives one courtesy late cancellation every 90 days, no questions asked.
+>
+> For a true illness or emergency after your courtesy cancellation has been used, please contact Tara at fersctennispro@gmail.com
+>
+> Thank you for helping us keep clinics organized and running smoothly!
+
+**When adding a card** (Profile, above Add a card): *"Your card will only be charged for late cancellations or no-shows. Cancel at least 4 hours before clinic and you will not be charged."*
+
+**When canceling within 4 hours** (above the note box): *"This cancellation is within 4 hours of clinic and the full clinic fee will apply. If there are circumstances you'd like us to consider, please leave a note below."*
+
+**The note only Tara sees**, her ask: a place at level entry to write something like *"just coming back from a back injury so I'm a low, 3.5"*, with the app saying only Tara sees it.
+
 ## Still open with Tara
 
 1. ~~The NTRP rating guide~~ **CLOSED 2026-08-27**: *"Rating guide is good

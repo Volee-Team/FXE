@@ -1,7 +1,8 @@
 -- late_cancellation.sql
 --
--- Decision 0010 (Tara, 2026-09-12): "before 4 hours anything can be
--- cancelled but after that you have to say it's an emergency to cancel."
+-- Decision 0010 (Tara, 2026-09-12) as amended by 0012 (2026-09-16): inside 4
+-- hours the cancel goes through, one courtesy per 90 days is applied by the
+-- app, the next one owes the fee, the note is optional.
 -- The rule lives in cancel_registration, so this probe drives it from the
 -- roles the app uses and reads back what Tara's roster will see.
 --
@@ -20,7 +21,7 @@ declare
   KEN_P   constant uuid := 'a0000000-0000-0000-0000-000000000002';
   ROB_P   constant uuid := 'a0000000-0000-0000-0000-000000000003';
   FAR     constant uuid := 'd0000000-0000-0000-0000-000000000002';
-  soon uuid; reg_soon uuid; reg_pool uuid; reg_far uuid; reg_admin uuid; pay uuid;
+  soon uuid; soon2 uuid; reg_soon uuid; reg_soon2 uuid; reg_pool uuid; reg_far uuid; reg_admin uuid; pay uuid;
   n int; v text; r public.registrations;
 begin
   -- ------------------------------------------------------------ fixtures
@@ -30,6 +31,11 @@ begin
   values ('Probe Soon', 'ladies', 'Clinic', 'probe', now() + interval '2 hours', now() + interval '3 hours',
           now() - interval '3 days', now() - interval '2 days', 8, 'published', 60)
   returning id into soon;
+  insert into public.clinics (name, audience, category, description, starts_at, ends_at,
+      member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
+  values ('Probe Soon 2', 'ladies', 'Clinic', 'probe', now() + interval '3 hours', now() + interval '4 hours',
+          now() - interval '3 days', now() - interval '2 days', 8, 'published', 60)
+  returning id into soon2;
   insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
   values (soon, MARIA_P, 'in', 'self', 1800, true, 60) returning id into reg_soon;
   insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
@@ -58,24 +64,23 @@ begin
   r := public.cancel_registration(reg_far);
   insert into _probe_result values ('far_cancel_needs_no_note', 'canceled false', r.status::text || ' ' || r.late_cancel::text);
 
-  -- 4. Inside 4 hours, You're In!, no note: refused.
-  begin
-    perform public.cancel_registration(reg_soon);
-    insert into _probe_result values ('late_cancel_without_note_refused', 'late_cancel_needs_note', 'CALL SUCCEEDED');
-  exception when others then
-    insert into _probe_result values ('late_cancel_without_note_refused', 'late_cancel_needs_note', sqlerrm);
-  end;
-  begin
-    perform public.cancel_registration(reg_soon, '   ');
-    insert into _probe_result values ('blank_note_is_no_note', 'late_cancel_needs_note', 'CALL SUCCEEDED');
-  exception when others then
-    insert into _probe_result values ('blank_note_is_no_note', 'late_cancel_needs_note', sqlerrm);
-  end;
+  -- 4. Inside 4 hours, You're In!, no note (decision 0012): the cancel goes
+  --    through, it is late, and the courtesy is used. No fee.
+  r := public.cancel_registration(reg_soon);
+  insert into _probe_result values ('late_cancel_without_note_goes_through', 'canceled true true',
+    r.status::text || ' ' || r.late_cancel::text || ' ' || r.courtesy_used::text);
+  insert into _probe_result values ('no_note_stored_when_none_sent', 'true', (r.cancel_note is null)::text);
 
-  -- 5. With a note: canceled, flagged late, note kept trimmed.
-  r := public.cancel_registration(reg_soon, '  Kid has a fever.  ');
-  insert into _probe_result values ('late_cancel_with_note_goes_through', 'canceled true Kid has a fever.',
-    r.status::text || ' ' || r.late_cancel::text || ' ' || r.cancel_note);
+  -- 5. A second late cancel inside the 90 days: no courtesy left, the fee
+  --    applies, and the optional note is kept trimmed.
+  perform set_config('role', 'postgres', true);
+  insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
+  values (soon2, MARIA_P, 'in', 'self', 1800, true, 60) returning id into reg_soon2;
+  perform set_config('role', 'authenticated', true);
+  insert into _probe_result values ('courtesy_gone_after_use', 'false', public.my_courtesy_available(MARIA_P)::text);
+  r := public.cancel_registration(reg_soon2, '  Kid has a fever.  ');
+  insert into _probe_result values ('second_late_cancel_owes_fee_note_kept', 'canceled true false Kid has a fever.',
+    r.status::text || ' ' || r.late_cancel::text || ' ' || r.courtesy_used::text || ' ' || r.cancel_note);
 
   -- 6. Maria sees late_cancel through her own view.
   select late_cancel::text into v from public.my_registrations where id = reg_soon;
@@ -84,9 +89,13 @@ begin
 
   -- 7. Tara got the note in her notification, in the player's words.
   select count(*) into n from public.notifications
-   where account_id = TARA and type = 'player_canceled' and entity_id = reg_soon
-     and body like '%Note: "Kid has a fever."%';
+   where account_id = TARA and type = 'player_canceled' and entity_id = reg_soon2
+     and body like '%Late, fee applies.%Note: "Kid has a fever."%';
   insert into _probe_result values ('admin_notified_with_note', '1', n::text);
+  select count(*) into n from public.notifications
+   where account_id = TARA and type = 'player_canceled' and entity_id = reg_soon
+     and body like '%Late, courtesy used.%';
+  insert into _probe_result values ('admin_notified_courtesy', '1', n::text);
 
   -- ------------------------------------------------------------ as Ken (pool)
   perform set_config('request.jwt.claims', json_build_object('sub', KEN)::text, true);
@@ -104,13 +113,15 @@ begin
   insert into _probe_result values ('admin_removal_is_not_late', 'canceled false', r.status::text || ' ' || r.late_cancel::text || coalesce(' ' || r.cancel_note, ''));
 
   -- 10. Her roster view carries the note and whether a card exists.
-  select late_cancel::text || ' ' || cancel_note || ' ' || has_card::text into v
-    from public.registrations_admin where id = reg_soon;
-  insert into _probe_result values ('roster_shows_note_and_no_card', 'true Kid has a fever. false', v);
+  select late_cancel::text || ' ' || cancel_note || ' ' || has_card::text || ' ' || courtesy_used::text into v
+    from public.registrations_admin where id = reg_soon2;
+  insert into _probe_result values ('roster_shows_note_and_no_card', 'true Kid has a fever. false false', v);
+  select courtesy_used::text into v from public.registrations_admin where id = reg_soon;
+  insert into _probe_result values ('roster_shows_courtesy', 'true', v);
   perform set_config('role', 'postgres', true);
 
   -- 11. Nothing was charged by the app on its own.
-  select count(*) into n from public.payments where registration_id = reg_soon;
+  select count(*) into n from public.payments where registration_id in (reg_soon, reg_soon2);
   insert into _probe_result values ('nothing_charged_automatically', '0', n::text);
 
   -- 12. Charging is her tap: with payments on and a card, the late-cancel
@@ -118,14 +129,14 @@ begin
   update public.app_settings set value = 'true' where key = 'payments_enabled';
   update public.accounts set stripe_customer_id = 'cus_probe_maria' where id = MARIA;
   perform set_config('role', 'authenticated', true);
-  select has_card::text into v from public.registrations_admin where id = reg_soon;
+  select has_card::text into v from public.registrations_admin where id = reg_soon2;
   insert into _probe_result values ('roster_shows_card_once_added', 'true', v);
-  select id into pay from public.admin_charge_registration(reg_soon, 'late_cancel');
+  select id into pay from public.admin_charge_registration(reg_soon2, 'late_cancel');
   perform set_config('role', 'postgres', true);
   select kind::text || ' ' || amount_cents || ' ' || status::text into v from public.payments where id = pay;
   insert into _probe_result values ('late_charge_is_taras_tap', 'late_cancel 1800 pending', v);
   perform set_config('role', 'authenticated', true);
-  select charge_status into v from public.registrations_admin where id = reg_soon;
+  select charge_status into v from public.registrations_admin where id = reg_soon2;
   insert into _probe_result values ('roster_shows_charge_status', 'pending', v);
   perform set_config('role', 'postgres', true);
 

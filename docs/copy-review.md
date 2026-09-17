@@ -31,6 +31,26 @@ mine. Nothing here is attributed to Tara.
 | ☐ | Couldn't load card payments. | web/index.html, Money tab, load error |
 | ☐ | Clinic fee · Late cancel · No-show · Refund | web/index.html, kind labels per row |
 | ☐ | Pending · Processing · Paid · Failed · Canceled | web/index.html, status labels per row |
+## New since the last review — 2026-09-16 (Tara's policy, decision 0012), awaiting Alex
+
+Tara's own sentences ship verbatim and are hers (marked in `docs/copy.md`).
+These are the chrome around them, mine.
+
+| ✓ | String | Where |
+|---|--------|-------|
+| ☐ | Cancel my spot | the cancel sheet button inside 4 hours |
+| ☐ | Note (optional) | the cancel sheet field when the fee applies |
+| ☐ | Add a card on your Profile to register. | Register tap refused for want of a card |
+| ☐ | Note for Tara (optional) · Only Tara sees this. | sign-up and Edit details |
+| ☐ | Add your name, phone and rating, and answer the membership question to continue. | sign-up helper line (replaces "Optional. Tara can set this for you later.", removed) |
+| ☐ | Came · No-show | roster toggle, phone and web |
+| ☐ | Charge clinic · Not now | the tap after a clinic, phone and web |
+| ☐ | Charge every card for <clinic>? Attendees pay the clinic fee; no-shows and late cancellations without a courtesy pay the full fee. | phone confirmation |
+| ☐ | Charged N. Already charged N. No card N. | after the tap |
+| ☐ | The clinic hasn't ended yet. · Payments are switched off. · That didn't go through. Try again. | errors |
+| ☐ | Courtesy · Fee applies | web roster, late canceled rows |
+| ☐ | That player has no card on file. · Only a You're In! player can be a no-show. | web errors |
+
 ## New since the last review — 2026-09-12 (charging, decision 0010), awaiting Alex
 
 Web admin roster and Money tab. Chrome, mine. None of it shows until

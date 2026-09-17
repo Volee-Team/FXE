@@ -82,6 +82,7 @@ We are following the rule, we just want to make sure we understand it. Is it bec
 **14. What happens to a clinic after it happens?**
 Does it just disappear from the player's list automatically at the end time? Do you ever need to mark it complete or take attendance?
 *Default: it moves to Past automatically at the end time. No attendance in v1.*
+*CONFIRMED 2026-09-16: "Correct."*
 *Default built, with one difference: a finished clinic drops off the players' list (no Past section); Tara's Manage list has Past. Re-asked as 09-12 short-list item 10.*
 
 ---
@@ -177,35 +178,43 @@ default we would otherwise pick, so "yes" is a complete answer.
 
 **28. Is the late-cancellation charge the full clinic price, or a fixed amount?**
 *Default: full price of that clinic ($18/$23 or $22/$28).*
+*ANSWERED 2026-09-16 (decision 0012): "Full price as you listed - yes, def full."*
 
 **29. A no-show, meaning they never canceled and never came: charged the same as a late cancel?**
 *Default: yes, same as a late cancel, marked by you after the clinic.*
+*ANSWERED 2026-09-16 (decision 0012): full fee, marked by her on the clinic list, charged with the others.*
 
 **30. Player Pool and Response Needed players who drop out: charged anything?**
 *Default: never. Only You're In! players owe money.*
 
 **31. When YOU cancel a clinic, does everyone get an automatic refund of anything already paid?**
 *Default: yes, automatic, same day, no action from you.*
+*ANSWERED 2026-09-16 (decision 0012): no refunds, because nothing is charged before the clinic ends.*
 *(Not built until she answers.)*
 
 **32. Card on file at sign-up: every player must add a card before they can register?**
 *Default: yes. A player without a card can browse but not register. Members you trust can still pay Zelle if you mark them paid by hand.*
+*ANSWERED 2026-09-16 (decision 0012): "Gosh I say yes."*
 *(Not built until she answers.)*
 
 **33. When is the regular clinic fee charged: at registration, or after the clinic?**
 *Default: charged when they land in You're In! (or accept an invitation), refunded automatically if they cancel before the cutoff.*
+*ANSWERED 2026-09-16 (decision 0012): after the clinic, everyone who came.*
 
 **34. Should the app ever charge a card without you seeing it first, or should every charge wait for your tap?**
 *Default: the regular fee is automatic; a late-cancel or no-show charge waits for your tap on the roster, so you can waive it for a good reason.*
+*ANSWERED 2026-09-16 (decision 0012): the courtesy is automatic; the charge is her one tap per clinic (question 43 confirms the tap).*
 
 **35. Do you want Zelle to stay as an option once cards work?**
 *Default: yes, for members who prefer it; you mark those paid by hand as today.*
 
 **36. Stripe account: can you create one at stripe.com this week? It asks for your bank account, a business address, and your SSN or an EIN. Your personal details work now; it can switch to the LLC later.**
 *Default: you create it and Alex adds the two keys to the app; nobody else ever sees them.*
+*ANSWERED 2026-09-16: she gave Alex the business details directly. They live in Stripe's form and nowhere else.*
 
 **37. The exact sentence a player reads when they add a card and agree to the cancellation rule. Your words, or shall we draft one for you to edit?**
 *Default: we draft, you edit, nothing ships until you say so.*
+*ANSWERED 2026-09-16 (decision 0012): her text ships verbatim, marked for her edit: "Your card will only be charged for late cancellations or no-shows. Cancel at least 4 hours before clinic and you will not be charged." Note: her regular-fee answer (Q41) charges every attendee, so this sentence understates what the card is charged for; question 46.*
 
 ## J. After Tara's 4-hour answer (added 2026-09-12)
 
@@ -216,16 +225,38 @@ say it's an emergency to cancel."* These are the gaps that remain.
 
 **38. Inside 4 hours, is saying it is an emergency the ONLY way to cancel?**
 *Default: yes. The app asks for the short message, and the cancellation goes through. Without the message it does not.*
+*ANSWERED 2026-09-16 (decision 0012): no. The emergency claim is gone; inside 4 hours the cancel goes through, the note is optional, and the app applies one courtesy per 90 days.*
 
 **39. Emergency cancels: never charged, or yours to decide one by one?**
 *Default: yours. The roster shows the message next to the name and a Charge button. Nothing is charged unless you tap.*
+*ANSWERED 2026-09-16 (decision 0012): the app applies the courtesy; after it is used the full fee applies, and she can still not charge a row.*
 
 **40. The sentence the app shows inside 4 hours, above the message box. Your words?**
 *Default: we draft, you edit, nothing ships until you say so.*
+*ANSWERED 2026-09-16 (decision 0012): her text ships verbatim, marked for her edit: "This cancellation is within 4 hours of clinic and the full clinic fee will apply. If there are circumstances you'd like us to consider, please leave a note below."*
 
 **41. The regular clinic fee: charge the card automatically when someone is In, or keep Zelle as the normal way to pay and use the card only for late cancels and no-shows?**
 *Default: card automatically when they are In (question 33). Say "Zelle stays normal" and the card is only for the late ones.*
+*ANSWERED 2026-09-16 (decision 0012): "I want to charge everyone's card everytime they come to clinic", after the clinic is over.*
 
 **42. Courts stay on reservemycourt.com for now, nothing to build there in v1?**
 *Default: yes. It goes on the list for later, with the rest of the club (treats, pool, merch, cabanas).*
+*ANSWERED 2026-09-16: "Correct."*
+
+## K. After Tara's 2026-09-16 answers (decision 0012)
+
+**43. Charging after a clinic: you tap "Charge clinic" once you've marked any no-shows, or should the app charge everyone automatically at the end time?**
+*Default: your tap. Nothing is charged until you press it, and the roster shows who will be charged what.*
+
+**44. The one courtesy every 90 days covers a late cancellation only; a no-show is always the full fee. Right?**
+*Default: yes, as your policy lists them separately.*
+
+**45. The waiver page you sent is the tennis camp (parent/guardian) form. Is there an adult version for clinics, or should the app show that one?**
+*Default: we show nothing until there is an adult version; juniors are later anyway.*
+
+**46. Your card sentence says the card is charged only for late cancellations and no-shows, but every attendee's card is charged after each clinic. Rewrite, or keep and let the cancellation policy explain?**
+*Default: one sentence: "Your card is charged after each clinic you attend. Late cancellations and no-shows are charged the full fee; the policy explains."* (ours, needs your words)
+
+**47. The note only you see, at level entry: should it show on your roster next to the rating, or only on the player's page?**
+*Default: both, short.*
 

@@ -279,14 +279,14 @@ const unpaidIn = (c) => (regsByClinic[c.id] || []).filter(r => r.status === "in"
 // only while payments are on; without a card there is nothing to charge and
 // the row says so instead.
 let cutoffHours = 4;
-const chargeButton = (r, kind, label) => {
+let chargeSummary = null;
+// Decision 0012: cards are charged after the clinic, by one tap on the clinic
+// card (Charge clinic). A row only shows where its charge stands.
+const chargeState = (r) => {
   if (!paymentsOn) return "";
-  if (kind === "clinic_fee" && r.paid) return "";
-  // A live or finished charge shows its state; only a failed one offers the
-  // button again (the ledger row stays as the record of the decline).
-  if (["pending", "processing", "succeeded"].includes(r.charge_status)) return `<span class="muted">${PAY_STATUS[r.charge_status]}</span>`;
+  if (r.charge_status) return `<span class="muted"${r.charge_status === "failed" ? ` style="color:#992E22"` : ""}>${PAY_STATUS[r.charge_status] || esc(r.charge_status)}</span>`;
   if (!r.has_card) return `<span class="muted">No card</span>`;
-  return `${r.charge_status === "failed" ? `<span class="muted" style="color:#992E22">Failed</span>` : ""}<button class="small" data-charge="${r.id}" data-kind="${kind}">${label}</button>`;
+  return "";
 };
 // Tara's payment line has no closing period; give it one so the sentences read.
 const endSentence = (t) => /[.!?]$/.test(t.trim()) ? t.trim() : t.trim() + ".";
@@ -320,6 +320,9 @@ function friendly(e) {
   if (m.includes("no_card_on_file")) return "No card on file for that player.";
   if (m.includes("already_charged")) return "That one is already charged.";
   if (m.includes("already_refunded")) return "That one is already refunded.";
+  if (m.includes("card_required")) return "That player has no card on file.";
+  if (m.includes("clinic_not_over")) return "The clinic hasn't ended yet.";
+  if (m.includes("registration_not_in")) return "Only a You're In! player can be a no-show.";
   if (m.includes("not_refundable")) return "Only a paid charge can be refunded.";
   if (m.includes("stripe_not_configured")) return "Stripe isn't connected yet.";
   if (m.includes("failed to fetch")) return "Couldn't reach the server. Check your connection.";
@@ -497,7 +500,7 @@ async function loadClinics() {
   }
   const ids = clinics.map(c => c.id);
   const { data: regs } = await sb.from("registrations_admin").select("*").in("clinic_id", ids);
-  const { data: players } = await sb.from("players").select("id,first_name,last_name,is_member,adult_rating");
+  const { data: players } = await sb.from("players").select("id,first_name,last_name,is_member,adult_rating,level_note");
   const byPlayer = Object.fromEntries((players || []).map(p => [p.id, p]));
   clinicIndex = Object.fromEntries(clinics.map(c => [c.id, c]));
   regsByClinic = {};
@@ -549,12 +552,13 @@ async function loadClinics() {
         ${unpaidIn(c).length ? `<button class="small" data-remind="${c.id}" data-n="${unpaidIn(c).length}">Remind unpaid (${unpaidIn(c).length})</button>` : ""}
         ${c.status === "draft" ? `<button class="small primary" data-publish="${c.id}">Publish</button>` : ""}
         ${c.status !== "canceled" ? `<button class="small" data-cancelclinic="${c.id}">Cancel clinic</button>` : `<span class="chip canceled">Canceled</span>`}
+        ${paymentsOn && c.status !== "canceled" && new Date(c.ends_at) < new Date() ? `<button class="small primary" data-chargeclinic="${c.id}">Charge clinic</button>` : ""}
       </div>
-      ${section("in", r => `${courtSelect(r)}<button class="small" data-paid="${r.id}" data-now="${r.paid}">${r.paid ? "Paid" : "Unpaid"}</button>${chargeButton(r, "clinic_fee", "Charge fee")}`)}
+      ${section("in", r => `${courtSelect(r)}<button class="small" data-paid="${r.id}" data-now="${r.paid}">${r.paid ? "Paid" : "Unpaid"}</button><button class="small${r.no_show ? " danger" : ""}" data-noshow="${r.id}" data-now="${r.no_show}">${r.no_show ? "No-show" : "Came"}</button>${chargeState(r)}`)}
       ${section("pool", r => `<button class="small primary" data-invite="${r.id}">Invite</button>`)}
       ${section("response_needed", r => `<button class="small" data-uninvite="${r.id}">Cancel invite</button>`)}
       ${section("canceled", r => r.late_cancel
-        ? `<span class="chip canc" title="Canceled inside ${cutoffHours} hours">Late</span><span class="muted">“${esc(r.cancel_note || "")}”</span>${chargeButton(r, "late_cancel", "Charge late cancel")}`
+        ? `<span class="chip canc" title="Canceled inside ${cutoffHours} hours">Late</span><span class="muted">${r.courtesy_used ? "Courtesy" : "Fee applies"}${r.cancel_note ? " · “" + esc(r.cancel_note) + "”" : ""}</span>${r.courtesy_used ? "" : chargeState(r)}`
         : "")}
     </div>`;
   }).join("");
@@ -593,7 +597,7 @@ document.addEventListener("click", async (e) => {
   const b = e.target.closest("button"); if (!b) return;
   const run = async (fn) => {
     b.disabled = true;
-    try { await fn(); await loadClinics(); }
+    try { await fn(); await loadClinics(); if (chargeSummary) { note($("msg"), chargeSummary, true); chargeSummary = null; } }
     catch (err) { note($("msg"), friendly(err)); }
     finally { b.disabled = false; }
   };
@@ -604,14 +608,14 @@ document.addEventListener("click", async (e) => {
   if (b.dataset.invite)   return run(() => call("invite_from_pool",   { p_registration: b.dataset.invite }));
   if (b.dataset.uninvite) return run(() => call("cancel_invitation",  { p_registration: b.dataset.uninvite }));
   if (b.dataset.paid)     return run(() => call("set_paid", { p_registration: b.dataset.paid, p_paid: b.dataset.now !== "true" }));
-  if (b.dataset.charge)   return run(async () => {
-    // Two steps, both idempotent: the ledger row (pending, one per
-    // registration and kind), then stripe-charge turns every pending row
-    // into one Stripe call. If the second step fails the row stays pending
-    // and the next tap, on any row, picks it up.
-    await call("admin_charge_registration", { p_registration: b.dataset.charge, p_kind: b.dataset.kind });
+  if (b.dataset.noshow)   return run(() => call("admin_set_no_show", { p_registration: b.dataset.noshow, p_no_show: b.dataset.now !== "true" }));
+  if (b.dataset.chargeclinic) return run(async () => {
+    // Her tap per clinic (decision 0012): pending rows for everyone who owes,
+    // then stripe-charge. The counts come back so she sees who was skipped.
+    const { data, error } = await sb.rpc("admin_charge_clinic", { p_clinic: b.dataset.chargeclinic }); if (error) throw error;
     await settleLedger();
     await loadMoney();
+    chargeSummary = `Charged ${data.charged}. Already charged ${data.already}. No card ${data.no_card}.`;
   });
   if (b.dataset.refund)   return run(async () => {
     await call("admin_refund_payment", { p_payment: b.dataset.refund });

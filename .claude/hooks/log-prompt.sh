@@ -79,6 +79,25 @@ if [ ! -s "$LOG_FILE" ]; then
   } >> "$LOG_FILE" 2>/dev/null
 fi
 
+
+# Redact anything that looks like a government id, a bank or card number, or
+# an SSN line before it touches the log. Tara sent her SSN and bank details in
+# a message on 2026-09-16 and this hook copied them into a file that lives in
+# a public repository until scrubbed by hand. Never again: the log is for what
+# she decided, not for what she is.
+redact() {
+  python3 -c '
+import re, sys
+t = sys.stdin.read()
+t = re.sub(r"\b\d{3}-\d{2}-\d{4}\b", "[redacted id number]", t)
+t = re.sub(r"(?i)\b(ssn|social security)[^\n]*", r"\1 [redacted]", t)
+t = re.sub(r"(?i)\b(routing|account|acct|iban|card)( number| no\.?| #)?[ :#]*\d[\d -]{6,}", r"\1 [redacted]", t)
+t = re.sub(r"\b(?:\d[ -]?){13,19}\b", "[redacted long number]", t)
+sys.stdout.write(t)
+'
+}
+PROMPT=$(printf '%s' "$PROMPT" | redact)
+
 BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
 
 {

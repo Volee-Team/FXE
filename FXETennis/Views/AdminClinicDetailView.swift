@@ -87,6 +87,8 @@ struct AdminClinicDetailView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var confirmCancelClinic = false
+    @State private var confirmCharge = false
+    @State private var chargeNote: String?
     @State private var removing: RosterEntry?
     @State private var cancelError: String?
     @State private var model: AdminClinicModel
@@ -117,7 +119,7 @@ struct AdminClinicDetailView: View {
                     rosterSection(
                         Brand.Status.youreIn, model.youreIn,
                         empty: "Nobody is in yet."
-                    ) { entry in AnyView(HStack(spacing: Brand.Spacing.xs) { courtMenu(entry); paidToggle(entry) }) }
+                    ) { entry in AnyView(HStack(spacing: Brand.Spacing.xs) { courtMenu(entry); paidToggle(entry); noShowToggle(entry) }) }
 
                     rosterSection(
                         Brand.Status.playerPool, model.pool,
@@ -147,6 +149,11 @@ struct AdminClinicDetailView: View {
             if clinic.status != "canceled" {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
+                        // Decision 0012: cards are charged after the clinic, on her
+                        // tap. Offered only once the clinic has ended.
+                        if clinic.endsAt < Date() {
+                            Button("Charge clinic") { confirmCharge = true }
+                        }
                         Button("Cancel clinic", role: .destructive) { confirmCancelClinic = true }
                     } label: {
                         // The word, not an ellipsis: a Label in a toolbar renders
@@ -158,6 +165,26 @@ struct AdminClinicDetailView: View {
                     .accessibilityIdentifier("admin.more")
                 }
             }
+        }
+        .confirmationDialog(
+            "Charge every card for \(clinic.name)? Attendees pay the clinic fee; no-shows and late cancellations without a courtesy pay the full fee.",
+            isPresented: $confirmCharge, titleVisibility: .visible
+        ) {
+            Button("Charge clinic") {
+                Task {
+                    do {
+                        let c = try await AdminRepository.chargeClinic(clinic.id)
+                        chargeNote = "Charged \(c["charged"] ?? 0). Already charged \(c["already"] ?? 0). No card \(c["no_card"] ?? 0)."
+                        await model.load()
+                    } catch {
+                        let e = String(describing: error)
+                        chargeNote = e.contains("payments_disabled") ? "Payments are switched off."
+                            : e.contains("clinic_not_over") ? "The clinic hasn't ended yet."
+                            : "That didn't go through. Try again."
+                    }
+                }
+            }
+            Button("Not now", role: .cancel) {}
         }
         // Canceling tells everyone in You're In!, the Player Pool and Response
         // Needed. A confirmation with the consequence spelled out, because a
@@ -272,6 +299,12 @@ struct AdminClinicDetailView: View {
                     .font(Brand.Typography.caption)
                     .foregroundStyle(Brand.textSecondary)
                     .accessibilityIdentifier("admin.remindNote")
+            }
+            if let chargeNote {
+                Text(chargeNote)
+                    .font(Brand.Typography.caption)
+                    .foregroundStyle(Brand.textSecondary)
+                    .accessibilityIdentifier("admin.chargeNote")
             }
         }
     }
@@ -459,6 +492,24 @@ struct AdminClinicDetailView: View {
         Task { await model.perform(entry.id) {
             try await AdminRepository.assignCourt(registration: entry.id, court: court)
         } }
+    }
+
+    /// Decision 0012: who did not come. Charged the full fee by the tap.
+    private func noShowToggle(_ entry: RosterEntry) -> some View {
+        let noShow = entry.registration.noShow ?? false
+        return Button {
+            Task { await model.perform(entry.id) {
+                try await AdminRepository.setNoShow(registration: entry.id, noShow: !noShow)
+            } }
+        } label: {
+            Label(noShow ? "No-show" : "Came", systemImage: noShow ? "person.fill.xmark" : "person.fill.checkmark")
+                .font(Brand.Typography.chip)
+                .foregroundStyle(noShow ? Brand.Status.canceled.ink : Brand.textSecondary)
+                .frame(minHeight: Brand.Layout.minTapTarget)
+        }
+        .buttonStyle(.plain)
+        .disabled(model.busy.contains(entry.id))
+        .accessibilityIdentifier("admin.noShowToggle")
     }
 
     private func paidToggle(_ entry: RosterEntry) -> some View {

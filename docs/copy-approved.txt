@@ -5,7 +5,7 @@ Accept
 Action Needed
 Add a player
 Add your first and last name.
-Add your name and answer the membership question to continue.
+Add your name, phone and rating, and answer the membership question to continue.
 Admin sign-in.
 Almost there
 Ann finds Anna, Annette, Joann…
@@ -15,9 +15,11 @@ Cancel Invite
 Cancel Registration
 Cancel clinic
 Cancel invite
+Cancel my spot
 Cancel the invitation to \(entry.displayName)
 Canceled inside ${cutoffHours} hours
 Card payments
+Charge clinic
 Checking your reset link…
 Choose a new password
 Clinic updates come through the app. Keep notifications on so you don't miss them.
@@ -75,12 +77,14 @@ Nobody by that name yet. They may need to sign up in the app first.
 Non-members, 60 min
 Non-members, 90 min
 Not now
+Note for Tara (optional)
 Nothing open right now.
 Nothing yet.
 Notifications
+Only Tara sees this.
+Only a You're In! player can be a no-show.
 Only a paid charge can be refunded.
 Only you can see this.
-Optional. Tara can set this for you later.
 Payment method
 Payments are switched off.
 Pick something you'll remember. At least 8 characters.
@@ -108,7 +112,6 @@ Saved. You can sign in with it now, on your phone or here.
 Search by name
 Search players by name
 Sections
-Send and cancel my spot
 Send reminder
 Set by Tara
 She will let you know if there is room.
@@ -128,6 +131,8 @@ That didn’t save. Try again.
 That email or password didn't work.
 That one is already charged.
 That one is already refunded.
+That player has no card on file.
+The clinic hasn't ended yet.
 This clinic has been canceled.
 This link has expired or was already used. Go back and request a new one.
 Those don’t match.
@@ -143,5 +148,6 @@ What is 105?
 Write a message first.
 You can still ask Tara to fit you in.
 You're not in any clinics yet.
+Your card will only be charged for late cancellations or no-shows. Cancel at least 4 hours before clinic and you will not be charged.
 Your tennis rating
 asking to get in

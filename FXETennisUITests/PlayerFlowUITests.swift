@@ -229,6 +229,13 @@ final class PlayerFlowUITests: XCTestCase {
         last.tap()
         last.typeText("Player")
 
+        // Phone and rating are required since 2026-09-16 (Tara: "app needs to
+        // ask every player for their rating.. and phone number").
+        let phone = app.textFields["profile.phone"]
+        XCTAssertTrue(phone.waitForExistence(timeout: 5))
+        phone.tap()
+        phone.typeText("7045550199")
+
         // Continue stays disabled until the membership question is answered,
         // because a silent default puts someone in the wrong pricing tier.
         let go = app.buttons["profile.continue"]
@@ -237,6 +244,11 @@ final class PlayerFlowUITests: XCTestCase {
                        "Continue was enabled before the membership question was answered")
 
         app.buttons["profile.member.yes"].tap()
+        // Pills carry the VoiceOver label "USTA 3.0" (NTRPRating.displayName).
+        let pill = app.buttons["USTA 3.0"].firstMatch
+        XCTAssertTrue(pill.waitForExistence(timeout: 5), "No rating pill to tap")
+        if !pill.isHittable { app.swipeUp() }
+        pill.tap()
         XCTAssertTrue(go.isEnabled, "Continue stayed disabled after a complete form")
 
         // The software keyboard is still up from the name fields and covers the

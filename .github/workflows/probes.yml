@@ -420,6 +420,15 @@ jobs:
             FAIL=1
           fi
 
+          # Personal identifiers. Tara sent her SSN and bank details in a
+          # message on 2026-09-16 and the prompt-log hook copied them into a
+          # tracked file before it learned to redact. Docs are scanned too.
+          if git grep -nE '\b[0-9]{3}-[0-9]{2}-[0-9]{4}\b|(?i)routing number[ :#]*[0-9]{6,}' -- ':!.github/workflows/*' | grep -q .; then
+            echo "::error::Something shaped like a Social Security or routing number is tracked:"
+            git grep -nE '\b[0-9]{3}-[0-9]{2}-[0-9]{4}\b' -- ':!.github/workflows/*' | cut -c1-80
+            FAIL=1
+          fi
+
           # A password assigned a real value in a tracked file.
           if git grep -nE '(PASSWORD|password) *= *["'"'"'][^"'"'"']{6,}' -- \
                ':!*.md' ':!tests/*' ':!supabase/seed.sql' ':!.github/workflows/*' | grep -q .; then

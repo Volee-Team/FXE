@@ -108,7 +108,8 @@ final class SessionStore {
         lastName: String,
         phone: String?,
         isMember: Bool,
-        adultRating: Double?
+        adultRating: Double?,
+        levelNote: String? = nil
     ) async -> Bool {
         authError = nil
         do {
@@ -117,7 +118,8 @@ final class SessionStore {
                 lastName: lastName,
                 phone: phone,
                 isMember: isMember,
-                adultRating: adultRating
+                adultRating: adultRating,
+                levelNote: levelNote
             )
             await loadProfile()
             guard account != nil, activePlayer != nil else {

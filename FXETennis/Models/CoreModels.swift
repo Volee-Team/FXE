@@ -95,12 +95,15 @@ struct MyRegistration: Codable, Identifiable, Sendable {
     /// Canceled inside the cutoff with a note (decision 0010). Optional so
     /// a row from before the column existed still decodes.
     let lateCancel: Bool?
+    /// This late cancel used the one courtesy per 90 days (decision 0012).
+    let courtesyUsed: Bool?
 
     enum CodingKeys: String, CodingKey {
         case id, status, paid
         case clinicId = "clinic_id"
         case playerId = "player_id"
         case lateCancel = "late_cancel"
+        case courtesyUsed = "courtesy_used"
         case registeredAt = "registered_at"
         case invitedAt = "invited_at"
         case respondedAt = "responded_at"
@@ -158,10 +161,13 @@ struct PlayerProfile: Codable, Identifiable, Sendable {
     let adultRating: Double?
     let isMember: Bool
     let isActive: Bool
+    /// The player's own note about their level, read only by Tara (decision 0012).
+    let levelNote: String?
 
     enum CodingKeys: String, CodingKey {
         case id, kind
         case accountId = "account_id"
+        case levelNote = "level_note"
         case firstName = "first_name"
         case lastName = "last_name"
         case dateOfBirth = "date_of_birth"

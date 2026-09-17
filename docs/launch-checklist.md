@@ -18,11 +18,11 @@ Owners: **[me]** built by the model, **[Alex]** needs his hands or his accounts,
 |---|---|---|---|
 | 1 | Stripe test-mode account and the three keys in Supabase secrets (steps in section B) | [Alex] | deferred by Alex 2026-09-13 ("figure that stuff out then I'll do the stripe stuff later"): after the CI project and the doc mechanisms |
 | 2 | Run `tests/stripe/run.sh` against real Stripe with test cards, `stripe listen` for webhooks, fix what the mock could not show | [me] | blocked on 1 |
-| 3 | Tara's answers to questions 28–42 (`docs/for-tara-2026-09-12.md`), recorded as decision 0011 | [Tara] | sent 2026-09-12 |
-| 4 | Flip `payments_enabled`, set the fee policy settings, add her two sentences (card entry, inside 4 hours) | [me] | blocked on 3 |
-| 5 | Refund on her clinic cancel (question 31) and no-show charge (question 29), if she says yes | [me] | blocked on 3 |
+| 3 | Tara's answers to questions 28–42 | [Tara] | **answered 2026-09-16**, decision 0012; follow-ups 43–47 open |
+| 4 | Her policy in the code: one courtesy per 90 days, no-shows, one tap per clinic after it ends, card required to register, her two sentences | [me] | **built 2026-09-16** (migration 20260916000001); `payments_enabled` still off until Stripe keys and question 43 |
+| 5 | Refund on her clinic cancel | [me] | **moot 2026-09-16**: nothing is charged before a clinic ends (her answer 7) |
 | 6 | Player-side payment history and receipts on Profile (Stripe sends email receipts if we pass `receipt_email`; decide whether to) | [me] | policy-independent, not built |
-| 7 | Live-mode activation: business details, bank account, SSN or EIN, on stripe.com | [Tara] | not started; the only step nobody else can do |
+| 7 | Live-mode activation on stripe.com. Tara sent Alex her business details on 2026-09-16; **they go into Stripe's own form and nowhere else** (not the repo, not chat, not the prompt log, which now redacts them) | [Alex] with Tara's details | ready to do with the test account |
 | 8 | Stripe webhook endpoint for hosted (`https://amnaxvznkadkgzdxzegw.supabase.co/functions/v1/stripe-webhook`, five events, section B) | [Alex] | with 1 |
 
 ## B. Stripe, exact steps for Alex
@@ -77,7 +77,7 @@ The rule (CLAUDE.md, verification asymmetry): the thing that builds a feature ca
 
 | Layer | Runs where | Count 2026-09-12 | Gap |
 |---|---|---|---|
-| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 386 checks, 18 probes | none known |
+| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 386 checks, 19 probes | none known |
 | Stripe pipeline against stripe-mock | every PR | 27 checks | real Stripe behaviour (3DS, declines) waits on keys |
 | Web admin browser tests (Playwright, real sign-in) | every PR | 12 | not idempotent (backlog); no test of the charge path with the switch on |
 | Swift unit tests (pure logic) | every PR | 23 | fine |
