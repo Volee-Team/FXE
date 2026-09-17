@@ -108,6 +108,15 @@ enum RegistrationRepository {
             .execute()
     }
 
+    /// Whether this player's one courtesy late cancellation per 90 days is
+    /// still available (decision 0012). Decides which sentence the cancel
+    /// sheet shows; the server applies it regardless of what the screen said.
+    static func myCourtesyAvailable(player: UUID) async throws -> Bool {
+        struct P: Encodable { let p_player: UUID }
+        let value: Bool = try await supabase.rpc("my_courtesy_available", params: P(p_player: player)).execute().value
+        return value
+    }
+
     /// Hours before a clinic after which a cancellation needs a note.
     /// `app_settings.cancel_cutoff_hours`, 4 by Tara's word.
     static func cancelCutoffHours() async throws -> Int {
@@ -216,7 +225,8 @@ enum ProfileRepository {
         lastName: String,
         phone: String?,
         isMember: Bool,
-        adultRating: Double?
+        adultRating: Double?,
+        levelNote: String? = nil
     ) async throws -> UUID {
         struct Params: Encodable {
             let p_first_name: String
@@ -224,6 +234,7 @@ enum ProfileRepository {
             let p_phone: String?
             let p_is_member: Bool
             let p_adult_rating: Double?
+            let p_level_note: String?
         }
         return try await supabase
             .rpc("create_my_account", params: Params(
@@ -231,7 +242,8 @@ enum ProfileRepository {
                 p_last_name: lastName,
                 p_phone: phone,
                 p_is_member: isMember,
-                p_adult_rating: adultRating
+                p_adult_rating: adultRating,
+                p_level_note: levelNote
             ))
             .execute()
             .value
@@ -244,16 +256,16 @@ enum ProfileRepository {
     /// to the caller. Membership is deliberately NOT here: it decides pricing
     /// and the head-start window, and after sign-up it is Tara's to correct
     /// (for-tara.md q5, hard rule 2).
-    static func updateMyProfile(firstName: String, lastName: String, phone: String?, adultRating: Double?, player: UUID) async throws {
+    static func updateMyProfile(firstName: String, lastName: String, phone: String?, adultRating: Double?, levelNote: String? = nil, player: UUID) async throws {
         guard let uid = supabase.auth.currentUser?.id else { return }
         struct AccountPatch: Encodable { let first_name: String; let last_name: String; let phone: String? }
-        struct PlayerPatch: Encodable { let first_name: String; let last_name: String; let adult_rating: Double? }
+        struct PlayerPatch: Encodable { let first_name: String; let last_name: String; let adult_rating: Double?; let level_note: String? }
         _ = try await supabase.from("accounts")
             .update(AccountPatch(first_name: firstName, last_name: lastName, phone: phone))
             .eq("id", value: uid)
             .execute()
         _ = try await supabase.from("players")
-            .update(PlayerPatch(first_name: firstName, last_name: lastName, adult_rating: adultRating))
+            .update(PlayerPatch(first_name: firstName, last_name: lastName, adult_rating: adultRating, level_note: levelNote))
             .eq("id", value: player)
             .execute()
     }

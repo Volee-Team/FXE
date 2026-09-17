@@ -19,6 +19,7 @@ struct EditProfileView: View {
     @State private var lastName = ""
     @State private var phone = ""
     @State private var rating: NTRPRating?
+    @State private var levelNote = ""
     @State private var saving = false
     @State private var error: String?
     @State private var loaded = false
@@ -39,6 +40,19 @@ struct EditProfileView: View {
                         field("First Name", text: $firstName, content: .givenName, id: "edit.firstName")
                         field("Last Name", text: $lastName, content: .familyName, id: "edit.lastName")
                         field("Phone", text: $phone, content: .telephoneNumber, keyboard: .phonePad, id: "edit.phone")
+
+                        VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
+                            Text("Note for Tara (optional)")
+                                .font(Brand.Typography.bodyEmphasis)
+                                .foregroundStyle(Brand.textPrimary)
+                            TextField("just coming back from a back injury so I'm a low 3.5", text: $levelNote, axis: .vertical)
+                                .lineLimit(2...4)
+                                .textFieldStyle(.roundedBorder)
+                                .accessibilityIdentifier("edit.levelNote")
+                            Text("Only Tara sees this.")
+                                .font(Brand.Typography.caption)
+                                .foregroundStyle(Brand.textSecondary)
+                        }
 
                         VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
                             Text("Your tennis rating")
@@ -110,6 +124,7 @@ struct EditProfileView: View {
                 lastName = session.account?.lastName ?? ""
                 phone = session.account?.phone ?? ""
                 if let r = session.activePlayer?.adultRating { rating = NTRPRating(rating: r) }
+                levelNote = session.activePlayer?.levelNote ?? ""
                 loaded = true
             }
         }
@@ -147,6 +162,7 @@ struct EditProfileView: View {
                     lastName: lastName.trimmingCharacters(in: .whitespaces),
                     phone: phone.trimmingCharacters(in: .whitespaces).isEmpty ? nil : phone.trimmingCharacters(in: .whitespaces),
                     adultRating: rating?.rawValue,
+                    levelNote: levelNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : levelNote.trimmingCharacters(in: .whitespacesAndNewlines),
                     player: player
                 )
                 await session.loadProfile()

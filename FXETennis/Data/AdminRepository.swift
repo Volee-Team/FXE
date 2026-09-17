@@ -110,6 +110,11 @@ struct RegistrationAdmin: Codable, Identifiable, Sendable {
     let courtNumber: Int?
     let registeredAt: Date
     let invitedAt: Date?
+    /// Decision 0012: Tara marks who did not come; the tap after the clinic
+    /// charges them the full fee. Optional so older rows decode.
+    let noShow: Bool?
+    let lateCancel: Bool?
+    let courtesyUsed: Bool?
 
     enum CodingKeys: String, CodingKey {
         case id, status, paid
@@ -118,6 +123,9 @@ struct RegistrationAdmin: Codable, Identifiable, Sendable {
         case courtNumber = "court_number"
         case registeredAt = "registered_at"
         case invitedAt = "invited_at"
+        case noShow = "no_show"
+        case lateCancel = "late_cancel"
+        case courtesyUsed = "courtesy_used"
     }
 }
 
@@ -141,6 +149,7 @@ struct RosterEntry: Identifiable, Sendable {
         var parts: [String] = []
         if let r = p.adultRating, let bucket = NTRPRating(rating: r) { parts.append(bucket.label) }
         parts.append(p.isMember ? "Member" : "Non-member")
+        if let n = p.levelNote, !n.isEmpty { parts.append(n) }
         return parts.joined(separator: " · ")
     }
 }
@@ -255,6 +264,22 @@ enum AdminRepository {
 
     /// Toggle the Paid checkbox. The app tracks payment, it never moves money
     /// (decision 0003).
+    /// Decision 0012: only Tara marks a no-show, only on a You're In! row.
+    static func setNoShow(registration: UUID, noShow: Bool) async throws {
+        struct P: Encodable { let p_registration: UUID; let p_no_show: Bool }
+        try await supabase.rpc("admin_set_no_show", params: P(p_registration: registration, p_no_show: noShow)).execute()
+    }
+
+    /// Her one tap per clinic (decision 0012): pending ledger rows for
+    /// everyone who owes, then stripe-charge turns them into Stripe calls.
+    /// Returns the RPC's counts (charged, already, no_card, not_owed).
+    static func chargeClinic(_ clinic: UUID) async throws -> [String: Int] {
+        struct P: Encodable { let p_clinic: UUID }
+        let counts: [String: Int] = try await supabase.rpc("admin_charge_clinic", params: P(p_clinic: clinic)).execute().value
+        _ = try await supabase.functions.invoke("stripe-charge")
+        return counts
+    }
+
     static func setPaid(registration: UUID, paid: Bool) async throws {
         _ = try await supabase
             .rpc("set_paid", params: SetPaidParams(p_registration: registration, p_paid: paid))

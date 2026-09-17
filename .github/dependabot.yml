@@ -1,0 +1,20 @@
+# Dependency updates as pull requests, so a vulnerable Playwright or a stale
+# GitHub Action is a PR to review rather than a surprise. Swift packages are
+# pinned exactly in project.yml and bumped by hand on purpose (the Stripe SDK
+# and supabase-swift both changed behaviour between minors); npm here is only
+# the browser-test tooling. Weekly, Mondays, so a batch lands before the week's
+# work rather than in the middle of it.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /web
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3

@@ -52,10 +52,10 @@ most important thing to understand here, and it is section 5.
 
 | Area | State |
 |---|---|
-| Postgres schema, RLS, narrow views, RPCs | **Built**, 27 migrations, all applied to hosted (verified 2026-09-12, `supabase migration list --linked`) |
+| Postgres schema, RLS, narrow views, RPCs | **Built**, 28 migrations, 27 applied to hosted (verified 2026-09-12; 20260916000001 pushes with its PR, `supabase migration list --linked`) |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | **Built**, enumerated by probes |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | **Built** |
-| SQL probe suite (18 probes; the suite prints its own total) + concurrency probe, in CI | **Built** |
+| SQL probe suite (19 probes; the suite prints its own total) + concurrency probe, in CI | **Built** |
 | iOS: sign-in, sign-up with profile, password reset, three tabs | **Built** |
 | iOS: browse by week, per-viewer pricing, register / cancel (4-hour note inside the cutoff) / leave pool / respond, closed-clinic "Message Tara", the bell, My Clinics, profile edit, card on file | **Built** |
 | iOS admin tab: rosters, invite, courts, paid, unpaid reminder, message audiences, late requests, Action Needed, player directory | **Built** |
@@ -378,7 +378,7 @@ or correcting a membership never rewrites history. `revenue_summary()` returns
 the four counts, expected, collected and outstanding; `revenue_by_clinic` and
 `revenue_by_segment` break it down. Only `status = 'in'` counts.
 
-Decision 0009 (2026-09-12) adds card payments alongside Zelle: a `payments`
+Decision 0012 (2026-09-16) is Tara's cancellation policy in code: one courtesy late cancellation per player per `courtesy_cancel_days` (90), applied by `cancel_registration` (`registrations.courtesy_used`); no-shows marked by `admin_set_no_show` (`registrations.no_show`); every card charged after the clinic by her one tap, `admin_charge_clinic`, which makes one pending ledger row per attendee (clinic fee), no-show and non-courtesy late cancel (full fee) and skips rows without a card; `register_for_clinic` raises `card_required` once payments are on (`card_required` setting); the player's own `players.level_note`, read by Tara only, written at sign-up (`create_my_account`) or on Edit details; `my_courtesy_available` tells the cancel sheet which of her sentences to show. Probe `cancellation_policy`. Decision 0009 (2026-09-12) adds card payments alongside Zelle: a `payments`
 ledger, admin RPCs that charge and refund, and `payments_ledger`, the admin's
 read of it with the player and clinic named. Three Deno edge functions do the
 Stripe half with `service_role`: `stripe-setup-intent` (customer + SetupIntent
@@ -450,6 +450,7 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `template_archive` | Only Tara archives or restores; the stamp survives a repeat; archived rows show to her and to nobody else; a clinic can still be built from an archived template |
 | `payments_foundation` | Nobody charges anyone while payments are off; a player cannot write the ledger or forge a card; a double tap is one fee; the ledger, not a checkbox, marks a registration paid |
 | `payments_ledger` | The gate on the owner-run view: Tara sees the row with names on it, Maria sees nothing, nobody writes through it |
+| `cancellation_policy` | Decision 0012: card required to register, no-shows, the courtesy window, one tap per clinic after it ends, the note only Tara reads | 28 |
 | `late_cancellation` | Decision 0010 driven from the roles the app uses: a late You're In! cancel needs a note, pool drop-outs and Tara's removals are never late, the note reaches her roster |
 | `capacity_race.sh` | Two racing registrations; invite-vs-accept |
 

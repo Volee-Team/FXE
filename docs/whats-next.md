@@ -12,6 +12,7 @@ Ordered by what it unblocks, not by how hard it is to answer.
 
 | # | Question | Why it blocks | Our current assumption |
 |---|---|---|---|
+| 43–47 | **Follow-ups to Tara's 2026-09-16 answers** (`docs/questions-for-tara.md` §K): does she tap Charge clinic or should it fire at end time; courtesy covers late cancels only; an adult waiver; the card sentence vs. charging every attendee; where her-only note shows | The tap is built as her tap; the sentence ships as she wrote it | Defaults beside each |
 | 27–42 | **Payments and cancellations** (`questions-for-tara.md` §I is 27–37, §J is 38–42). Answered 2026-09-12: the cutoff is 4 hours and it is an honor system with a concise emergency note (decision 0010). Still open: the late charge amount, no-shows, whether the regular fee goes on the card, card required at sign-up, refunds on her cancel, her Stripe account, and the two sentences | Nothing can charge anyone until she answers: `payments_enabled` stays false | The defaults written beside each question |
 
 **Blocked on Alex (2026-09-12), two asks, both spelled out in `docs/launch-checklist.md`:**
@@ -78,7 +79,7 @@ Charge late cancel / Refund as Tara's tap, rendered only while
 grants), the three Stripe edge functions deployed, the card screen on Profile
 with PaymentSheet, `payments_ledger`, and `cancel_registration` refusing a late
 You're In! cancel without a note. Testing: 12 Playwright tests, 13 XCUITests
-(5 on Tara's side), 23 unit tests, 18 SQL probes, and a 27-check Stripe
+(5 on Tara's side), 23 unit tests, 19 SQL probes, and a 27-check Stripe
 pipeline against stripe-mock in CI. `docs/architecture.md` was regenerated
 2026-09-01 and refreshed 2026-09-12. Nothing charges anyone: the switch is off.
 

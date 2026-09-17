@@ -29,7 +29,7 @@ handwritten court sheet. Nothing more.
 | ✅ | Court assignment 1–5, admin only |
 | ✅ | Clinic messages with audience targeting |
 | ✅ | News with audience and unread tracking |
-| ✅ | Automated SQL probe suite + a concurrency probe (18 probes as of 2026-09-12; the suite prints its own total), green in CI on every push |
+| ✅ | Automated SQL probe suite + a concurrency probe (19 probes as of 2026-09-16; the suite prints its own total), green in CI on every push |
 
 ### iOS app 🔨
 
@@ -64,7 +64,7 @@ itself the finding.
 
 | | |
 |---|---|
-| ✅ | SQL probe suite: 18 probes as of 2026-09-12 (the suite prints its own total), plus the concurrency probe. Green in CI on every push |
+| ✅ | SQL probe suite: 19 probes as of 2026-09-12 (the suite prints its own total), plus the concurrency probe. Green in CI on every push |
 | ✅ | **Web admin browser tests** (2026-09-02): 12 Playwright tests as of 2026-09-12 walk Tara's side against a fresh seed (sign-in and the non-admin door, prices, walk-up, courts, unpaid reminder, directory note round-trip, cancel clinic, template archive and restore, Money counts, the card-payments ledger, payments off). Run in CI on every push |
 | ✅ | **Stripe pipeline against a mock** (2026-09-12): `tests/stripe/run.sh`, 27 checks from SetupIntent through webhook, charge, refund and decline, with the switch off proving nothing charges. Runs in CI on every PR |
 | ✅ | **Admin XCUITests** (2026-09-02): four flows on Tara's side of the phone: register → court → unpaid reminder → paid; Player Pool → invite → the player's own Accept (hard rule 2 end to end); directory note round-trip; cancel clinic with confirmation. The phone's UI suite is now 13 tests, 8 player + 5 admin (Remove from clinic added 2026-09-10) |
@@ -110,7 +110,8 @@ her email to admin, so the bootstrap is entirely hers.
 | ✅ | **Template archive and restore** (2026-09-10): `admin_set_template_archived`, a Templates card with Archive / Show archived / Restore, and the picker lists only live ones. 10-check probe, red first |
 | ✅ | **"Edited <date>" under every note** (2026-09-12): `admin_player_note_edited` returns the note's `updated_at`, so a note from March no longer reads like one from yesterday |
 | ✅ | **Card payments on the Money tab** (2026-09-12): `payments_ledger` listed newest first, or "No card payments yet." while `payments_enabled` is false |
-| ✅ | **Charge fee / Charge late cancel / Refund** (2026-09-12): Tara's tap on the roster row, rendered only while `payments_enabled` is true; the late-cancel note shows always |
+| ✅ | ~~Charge fee / Charge late cancel~~ **Refund** (2026-09-12; the per-row charge buttons were replaced on 2026-09-16 by one tap per clinic, below): Tara's tap on the roster row, rendered only while `payments_enabled` is true; the late-cancel note shows always |
+| ✅ | **Tara's cancellation policy** (2026-09-16, decision 0012): one courtesy late cancellation per 90 days applied by the app; no-shows marked on the roster (web and phone); **Charge clinic**, one tap after a clinic ends, charges every attendee the clinic fee and every no-show and non-courtesy late cancel the full fee, skipping and counting anyone without a card; a card is required to register once payments are on; her policy text and her two sentences verbatim; rating and phone required at sign-up; a note at level entry only she reads. Nothing charges until `payments_enabled` and question 43 |
 
 ### Ship ⬜
 

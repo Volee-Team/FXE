@@ -23,6 +23,10 @@ struct CardOnFileView: View {
             Text("Payment method")
                 .font(Brand.Typography.bodyEmphasis)
                 .foregroundStyle(Brand.textPrimary)
+            // Tara's sentence, verbatim (2026-09-16, decision 0012), marked for her edit.
+            Text("Your card will only be charged for late cancellations or no-shows. Cancel at least 4 hours before clinic and you will not be charged.")
+                .font(Brand.Typography.caption)
+                .foregroundStyle(Brand.textSecondary)
 
             HStack {
                 Text(session.account?.cardLabel ?? "No card on file")

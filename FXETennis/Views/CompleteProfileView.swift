@@ -32,6 +32,8 @@ struct CompleteProfileView: View {
     @State private var phone = ""
     @State private var isMember: Bool?          // nil until answered: no default
     @State private var rating: NTRPRating?
+    /// Only Tara reads it (decision 0012, her ask 2026-09-16).
+    @State private var levelNote = ""
     @State private var showNTRP = false
     @State private var saving = false
     /// The keyboard covers Continue on every phone once a name field has focus,
@@ -46,10 +48,14 @@ struct CompleteProfileView: View {
     /// what Tara reads in her roster. Membership is required because it decides
     /// which registration window opens first and which price is shown, and a
     /// silent default would quietly put someone in the wrong tier.
+    /// Phone and rating became required on 2026-09-16 (Tara: "app needs to
+    /// ask every player for their rating.. and phone number").
     private var canSave: Bool {
         !firstName.trimmingCharacters(in: .whitespaces).isEmpty
             && !lastName.trimmingCharacters(in: .whitespaces).isEmpty
+            && !phone.trimmingCharacters(in: .whitespaces).isEmpty
             && isMember != nil
+            && rating != nil
             && !saving
     }
 
@@ -67,6 +73,7 @@ struct CompleteProfileView: View {
 
                     membershipQuestion
                     ratingPicker
+                    levelNoteField
 
                     if let error = session.authError {
                         Text(error)
@@ -174,6 +181,22 @@ struct CompleteProfileView: View {
         .accessibilityIdentifier(id)
     }
 
+    /// Her words for the caption. The placeholder is her own example.
+    private var levelNoteField: some View {
+        VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
+            Text("Note for Tara (optional)")
+                .font(Brand.Typography.bodyEmphasis)
+                .foregroundStyle(Brand.textPrimary)
+            TextField("just coming back from a back injury so I'm a low 3.5", text: $levelNote, axis: .vertical)
+                .lineLimit(2...4)
+                .textFieldStyle(.roundedBorder)
+                .accessibilityIdentifier("profile.levelNote")
+            Text("Only Tara sees this.")
+                .font(Brand.Typography.caption)
+                .foregroundStyle(Brand.textSecondary)
+        }
+    }
+
     private var ratingPicker: some View {
         VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
             HStack {
@@ -188,11 +211,9 @@ struct CompleteProfileView: View {
                     .frame(minHeight: Brand.Layout.minTapTarget)
             }
 
-            // Optional: a new player who does not know their level should not be
-            // blocked at the door. Tara can set it later from her side.
-            Text("Optional. Tara can set this for you later.")
-                .font(Brand.Typography.caption)
-                .foregroundStyle(Brand.textSecondary)
+            // Required since 2026-09-16 (Tara: the app "needs to ask every
+            // player for their rating"); it was optional before. "Need Help?"
+            // opens her chart for anyone unsure.
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: Brand.Spacing.xs) {
@@ -258,7 +279,8 @@ struct CompleteProfileView: View {
                         lastName: lastName.trimmingCharacters(in: .whitespaces),
                         phone: phone.trimmingCharacters(in: .whitespaces).isEmpty ? nil : phone,
                         isMember: isMember ?? false,
-                        adultRating: rating?.rawValue
+                        adultRating: rating?.rawValue,
+                        levelNote: levelNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : levelNote.trimmingCharacters(in: .whitespacesAndNewlines)
                     )
                     saving = false
                 }
@@ -279,7 +301,7 @@ struct CompleteProfileView: View {
 
             // A disabled control always gets visible helper text saying why.
             if !canSave && !saving {
-                Text("Add your name and answer the membership question to continue.")
+                Text("Add your name, phone and rating, and answer the membership question to continue.")
                     .font(Brand.Typography.caption)
                     .foregroundStyle(Brand.textSecondary)
             }

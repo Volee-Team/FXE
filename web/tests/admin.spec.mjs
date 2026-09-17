@@ -152,6 +152,9 @@ test.describe("payments switch", () => {
     await signIn(page, TARA);
     await expect(page.locator("#clinics .card").first()).toBeVisible();
     await expect(page.getByRole("button", { name: /^Charge/ })).toHaveCount(0);
+    // Decision 0012: no-shows are Tara's to mark, switch or no switch. The
+    // seed has Ken in Thursday Morning Cardio, so one row offers it.
+    await expect(page.getByRole("button", { name: "Came" }).first()).toBeVisible();
     await page.getByRole("tab", { name: "Money" }).click();
     await expect(page.locator("#ledger")).toContainText("Card payments");
     await expect(page.getByRole("button", { name: "Refund" })).toHaveCount(0);
