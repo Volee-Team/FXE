@@ -48,7 +48,7 @@ What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision 00
 | 2 | Bundle id (replaces `com.fxetennis.app` placeholder), Team ID, App Store Connect record, APNs key | [Alex] | blocked on 1 |
 | 3 | Push delivery: the `push` edge function on the notifications webhook, audit columns (decision 0008) | [me] | blocked on the APNs key |
 | 4 | **Privacy manifest** (`PrivacyInfo.xcprivacy`): Apple rejects builds that use required-reason APIs without it | [me] | **done 2026-09-12** (PR #37) |
-| 5 | **Account deletion in the app**: App Store guideline 5.1.1(v) requires it for any app with account creation. What it deletes is a Tara question (a player's history and ledger rows vs. their name and contact), so: question for Tara, then build | [Tara] then [me] | not built |
+| 5 | **Account deletion in the app**: App Store guideline 5.1.1(v) requires it for any app with account creation. What it deletes is a Tara question (a player's history and ledger rows vs. their name and contact), so: question for Tara, then build | [Tara] then [me] | not built; asked as Q48 on 2026-09-18 |
 | 6 | Privacy policy at a URL, terms, waiver wording (Tara said Volee's privacy policy can be reused, decision 16) | [Alex]/[Tara] | needs a place to host it (fersc.com?) |
 | 7 | App Store listing: name, subtitle, description (Tara's words), screenshots on the required sizes, age rating, support URL, review notes with a test account | [Alex]+[me] | not started |
 | 8 | TestFlight internal build to Tara's phone, then external testers (external needs the privacy URL) | [Alex] | blocked on 1 |
@@ -69,7 +69,7 @@ What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision 00
 | 7 | Rate limits on the public functions (`stripe-setup-intent`) and on sign-up | [me] | none; low risk at club scale, note it |
 | 8 | Drop dead `clinics.price_cents` (blast radius in backlog) | [me] | whenever |
 | 9 | Data retention and export: what Tara gets if she leaves the app (CSV of players and payments) | [me] | v1.1 |
-| 10 | **Backup artifacts are readable by any signed-in GitHub user** because the repo is public and the dump carries `auth.users` (emails, bcrypt password hashes). Found 2026-09-12 by the docs audit. Fix in the same PR: the job now encrypts with `age` to a public key in `.github/backup-recipient.txt` and refuses to upload without one. Alex generated the key on 2026-09-13 and keeps the private half in LastPass; the public `age1...` line still has to go into that file. The repo stays public (Alex, 2026-09-13: it was made public for free CI minutes). Still open: the ten existing unencrypted artifacts (delete via `gh api -X DELETE`, or let them expire in December) | [Alex] | **public line needed; job fails until then** |
+| 10 | **Backup artifacts are readable by any signed-in GitHub user** because the repo is public and the dump carries `auth.users` (emails, bcrypt password hashes). Found 2026-09-12 by the docs audit. Fix in the same PR: the job now encrypts with `age` to a public key in `.github/backup-recipient.txt` and refuses to upload without one. Alex generated the key on 2026-09-13 and keeps the private half in LastPass; the public `age1...` line still has to go into that file. The repo stays public (Alex, 2026-09-13: it was made public for free CI minutes). The eleven existing unencrypted artifacts were deleted on 2026-09-18 (`gh api -X DELETE`, remaining count verified 0; Alex: "whatever you think") | [Alex] | **public line needed; job fails until then** |
 
 ## E. Testing: what exists, what is missing, what to build
 
@@ -99,7 +99,10 @@ Missing kinds of testing, in the order they matter:
 9. **Dependency audit**: `npm audit` for the web tests. Swift packages: Stripe SDK pinned exactly 2026-09-12 (PR #37); supabase-swift was already exact.
 10. **Copy review with Tara**: the 60-odd chrome strings in `docs/copy-review.md` and every sentence marked hers.
 
-## F. The CI Supabase project (Alex asked 2026-09-12; corrected 2026-09-13)
+## F. The CI Supabase project (Alex asked 2026-09-12; corrected 2026-09-13; decided 2026-09-18)
+
+**Decided 2026-09-18: option 3.** Alex: *"nahh unless we really need it no more money for now."* No CI project, no Pro plan. The 13 XCUITests run on a laptop before every TestFlight build and the run is pasted into the changelog entry for that build; the `ios-ui-tests` job stays green with its notice until the three settings exist, so switching later is a dashboard visit and two secrets, nothing in the repo. Revisit when the first paying member exists (D3 wants point-in-time recovery then anyway). The rest of this section is kept as the record of why.
+
 
 Alex gave the go-ahead on 2026-09-13 ("exact steps for me or can you do it all?"); the create was attempted the same day and refused, see below. Would it help a lot? Yes: it is the only way to run the 13 XCUITests on every PR, which is the layer that walks the app like a member does. The macOS runner has no Docker, so it cannot host the local stack; a small hosted project it can reset to the seed is the practical answer. Everything on our side is built and waiting (2026-09-13): the Debug app accepts `FXE_SUPABASE_URL` / `FXE_SUPABASE_ANON_KEY`, the UI tests forward them, and the `ios-ui-tests` job resets the project with `supabase db reset --db-url` and runs the suite with one retry. The job stays green with a notice until the secrets exist.
 

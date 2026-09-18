@@ -1,6 +1,6 @@
 # What's next, and what we need from Tara
 
-Living file. Updated 2026-09-13. Alex's target (2026-09-10): *"in the next week or two, get 95% of everything regarding the app/distribution/users"*, so about 2026-09-24; payments by October 1 (Tara). If something here is done, move it out; if
+Living file. Updated 2026-09-18. Alex's target (2026-09-10): *"in the next week or two, get 95% of everything regarding the app/distribution/users"*, so about 2026-09-24; payments by October 1 (Tara). If something here is done, move it out; if
 something new blocks, add it. This exists because the answer to "what's next"
 kept living in chat and dying with the session.
 
@@ -12,15 +12,18 @@ Ordered by what it unblocks, not by how hard it is to answer.
 
 | # | Question | Why it blocks | Our current assumption |
 |---|---|---|---|
-| 43–47 | **Follow-ups to Tara's 2026-09-16 answers** (`docs/questions-for-tara.md` §K): does she tap Charge clinic or should it fire at end time; courtesy covers late cancels only; an adult waiver; the card sentence vs. charging every attendee; where her-only note shows | The tap is built as her tap; the sentence ships as she wrote it | Defaults beside each |
+| 43–51 | **Follow-ups to Tara's 2026-09-16 answers plus account deletion, Saturday clinics, short weeks and the splash line** (`docs/questions-for-tara.md` §K). Sent 2026-09-18 as the Questions tab of her review page (`docs/tara-review/index.html`), alongside every word in the app for her to keep or change and a try-it list for the web admin | The tap is built as her tap; the sentence ships as she wrote it | Defaults beside each |
 | 27–42 | **Payments and cancellations** (`questions-for-tara.md` §I is 27–37, §J is 38–42). Answered 2026-09-12: the cutoff is 4 hours and it is an honor system with a concise emergency note (decision 0010). Still open: the late charge amount, no-shows, whether the regular fee goes on the card, card required at sign-up, refunds on her cancel, her Stripe account, and the two sentences | Nothing can charge anyone until she answers: `payments_enabled` stays false | The defaults written beside each question |
 
 **Blocked on Alex (2026-09-12), two asks, both spelled out in `docs/launch-checklist.md`:**
 
 1. **Stripe test keys** (§B): a Stripe *test-mode* account, its secret key and webhook secret set as Supabase Edge Function secrets (dashboard only, never the repo). Everything else on the payments path is built and deployed: schema, ledger, RPCs, three edge functions, the card screen on Profile, the Money tab ledger. Until the key exists, Add a card answers "Cards aren't set up yet."
-2. **A `fxe-ci` Supabase project in the FXE org** (§F): the only way the 13 XCUITests can run on every PR, because the macOS runner has no Docker for the local stack. Two minutes in the dashboard and two GitHub secrets; the workflow is ours to write once they exist.
+2. **The public half of the backup key** into `.github/backup-recipient.txt` (§D10): the `age1...` line, pasted into the file or into chat. The nightly backup fails until it is there, and the old unencrypted artifacts are gone (2026-09-18), so right now there is no backup at all.
+3. **Share Tara's review page** (`docs/tara-review/index.html`, published at https://claude.ai/artifact/1H3fCuvG7pkc9scTAJmfkL): open it, use the page's share menu to make a link, text it to her. Her answers come back as one pasted block from the page's "Copy my answers".
 
-Also his: a tick through `docs/copy-review.md` for the connective words in the unpaid reminder.
+Dropped 2026-09-18: the `fxe-ci` Supabase project (§F option 3 chosen, no money for now; UI tests run on a laptop before each TestFlight build).
+
+Also his: a tick through `docs/copy-review.md` for the connective words in the unpaid reminder. Tara's keep-or-change on the same strings supersedes his tick wherever she answers.
 
 **Answered already, do not re-ask.** Six of the eight closed on 2026-08-27; see
 `docs/decisions/0007`.
