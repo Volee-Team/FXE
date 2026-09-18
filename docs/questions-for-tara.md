@@ -260,3 +260,19 @@ say it's an emergency to cancel."* These are the gaps that remain.
 **47. The note only you see, at level entry: should it show on your roster next to the rating, or only on the player's page?**
 *Default: both, short.*
 
+**48. Deleting an account. Apple requires a "Delete my account" button. When a player deletes theirs, should their history and payment record stay with you with the name removed, or go entirely?**
+*Default: the rows stay, the name, phone and email are blanked (a paid clinic in March should still add up in Money in April). Status: open, asked 2026-09-18 (launch checklist D5).*
+
+**49. A Saturday clinic opens with the week before it: the Thursday nine days out for members, the Friday for everyone. Right?**
+*Default: yes, that is what is built (decision 0001; the first of the three open points under "Open questions on the window rule" in CLAUDE.md). Status: open, asked 2026-09-18.*
+
+**50. A short week, say clinics only Monday to Wednesday over a holiday, still opens the Thursday and Friday before. Right?**
+*Default: yes, built that way. Status: open, asked 2026-09-18.*
+
+**51. "Smart. Simple. Built for Tennis." under the logo on the sign-in screen came from the AI mockups, not from you. Keep, change, or drop?**
+*Default: drop it; the logo needs no caption. Status: open, asked 2026-09-18.*
+
+### How 43 to 51 were sent
+
+Not as this file. On 2026-09-18 they went to Tara as the Questions tab of her review page (`docs/tara-review/index.html`, published privately at https://claude.ai/artifact/1H3fCuvG7pkc9scTAJmfkL for Alex to share), in the plainer wording that page uses. Her answers come back as one pasted text; record them here with a date and a decision number, as 0007 and 0012 were.
+
