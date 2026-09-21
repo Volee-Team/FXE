@@ -82,7 +82,7 @@ Charge late cancel / Refund as Tara's tap, rendered only while
 grants), the three Stripe edge functions deployed, the card screen on Profile
 with PaymentSheet, `payments_ledger`, and `cancel_registration` refusing a late
 You're In! cancel without a note. Testing: 12 Playwright tests, 13 XCUITests
-(5 on Tara's side), 23 unit tests, 21 SQL probes, and a 27-check Stripe
+(5 on Tara's side), 23 unit tests, 22 SQL probes, and a 27-check Stripe
 pipeline against stripe-mock in CI. `docs/architecture.md` was regenerated
 2026-09-01 and refreshed 2026-09-12. Nothing charges anyone: the switch is off.
 

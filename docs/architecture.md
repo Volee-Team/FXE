@@ -55,7 +55,7 @@ most important thing to understand here, and it is section 5.
 | Postgres schema, RLS, narrow views, RPCs | **Built**, 31 migrations, 28 applied to hosted (verified 2026-09-16; the three 20260921 files push with their PR, `supabase migration list --linked`) |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | **Built**, enumerated by probes |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | **Built** |
-| SQL probe suite (21 probes; the suite prints its own total) + concurrency probe, in CI | **Built** |
+| SQL probe suite (22 probes; the suite prints its own total) + concurrency probe, in CI | **Built** |
 | iOS: sign-in, sign-up with profile, password reset, three tabs | **Built** |
 | iOS: browse by week, per-viewer pricing, register / cancel (4-hour note inside the cutoff) / leave pool / respond, closed-clinic "Message Tara", the bell, My Clinics, profile edit, card on file | **Built** |
 | iOS admin tab: rosters, invite, courts, paid, unpaid reminder, message audiences, late requests, Action Needed, player directory | **Built** |
