@@ -45,7 +45,12 @@ because they cannot reply in the app.
 
 ## Pinned by
 
-Nothing yet. `my_clinic_messages` filters through `clinic_message_recipients`,
-but no probe sends a targeted message and asserts a non-recipient cannot read
-it. Test gap (hard rule 9); backlog. (Until 2026-09-12 this section claimed
-`tests/sql/information_hiding.sql` pinned it; that probe has no message check.)
+`tests/sql/clinic_messaging.sql` (2026-09-21, 14 checks): Tara sends to In,
+Pool and everyone; Maria (In), Ken (Pool), Rob (canceled) and Dana (not
+registered) each read the view and the whole list they see is asserted in
+brackets, so a longer list cannot pass by containing the expected one; the
+recipients table and the messages table are unreadable to players; each
+recipient is notified once and non-recipients not at all. Proven red on
+three checks under a view that shows every message to any registered player.
+(Until 2026-09-12 this section claimed `information_hiding.sql` pinned it;
+that probe has no message check. From then until 2026-09-21 nothing did.)

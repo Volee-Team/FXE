@@ -48,6 +48,7 @@ struct HomeView: View {
 
                     ScrollView {
                         VStack(alignment: .leading, spacing: Brand.Spacing.lg) {
+                            NotificationsOffLine()
 
                             SectionBlock(title: "My Clinics") {
                                 if myClinics.isEmpty {

@@ -160,6 +160,7 @@ FXETennis/
     ├── MainTabView.swift        Home, Clinics, Profile, plus Manage when isAdmin
     ├── HomeView.swift           My Clinics + Available Clinics glance, the bell with its badge
     ├── NotificationsView.swift  what the bell opens: rows the RPCs wrote, newest first, mark read
+    │   (NotificationPermissionView.swift also holds NotificationsOffLine: the standing line on Home while permission is denied)
     ├── MyClinicsView.swift      the clinics I hold a live registration in, grouped by week, with chips
     ├── ClinicsView.swift        the list, grouped This week / Next week / Week of …
     ├── ClinicDetailView.swift   register / cancel / leave pool / respond, confirmations,
@@ -445,7 +446,8 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `pricing_and_revenue` | Snapshot correctness and the report's totals |
 | `create_my_account` | Sign-up creates rows, cannot impersonate, cannot self-promote, is idempotent |
 | `admin_clinic_crud`, `templates_floor_bootstrap` | CRUD, template pricing, the date floor, Tara's bootstrap |
-| `late_requests`, `player_directory` | The late path and the directory, including "a member cannot read their own note" |
+| `late_requests`, `player_directory` | The late path and the directory, including "a member cannot read their own note" and "a non-member cannot flip their own is_member column" |
+| `clinic_messaging` | Decision 0005: a targeted message is readable only by the group it went to; the whole list each player sees is asserted; the recipients table is hidden; each recipient notified once |
 | `schema_decisions` | Tara's decisions with a DB consequence stay true |
 | `push_devices` | `register_device` / `unregister_device`, attacked: nobody but the owner sees a token, the account is never a parameter, re-registering is idempotent |
 | `template_archive` | Only Tara archives or restores; the stamp survives a repeat; archived rows show to her and to nobody else; a clinic can still be built from an archived template |
