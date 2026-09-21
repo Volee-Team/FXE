@@ -57,12 +57,12 @@ most important thing to understand here, and it is section 5.
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | **Built** |
 | SQL probe suite (24 probes; the suite prints its own total) + concurrency probe, in CI | **Built** |
 | iOS: sign-in, sign-up with profile, password reset, three tabs | **Built** |
-| iOS: browse by week, per-viewer pricing, register / cancel (4-hour note inside the cutoff) / leave pool / respond, closed-clinic "Message Tara", the bell, My Clinics, profile edit, card on file | **Built** |
+| iOS: browse by week, per-viewer pricing, register / cancel (inside the 3-hour cutoff the full fee applies; the note is optional) / leave pool / respond, closed-clinic "Message Tara", the bell, My Clinics, profile edit, card on file | **Built** |
 | iOS admin tab: rosters, invite, courts, paid, unpaid reminder, message audiences, late requests, Action Needed, player directory | **Built** |
 | Web admin: clinic + template CRUD (archive, never delete), rosters, walk-up, courts, reminder, Action Needed, Money with the card ledger, directory, password reset | **Built**, live on Vercel |
 | Nightly `pg_dump` backup + keep-warm | **Built**, first artifact 2026-09-01 |
 | APNs push delivery | **Client half built** (permission sheet, registration, `register_device`; decision 0008). The sender waits on the APNs key, which only the Apple Developer account can issue. `notifications` rows are written; nothing delivers them |
-| Stripe card payments | **Built, switched off** (decision 0009): ledger, RPCs, three edge functions ACTIVE on hosted, card screen, `payments_ledger`. `app_settings.payments_enabled` is `false`; nothing charges until Tara answers Q27–42 |
+| Stripe card payments | **Built, switched off** (decision 0009): ledger, RPCs, three edge functions ACTIVE on hosted, card screen, `payments_ledger`. `app_settings.payments_enabled` is `false`; nothing charges until the Stripe keys are set (launch checklist A1); her policy answers landed 2026-09-16 and 2026-09-21 (decisions 0012, 0013) |
 | Juniors / parent accounts | **Deferred** to November or the spring session (decision 0007) |
 | App Store / TestFlight | **Blocked** on Apple Developer enrollment for FXE Tennis, LLC |
 
@@ -240,7 +240,7 @@ JSON. The hiding is done in the database by three mechanisms:
    `notifications`, `late_requests`, `payments` and `app_settings` (RLS scopes
    the first five to the caller; settings are player-safe by rule), column
    `UPDATE` on `accounts(first_name, last_name, phone)`,
-   `players(first_name, last_name, adult_rating, date_of_birth, is_member)` and
+   `players(first_name, last_name, adult_rating, date_of_birth)` and
    `notifications(read_at)`, `SELECT` on the narrow views, and `EXECUTE` on the
    client RPCs. `anon` holds nothing: no table, no view, no function. `tests/sql/grants_are_explicit.sql`
    enumerates `pg_class` and `pg_proc` rather than naming objects, so an
@@ -281,7 +281,7 @@ JSON. The hiding is done in the database by three mechanisms:
 A player could once `update accounts set role = 'admin'`. Migration
 `20260802000003` closed it three ways, any one sufficient: column-level
 grants (`authenticated` may update `accounts`: name and phone; `players`: name,
-rating, date of birth, membership; never `role` or `account_id`), `WITH CHECK` pinning
+rating, date of birth; never `is_member`, `role` or `account_id`), `WITH CHECK` pinning
 identity columns, and triggers (`guard_account_privilege_columns`,
 `guard_player_owner_column`). `tests/sql/privilege_escalation.sql` performs
 the attack and asserts it fails.
@@ -377,8 +377,10 @@ race with her canceling resolves cleanly (hard rules 2 and 3).
 
 ## 7. Payments, pricing, and the revenue report
 
-v1 moves no money in the app (decision 0003): Zelle preferred, Venmo accepted,
-and the app gives Tara a report. Prices are member/non-member by length: $18 /
+Decision 0003 put Zelle and Venmo outside the app; decision 0013 §3
+(2026-09-21) closed that path: `zelle_allowed` is `false`, the card is the only
+way to pay, and the Paid toggle and unpaid reminder are hidden on both admin
+surfaces while it stays false. The app still gives Tara a report. Prices are member/non-member by length: $18 /
 $23 for 60 minutes, $22 / $28 for 90. At registration the price, membership and
 duration are **snapshotted** onto the row (decision 0002), so editing a clinic
 or correcting a membership never rewrites history. `revenue_summary()` returns
@@ -392,25 +394,28 @@ Stripe half with `service_role`: `stripe-setup-intent` (customer + SetupIntent
 for PaymentSheet), `stripe-webhook` (the only writer of card summaries and
 ledger outcomes), `stripe-charge` (each pending row becomes one off-session
 PaymentIntent or Refund, idempotency key per row, claim-then-call so a crash
-never double-charges). Switched off (`payments_enabled`) until Tara answers
-questions 27–42; `tests/stripe/run.sh` proves the pipeline against stripe-mock.
+never double-charges). Switched off (`payments_enabled` is still `'false'`) until the
+Stripe keys exist (launch checklist A1); Tara's policy questions were answered
+2026-09-16 and 2026-09-21 (decisions 0012, 0013). `tests/stripe/run.sh` proves the
+pipeline against stripe-mock.
 
-Decision 0010 (2026-09-12, partial) is Tara's cancellation rule, in her words
-an honor system: `cancel_cutoff_hours` is 4; before it any cancel is free;
-inside it a You're In! player must say it is an emergency, so
-`cancel_registration(p_registration, p_note)` refuses a late cancel without a
-note and stamps `late_cancel` + `cancel_note` on the row. Pool and Response
+Decision 0010 (2026-09-12), superseded on both numbers: `cancel_cutoff_hours`
+is **3** (decision 0013 §2) and the note is optional (decision 0012). Before
+the cutoff any cancel is free; inside it the full fee applies and
+`cancel_registration(p_registration, p_note)` stamps `late_cancel` + the
+optional `cancel_note` on the row. Pool and Response
 Needed drop-outs and Tara's own removals are never late. The app judges
 nothing and charges nobody on its own: the note rides in her notification and
-shows on the roster, and any charge is her tap. Still hers to answer: the
-amount, no-shows, whether emergencies are always free (Q38–42).
+shows on the roster, and any charge is her tap. Answered: Q38–42 on
+2026-09-16 (decision 0012) and Q43–47 on 2026-09-21 (decision 0013). Nothing
+on the cancellation rule is open except her policy block's wording (Q56).
 
 ---
 
 ## 8. The web admin
 
-`web/` is four static files and no build step: `index.html`, `reset.html`,
-`config.js` (which picks local vs hosted by hostname) and `tokens.css`, plus
+`web/` is five static files and no build step: `index.html`, `reset.html`,
+`review.html`, `config.js` (which picks local vs hosted by hostname) and `tokens.css`, plus
 the Playwright tooling (`package.json`, `playwright.config.mjs`, `tests/`). Hosted on Vercel by
 manual `vercel --prod` from that folder; the Git repo is deliberately **not**
 connected, because preview deploys would point at Tara's live data. It signs
@@ -480,7 +485,7 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `capacity_race.sh` | Two racing registrations; invite-vs-accept |
 
 **Swift**: 23 unit tests (`FXETennisTests`: price formatting, per-viewer
-pricing, NTRP buckets, service-week edges, the 4-hour cancel policy) and 13
+pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013) and 13
 XCUITests: 8 player flows
 (`PlayerFlowUITests`: sign in / browse / register, undo, sign-up end to end,
 the bell, profile edit, My Clinics, prices, hidden information) and 5 admin
@@ -543,7 +548,10 @@ requirement, and it is not enforced for admins.
 `docs/decisions/` (0001 service-week windows, 0002 price snapshot, 0003
 payments, 0004 adults only, 0005 clinic messaging, 0006 three tabs and no
 News, 0007 Tara's 2026-08-27 answers, 0008 push notifications, 0009 Stripe
-card on file, 0010 the 4-hour honor system), `docs/roadmap.md` (plan of record),
+card on file, 0010 the cancellation honor system, 0011 no email verification in
+v1, 0012 the cancellation policy and charging, 0013 Tara's 2026-09-21 review: no
+courtesy, 3 hours, card only, the waiver, deletion that keeps history),
+`docs/roadmap.md` (plan of record),
 `docs/whats-next.md` (what is blocked and on whom), `docs/backlog.md`,
 `docs/copy.md` (Tara's words), `docs/web-admin.md`, `docs/notifications.md`,
 and `CLAUDE.md` (the working rules and the changelog).
@@ -553,11 +561,11 @@ and `CLAUDE.md` (the working rules and the changelog).
 ## 11. Deliberately not in v1
 
 - **In-app purchase / Apple Pay for clinic fees.** Not required for a
-  real-world service; Zelle keeps Apple's cut off a $23 fee.
+  real-world service; card charges through Stripe keep Apple's cut off a $23 fee (decision 0009).
 - **Auto-promoting from the Player Pool, auto-expiring invitations.** Tara
   picks every player and takes a spot back by hand. This is the product.
 - **Showing players any capacity, count, court, or other player.**
 - **Juniors and parent-managed child accounts.** Schema ready; UI later.
 - **Push delivery.** Rows are written and the client registers; the sender waits on the APNs key.
-- **Charging anyone.** Every piece exists and `payments_enabled` is `false` until Tara answers.
+- **Charging anyone.** Every piece exists and `payments_enabled` is `false` until the Stripe keys are set (launch checklist A1).
 - **Drag-and-drop courts, a category filter, a custom domain.**
