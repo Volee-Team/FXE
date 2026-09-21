@@ -9,9 +9,9 @@ deployed by hand with `vercel --prod` and deliberately not connected to the
 repo (`web/README.md`); there is no `_headers` file and no CSP; there is no
 generated `db.types.ts` and no `dist/` for CI to grep. The architecture
 arguments below (static SPA, no server, RPC-only authority) all still hold and
-are what the shipped page does. Verified 2026-09-12: `ls web` shows
-`index.html`, `reset.html`, `config.js`, `tokens.css` plus the Playwright
-tooling.
+are what the shipped page does. Verified 2026-09-21: `ls web` shows
+`index.html`, `reset.html`, `review.html`, `config.js`, `tokens.css` plus the
+Playwright tooling.
 **Date:** 2026-08-02
 **Decision owner:** Alex
 **Approved by:** Tara (split admin surface, per `for-tara.md` question 1)
@@ -286,7 +286,7 @@ Each of these is a decision, not an oversight.
 * **No admin-side push or email.** Notifications reach her phone. The laptop page is opened deliberately.
 * **No multi-admin UI, no roles beyond `member` and `admin`, no permission editor.** `accounts.role` already supports a second admin as an `UPDATE` statement. Do not build a screen for it before a second admin exists.
 * **No CSV import or export, no charts.** The Money tab is the one report: `revenue_summary()`, `revenue_by_clinic`, and the `payments_ledger` list (2026-09-01, 2026-09-12). The data is in Postgres and can be queried directly if a one-off question comes up.
-* **Payment processing, revised.** Zelle stays the Paid checkbox Tara ticks. Card charges are her tap: Charge fee, Charge late cancel and Refund exist on the card only while `app_settings.payments_enabled` is true, which it is not yet (decision 0009, 2026-09-12).
+* **Payment processing, revised twice.** Zelle is off: `app_settings.zelle_allowed` is `false` since decision 0013 (2026-09-21), so the Paid checkbox and Remind unpaid are rendered on neither admin surface. Card charging is one tap per clinic, Charge clinic (decision 0012), plus Refund on the Money tab; both exist only while `app_settings.payments_enabled` is true, which it is not yet (decision 0009).
 * **No print stylesheet or printable court sheet.** Flagged as the most likely first request after launch, because a paper sheet on a clipboard is a real thing at tennis clubs. Cheap to add later, roughly a `@media print` block. Not built until asked.
 * **No undo, no audit log, no change history.** `canceled_at`, `canceled_by`, `invited_at`, and `responded_at` already record the transitions that matter. A general audit trail is a different project.
 * **No touch or keyboard drag-and-drop.** The dropdown covers both, permanently.

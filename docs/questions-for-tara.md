@@ -53,6 +53,7 @@ Real situation: someone calls you or grabs you at the club and you just want to 
 We can leave it as your correction (you fix it in the player directory when you notice), or we can make member status something only you can set.
 *Default: players self-report, and you can override it on their profile at any time.*
 *ANSWERED 2026-08-02 (decision 5): self-reported at sign-up, Tara overrides. Since 2026-09-02 a player cannot change it after sign-up.*
+*Update 2026-09-21: the iOS UI stopped offering the switch on 2026-09-02 ("Set by Tara"), but the column grant survived until `revoke update (is_member)` landed in 20260921000001; `admin_set_membership` is now the only write path.*
 
 **9. What is the adult rating scale, exactly?**
 NTRP 2.5 / 3.0 / 3.5 / 4.0 / 4.5+? Something FXE-specific? We need the exact list of options.
@@ -84,6 +85,7 @@ Does it just disappear from the player's list automatically at the end time? Do 
 *Default: it moves to Past automatically at the end time. No attendance in v1.*
 *CONFIRMED 2026-09-16: "Correct."*
 *Default built, with one difference: a finished clinic drops off the players' list (no Past section); Tara's Manage list has Past. Re-asked as 09-12 short-list item 10.*
+*Update 2026-09-21: a PAST section was added under My Clinics (`my_past_clinics`, migration 20260921000004), showing each player their own outcome: Played · $18, Played, No-show, Canceled, Canceled late. Tara's Manage list has Past too.*
 
 ---
 
@@ -153,7 +155,7 @@ Apple requires a privacy policy URL and an accurate privacy declaration, and app
 
 **26. Final logo asset and exact brand colors.**
 We need the gator-with-tennis-ball logo as a PNG or SVG with a transparent background, and the exact navy, cream, and green you want (hex codes if the club has them, otherwise send an image and we will pull them).
-*ANSWERED 2026-08-02/08-12 (decisions 15, 22, 23): crossed-racquets mark (in repo), her hex codes in Brand.swift. Still open: the warm-white background #FAF7F1 is our choice awaiting her OK.*
+*ANSWERED 2026-08-02/08-12 (decisions 15, 22, 23): crossed-racquets mark (in repo), her hex codes in Brand.swift. Still open: the cream ground #F7F4EC is our choice awaiting her OK (the older #FAF7F1 belonged to palette A and is gone).*
 
 ---
 
@@ -174,7 +176,7 @@ service); Stripe takes about 3% per card payment. Every question below has a
 default we would otherwise pick, so "yes" is a complete answer.
 
 **27. Cancellation cutoff: how close to the start is a cancellation charged?**
-*ANSWERED 2026-09-12: 4 hours, honor system (decision 0010). Free before; inside 4 hours the player has to say it is an emergency, with a very concise message.*
+*ANSWERED 2026-09-12: 4 hours, honor system (decision 0010). **SUPERSEDED 2026-09-21 (decision 0013): 3 hours** ("3 hours instead of 4. Otherwise good"), which is also the registration close. Free before; inside 4 hours the player has to say it is an emergency, with a very concise message.*
 
 **28. Is the late-cancellation charge the full clinic price, or a fixed amount?**
 *Default: full price of that clinic ($18/$23 or $22/$28).*
@@ -191,12 +193,11 @@ default we would otherwise pick, so "yes" is a complete answer.
 **31. When YOU cancel a clinic, does everyone get an automatic refund of anything already paid?**
 *Default: yes, automatic, same day, no action from you.*
 *ANSWERED 2026-09-16 (decision 0012): no refunds, because nothing is charged before the clinic ends.*
-*(Not built until she answers.)*
 
 **32. Card on file at sign-up: every player must add a card before they can register?**
 *Default: yes. A player without a card can browse but not register. Members you trust can still pay Zelle if you mark them paid by hand.*
 *ANSWERED 2026-09-16 (decision 0012): "Gosh I say yes."*
-*(Not built until she answers.)*
+*Built 2026-09-16: `app_settings.card_required` is `true` and `register_for_clinic` raises `card_required`; the app says "Add a card on your Profile to register." The gate is inert until `payments_enabled` is true.*
 
 **33. When is the regular clinic fee charged: at registration, or after the clinic?**
 *Default: charged when they land in You're In! (or accept an invitation), refunded automatically if they cancel before the cutoff.*
@@ -205,6 +206,7 @@ default we would otherwise pick, so "yes" is a complete answer.
 **34. Should the app ever charge a card without you seeing it first, or should every charge wait for your tap?**
 *Default: the regular fee is automatic; a late-cancel or no-show charge waits for your tap on the roster, so you can waive it for a good reason.*
 *ANSWERED 2026-09-16 (decision 0012): the courtesy is automatic; the charge is her one tap per clinic (question 43 confirms the tap).*
+*The automatic courtesy in that answer was withdrawn 2026-09-21 (decision 0013); the tap is confirmed by question 43.*
 
 **35. Do you want Zelle to stay as an option once cards work?**
 *Default: yes, for members who prefer it; you mark those paid by hand as today.*
@@ -217,6 +219,7 @@ default we would otherwise pick, so "yes" is a complete answer.
 **37. The exact sentence a player reads when they add a card and agree to the cancellation rule. Your words, or shall we draft one for you to edit?**
 *Default: we draft, you edit, nothing ships until you say so.*
 *ANSWERED 2026-09-16 (decision 0012): her text ships verbatim, marked for her edit: "Your card will only be charged for late cancellations or no-shows. Cancel at least 4 hours before clinic and you will not be charged." Note: her regular-fee answer (Q41) charges every attendee, so this sentence understates what the card is charged for; question 46.*
+*SUPERSEDED 2026-09-21 by her question-46 rewrite (decision 0013), which is what ships: "Your card will only be charged after the clinic you attended, late cancellations, or no-shows. Cancel at least 3 hours before clinic and you will not be charged."*
 
 ## J. After Tara's 4-hour answer (added 2026-09-12)
 
@@ -228,14 +231,17 @@ say it's an emergency to cancel."* These are the gaps that remain.
 **38. Inside 4 hours, is saying it is an emergency the ONLY way to cancel?**
 *Default: yes. The app asks for the short message, and the cancellation goes through. Without the message it does not.*
 *ANSWERED 2026-09-16 (decision 0012): no. The emergency claim is gone; inside 4 hours the cancel goes through, the note is optional, and the app applies one courtesy per 90 days.*
+*SUPERSEDED 2026-09-21 (decision 0013): no courtesy at all (`courtesy_cancel_days = 0`), and the window is 3 hours.*
 
 **39. Emergency cancels: never charged, or yours to decide one by one?**
 *Default: yours. The roster shows the message next to the name and a Charge button. Nothing is charged unless you tap.*
 *ANSWERED 2026-09-16 (decision 0012): the app applies the courtesy; after it is used the full fee applies, and she can still not charge a row.*
+*SUPERSEDED 2026-09-21 (decision 0013): "No courtesy anymore." The full fee applies every time; she can still skip a row when she charges.*
 
 **40. The sentence the app shows inside 4 hours, above the message box. Your words?**
 *Default: we draft, you edit, nothing ships until you say so.*
 *ANSWERED 2026-09-16 (decision 0012): her text ships verbatim, marked for her edit: "This cancellation is within 4 hours of clinic and the full clinic fee will apply. If there are circumstances you'd like us to consider, please leave a note below."*
+*Amended 2026-09-21 (decision 0013) to three hours; ships verbatim: "This cancellation is within 3 hours of clinic and the full clinic fee will apply. If there are circumstances you'd like us to consider, please leave a note below."*
 
 **41. The regular clinic fee: charge the card automatically when someone is In, or keep Zelle as the normal way to pay and use the card only for late cancels and no-shows?**
 *Default: card automatically when they are In (question 33). Say "Zelle stays normal" and the card is only for the late ones.*

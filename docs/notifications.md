@@ -26,7 +26,7 @@ the database layer as well. Do not add a count to a body string here.
 
 ---
 
-## What fires today (2026-09-12)
+## What fires today (2026-09-21)
 
 The catalogue below is what she wrote and what should fire. This table is what
 the database does, from `pg_get_functiondef` on every function in `public`
@@ -41,7 +41,7 @@ yes before it reaches a real player.
 | `cancel_clinic` | `clinic_canceled` | Every live registration | `{clinic} has been canceled.` | 7 (different words) |
 | `send_clinic_message` | `clinic_message` | The audience she picked | Her typed body, pass-through | 12 |
 | `respond_to_invitation` | `invitation_accepted` / `invitation_declined` | Every admin | `{player} accepted.` / `{player} declined.` | 13, 14 (shorter) |
-| `cancel_registration` | `player_canceled` | Every admin | `{player} canceled.` plus ` Note: "{cancel_note}"` on a late cancel | 15 |
+| `cancel_registration` | `player_canceled` | Every admin | `{player} canceled.` plus ` Late, fee applies.` on a late cancel, plus ` Note: "{cancel_note}"` when a note was left (the ` Late, courtesy used.` branch is still in the SQL but unreachable since `courtesy_cancel_days = 0`, decision 0013) | 15 |
 | `request_late_spot` | `LATE_REQUEST` | Every admin | `{player} is asking to join {clinic}.` plus the quoted message if any | not in her list |
 | `resolve_late_request` | `LATE_REQUEST_APPROVED` / `LATE_REQUEST_DECLINED` | The requesting player | `You're in for {clinic}.` / `Tara couldn't fit you into {clinic} this time.` | not in her list |
 
@@ -75,7 +75,7 @@ player travelling out of state must still read the court time.
 | 5 | Added to Player Pool | **Not wired.** Should fire when a first registration resolves to Player Pool; not on decline, not on invitation cancel. See finding (i). | The registering player's account | `Thanks for registering! I personally create each clinic based on playing levels and will send confirmations once lineups are set ASAP` |
 | 6 | Removed from Player Pool | **Not wired.** Should fire when Tara removes a pooled player (admin `cancel_registration`), which today notifies only the admins. See contradiction (b). | The removed player's account | `You've been removed from the Player Pool for {clinic}. Hope to see you at another clinic soon!` |
 | 7 | Clinic Canceled | Tara cancels a clinic (`cancel_clinic`). Sent to You're In!, Player Pool, and Response Needed. Wired, but with our body, not hers: see What fires today and contradiction (d). | Every account with a live registration | `Unfortunately today's {clinic} has been canceled due to weather.` |
-| 8 | Payment Reminder | Tara taps Remind unpaid (web and iOS, 2026-09-01). Built as a `send_clinic_message` with audience `unpaid`, so it is a clinic message, not a push body. | Unpaid registrants | Her sentence was `Just a quick reminder for payment from {clinic} on {date}. Thank you!`. What ships is `Just a reminder that {clinic} ({date}) hasn't been paid yet. {payment line} Thanks!` (`web/index.html`, `AdminRepository.swift`), with the Zelle line inside; the connective words await Alex's tick in `copy-review.md`. See (g). |
+| 8 | Payment Reminder | **Switched off 2026-09-21 (decision 0013).** Built 2026-09-01 as a `send_clinic_message` with audience `unpaid`; the Remind unpaid control is rendered on neither admin surface while `app_settings.zelle_allowed` is `false`, which it is. | Unpaid registrants | Her sentence was `Just a quick reminder for payment from {clinic} on {date}. Thank you!`. The code still holds `Just a reminder that {clinic} ({date}) hasn't been paid yet. {payment line} Thanks!` (`web/index.html`, `AdminRepository.swift`) behind the `zelle_allowed` gate. See (g). |
 | 9 | New Announcement | **Not wired.** `publish_news` notifies nobody, and News has no surface (decision 0006). | Accounts matching the post's audience | `News from FXE!` |
 | 10 | Registration Is Open | **Not wired.** Requires a scheduled job at window open. See contradiction (c). | Undecided, see (c) | `Registration is LIVE!! Hope to see you on the court` |
 | 11 | Registration Canceled | **Not wired.** A player's own `cancel_registration` notifies only the admins. See (h), which recommends in-app only. | The cancelling player's account | `You've canceled your registration for {clinic}. Hope to see you back on the court soon!` |
@@ -200,11 +200,10 @@ the opposite. This is a bug her copy caught.
 **Recommendation: option 1.** Same transition, same row, same race conditions.
 A second RPC would duplicate the conditional update for no gain.
 
-**Also worth her knowing, though it is ours to fix.** `leave_pool` deletes the
-registration row outright rather than cancelling it, which conflicts with hard
-rule 4, archive and never delete. It is the player's own withdrawal, so nothing
-is lost that Tara needs, but the inconsistency should be a deliberate choice
-rather than an accident.
+**Fixed 2026-09-21** (20260921000001). `leave_pool` used to delete the
+registration row outright, against hard rule 4; it now cancels the row
+conditionally on `status = 'pool'`, stamped and never late, so archive-never-
+delete holds on every exit path.
 
 ### (c) A broadcast when registration opens
 

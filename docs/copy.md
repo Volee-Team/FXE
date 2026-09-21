@@ -195,10 +195,15 @@ punctuation and the missing periods:
 | Profile, card section | (her 09-16 sentence) | **Your card will only be charged after the clinic you attended, late cancellations, or no-shows. Cancel at least 3 hours before clinic and you will not be charged.** |
 | Cancel sheet, inside the cutoff | (her 09-16 sentence, 4 hours) | same sentence with **3 hours** (*"3 hours instead of 4. Otherwise good"*) |
 
-Gone by her word: the courtesy sentence (*"NOT DOING THIS ANYMORE"*), the
-"Late, courtesy used." notification suffix, and the Zelle reminder, Paid and
-Remind unpaid controls (*"I don't want this to be an option. Everyone using
-the app has to input a credit card"*), which now sit behind `zelle_allowed`.
+Gone by her word: the courtesy sentence (*"NOT DOING THIS ANYMORE"*), and the
+Zelle reminder, Paid and Remind unpaid controls (*"I don't want this to be an
+option. Everyone using the app has to input a credit card"*), which now sit
+behind `zelle_allowed` on both admin surfaces. The "Late, courtesy used."
+notification suffix is still in `cancel_registration` but unreachable:
+`courtesy_cancel_days = 0` makes `courtesy_available()` false, so the branch
+never fires (kept per hard rule 4). The player-facing payment card on Clinic
+Details still renders her Zelle line unconditionally (`ClinicDetailView.swift`,
+`paymentCard`); gating it is a backlog row.
 
 Her policy text above is therefore superseded on three lines: **3 hours**
 where it says 4, no courtesy paragraph, and no emergency-email paragraph. She
