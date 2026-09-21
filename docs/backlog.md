@@ -39,7 +39,7 @@ Priority: 🔴 blocks a person · 🟡 should fix · 🟢 whenever
 |---|---|---|---|
 | 🟡 | ~~**`leave_pool` hard-deletes the registration**~~ | 2026-09-21 | Conditional update to `canceled` with the stamp (20260921000001); `late_cancellation.sql` asserts the row survives |
 | 🟡 | ~~**`players.is_member` is still column-writable by the owning account**~~ | 2026-09-21 | `revoke update (is_member)` (20260921000001); sign-up still records the self-report through `create_my_account`; `player_directory.sql` asserts a member cannot flip it |
-| 🟡 | **The review page lost Tara's answers once** | 2026-09-21 | She had to redo the whole page after her browser dropped `localStorage`. Fix in flight: `web/review.html` on the admin site saving to `review_responses` through the `review-submit` edge function as she types |
+| 🟡 | **The review page lost Tara's answers once** | 2026-09-21 | She had to redo the whole page after her browser dropped `localStorage`. Fix in flight: a review page on the admin site that saves to a review-responses table through an edge function as she types |
 | 🟢 | ~~`extract-copy.py` captures a Swift interpolation (`“\(m)”`) as a string~~ | 2026-09-10 | A string that is nothing but an interpolation is not copy; the extractor's noise filter now says so |
 | 🟢 | ~~`anon` holds EXECUTE on 22 SECURITY DEFINER RPCs~~ | 2026-09-01 | It was 30 of 41 by then. 20260902000001 revokes from PUBLIC and anon on every function; `grants_are_explicit.sql` enumerates `pg_proc` so it cannot regress silently |
 | 🟡 | ~~Clinic list has no date bounds in either direction~~ | 2026-09-02 | Floor: `clinics_public` drops ended clinics (08-28). Ceiling: the client stops five weeks out (09-02) |
