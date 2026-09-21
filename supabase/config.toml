@@ -414,3 +414,9 @@ verify_jwt = true
 
 [functions.stripe-charge]
 verify_jwt = true
+
+# Tara opens the review page from a text message and has no account, so the
+# request carries no JWT. The token in the body is the credential; the function
+# checks it against review_links.
+[functions.review-submit]
+verify_jwt = false

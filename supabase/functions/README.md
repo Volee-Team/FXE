@@ -1,8 +1,9 @@
 # Edge functions
 
 Deno functions deployed to the Supabase project. Decision 0009 (payments)
-owns the three `stripe-*` functions; nothing else lives here yet (push
-delivery, decision 0008, will add `push` once Apple issues the key).
+owns the three `stripe-*` functions; `review-submit` (2026-09-21) saves
+Tara's review-page answers; push delivery, decision 0008, will add `push`
+once Apple issues the key.
 
 ## Secrets (never in the repo, the app, or a log)
 
@@ -25,6 +26,7 @@ injected by the platform.
 | `stripe-setup-intent` | the iOS app, once per card | caller's JWT | creates or reuses the Stripe customer, returns a SetupIntent client secret + ephemeral key for PaymentSheet |
 | `stripe-webhook` | Stripe | Stripe signature (`verify_jwt = false`) | records the card summary on `setup_intent.succeeded`, and ledger outcomes on payment / refund events |
 | `stripe-charge` | the admin surfaces after `admin_charge_registration` / `admin_refund_payment` | admin JWT | turns up to 25 `pending` ledger rows per call (`.limit(25)`) into one PaymentIntent (off-session) or Refund each, with an idempotency key per row; safe to call again for the rest |
+| `review-submit` | `web/review.html?t=<token>`, Tara's review page | the token in the body or query, checked against `review_links` (`verify_jwt = false`: she has no account) | `POST {token, page_version, answers}` upserts one jsonb blob per (link, page version) into `review_responses` and returns `{saved_at}`; `GET ?token=&page_version=` returns `{answers, saved_at}` so she can continue on another device; unknown or revoked token is 404, answers over 200 KB or not an object is 400. Uses `_shared/supabase.ts`, not the Stripe module. No rate limiting |
 
 The database never talks to Stripe; the app never holds a key that can move
 money; the only writer of ledger status is the webhook (plus `stripe-charge`
@@ -48,6 +50,7 @@ call fails, which is the intended state until the test keys exist.
 supabase functions deploy stripe-setup-intent
 supabase functions deploy stripe-webhook --no-verify-jwt
 supabase functions deploy stripe-charge
+supabase functions deploy review-submit --no-verify-jwt
 ```
 
 ## Testing without a Stripe account
