@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FXE Tennis, Tara's Review</title>
+<link rel="stylesheet" href="./tokens.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap">
+<style>
+:root {
+  --navy:#0E1239; --ink:#1B1F3A; --muted:#5F6478; --line:#DDD9CE; --ground:#FAF7F1; --card:#FFFFFF;
+  --green:#3E7C55; --green-soft:#E7F0E7; --brass:#7A5E24; --brass-soft:#F5EBD8; --red:#992E22;
+  --chip:#F1EEE6; --chip-on:#0E1239; --chip-on-ink:#F6F3EA;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --navy:#C9CFF2; --ink:#EDEBE4; --muted:#A9ADBF; --line:#3A3D52; --ground:#15172A; --card:#1E2136;
+  --green:#8FCB9F; --green-soft:#24372B; --brass:#D9B86A; --brass-soft:#3A3120; --red:#F0907F;
+  --chip:#2A2D44; --chip-on:#E9E6DD; --chip-on-ink:#15172A;
+} }
+:root[data-theme="dark"] {
+  --navy:#C9CFF2; --ink:#EDEBE4; --muted:#A9ADBF; --line:#3A3D52; --ground:#15172A; --card:#1E2136;
+  --green:#8FCB9F; --green-soft:#24372B; --brass:#D9B86A; --brass-soft:#3A3120; --red:#F0907F;
+  --chip:#2A2D44; --chip-on:#E9E6DD; --chip-on-ink:#15172A;
+}
+body { background:var(--ground); color:var(--ink); font: 16px/1.5 -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif; padding-block:0 48px; }
+.wrap { max-width:680px; margin:0 auto; padding:0 16px; }
+header.top { padding:28px 0 12px; }
+h1 { font-family:"Fraunces", Georgia, "Times New Roman", serif; font-weight:700; font-size:34px; line-height:1.1; color:var(--navy); margin:0 0 8px; text-wrap:balance; }
+.lede { color:var(--muted); margin:0; max-width:60ch; }
+nav.tabs { position:sticky; top:env(safe-area-inset-top, 0px); background:var(--ground); display:flex; gap:6px; padding:12px 0 10px; border-bottom:1px solid var(--line); z-index:2; }
+nav.tabs button { flex:1; border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:999px; padding:10px 8px; font:inherit; font-weight:600; font-size:15px; cursor:pointer; }
+nav.tabs button[aria-selected="true"] { background:var(--chip-on); color:var(--chip-on-ink); border-color:var(--chip-on); }
+nav.tabs button:focus-visible, .chip:focus-visible, textarea:focus-visible, .copy:focus-visible { outline:3px solid var(--green); outline-offset:2px; }
+.progress { font-size:14px; color:var(--muted); padding:12px 0 4px; font-variant-numeric:tabular-nums; }
+section.screen { margin-top:22px; }
+h2 { font-family:"Fraunces", Georgia, serif; font-weight:600; font-size:24px; color:var(--navy); margin:0; text-wrap:balance; }
+.sub { margin:2px 0 12px; color:var(--muted); font-size:14px; }
+.item { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px 14px 12px; margin:0 0 10px; }
+.where { font-size:12.5px; letter-spacing:.02em; text-transform:uppercase; color:var(--muted); display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.tag { text-transform:none; letter-spacing:0; font-size:12px; padding:2px 8px; border-radius:999px; background:var(--brass-soft); color:var(--brass); font-weight:600; }
+blockquote.blurb { margin:8px 0 10px; padding:0 0 0 12px; border-left:3px solid var(--navy); font-size:17px; line-height:1.45; }
+.choices { display:flex; gap:8px; }
+.chip { border:1px solid var(--line); background:var(--chip); color:var(--ink); border-radius:999px; padding:8px 16px; font:inherit; font-weight:600; font-size:15px; min-height:40px; cursor:pointer; }
+.chip[aria-pressed="true"] { background:var(--chip-on); color:var(--chip-on-ink); border-color:var(--chip-on); }
+.chip[aria-pressed="true"][data-choice="keep"] { background:var(--green); border-color:var(--green); color:#fff; }
+textarea { width:100%; box-sizing:border-box; margin-top:10px; border:1px solid var(--line); border-radius:10px; padding:10px 12px; font:inherit; font-size:16px; background:var(--card); color:var(--ink); min-height:64px; resize:vertical; }
+h3 { margin:6px 0 4px; font-size:18px; color:var(--navy); }
+.item p { margin:0; }
+label.task { display:flex; gap:12px; align-items:flex-start; cursor:pointer; }
+label.task input { width:22px; height:22px; margin:2px 0 0; accent-color:var(--green); flex:none; }
+.send { margin-top:28px; padding:16px; border:1px dashed var(--line); border-radius:14px; background:var(--card); }
+.send h2 { font-size:20px; }
+.copy { margin-top:10px; border:0; background:var(--chip-on); color:var(--chip-on-ink); border-radius:999px; padding:12px 18px; font:inherit; font-weight:700; font-size:16px; cursor:pointer; }
+.copied { margin-left:10px; color:var(--green); font-weight:600; }
+pre.summary { white-space:pre-wrap; font: 13.5px/1.45 ui-monospace, Menlo, monospace; background:var(--chip); border-radius:10px; padding:12px; margin-top:12px; max-height:340px; overflow:auto; }
+.panel[hidden] { display:none; }
+@media (prefers-reduced-motion: no-preference) { .chip, nav.tabs button { transition: background .15s, color .15s; } }
+</style>
+<style>
+:root { --navy:var(--fxe-navy); --ink:var(--fxe-text-primary); --muted:var(--fxe-text-secondary); --line:var(--fxe-hairline); --ground:var(--fxe-surface); --card:var(--fxe-surface-raised); --green:var(--fxe-court); --brass:var(--fxe-status-pool-ink); --brass-soft:var(--fxe-status-pool-tint); --red:var(--fxe-status-canceled-ink); --chip-on:var(--fxe-navy); --chip-on-ink:var(--fxe-text-on-navy); }
+body { margin:0; }
+.sync { margin:10px 0 0; font-size:14px; color:var(--muted); min-height:1.5em; }
+.sync[data-state="error"] { color:var(--red); }
+.sync[data-state="saved"] { color:var(--green); }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <h1>Tara, this is your app's words</h1>
+  <p class="lede">Every sentence a player or you will read, with where it shows up. Tap Keep, or Change and write it your way. Your answers save as you go.</p>
+  <p class="sync" id="sync" aria-live="polite"></p>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button role="tab" data-tab="words" aria-selected="true">Words</button>
+  <button role="tab" data-tab="questions" aria-selected="false">Questions</button>
+  <button role="tab" data-tab="try" aria-selected="false">Try it</button>
+</nav>
+
+<div class="panel" id="panel-words">
+  <div class="progress" id="progress-words"></div>
+</div>
+
+<div class="panel" id="panel-questions" hidden>
+  <div class="progress" id="progress-questions"></div>
+</div>
+
+<div class="panel" id="panel-try" hidden>
+  <div class="progress">On your laptop, with your real account. Whatever you set up here is real: it is your schedule.</div>
+</div>
+
+<div class="send">
+  <h2>Your answers as text</h2>
+  <p class="lede">Alex sees your answers as they save. Copy them here if you want to text them as well.</p>
+  <button class="copy" id="copy">Copy my answers</button><span class="copied" id="copied" hidden>Copied</span>
+  <pre class="summary" id="summary"></pre>
+</div>
+</div>
+
+<script id="review-data" type="application/json">{"version": "1", "sections": [{"name": "Sign in and sign up", "sub": "The first screens a new player sees on the phone", "items": [{"id": "w0-0", "text": "Smart. Simple. Built for Tennis.", "where": "Under the FXE logo on the sign-in screen. This came from the AI mockups, not from you.", "yours": false}, {"id": "w0-1", "text": "Create an account", "where": "Button on the sign-in screen", "yours": false}, {"id": "w0-2", "text": "Forgot password?", "where": "Link on the sign-in screen", "yours": false}, {"id": "w0-3", "text": "Almost there", "where": "Heading of the profile screen after sign-up", "yours": false}, {"id": "w0-4", "text": "Are you currently a Foxcroft East Racquet & Swim Club member?", "where": "The membership question at sign-up (your Screen 4 wording)", "yours": true}, {"id": "w0-5", "text": "Tara uses this to build her clinic lists.", "where": "Under the membership question", "yours": false}, {"id": "w0-6", "text": "Your tennis rating", "where": "Label above the rating pills (2.0 to 5.0+)", "yours": false}, {"id": "w0-7", "text": "Need Help?", "where": "Button that opens the rating guide (your wording)", "yours": true}, {"id": "w0-8", "text": "Note for Tara (optional)", "where": "Label of the new note box at level entry", "yours": false}, {"id": "w0-9", "text": "just coming back from a back injury so I'm a low 3.5", "where": "The grey example text inside that box (your example)", "yours": true}, {"id": "w0-10", "text": "Only Tara sees this.", "where": "Under the note box", "yours": false}, {"id": "w0-11", "text": "Add your name, phone and rating, and answer the membership question to continue.", "where": "Shown under a greyed-out Continue button", "yours": false}, {"id": "w0-12", "text": "Signs you out. Your account is kept, and you can finish this later.", "where": "Under the Sign out link on the profile screen", "yours": false}, {"id": "w0-13", "text": "Clinic updates come through the app. Keep notifications on so you don't miss them.", "where": "The notifications permission screen, before the iPhone asks", "yours": false}, {"id": "w0-14", "text": "Turn on notifications", "where": "Its button", "yours": false}, {"id": "w0-15", "text": "Not now", "where": "Its other button", "yours": false}]}, {"name": "Home", "sub": "What a signed-in player sees first", "items": [{"id": "w1-0", "text": "Good Morning, Maria!", "where": "Greeting (Morning / Afternoon / Evening by the hour)", "yours": false}, {"id": "w1-1", "text": "MY CLINICS", "where": "Section heading", "yours": false}, {"id": "w1-2", "text": "You're not in any clinics yet.", "where": "When they hold no spot and are in no Player Pool", "yours": false}, {"id": "w1-3", "text": "View All Clinics", "where": "Button under My Clinics; opens their own clinics", "yours": false}, {"id": "w1-4", "text": "AVAILABLE CLINICS", "where": "Section heading for the open list", "yours": false}, {"id": "w1-5", "text": "Nothing open right now.", "where": "When no clinic is open for registration", "yours": false}, {"id": "w1-6", "text": "View Open Clinics (4)", "where": "Button under the list; the number is how many are open", "yours": false}]}, {"name": "Clinics and a clinic", "sub": "The list, and a single clinic's page", "items": [{"id": "w2-0", "text": "Registration open", "where": "Chip on a clinic in the list", "yours": false}, {"id": "w2-1", "text": "Registration opens Sep 18", "where": "Chip when the window has not opened yet", "yours": false}, {"id": "w2-2", "text": "This week / Next week / Week of Sep 27", "where": "Group headings in the list", "yours": false}, {"id": "w2-3", "text": "Register", "where": "The one big button", "yours": false}, {"id": "w2-4", "text": "Cancel Registration", "where": "Same button once they are in", "yours": false}, {"id": "w2-5", "text": "Leave Player Pool", "where": "Same button once they are in the Pool", "yours": false}, {"id": "w2-6", "text": "Keep my spot", "where": "The safe choice on every confirmation", "yours": false}, {"id": "w2-7", "text": "Yes, cancel my spot", "where": "Confirmation before 4 hours", "yours": false}, {"id": "w2-8", "text": "Yes, leave the pool", "where": "Confirmation for leaving the Player Pool", "yours": false}, {"id": "w2-9", "text": "Each player receives one courtesy late cancellation every 90 days, no questions asked.", "where": "Inside 4 hours, when their courtesy is available (from your policy)", "yours": true}, {"id": "w2-10", "text": "This cancellation is within 4 hours of clinic and the full clinic fee will apply. If there are circumstances you'd like us to consider, please leave a note below.", "where": "Inside 4 hours, when the courtesy is used up (your sentence)", "yours": true}, {"id": "w2-11", "text": "Note (optional)", "where": "The box under that sentence", "yours": false}, {"id": "w2-12", "text": "Cancel my spot", "where": "The red button on that sheet", "yours": false}, {"id": "w2-13", "text": "Accept", "where": "For an invitation from the Player Pool", "yours": false}, {"id": "w2-14", "text": "Decline", "where": "Its partner", "yours": false}, {"id": "w2-15", "text": "Registration has closed for this clinic.", "where": "Inside the 3-hour close", "yours": false}, {"id": "w2-16", "text": "You can still ask Tara to fit you in.", "where": "Under it", "yours": false}, {"id": "w2-17", "text": "Message Tara", "where": "The button that sends you their note", "yours": false}, {"id": "w2-18", "text": "Tara has your message.", "where": "After they send it", "yours": false}, {"id": "w2-19", "text": "She will let you know if there is room.", "where": "Under that", "yours": false}, {"id": "w2-20", "text": "This clinic has been canceled.", "where": "On a canceled clinic", "yours": false}, {"id": "w2-21", "text": "FROM TARA", "where": "Heading above your clinic messages", "yours": false}, {"id": "w2-22", "text": "Add a card on your Profile to register.", "where": "When a card is required and they have none", "yours": false}, {"id": "w2-23", "text": "That just changed. Here's the latest.", "where": "When someone else acted first (the spot filled, an invite was withdrawn)", "yours": false}, {"id": "w2-24", "text": "Couldn't load clinics.", "where": "When the phone is offline", "yours": false}, {"id": "w2-25", "text": "About this clinic", "where": "Heading of the ? sheet", "yours": false}, {"id": "w2-26", "text": "What is 105?", "where": "Heading in that sheet (your 105 definition follows it)", "yours": false}, {"id": "w2-27", "text": "No description yet.", "where": "When a clinic has no description", "yours": false}]}, {"name": "Profile", "sub": "Their own details", "items": [{"id": "w3-0", "text": "FXE Member / Non-member", "where": "Under their name", "yours": false}, {"id": "w3-1", "text": "Payment method", "where": "Heading of the card section", "yours": false}, {"id": "w3-2", "text": "Your card will only be charged for late cancellations or no-shows. Cancel at least 4 hours before clinic and you will not be charged.", "where": "Under that heading (your sentence). Note: every attendee's card is also charged after each clinic, so this may need a rewrite; question 4 asks.", "yours": true}, {"id": "w3-3", "text": "No card on file", "where": "Before they add one", "yours": false}, {"id": "w3-4", "text": "Add a card", "where": "The link that opens the card form", "yours": false}, {"id": "w3-5", "text": "Change card", "where": "Same link once a card exists", "yours": false}, {"id": "w3-6", "text": "Cards aren't set up yet.", "where": "Until Stripe is connected", "yours": false}, {"id": "w3-7", "text": "Saved.", "where": "After a card is added", "yours": false}, {"id": "w3-8", "text": "Edit details", "where": "Button", "yours": false}, {"id": "w3-9", "text": "Set by Tara", "where": "Beside their membership on Edit details", "yours": false}, {"id": "w3-10", "text": "What do the ratings mean?", "where": "The ? button, read aloud by VoiceOver", "yours": false}, {"id": "w3-11", "text": "Rating Guide", "where": "Title of the rating chart sheet (the chart itself is the Volee one you approved)", "yours": false}, {"id": "w3-12", "text": "Sign Out", "where": "Button", "yours": false}]}, {"name": "Notifications", "sub": "The bell on Home, and the messages the app sends", "items": [{"id": "w4-0", "text": "Notifications", "where": "Title of the bell screen", "yours": false}, {"id": "w4-1", "text": "Nothing yet.", "where": "When there are none", "yours": false}, {"id": "w4-2", "text": "Mark all read", "where": "Button", "yours": false}, {"id": "w4-3", "text": "A spot opened in Tuesday Ladies 3.0+. Accept or decline.", "where": "Sent when you invite someone from the Player Pool", "yours": false}, {"id": "w4-4", "text": "Tuesday Ladies 3.0+ has been canceled.", "where": "Sent to everyone when you cancel a clinic", "yours": false}, {"id": "w4-5", "text": "Just a reminder that Tuesday Ladies 3.0+ (Tue, Sep 22) hasn't been paid yet. Payment can be made via zelle to fersctennispro@gmail.com (preferred) or Venmo FXE Tennis. Thanks!", "where": "The one-tap unpaid reminder; the middle sentence is yours", "yours": false}, {"id": "w4-6", "text": "Maria Alvarez canceled. Late, courtesy used.", "where": "What YOU see when a player cancels inside 4 hours with their courtesy", "yours": false}, {"id": "w4-7", "text": "Maria Alvarez canceled. Late, fee applies. Note: \"Kid has a fever\"", "where": "What YOU see when the fee applies and they left a note", "yours": false}]}, {"name": "Your side of the phone", "sub": "The Manage tab, only you see it", "items": [{"id": "w5-0", "text": "Manage", "where": "Your fourth tab", "yours": false}, {"id": "w5-1", "text": "ACTION NEEDED", "where": "Heading for late requests and unread replies", "yours": false}, {"id": "w5-2", "text": "asking to get in", "where": "Beside a player who messaged you inside the close", "yours": false}, {"id": "w5-3", "text": "Put them in / No room", "where": "Your two answers", "yours": false}, {"id": "w5-4", "text": "Invite / Cancel Invite", "where": "On Player Pool and Response Needed rows", "yours": false}, {"id": "w5-5", "text": "Paid / Unpaid", "where": "The toggle on each You're In! row", "yours": false}, {"id": "w5-6", "text": "Came / No-show", "where": "The new toggle on each You're In! row", "yours": false}, {"id": "w5-7", "text": "No court / Court 3", "where": "The court menu", "yours": false}, {"id": "w5-8", "text": "Remove from clinic", "where": "In the row menu, with a confirmation", "yours": false}, {"id": "w5-9", "text": "Message Players", "where": "Button; then Everyone / You're In! / Player Pool / Response Needed / Unpaid", "yours": false}, {"id": "w5-10", "text": "Remind unpaid (2)", "where": "One tap sends the reminder above to everyone unpaid", "yours": false}, {"id": "w5-11", "text": "Send reminder", "where": "Its confirmation", "yours": false}, {"id": "w5-12", "text": "Charge clinic", "where": "In the More menu once a clinic has ended", "yours": false}, {"id": "w5-13", "text": "Charge every card for Tuesday Ladies 3.0+? Attendees pay the clinic fee; no-shows and late cancellations without a courtesy pay the full fee.", "where": "Its confirmation", "yours": false}, {"id": "w5-14", "text": "Charged 6. Already charged 0. No card 1.", "where": "What you see after", "yours": false}, {"id": "w5-15", "text": "Cancel clinic", "where": "In the More menu", "yours": false}, {"id": "w5-16", "text": "Cancel Tuesday Ladies 3.0+? Everyone registered or waiting is told.", "where": "Its confirmation", "yours": false}, {"id": "w5-17", "text": "Players", "where": "Your directory; search by name", "yours": false}, {"id": "w5-18", "text": "Type at least two letters of a name.", "where": "Before searching", "yours": false}, {"id": "w5-19", "text": "Nobody by that name yet. They may need to sign up in the app first.", "where": "Empty search", "yours": false}, {"id": "w5-20", "text": "Private note", "where": "Your note on a player", "yours": false}, {"id": "w5-21", "text": "Only you can see this.", "where": "Under it", "yours": false}]}, {"name": "The web admin (laptop)", "sub": "fxe-tennis-admin.vercel.app", "items": [{"id": "w6-0", "text": "Admin sign-in.", "where": "Under the FXE Tennis title", "yours": false}, {"id": "w6-1", "text": "First time? Create your account", "where": "Button on sign-in", "yours": false}, {"id": "w6-2", "text": "This week \u00b7 Players \u00b7 Money", "where": "The three tabs", "yours": false}, {"id": "w6-3", "text": "New clinic", "where": "Button", "yours": false}, {"id": "w6-4", "text": "Start from a template", "where": "In the clinic form", "yours": false}, {"id": "w6-5", "text": "Description (players see this under the \u201c?\u201d)", "where": "A field label", "yours": false}, {"id": "w6-6", "text": "Date & time / Length (minutes) / Max players", "where": "Field labels", "yours": false}, {"id": "w6-7", "text": "Add a player", "where": "Heading of the walk-up box", "yours": false}, {"id": "w6-8", "text": "For someone who called or grabbed you at the club. They go straight to You're In!", "where": "Under it", "yours": false}, {"id": "w6-9", "text": "Ann finds Anna, Annette, Joann\u2026", "where": "Hint under the player search", "yours": false}, {"id": "w6-10", "text": "Put in clinic", "where": "Its button", "yours": false}, {"id": "w6-11", "text": "Show canceled", "where": "Checkbox", "yours": false}, {"id": "w6-12", "text": "1 canceled clinic hidden.", "where": "The count under it", "yours": false}, {"id": "w6-13", "text": "Really cancel? Everyone is told.", "where": "Second click on Cancel clinic", "yours": false}, {"id": "w6-14", "text": "Late \u00b7 Courtesy / Late \u00b7 Fee applies", "where": "On a canceled row, inside 4 hours", "yours": false}, {"id": "w6-15", "text": "Members, 60 min / Members, 90 min / Non-members, 60 min / Non-members, 90 min", "where": "The four counts on Money", "yours": false}, {"id": "w6-16", "text": "Expected / Collected / Still owed", "where": "The three money lines", "yours": false}, {"id": "w6-17", "text": "Card payments", "where": "Heading of the ledger", "yours": false}, {"id": "w6-18", "text": "No card payments yet.", "where": "Before any", "yours": false}, {"id": "w6-19", "text": "Pending / Processing / Paid / Failed / Refund", "where": "States beside a charge", "yours": false}, {"id": "w6-20", "text": "Edited Sep 12, 1:38 PM.", "where": "Under a private note", "yours": false}, {"id": "w6-21", "text": "Payments are switched off. / That player has no card on file. / The clinic hasn't ended yet. / That clinic is full now. / Someone already handled that one. / That clinic is already canceled. / That email or password didn't work. / Couldn't reach the server. Check your connection.", "where": "The error lines", "yours": false}, {"id": "w6-22", "text": "Choose a new password", "where": "The password reset page", "yours": false}, {"id": "w6-23", "text": "Pick something you'll remember. At least 8 characters.", "where": "Under the new-password box", "yours": false}, {"id": "w6-24", "text": "Saved. You can sign in with it now, on your phone or here.", "where": "After it saves", "yours": false}, {"id": "w6-25", "text": "This link has expired or was already used. Go back and request a new one.", "where": "An old reset link", "yours": false}]}], "questions": [{"id": "q0", "title": "Charging after a clinic", "text": "Once a clinic is over and you've marked any no-shows, you tap Charge clinic and every card is charged. Or should the app charge everyone by itself at the clinic's end time? Right now it's your tap."}, {"id": "q1", "title": "Courtesy for no-shows?", "text": "Your one courtesy every 90 days covers a late cancellation. A no-show is always the full fee. Right?"}, {"id": "q2", "title": "Adult waiver", "text": "The waiver page you sent is the tennis camp form for parents. Is there an adult version for clinics, or nothing for now?"}, {"id": "q3", "title": "Your card sentence", "text": "It says the card is charged only for late cancellations and no-shows, but every attendee's card is charged after each clinic. Keep it and let the policy explain, or rewrite? If rewrite, type the new sentence."}, {"id": "q4", "title": "Where your-only note shows", "text": "The note a player writes at level entry that only you see: next to their rating on your roster, only on their player page, or both?"}, {"id": "q5", "title": "Deleting an account", "text": "Apple requires a Delete my account button. When a player deletes theirs, should their history and payment record stay with you (name removed), or go entirely?"}, {"id": "q6", "title": "Saturday clinics", "text": "A Saturday clinic opens with the week before it (the Thursday 9 days out). Right?"}, {"id": "q7", "title": "Short weeks", "text": "A holiday week with clinics only Monday to Wednesday still opens the Thursday and Friday before. Right?"}, {"id": "q8", "title": "The splash line", "text": "\"Smart. Simple. Built for Tennis.\" under the logo came from the AI mockups. Keep it, change it, or drop it?"}], "tasks": [{"id": "t0", "title": "Sign in on your laptop", "text": "Go to fxe-tennis-admin.vercel.app and sign in with your admin email. Does it open to This week?"}, {"id": "t1", "title": "Make a template", "text": "Templates card \u2192 New template. Use one of your real clinics (name, day, time, length, max players, your description). It saves the prices for you."}, {"id": "t2", "title": "Publish this week's real clinics", "text": "New clinic \u2192 Start from a template \u2192 check the date and time \u2192 Save, then Publish. Do the member and public open dates look right on the card?"}, {"id": "t3", "title": "Edit one", "text": "Change the time on a published clinic. Does the card update?"}, {"id": "t4", "title": "Show canceled", "text": "Cancel a clinic you made by mistake (two clicks), then tick Show canceled to see it again. Nothing is deleted."}, {"id": "t5", "title": "Money tab", "text": "Open Money. The numbers are zero until players register; does the layout make sense to you?"}, {"id": "t6", "title": "Players tab", "text": "Search a name. Empty until members sign up; the app will list them here."}, {"id": "t7", "title": "Forgot password", "text": "Sign out, click Forgot password, and finish the reset from the email. Tell me if the email never arrives or lands in spam."}, {"id": "t8", "title": "The phone app", "text": "Not yet. It needs Apple's approval of the FXE Tennis, LLC account before it can go on your phone. Everything above is what you can try today."}]}</script>
+<script type="module">
+import { CONFIG } from "./config.js";
+
+const DATA = JSON.parse(document.getElementById('review-data').textContent);
+const token = new URLSearchParams(location.search).get('t') || '';
+const FN = CONFIG.url + '/functions/v1/review-submit';
+// One local copy per link, so two links on one phone never share answers.
+const KEY = 'fxe-tara-review-web:' + (token || 'local');
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+
+let state = {}, localStamp = null;
+try { const l = JSON.parse(localStorage.getItem(KEY) || '{}'); state = l.state || {}; localStamp = l.stamp || null; } catch (e) {}
+const saveLocal = () => { try { localStorage.setItem(KEY, JSON.stringify({ state, stamp: localStamp })); } catch (e) {} };
+
+// ---- render from DATA
+const total = DATA.sections.reduce((n, s) => n + s.items.length, 0);
+document.getElementById('panel-words').insertAdjacentHTML('beforeend', DATA.sections.map(s => `<section class="screen"><h2>${esc(s.name)}</h2><p class="sub">${esc(s.sub)}</p>` + s.items.map(i => `<div class="item" data-id="${i.id}">
+  <div class="where">${esc(i.where)} ${i.yours ? '<span class="tag yours">Your words</span>' : ''}</div>
+  <blockquote class="blurb">${esc(i.text)}</blockquote>
+  <div class="choices">
+    <button class="chip" data-choice="keep">Keep</button>
+    <button class="chip" data-choice="change">Change</button>
+  </div>
+  <textarea class="alt" id="${i.id}-alt" placeholder="Write it the way you'd say it" hidden></textarea>
+</div>`).join('') + '</section>').join(''));
+document.getElementById('progress-questions').textContent = `${DATA.questions.length} questions. One line each is plenty.`;
+document.getElementById('panel-questions').insertAdjacentHTML('beforeend', DATA.questions.map((q, i) =>
+  `<div class="item" data-id="${q.id}"><div class="where">${i + 1} of ${DATA.questions.length}</div><h3>${esc(q.title)}</h3><p>${esc(q.text)}</p><textarea class="ans" id="${q.id}-ans" placeholder="Your answer"></textarea></div>`).join(''));
+document.getElementById('panel-try').insertAdjacentHTML('beforeend', DATA.tasks.map(t =>
+  `<div class="item" data-id="${t.id}"><label class="task"><input type="checkbox" id="${t.id}-done"><span><strong>${esc(t.title)}</strong><br>${esc(t.text)}</span></label><textarea class="ans" id="${t.id}-note" placeholder="What happened? Anything odd?"></textarea></div>`).join(''));
+
+// ---- tabs
+document.querySelectorAll('nav.tabs [role=tab]').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('nav.tabs [role=tab]').forEach(x => x.setAttribute('aria-selected', String(x === b)));
+  for (const n of ['words','questions','try']) document.getElementById('panel-' + n).hidden = (n !== b.dataset.tab);
+  try { localStorage.setItem(KEY + ':tab', b.dataset.tab); } catch (e) {}
+}));
+try { const t = localStorage.getItem(KEY + ':tab'); if (t) document.querySelector(`[data-tab="${t}"]`)?.click(); } catch (e) {}
+
+// ---- state -> screen
+function renderItem(el) {
+  const id = el.dataset.id, s = state[id] || {};
+  el.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', String(s.choice === c.dataset.choice)));
+  const alt = el.querySelector('.alt');
+  if (alt) { alt.hidden = s.choice !== 'change'; if (s.alt !== undefined && alt.value !== s.alt) alt.value = s.alt; }
+}
+function renderAll() {
+  document.querySelectorAll('#panel-words .item').forEach(renderItem);
+  document.querySelectorAll('#panel-questions textarea, #panel-try textarea').forEach(t => { t.value = state[t.id] !== undefined ? state[t.id] : ''; });
+  document.querySelectorAll('#panel-try input[type=checkbox]').forEach(c => { c.checked = !!state[c.id]; });
+  progress(); summary();
+}
+function progress() {
+  const n = DATA.sections.flatMap(s => s.items).filter(i => state[i.id]?.choice).length;
+  document.getElementById('progress-words').textContent = `${n} of ${total} decided`;
+}
+// The text Alex reads on the admin page and the text under Copy my answers
+// are one function, so they cannot drift: the page saves its own summary
+// alongside the raw state.
+function formatSummary(data, st) {
+  const lines = ["FXE Tennis review, " + new Date().toLocaleDateString(), ""];
+  lines.push("WORDS");
+  for (const s of data.sections) for (const i of s.items) {
+    const x = st[i.id]; if (!x?.choice) continue;
+    if (x.choice === 'keep') lines.push(`keep: ${i.text}`);
+    else lines.push(`CHANGE: "${i.text}" -> "${(x.alt || '').trim() || '(no replacement written yet)'}"`);
+  }
+  lines.push("", "QUESTIONS");
+  for (const q of data.questions) { const a = (st[q.id + '-ans'] || '').trim(); if (a) lines.push(`${q.title}: ${a}`); }
+  lines.push("", "TRIED");
+  for (const t of data.tasks) { const done = st[t.id + '-done'], note = (st[t.id + '-note'] || '').trim(); if (done || note) lines.push(`${done ? '[x]' : '[ ]'} ${t.title}${note ? ': ' + note : ''}`); }
+  return lines.join("\n");
+}
+function summary() { document.getElementById('summary').textContent = formatSummary(DATA, state); }
+
+// ---- every change: this phone first, the server 1.5 s later
+function changed() { localStamp = new Date().toISOString(); saveLocal(); summary(); scheduleServer(); }
+document.querySelectorAll('#panel-words .item').forEach(el => {
+  el.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {
+    const id = el.dataset.id; state[id] = { ...(state[id] || {}), choice: c.dataset.choice }; renderItem(el); progress(); changed();
+    if (c.dataset.choice === 'change') el.querySelector('.alt').focus();
+  }));
+  el.querySelector('.alt')?.addEventListener('input', e => { const id = el.dataset.id; state[id] = { ...(state[id] || {}), alt: e.target.value }; changed(); });
+});
+document.querySelectorAll('#panel-questions textarea, #panel-try textarea').forEach(t => t.addEventListener('input', e => { state[t.id] = e.target.value; changed(); }));
+document.querySelectorAll('#panel-try input[type=checkbox]').forEach(c => c.addEventListener('change', e => { state[c.id] = e.target.checked; changed(); }));
+
+// ---- server. Debounced 1.5 s after the last change, and flushed when the
+// page goes to the background (keepalive lets the request outlive the tab).
+const sync = document.getElementById('sync');
+const setSync = (text, st) => { sync.textContent = text; sync.dataset.state = st || ''; };
+let timer = null, dirty = false, inflight = false;
+function scheduleServer() { if (!token) return; dirty = true; clearTimeout(timer); timer = setTimeout(pushServer, 1500); }
+async function pushServer(keepalive = false) {
+  if (!token || !dirty || inflight) return;
+  inflight = true; dirty = false; setSync('Saving\u2026', 'saving');
+  const body = JSON.stringify({ token, page_version: DATA.version, answers: { state, summary: formatSummary(DATA, state), page_version: DATA.version, saved_from: localStamp } });
+  try {
+    const r = await fetch(FN, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive });
+    if (!r.ok) throw new Error(String(r.status));
+    setSync('Saved', 'saved');
+  } catch (e) {
+    dirty = true; setSync("Couldn't save, still on this phone", 'error');
+  } finally { inflight = false; if (dirty) scheduleServer(); }
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') { clearTimeout(timer); pushServer(true); } });
+
+// On load: the server copy wins when it is at least as new as this phone's;
+// otherwise this phone is ahead (it saved offline) and pushes.
+async function pullServer() {
+  if (!token) { setSync('This link has no code, answers stay on this phone.', ''); return; }
+  try {
+    const r = await fetch(FN + '?token=' + encodeURIComponent(token) + '&page_version=' + encodeURIComponent(DATA.version));
+    if (r.status === 404) { setSync("This link isn't active, answers stay on this phone.", 'error'); return; }
+    if (!r.ok) throw new Error(String(r.status));
+    const { answers, saved_at } = await r.json();
+    const serverNewer = answers?.state && (!localStamp || (saved_at && new Date(saved_at) >= new Date(localStamp)));
+    if (serverNewer) { state = answers.state; localStamp = saved_at; saveLocal(); renderAll(); setSync('Saved', 'saved'); }
+    else if (localStamp) { setSync('', ''); scheduleServer(); }
+    else setSync('', '');
+  } catch (e) { setSync("Couldn't load saved answers, still on this phone", 'error'); }
+}
+
+document.getElementById('copy').addEventListener('click', async () => {
+  summary();
+  const text = document.getElementById('summary').textContent;
+  try { await navigator.clipboard.writeText(text); document.getElementById('copied').hidden = false; setTimeout(() => document.getElementById('copied').hidden = true, 2500); }
+  catch (e) { const r = document.createRange(); r.selectNodeContents(document.getElementById('summary')); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); const c = document.getElementById('copied'); c.textContent = 'Selected. Press and hold to copy.'; c.hidden = false; }
+});
+renderAll();
+pullServer();
+</script>
+</body>
+</html>

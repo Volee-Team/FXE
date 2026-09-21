@@ -58,6 +58,28 @@ dialog titles and error branches it cannot (backlog row on the extractor).
 | ☐ | Sign the waiver first. | ClinicDetailView, waiver_required from register_for_clinic |
 | ☐ | Waiver signed / Waiver not signed | PlayersDirectoryView detail and row; web Players tab ("Waiver not signed") |
 | ☐ | Charge every card for …? Attendees pay the clinic fee; no-shows and late cancellations pay the full fee. | AdminClinicDetailView, confirmation (courtesy clause removed) |
+## New since the last review — 2026-09-21 (the review page saves to the server), awaiting Alex
+
+Tara's review page now lives on the admin site as `web/review.html`
+(`scripts/build-tara-review.py --target web`) and saves her answers to our
+database as she types (`review_responses`, through the `review-submit` edge
+function), so nothing is lost and Alex never relays. The 120 review items on
+it are not new copy: they are the strings already in this snapshot or Tara's
+own words, rendered from a JSON block the extractor does not read (they are
+the copy under review, not copy of the product). What the gate sees is the
+chrome below, mine.
+
+| ✓ | String | Where |
+|---|--------|-------|
+| ☐ | Your answers save as you go. | web/review.html, last sentence of the lede (replaces the artifact's "Your answers stay on this phone; when you're done, copy the summary at the bottom and text it to Alex.") |
+| ☐ | Saving… · Saved · Couldn't save, still on this phone | web/review.html, the status line under the lede |
+| ☐ | Couldn't load saved answers, still on this phone | web/review.html, status line when the first load fails |
+| ☐ | This link has no code, answers stay on this phone. | web/review.html opened without ?t= |
+| ☐ | This link isn't active, answers stay on this phone. | web/review.html when the token is unknown or revoked |
+| ☐ | Your answers as text · Alex sees your answers as they save. Copy them here if you want to text them as well. | web/review.html, the box above Copy my answers (replaces "Send it to Alex" and "This gathers everything you've decided across all three tabs.") |
+| ☐ | Review links · Label · Make link · Copy · Responses · Show · Hide | web/index.html, Players tab, the Review links card |
+| ☐ | Give the link a label. · Copied. · Couldn't copy. Select the link and copy it. · No responses yet. | web/index.html, the card's messages |
+| ☐ | Tara, this is your app's words · FXE Tennis, Tara's Review · Copy my answers · Copied · Selected. Press and hold to copy. · Your answer · Write it the way you'd say it · What happened? Anything odd? · On your laptop, with your real account. Whatever you set up here is real: it is your schedule. · N of 120 decided · 9 questions. One line each is plenty. | Not new: on the artifact since 2026-09-18 (`docs/`, outside the gate), in the snapshot now because `web/review.html` is scanned. Listed so the snapshot diff has a home. "Saving…" in the snapshot is the JS escape for the ellipsis |
 
 ## New since the last review — 2026-09-12, awaiting Alex
 

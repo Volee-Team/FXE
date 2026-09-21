@@ -167,6 +167,36 @@ test.describe("payments switch", () => {
   });
 });
 
+test.describe("review links", () => {
+  test("Tara makes a review link and gets a URL carrying a long token", async ({ page }) => {
+    await signIn(page, TARA);
+    await page.getByRole("tab", { name: "Players" }).click();
+    await page.getByLabel("Link label").fill(`Playwright ${Date.now()}`);
+    await page.getByRole("button", { name: "Make link" }).click();
+    const url = page.locator("#rl-url");
+    await expect(url).toContainText("/review.html?t=");
+    // The token is the credential (20260921000010): 24 random bytes as
+    // URL-safe base64, minted by admin_create_review_link. Asserted from the
+    // rule, not the code: at least 24 characters, nothing a URL would mangle.
+    const token = (await url.textContent()).split("?t=")[1];
+    expect(token.length).toBeGreaterThanOrEqual(24);
+    expect(token).toMatch(/^[A-Za-z0-9_-]+$/);
+  });
+
+  test("the review page renders every item without a code and says answers stay local", async ({ page }) => {
+    // No token: no server round trip, so this runs with no edge runtime
+    // (CI serves none). The page builds its items from the JSON block.
+    await page.goto("/review.html");
+    await expect(page).toHaveTitle("FXE Tennis, Tara's Review");
+    await expect(page.locator("#sync")).toContainText("This link has no code");
+    const items = page.locator("#panel-words .item");
+    expect(await items.count()).toBeGreaterThan(100);
+    await items.first().getByRole("button", { name: "Keep" }).click();
+    await expect(page.locator("#progress-words")).toContainText(/^1 of \d+ decided/);
+    await expect(page.locator("#summary")).toContainText("keep: ");
+  });
+});
+
 test.describe("cancel clinic", () => {
   test("takes two clicks and leaves a Canceled chip", async ({ page }) => {
     await signIn(page, TARA);

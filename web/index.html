@@ -148,6 +148,23 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
       <div id="players-msg"></div>
     </div>
 
+    <!-- Review links (20260921000010). A link is a random token; the review
+         page (review.html?t=...) saves Tara's answers to the server through
+         the review-submit edge function, and they show here. -->
+    <h2>Review links</h2>
+    <div class="card">
+      <div class="row">
+        <input id="rl-label" class="grow" placeholder="Label" aria-label="Link label">
+        <button class="small primary" id="rl-make">Make link</button>
+      </div>
+      <div id="rl-new" class="hide" style="margin-top:10px">
+        <div class="row"><code id="rl-url" class="grow" style="word-break:break-all"></code><button class="small" id="rl-copy">Copy</button></div>
+      </div>
+      <div id="rl-msg"></div>
+      <h2>Responses</h2>
+      <div id="rl-responses"></div>
+    </div>
+
     </div>
 
     <div id="tab-money" role="tabpanel" class="hide">
@@ -244,7 +261,7 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
 
 <script type="module">
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { CONFIG } from "./config.js";
+import { CONFIG, ENV } from "./config.js";
 
 // implicit flow: a reset started on one device (the phone) must finish on
 // another (this page). PKCE ties the emailed code to the device that asked.
@@ -325,6 +342,7 @@ function friendly(e) {
   if (m.includes("registration_not_in")) return "Only a You're In! player can be a no-show.";
   if (m.includes("not_refundable")) return "Only a paid charge can be refunded.";
   if (m.includes("stripe_not_configured")) return "Stripe isn't connected yet.";
+  if (m.includes("label_required")) return "Give the link a label.";
   if (m.includes("failed to fetch")) return "Couldn't reach the server. Check your connection.";
   return e?.message || "Something went wrong.";
 }
@@ -356,6 +374,7 @@ async function showApp() {
   $("who").textContent = `${acct.first_name} ${acct.last_name}`;
   $("signin").classList.add("hide"); $("app").classList.remove("hide"); $("bar").classList.remove("hide");
   await loadClinics();
+  loadReviewResponses();
 }
 
 async function loadTemplates() {
@@ -767,6 +786,46 @@ async function searchPlayers() {
 }
 $("p-query").addEventListener("input", () => { clearTimeout(playerTimer); playerTimer = setTimeout(searchPlayers, 250); });
 $("p-inactive").addEventListener("change", searchPlayers);
+
+// Review links (20260921000010). admin_create_review_link mints the token;
+// the page at review.html?t=<token> saves through the review-submit edge
+// function; admin_review_responses reads every response back. The link's
+// origin follows this page's: a link made on localhost points at localhost,
+// one made on the live site points at the live site.
+const REVIEW_ORIGIN = ENV === "local" ? location.origin : "https://fxe-tennis-admin.vercel.app";
+// The page saves its own summary text beside the raw state (formatSummary in
+// review.html), so what Alex reads here is exactly what Copy my answers
+// gives Tara. A blob without one (hand-written, or older) shows as JSON.
+const reviewText = (a) => (a && typeof a.summary === "string") ? a.summary : JSON.stringify(a, null, 2);
+$("rl-make").addEventListener("click", async () => {
+  const label = $("rl-label").value.trim();
+  if (!label) return note($("rl-msg"), "Give the link a label.");
+  const { data, error } = await sb.rpc("admin_create_review_link", { p_label: label });
+  if (error) return note($("rl-msg"), friendly(error));
+  $("rl-url").textContent = `${REVIEW_ORIGIN}/review.html?t=${data}`;
+  $("rl-new").classList.remove("hide");
+  note($("rl-msg"), "");
+});
+$("rl-copy").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText($("rl-url").textContent); note($("rl-msg"), "Copied.", true); }
+  catch { note($("rl-msg"), "Couldn't copy. Select the link and copy it."); }
+});
+async function loadReviewResponses() {
+  const { data, error } = await sb.rpc("admin_review_responses");
+  if (error) return note($("rl-msg"), friendly(error));
+  $("rl-responses").innerHTML = (data || []).length
+    ? data.map((r, i) => `<div class="row" data-review-row="${esc(r.token)}">
+        <span class="grow"><span class="name">${esc(r.label)}</span><br><span class="muted">${fmtDate(r.updated_at)}</span></span>
+        <button class="small" data-showreview="${i}" aria-expanded="false">Show</button></div>
+      <pre class="hide" id="rl-answers-${i}" style="white-space:pre-wrap;font-size:13px;background:var(--fxe-surface);border-radius:10px;padding:10px;margin:0 0 10px">${esc(reviewText(r.answers))}</pre>`).join("")
+    : `<p class="muted">No responses yet.</p>`;
+  $("rl-responses").querySelectorAll("[data-showreview]").forEach(b => b.addEventListener("click", () => {
+    const pre = $("rl-answers-" + b.dataset.showreview);
+    pre.classList.toggle("hide");
+    const open = !pre.classList.contains("hide");
+    b.textContent = open ? "Hide" : "Show"; b.setAttribute("aria-expanded", String(open));
+  }));
+}
 
 $("w-query").addEventListener("input", () => {
   clearTimeout(searchTimer);

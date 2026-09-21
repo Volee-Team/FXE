@@ -8,6 +8,7 @@ Add your first and last name.
 Add your name, phone number, and tennis rating. Please answer the membership question to continue
 Admin sign-in.
 Agree and sign
+Alex sees your answers as they save. Copy them here if you want to text them as well.
 Almost there!
 Ann finds Anna, Annette, Joann…
 Are you currently a Foxcroft East Racquet & Swim Club member?
@@ -25,9 +26,12 @@ Checking your reset link…
 Choose a new password
 Clinic updates come through the app. Keep notifications on so you don't miss them.
 Clinics
+Copy my answers
 Couldn't load card payments.
+Couldn't load saved answers, still on this phone
 Couldn't load the numbers.
 Couldn't reach the server. Check your connection.
+Couldn't save, still on this phone
 Court
 Court \(n)
 Date &amp; time
@@ -37,15 +41,18 @@ Description (players see this under the “?”)
 Done
 Draft
 Edit details
+Every sentence a player or you will read, with where it shows up. Tap Keep, or Change and write it your way. Your answers save as you go.
 FROM TARA
 FXE TENNIS
 FXE Tennis
 FXE Tennis · Admin
 FXE Tennis · Reset password
+FXE Tennis, Tara's Review
 First time? Create your account
 For someone who called or grabbed you at the club. They go straight to You&rsquo;re In!
 Forgot password?
 Full legal name
+Give the link a label.
 Has a note
 Home
 I have read and agree to the Adult Tennis Participation Waiver and Release.
@@ -55,10 +62,12 @@ Keep
 Keep my account
 Keep my spot
 Keep the clinic
+Label
 Leave Player Pool
 Length (minutes)
 Length must be more than 0 minutes.
 Let's Play.
+Link label
 Manage
 Mark all read
 Max players must be at least 1.
@@ -80,6 +89,7 @@ No clinics yet. Use “New clinic” to add your first one.
 No court
 No description yet.
 No notifications yet
+No responses yet.
 No room
 No templates yet.
 Nobody by that name yet. They may need to sign up in the app first.
@@ -88,6 +98,7 @@ Non-members, 90 min
 Not now
 Note for Tara (optional)
 Notifications
+On your laptop, with your real account. Whatever you set up here is real: it is your schedule.
 Only Tara sees this.
 Only a You're In! player can be a no-show.
 Only a paid charge can be refunded.
@@ -113,12 +124,15 @@ Remind unpaid (\(model.unpaidCount))
 Remove
 Remove from clinic
 Response Needed
+Review links
 Save note
 Save password
 Saved. You can sign in with it now, on your phone or here.
+Saving\u2026
 Search by name
 Search players by name
 Sections
+Selected. Press and hold to copy.
 Send reminder
 Set by Tara
 She will let you know asap if there is room in this clinic
@@ -129,6 +143,7 @@ Someone already handled that one.
 Start from a template
 Stripe isn't connected yet.
 Tara has your message.
+Tara, this is your app's words
 That account is not an administrator.
 That clinic is already canceled.
 That clinic is full now.
@@ -142,6 +157,8 @@ The player's note at level entry; only you see it
 This cancellation is within 3 hours of clinic and the full clinic fee will apply. If there are circumstances you'd like us to consider, please leave a note below.
 This clinic has been canceled.
 This link has expired or was already used. Go back and request a new one.
+This link has no code, answers stay on this phone.
+This link isn't active, answers stay on this phone.
 Those don’t match.
 To
 Turn on notifications
@@ -152,10 +169,14 @@ View All Clinics
 View Open Clinics
 Waiver
 What do the ratings mean?
+What happened? Anything odd?
 What is 105?
 Write a message first.
+Write it the way you'd say it
 You can still ask Tara to fit you in.
 You're not registered for any clinics this week
+Your answer
+Your answers as text
 Your card will only be charged after the clinic you attended, late cancellations, or no-shows. Cancel at least 3 hours before clinic and you will not be charged.
 Your tennis rating
 asking to get in
