@@ -5,9 +5,10 @@ Accept
 Action Needed
 Add a player
 Add your first and last name.
-Add your name, phone and rating, and answer the membership question to continue.
+Add your name, phone number, and tennis rating. Please answer the membership question to continue
 Admin sign-in.
-Almost there
+Agree and sign
+Almost there!
 Ann finds Anna, Annette, Joann…
 Are you currently a Foxcroft East Racquet & Swim Club member?
 Cancel
@@ -31,6 +32,7 @@ Court
 Court \(n)
 Date &amp; time
 Decline
+Delete my account
 Description (players see this under the “?”)
 Done
 Draft
@@ -43,19 +45,24 @@ FXE Tennis · Reset password
 First time? Create your account
 For someone who called or grabbed you at the club. They go straight to You&rsquo;re In!
 Forgot password?
+Full legal name
 Has a note
 Home
+I have read and agree to the Adult Tennis Participation Waiver and Release.
 Invite
 Invite \(entry.displayName)
 Keep
+Keep my account
 Keep my spot
 Keep the clinic
 Leave Player Pool
 Length (minutes)
 Length must be more than 0 minutes.
+Let's Play.
 Manage
 Mark all read
 Max players must be at least 1.
+Members get 24-hour early access to all clinics
 Members, 60 min
 Members, 90 min
 Message
@@ -68,9 +75,11 @@ Need Help?
 New password
 No card on file for that player.
 No card payments yet.
+No clinics currently open for registration
 No clinics yet. Use “New clinic” to add your first one.
 No court
 No description yet.
+No notifications yet
 No room
 No templates yet.
 Nobody by that name yet. They may need to sign up in the app first.
@@ -78,8 +87,6 @@ Non-members, 60 min
 Non-members, 90 min
 Not now
 Note for Tara (optional)
-Nothing open right now.
-Nothing yet.
 Notifications
 Only Tara sees this.
 Only a You're In! player can be a no-show.
@@ -114,16 +121,14 @@ Search players by name
 Sections
 Send reminder
 Set by Tara
-She will let you know if there is room.
+She will let you know asap if there is room in this clinic
 Sign Out
 Sign out
-Signs you out. Your account is kept, and you can finish this later.
-Smart. Simple. Built for Tennis.
+Signs you out, you can finish later if needed
 Someone already handled that one.
 Start from a template
 Stripe isn't connected yet.
 Tara has your message.
-Tara uses this to build her clinic lists.
 That account is not an administrator.
 That clinic is already canceled.
 That clinic is full now.
@@ -133,6 +138,8 @@ That one is already charged.
 That one is already refunded.
 That player has no card on file.
 The clinic hasn't ended yet.
+The player's note at level entry; only you see it
+This cancellation is within 3 hours of clinic and the full clinic fee will apply. If there are circumstances you'd like us to consider, please leave a note below.
 This clinic has been canceled.
 This link has expired or was already used. Go back and request a new one.
 Those don’t match.
@@ -143,11 +150,12 @@ Type it again
 USTA \(level.label)
 View All Clinics
 View Open Clinics
+Waiver
 What do the ratings mean?
 What is 105?
 Write a message first.
 You can still ask Tara to fit you in.
-You're not in any clinics yet.
-Your card will only be charged for late cancellations or no-shows. Cancel at least 4 hours before clinic and you will not be charged.
+You're not registered for any clinics this week
+Your card will only be charged after the clinic you attended, late cancellations, or no-shows. Cancel at least 3 hours before clinic and you will not be charged.
 Your tennis rating
 asking to get in

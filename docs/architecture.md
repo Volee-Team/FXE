@@ -52,10 +52,10 @@ most important thing to understand here, and it is section 5.
 
 | Area | State |
 |---|---|
-| Postgres schema, RLS, narrow views, RPCs | **Built**, 28 migrations, 27 applied to hosted (verified 2026-09-12; 20260916000001 pushes with its PR, `supabase migration list --linked`) |
+| Postgres schema, RLS, narrow views, RPCs | **Built**, 31 migrations, 28 applied to hosted (verified 2026-09-16; the three 20260921 files push with their PR, `supabase migration list --linked`) |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | **Built**, enumerated by probes |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | **Built** |
-| SQL probe suite (19 probes; the suite prints its own total) + concurrency probe, in CI | **Built** |
+| SQL probe suite (22 probes; the suite prints its own total) + concurrency probe, in CI | **Built** |
 | iOS: sign-in, sign-up with profile, password reset, three tabs | **Built** |
 | iOS: browse by week, per-viewer pricing, register / cancel (4-hour note inside the cutoff) / leave pool / respond, closed-clinic "Message Tara", the bell, My Clinics, profile edit, card on file | **Built** |
 | iOS admin tab: rosters, invite, courts, paid, unpaid reminder, message audiences, late requests, Action Needed, player directory | **Built** |
@@ -99,7 +99,7 @@ flowchart TD
         auth -.->|"auth.uid() read by is_admin() / owns_player()"| pg
     end
 
-    edge["Edge functions (Deno, service_role)<br/>stripe-setup-intent, stripe-webhook, stripe-charge"]
+    edge["Edge functions (Deno, service_role)<br/>stripe-setup-intent, stripe-webhook, stripe-charge, delete-account"]
     edge --> pg
     gha["GitHub Actions<br/>probes, browser tests, Stripe pipeline (mocked), iOS build + tests,<br/>copy gate, secret scan, migration immutability, doc paths, nightly backup"] -.-> supa
 ```
@@ -160,17 +160,19 @@ FXETennis/
     ├── MainTabView.swift        Home, Clinics, Profile, plus Manage when isAdmin
     ├── HomeView.swift           My Clinics + Available Clinics glance, the bell with its badge
     ├── NotificationsView.swift  what the bell opens: rows the RPCs wrote, newest first, mark read
+    │   (NotificationPermissionView.swift also holds NotificationsOffLine: the standing line on Home while permission is denied)
     ├── MyClinicsView.swift      the clinics I hold a live registration in, grouped by week, with chips
     ├── ClinicsView.swift        the list, grouped This week / Next week / Week of …
     ├── ClinicDetailView.swift   register / cancel / leave pool / respond, confirmations,
     │                            "Message Tara" once the clinic has closed
     ├── ClinicExplainerSheet.swift the "?" sheet (Tara's descriptions + the 105 definition)
-    ├── ProfileView.swift        the player's own details, Payment method, version, sign out
+    ├── ProfileView.swift        the player's own details, Payment method, version, sign out, Delete my account
     ├── EditProfileView.swift    name, phone, rating; membership shown as Tara's to correct
     ├── CardOnFileView.swift     the webhook's card summary, or Add a card → Stripe's PaymentSheet
+    ├── WaiverView.swift         Tara's waiver, her checkbox sentence, the typed legal name; gates the app until signed
     ├── AdminClinicsView.swift   Manage: Action Needed, Today, Upcoming, Past; toolbar → Players
-    ├── AdminClinicDetailView.swift roster: courts, paid, invite, cancel invite, late requests,
-    │                            Message Players, Remind unpaid
+    ├── AdminClinicDetailView.swift roster: courts, Came/No-show, invite, cancel invite, late requests,
+    │                            Message Players, Charge clinic (Paid and Remind unpaid only while zelle_allowed)
     └── PlayersDirectoryView.swift search, member / active switches, private note
 ```
 
@@ -298,6 +300,7 @@ the attack and asserts it fails.
 | `news_posts` + `news_reads` | Announcements; read state per account. |
 | `notifications` | In-app rows written by RPCs (players and Tara). Readable by the owner; only `read_at` is writable. |
 | `devices` | APNs tokens (groundwork; nothing delivers yet). |
+| `waivers` + `waiver_acceptances` | Tara's Adult Tennis Participation Waiver, one row per version, and each electronic signature (typed legal name, account email, time, app build). Reached only through `current_waiver`, `my_waiver_accepted`, `accept_waiver` (decision 0013). |
 | `payments` | The money ledger (decision 0009): one row per clinic fee, late cancel, no show or refund, with Stripe ids and a status only the edge functions or admin RPCs change. Players read their own rows. |
 | `app_settings` | Small admin-editable strings, e.g. Tara's payment line, and the payment policy keys (`payments_enabled`, `cancel_cutoff_hours`, …). Never anything hidden. |
 
@@ -312,11 +315,10 @@ Enums: `account_type`, `account_role`, `player_kind`, `clinic_audience`
 ### The RPCs
 
 **Player-facing** (self-gated by `owns_player()` or `auth.uid()`):
-`create_my_account`, `register_for_clinic`, `respond_to_invitation`,
-`cancel_registration(p_registration, p_note)` (refuses a late You're In!
-cancel without a note, decision 0010), `leave_pool`, `request_late_spot`,
+`create_my_account`, `register_for_clinic` (refuses `card_required` once payments are on and `waiver_required` until the current waiver is signed), `respond_to_invitation`,
+`cancel_registration(p_registration, p_note)` (inside the 3-hour cutoff the cancel is late and the fee applies; the note is optional, decisions 0012/0013), `leave_pool` (archives the row as canceled since 2026-09-21), `request_late_spot`,
 `mark_news_read`, `register_device` / `unregister_device` (the account is
-always `auth.uid()`; `devices` stays client-unreadable).
+always `auth.uid()`; `devices` stays client-unreadable), `current_waiver` / `waiver_version` / `my_waiver_accepted` / `accept_waiver` (the waiver, decision 0013 §4), `delete_my_account` (scrubs the person, keeps history; the `delete-account` edge function then removes the sign-in through Supabase's admin API, decision 0013 §5), `zelle_allowed` (false: the card is the only way to pay).
 
 **Admin** (each opens with `require_admin()`):
 
@@ -378,7 +380,7 @@ or correcting a membership never rewrites history. `revenue_summary()` returns
 the four counts, expected, collected and outstanding; `revenue_by_clinic` and
 `revenue_by_segment` break it down. Only `status = 'in'` counts.
 
-Decision 0012 (2026-09-16) is Tara's cancellation policy in code: one courtesy late cancellation per player per `courtesy_cancel_days` (90), applied by `cancel_registration` (`registrations.courtesy_used`); no-shows marked by `admin_set_no_show` (`registrations.no_show`); every card charged after the clinic by her one tap, `admin_charge_clinic`, which makes one pending ledger row per attendee (clinic fee), no-show and non-courtesy late cancel (full fee) and skips rows without a card; `register_for_clinic` raises `card_required` once payments are on (`card_required` setting); the player's own `players.level_note`, read by Tara only, written at sign-up (`create_my_account`) or on Edit details; `my_courtesy_available` tells the cancel sheet which of her sentences to show. Probe `cancellation_policy`. Decision 0009 (2026-09-12) adds card payments alongside Zelle: a `payments`
+Decision 0012 (2026-09-16), amended by 0013 (2026-09-21: no courtesy, 3 hours, card only), is Tara's cancellation policy in code: a courtesy late cancellation per player per `courtesy_cancel_days` (now 0, so never), applied by `cancel_registration` (`registrations.courtesy_used`); no-shows marked by `admin_set_no_show` (`registrations.no_show`); every card charged after the clinic by her one tap, `admin_charge_clinic`, which makes one pending ledger row per attendee (clinic fee), no-show and non-courtesy late cancel (full fee) and skips rows without a card; `register_for_clinic` raises `card_required` once payments are on (`card_required` setting); the player's own `players.level_note`, read by Tara only, written at sign-up (`create_my_account`) or on Edit details; `my_courtesy_available` tells the cancel sheet which of her sentences to show. Probe `cancellation_policy`. Decision 0009 (2026-09-12) adds card payments alongside Zelle: a `payments`
 ledger, admin RPCs that charge and refund, and `payments_ledger`, the admin's
 read of it with the player and clinic named. Three Deno edge functions do the
 Stripe half with `service_role`: `stripe-setup-intent` (customer + SetupIntent
@@ -444,13 +446,16 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `pricing_and_revenue` | Snapshot correctness and the report's totals |
 | `create_my_account` | Sign-up creates rows, cannot impersonate, cannot self-promote, is idempotent |
 | `admin_clinic_crud`, `templates_floor_bootstrap` | CRUD, template pricing, the date floor, Tara's bootstrap |
-| `late_requests`, `player_directory` | The late path and the directory, including "a member cannot read their own note" |
+| `late_requests`, `player_directory` | The late path and the directory, including "a member cannot read their own note" and "a non-member cannot flip their own is_member column" |
+| `clinic_messaging` | Decision 0005: a targeted message is readable only by the group it went to; the whole list each player sees is asserted; the recipients table is hidden; each recipient notified once |
 | `schema_decisions` | Tara's decisions with a DB consequence stay true |
 | `push_devices` | `register_device` / `unregister_device`, attacked: nobody but the owner sees a token, the account is never a parameter, re-registering is idempotent |
 | `template_archive` | Only Tara archives or restores; the stamp survives a repeat; archived rows show to her and to nobody else; a clinic can still be built from an archived template |
 | `payments_foundation` | Nobody charges anyone while payments are off; a player cannot write the ledger or forge a card; a double tap is one fee; the ledger, not a checkbox, marks a registration paid |
 | `payments_ledger` | The gate on the owner-run view: Tara sees the row with names on it, Maria sees nothing, nobody writes through it |
-| `cancellation_policy` | Decision 0012: card required to register, no-shows, the courtesy window, one tap per clinic after it ends, the note only Tara reads | 28 |
+| `cancellation_policy` | Decisions 0012/0013: card required to register, no-shows, the courtesy window switched off at 0 days (and proven reversible at 90), one tap per clinic after it ends, the note only Tara reads | 30 |
+| `waiver` | Decision 0013 §4: her text is served, an unsigned account cannot register, a signature needs a full legal name and the current version, the email comes from the account, signing twice keeps the first record, Tara can place an unsigned player and see who has not signed, no client touches the tables | 23 |
+| `account_deletion` | Decision 0013 §5: the person is scrubbed, registrations, ledger and Tara's note stay, a spot in a future clinic is given back, a played clinic keeps its row and its revenue, Tara cannot delete herself, a deleted row is never an admin | 18 |
 | `late_cancellation` | Decision 0010 driven from the roles the app uses: a late You're In! cancel needs a note, pool drop-outs and Tara's removals are never late, the note reaches her roster |
 | `capacity_race.sh` | Two racing registrations; invite-vs-accept |
 

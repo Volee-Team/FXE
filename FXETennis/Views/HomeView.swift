@@ -48,10 +48,11 @@ struct HomeView: View {
 
                     ScrollView {
                         VStack(alignment: .leading, spacing: Brand.Spacing.lg) {
+                            NotificationsOffLine()
 
                             SectionBlock(title: "My Clinics") {
                                 if myClinics.isEmpty {
-                                    EmptyLine("You're not in any clinics yet.")
+                                    EmptyLine("You're not registered for any clinics this week")
                                 } else {
                                     ForEach(Array(myClinics.prefix(3))) { clinic in
                                         row(clinic)
@@ -66,7 +67,7 @@ struct HomeView: View {
 
                             SectionBlock(title: "Available Clinics") {
                                 if available.isEmpty {
-                                    EmptyLine("Nothing open right now.")
+                                    EmptyLine("No clinics currently open for registration")
                                 } else {
                                     ForEach(Array(available.prefix(3))) { clinic in
                                         row(clinic)

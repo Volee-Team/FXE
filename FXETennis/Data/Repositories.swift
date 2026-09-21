@@ -179,7 +179,56 @@ enum NewsRepository {
 
 // MARK: - Profile
 
+/// Tara's waiver text, one version at a time (decision 0013 §4).
+struct Waiver: Codable, Sendable {
+    let version: String
+    let title: String
+    let organizer: String
+    let body: String
+
+    struct Paragraph { let text: String; let isHeading: Bool }
+    /// Her document is headings ("1  Activities and Released Parties") and
+    /// paragraphs, stored blank-line separated. A heading is a short line
+    /// starting with a number and two spaces, as she typed them.
+    var paragraphs: [Paragraph] {
+        body.components(separatedBy: "\n\n").map { raw in
+            let t = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            let heading = t.count < 60 && (t.range(of: "^[0-9]+  ", options: .regularExpression) != nil || t == "Participant Acknowledgment" || t.hasPrefix("IMPORTANT NOTICE"))
+            return Paragraph(text: t, isHeading: heading)
+        }.filter { !$0.text.isEmpty }
+    }
+}
+
 enum ProfileRepository {
+    /// The current waiver, or nil if none is published.
+    static func currentWaiver() async throws -> Waiver? {
+        let rows: [Waiver] = try await supabase.rpc("current_waiver").execute().value
+        return rows.first
+    }
+
+    /// Whether this account has signed the current version.
+    static func myWaiverAccepted() async throws -> Bool {
+        let value: Bool = try await supabase.rpc("my_waiver_accepted").execute().value
+        return value
+    }
+
+    /// The electronic signature: version, typed legal name, the build that
+    /// showed the text. Email and time are recorded server-side.
+    static func acceptWaiver(version: String, legalName: String, appVersion: String) async throws {
+        struct P: Encodable { let p_version: String; let p_legal_name: String; let p_app_version: String }
+        _ = try await supabase
+            .rpc("accept_waiver", params: P(p_version: version, p_legal_name: legalName, p_app_version: appVersion))
+            .execute()
+    }
+
+    /// Account deletion (decision 0013 §5, App Store 5.1.1(v)). The edge
+    /// function scrubs the person through delete_my_account() and removes the
+    /// sign-in through Supabase's admin API; history stays. The caller signs
+    /// out afterwards.
+    static func deleteMyAccount() async throws {
+        _ = try await supabase.functions.invoke("delete-account")
+    }
+
 
     /// The players this account owns. For an adult that is one row (themselves).
     ///

@@ -1,6 +1,6 @@
 # What's next, and what we need from Tara
 
-Living file. Updated 2026-09-18. Alex's target (2026-09-10): *"in the next week or two, get 95% of everything regarding the app/distribution/users"*, so about 2026-09-24; payments by October 1 (Tara). If something here is done, move it out; if
+Living file. Updated 2026-09-21. Alex's target (2026-09-10): *"in the next week or two, get 95% of everything regarding the app/distribution/users"*, so about 2026-09-24; payments by October 1 (Tara). If something here is done, move it out; if
 something new blocks, add it. This exists because the answer to "what's next"
 kept living in chat and dying with the session.
 
@@ -12,8 +12,8 @@ Ordered by what it unblocks, not by how hard it is to answer.
 
 | # | Question | Why it blocks | Our current assumption |
 |---|---|---|---|
-| 43–51 | **Follow-ups to Tara's 2026-09-16 answers plus account deletion, Saturday clinics, short weeks and the splash line** (`docs/questions-for-tara.md` §K). Sent 2026-09-18 as the Questions tab of her review page (`docs/tara-review/index.html`), alongside every word in the app for her to keep or change and a try-it list for the web admin | The tap is built as her tap; the sentence ships as she wrote it | Defaults beside each |
-| 27–42 | **Payments and cancellations** (`questions-for-tara.md` §I is 27–37, §J is 38–42). Answered 2026-09-12: the cutoff is 4 hours and it is an honor system with a concise emergency note (decision 0010). Still open: the late charge amount, no-shows, whether the regular fee goes on the card, card required at sign-up, refunds on her cancel, her Stripe account, and the two sentences | Nothing can charge anyone until she answers: `payments_enabled` stays false | The defaults written beside each question |
+| 52–57 | **After her review of every word** (`docs/questions-for-tara.md` §L): the "Set by Tara" caption, the blank replacement for "Tara has your message.", "this week" under My Clinics, "Let's Play." vs "Let's play!", whether her policy block gets rewritten and shown, and whether "Stripe needs to be connected" was a note to us | Nothing blocks: every default is the current text | Keep as is |
+| 27–51 | **Answered.** §I/§J on 2026-09-12 and 2026-09-16 (decisions 0010, 0012), §K on 2026-09-21 (decision 0013: no courtesy, 3 hours, card only, waiver, keep history on deletion, Saturday and short weeks as built, her tap charges) | | |
 
 **Blocked on Alex (2026-09-12), two asks, both spelled out in `docs/launch-checklist.md`:**
 
@@ -82,7 +82,7 @@ Charge late cancel / Refund as Tara's tap, rendered only while
 grants), the three Stripe edge functions deployed, the card screen on Profile
 with PaymentSheet, `payments_ledger`, and `cancel_registration` refusing a late
 You're In! cancel without a note. Testing: 12 Playwright tests, 13 XCUITests
-(5 on Tara's side), 23 unit tests, 19 SQL probes, and a 27-check Stripe
+(5 on Tara's side), 23 unit tests, 22 SQL probes, and a 27-check Stripe
 pipeline against stripe-mock in CI. `docs/architecture.md` was regenerated
 2026-09-01 and refreshed 2026-09-12. Nothing charges anyone: the switch is off.
 

@@ -1,6 +1,6 @@
 # 0012: Tara's cancellation policy, and cards charged after the clinic
 
-**Date:** 2026-09-16 · **Status:** Active · **Supersedes:** 0010 (the emergency-note rule) and the "charge when You're In!" default in 0009
+**Date:** 2026-09-16 · **Status:** Active; §2 and §6 (the courtesy) and the 4-hour figure superseded by 0013 on 2026-09-21 · **Supersedes:** 0010 (the emergency-note rule) and the "charge when You're In!" default in 0009
 
 ## What Tara said
 

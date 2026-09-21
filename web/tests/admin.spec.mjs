@@ -69,11 +69,17 @@ test.describe("the week", () => {
     await expect(card.getByLabel("Court").first()).toHaveValue("");
   });
 
-  test("the unpaid reminder goes to everyone unpaid", async ({ page }) => {
+  // Decision 0013 (Tara, 2026-09-21): "Everyone using the app has to input a
+  // credit card." zelle_allowed is false in the seed, so the Paid toggle and
+  // the unpaid reminder are not rendered; Came/No-show still is. The code for
+  // both stays behind the setting (hard rule 6), and this test is the one to
+  // invert if she ever turns Zelle back on.
+  test("the Zelle controls are hidden while the card is the only way to pay", async ({ page }) => {
     await signIn(page, TARA);
     const card = page.locator("#clinics .card", { hasText: "Thursday Morning Cardio" });
-    await card.getByRole("button", { name: /Remind unpaid/ }).click();
-    await expect(page.getByText(/Reminder sent to \d+\./)).toBeVisible();
+    await expect(card.getByRole("button", { name: "Came" }).first()).toBeVisible();
+    await expect(card.getByRole("button", { name: /Remind unpaid/ })).toHaveCount(0);
+    await expect(card.getByRole("button", { name: /^(Paid|Unpaid)$/ })).toHaveCount(0);
   });
 });
 

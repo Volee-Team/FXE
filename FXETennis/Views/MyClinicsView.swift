@@ -34,7 +34,7 @@ struct MyClinicsView: View {
                     Image(systemName: "figure.tennis")
                         .font(.system(size: 40))
                         .foregroundStyle(Brand.disabled)
-                    Text("You're not in any clinics yet.")
+                    Text("You're not registered for any clinics this week")
                         .font(Brand.Typography.body)
                         .foregroundStyle(Brand.textSecondary)
                         .multilineTextAlignment(.center)

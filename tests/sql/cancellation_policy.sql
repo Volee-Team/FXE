@@ -1,8 +1,10 @@
 -- cancellation_policy.sql
 --
--- Decision 0012 (Tara, 2026-09-16): a card on file to register, no-shows
--- marked by Tara, one courtesy late cancellation per 90 days applied by the
--- app, and every charge waiting for the clinic to end and for her one tap.
+-- Decision 0012 (Tara, 2026-09-16) as amended by 0013 (2026-09-21): a card
+-- on file to register, no-shows marked by Tara, NO courtesy late cancellation
+-- (the 90-day window is a setting now at 0, kept so the switch is reversible
+-- without a migration), and every charge waiting for the clinic to end and
+-- for her one tap.
 -- Expected values come from her policy text, not from the functions.
 --
 -- Expected: every row reads PASS.
@@ -27,7 +29,7 @@ begin
   select value into v from public.app_settings where key = 'card_required';
   insert into _probe_result values ('card_required_setting_true', 'true', v);
   select value into v from public.app_settings where key = 'courtesy_cancel_days';
-  insert into _probe_result values ('courtesy_window_is_90_days', '90', v);
+  insert into _probe_result values ('courtesy_window_is_zero_days', '0', v);
   select value into v from public.app_settings where key = 'charge_fee_at';
   insert into _probe_result values ('fee_charged_after_clinic', 'after_clinic', v);
 
@@ -163,9 +165,16 @@ begin
                                     late_cancel, courtesy_used, canceled_at)
   values (done_c, KEN_P, 'canceled', 'self', 1800, true, 60, true, true, now() - interval '89 days')
   on conflict do nothing;
-  insert into _probe_result values ('courtesy_used_89_days_ago_blocks', 'false', public.courtesy_available(KEN_P)::text);
+  -- With the window at 0 (decision 0013) there is never a courtesy, whatever
+  -- the history says. Set it back to 90 inside this transaction to prove the
+  -- switch, not a deletion, is what turned it off; then restore 0.
+  insert into _probe_result values ('no_courtesy_while_window_is_zero', 'false', public.courtesy_available(KEN_P)::text);
+  update public.app_settings set value = '90' where key = 'courtesy_cancel_days';
+  insert into _probe_result values ('at_90_days_courtesy_used_89_days_ago_blocks', 'false', public.courtesy_available(KEN_P)::text);
   update public.registrations set canceled_at = now() - interval '91 days' where player_id = KEN_P and courtesy_used;
-  insert into _probe_result values ('courtesy_used_91_days_ago_is_back', 'true', public.courtesy_available(KEN_P)::text);
+  insert into _probe_result values ('at_90_days_courtesy_used_91_days_ago_is_back', 'true', public.courtesy_available(KEN_P)::text);
+  update public.app_settings set value = '0' where key = 'courtesy_cancel_days';
+  insert into _probe_result values ('back_at_zero_no_courtesy', 'false', public.courtesy_available(KEN_P)::text);
 
   -- ------------------------------------------- the note only Tara sees
   perform set_config('request.jwt.claims', json_build_object('sub', MARIA)::text, true);

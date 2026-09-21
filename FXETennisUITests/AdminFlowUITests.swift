@@ -63,26 +63,27 @@ final class AdminFlowUITests: XCTestCase {
         expectation(for: assigned, evaluatedWith: court)
         waitForExpectations(timeout: 15)
 
-        // Reminder: exists only while someone is unpaid, so it comes before Paid.
-        let remind = app.buttons["admin.remindUnpaid"]
-        XCTAssertTrue(remind.waitForExistence(timeout: 10), "No Remind unpaid button while a player is unpaid")
-        remind.tap()
-        let send = app.buttons["Send reminder"]
-        XCTAssertTrue(send.waitForExistence(timeout: 10), "No confirmation before messaging several people")
-        send.tap()
-        XCTAssertTrue(app.staticTexts["admin.remindNote"].waitForExistence(timeout: 15), "No confirmation that the reminder went")
-
-        // Paid.
-        let paid = app.buttons["admin.paidToggle"].firstMatch
-        XCTAssertTrue(paid.waitForExistence(timeout: 10))
-        paid.tap()
-        let isPaid = NSPredicate(format: "label CONTAINS[c] ', paid.'")
-        expectation(for: isPaid, evaluatedWith: paid)
-        waitForExpectations(timeout: 15)
-
-        // And the reminder button is gone, because nobody is unpaid now.
+        // Decision 0013 (Tara, 2026-09-21): "Everyone using the app has to input
+        // a credit card." zelle_allowed is false, so neither the Paid toggle nor
+        // the unpaid reminder is rendered. The code stays behind the setting
+        // (hard rule 6); this is the assertion to invert if she turns it back on.
         XCTAssertFalse(app.buttons["admin.remindUnpaid"].waitForExistence(timeout: 3),
-                       "Remind unpaid still offered with nobody unpaid")
+                       "Remind unpaid offered while the card is the only way to pay")
+        XCTAssertFalse(app.buttons["admin.paidToggle"].firstMatch.exists,
+                       "Paid toggle rendered while the card is the only way to pay")
+
+        // No-show: the toggle Tara uses after a clinic (decision 0012). Its label
+        // is built from the database row after the RPC returns.
+        let noShow = app.buttons["admin.noShowToggle"].firstMatch
+        XCTAssertTrue(noShow.waitForExistence(timeout: 10), "No Came/No-show control on the roster row")
+        noShow.tap()
+        let marked = NSPredicate(format: "label CONTAINS[c] 'no-show'")
+        expectation(for: marked, evaluatedWith: noShow)
+        waitForExpectations(timeout: 15)
+        noShow.tap()
+        let came = NSPredicate(format: "label CONTAINS[c] 'came'")
+        expectation(for: came, evaluatedWith: noShow)
+        waitForExpectations(timeout: 15)
     }
 
     // MARK: - B. the Player Pool, Tara's hand-pick, and the answer

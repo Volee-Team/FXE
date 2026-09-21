@@ -278,7 +278,7 @@ const unpaidIn = (c) => (regsByClinic[c.id] || []).filter(r => r.status === "in"
 // Tara's tap (decision 0010): a charge is never automatic. The button exists
 // only while payments are on; without a card there is nothing to charge and
 // the row says so instead.
-let cutoffHours = 4;
+let cutoffHours = 3;
 let chargeSummary = null;
 // Decision 0012: cards are charged after the clinic, by one tap on the clinic
 // card (Charge clinic). A row only shows where its charge stands.
@@ -481,11 +481,16 @@ async function loadLedger() {
 // Read on every load so flipping the setting in the dashboard shows up on
 // the next refresh, no deploy.
 let paymentsOn = false;
+// Decision 0013: the card is the only way to pay. While zelle_allowed is
+// 'false' the Paid toggle and the unpaid reminder are not rendered; flipping
+// the setting brings them back without a deploy (hard rule 6).
+let zelleOn = false;
 async function loadPaymentsSwitch() {
-  const { data } = await sb.from("app_settings").select("key, value").in("key", ["payments_enabled", "cancel_cutoff_hours"]);
+  const { data } = await sb.from("app_settings").select("key, value").in("key", ["payments_enabled", "cancel_cutoff_hours", "zelle_allowed"]);
   const byKey = Object.fromEntries((data || []).map(r => [r.key, r.value]));
   paymentsOn = byKey.payments_enabled === "true";
-  cutoffHours = parseInt(byKey.cancel_cutoff_hours, 10) || 4;
+  zelleOn = byKey.zelle_allowed === "true";
+  cutoffHours = parseInt(byKey.cancel_cutoff_hours, 10) || 3;
 }
 
 async function loadClinics() {
@@ -549,12 +554,12 @@ async function loadClinics() {
         <button class="small" data-edit="${c.id}">Edit</button>
         <button class="small" data-message="${c.id}">Message</button>
         <button class="small" data-walkup="${c.id}">Add player</button>
-        ${unpaidIn(c).length ? `<button class="small" data-remind="${c.id}" data-n="${unpaidIn(c).length}">Remind unpaid (${unpaidIn(c).length})</button>` : ""}
+        ${zelleOn && unpaidIn(c).length ? `<button class="small" data-remind="${c.id}" data-n="${unpaidIn(c).length}">Remind unpaid (${unpaidIn(c).length})</button>` : ""}
         ${c.status === "draft" ? `<button class="small primary" data-publish="${c.id}">Publish</button>` : ""}
         ${c.status !== "canceled" ? `<button class="small" data-cancelclinic="${c.id}">Cancel clinic</button>` : `<span class="chip canceled">Canceled</span>`}
         ${paymentsOn && c.status !== "canceled" && new Date(c.ends_at) < new Date() ? `<button class="small primary" data-chargeclinic="${c.id}">Charge clinic</button>` : ""}
       </div>
-      ${section("in", r => `${courtSelect(r)}<button class="small" data-paid="${r.id}" data-now="${r.paid}">${r.paid ? "Paid" : "Unpaid"}</button><button class="small${r.no_show ? " danger" : ""}" data-noshow="${r.id}" data-now="${r.no_show}">${r.no_show ? "No-show" : "Came"}</button>${chargeState(r)}`)}
+      ${section("in", r => `${courtSelect(r)}${zelleOn ? `<button class="small" data-paid="${r.id}" data-now="${r.paid}">${r.paid ? "Paid" : "Unpaid"}</button>` : ""}<button class="small${r.no_show ? " danger" : ""}" data-noshow="${r.id}" data-now="${r.no_show}">${r.no_show ? "No-show" : "Came"}</button>${chargeState(r)}`)}
       ${section("pool", r => `<button class="small primary" data-invite="${r.id}">Invite</button>`)}
       ${section("response_needed", r => `<button class="small" data-uninvite="${r.id}">Cancel invite</button>`)}
       ${section("canceled", r => r.late_cancel
@@ -741,7 +746,7 @@ let searchTimer = null;
 let playerTimer;
 const playerRow = (pl) => `<div class="row" data-player-row="${pl.id}">
   <span class="grow"><span class="name">${esc(pl.first_name)} ${esc(pl.last_name)}</span>${pl.has_notes ? ' <span class="muted" title="Has a note">✎</span>' : ""}<br>
-    <span class="muted">${pl.adult_rating ?? "—"} · ${pl.is_member ? "Member" : "Non-member"}${pl.is_active ? "" : " · Inactive"}</span></span>
+    <span class="muted">${pl.adult_rating ?? "—"} · ${pl.is_member ? "Member" : "Non-member"}${pl.is_active ? "" : " · Inactive"}${pl.waiver_accepted ? "" : " · Waiver not signed"}</span>${pl.level_note ? `<br><span class="muted" title="The player's note at level entry; only you see it">“${esc(pl.level_note)}”</span>` : ""}</span>
   <button class="small" data-member="${pl.id}" data-now="${pl.is_member}">${pl.is_member ? "Make non-member" : "Make member"}</button>
   <button class="small" data-active="${pl.id}" data-now="${pl.is_active}">${pl.is_active ? "Deactivate" : "Reactivate"}</button>
   <button class="small" data-notes="${pl.id}">Note</button>

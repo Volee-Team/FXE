@@ -104,6 +104,8 @@ struct PlayersDirectoryView: View {
         if let r = p.adultRating, let bucket = NTRPRating(rating: r) { parts.append(bucket.label) }
         parts.append(p.isMember ? "Member" : "Non-member")
         if !p.isActive { parts.append("Inactive") }
+        if p.waiverAccepted == false { parts.append("Waiver not signed") }
+        if let n = p.levelNote, !n.isEmpty { parts.append(n) }
         return parts.joined(separator: " · ")
     }
 
@@ -161,6 +163,17 @@ private struct PlayerAdminDetailView: View {
                                 .font(Brand.Typography.subheadline)
                                 .foregroundStyle(Brand.textSecondary)
                         }
+                        // Decision 0013: "Both". The note at level entry, in the
+                        // player's own words, next to the rating here and on the roster.
+                        if let n = player.levelNote, !n.isEmpty {
+                            Text("“\(n)”")
+                                .font(Brand.Typography.body)
+                                .foregroundStyle(Brand.textPrimary)
+                                .accessibilityIdentifier("admin.player.levelNote")
+                        }
+                        Text(player.waiverAccepted == true ? "Waiver signed" : "Waiver not signed")
+                            .font(Brand.Typography.caption)
+                            .foregroundStyle(player.waiverAccepted == true ? Brand.Status.youreIn.ink : Brand.Status.canceled.ink)
                     }
 
                     VStack(spacing: 0) {

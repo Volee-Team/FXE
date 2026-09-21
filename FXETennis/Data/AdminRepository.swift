@@ -280,6 +280,14 @@ enum AdminRepository {
         return counts
     }
 
+    /// Whether the Zelle/Venmo path exists (app_settings.zelle_allowed).
+    /// False since decision 0013: the card is the only way to pay, so the
+    /// Paid toggle and the unpaid reminder are not rendered.
+    static func zelleAllowed() async throws -> Bool {
+        let value: Bool = try await supabase.rpc("zelle_allowed").execute().value
+        return value
+    }
+
     static func setPaid(registration: UUID, paid: Bool) async throws {
         _ = try await supabase
             .rpc("set_paid", params: SetPaidParams(p_registration: registration, p_paid: paid))
@@ -466,6 +474,10 @@ struct PlayerSearchResult: Codable, Identifiable, Sendable {
     let isMember: Bool
     let isActive: Bool
     let hasNotes: Bool
+    /// The note the player wrote at level entry, only Tara reads it (0012/0013).
+    let levelNote: String?
+    /// Signed the current waiver (decision 0013 §4).
+    let waiverAccepted: Bool?
 
     enum CodingKeys: String, CodingKey {
         case id, kind, age
@@ -475,6 +487,8 @@ struct PlayerSearchResult: Codable, Identifiable, Sendable {
         case isMember = "is_member"
         case isActive = "is_active"
         case hasNotes = "has_notes"
+        case levelNote = "level_note"
+        case waiverAccepted = "waiver_accepted"
     }
 
     var displayName: String { "\(firstName) \(lastName)" }

@@ -103,7 +103,25 @@ begin
     insert into _probe_result values ('member_cannot_set_own_membership', 'blocked', 'blocked');
   end;
 
+  -- Decision 5 said self-reported; since 2026-09-21 the column itself is
+  -- Tara's (backlog row, fixed in 20260921000001): a non-member writing
+  -- is_member = true on their own row through PostgREST is refused, and the
+  -- resulting state is what is asserted (hard rule 9), not the error.
   perform set_config('role', 'postgres', true);
+  select is_member::text into v_text from public.players where id = ROB_P;   -- whatever Tara last set
+  perform set_config('request.jwt.claims', json_build_object('sub', '44444444-4444-4444-4444-444444444444')::text, true);
+  perform set_config('role', 'authenticated', true);
+  begin
+    update public.players set is_member = (v_text <> 'true') where id = ROB_P;   -- flip it
+    insert into _probe_result values ('non_member_cannot_flip_own_is_member_column', 'blocked', 'CALL SUCCEEDED');
+  exception when others then
+    insert into _probe_result values ('non_member_cannot_flip_own_is_member_column', 'blocked', 'blocked');
+  end;
+  perform set_config('role', 'postgres', true);
+  insert into _probe_result values ('rob_membership_unchanged_after_attempt', v_text,
+    (select is_member::text from public.players where id = ROB_P));
+  perform set_config('request.jwt.claims', json_build_object('sub', MARIA)::text, true);
+
   select count(*) into n from public.player_notes where body = 'I am great';
   insert into _probe_result values ('no_note_written_by_member', '0', n::text);
 

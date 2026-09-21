@@ -38,7 +38,7 @@ struct NotificationsView: View {
                         Image(systemName: "bell.slash")
                             .font(.system(size: 40))
                             .foregroundStyle(Brand.disabled)
-                        Text("Nothing yet.")
+                        Text("No notifications yet")
                             .font(Brand.Typography.body)
                             .foregroundStyle(Brand.textSecondary)
                     }

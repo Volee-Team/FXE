@@ -46,12 +46,15 @@ final class AdminClinicModel {
     var canceled: [RosterEntry] { roster.filter { $0.registration.status == .canceled } }
     var lateRequests: [(request: LateRequest, player: PlayerProfile?)] = []
     var unpaidCount: Int { youreIn.filter { !$0.registration.paid }.count }
+    /// Decision 0013: false, so Paid/Unpaid and the reminder stay hidden.
+    var zelleAllowed = false
 
     func load() async {
         loading = true
         defer { loading = false }
         do {
             roster = try await AdminRepository.roster(clinic: clinic.id)
+            zelleAllowed = (try? await AdminRepository.zelleAllowed()) ?? false
             let asks = (try? await AdminRepository.pendingLateRequests(clinic: clinic.id)) ?? []
             let people = (try? await AdminRepository.players(ids: asks.map(\.playerId))) ?? []
             let byId = Dictionary(uniqueKeysWithValues: people.map { ($0.id, $0) })
@@ -119,7 +122,7 @@ struct AdminClinicDetailView: View {
                     rosterSection(
                         Brand.Status.youreIn, model.youreIn,
                         empty: "Nobody is in yet."
-                    ) { entry in AnyView(HStack(spacing: Brand.Spacing.xs) { courtMenu(entry); paidToggle(entry); noShowToggle(entry) }) }
+                    ) { entry in AnyView(HStack(spacing: Brand.Spacing.xs) { courtMenu(entry); if model.zelleAllowed { paidToggle(entry) }; noShowToggle(entry) }) }
 
                     rosterSection(
                         Brand.Status.playerPool, model.pool,
@@ -167,7 +170,7 @@ struct AdminClinicDetailView: View {
             }
         }
         .confirmationDialog(
-            "Charge every card for \(clinic.name)? Attendees pay the clinic fee; no-shows and late cancellations without a courtesy pay the full fee.",
+            "Charge every card for \(clinic.name)? Attendees pay the clinic fee; no-shows and late cancellations pay the full fee.",
             isPresented: $confirmCharge, titleVisibility: .visible
         ) {
             Button("Charge clinic") {
@@ -262,7 +265,7 @@ struct AdminClinicDetailView: View {
 
             // One tap plus a confirmation: it messages several people at once,
             // and a mis-tap standing courtside should not do that.
-            if model.unpaidCount > 0 {
+            if model.zelleAllowed && model.unpaidCount > 0 {
                 Button {
                     confirmRemind = true
                 } label: {

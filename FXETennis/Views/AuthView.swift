@@ -43,7 +43,7 @@ struct AuthView: View {
                             .tracking(1.5)
                             .foregroundStyle(Brand.textOnNavy)
                         // Her tagline from the mockups, not invented here.
-                        Text("Smart. Simple. Built for Tennis.")
+                        Text("Let's Play.")
                             .font(Brand.Typography.subheadline)
                             .foregroundStyle(Brand.textOnNavy.opacity(0.72))
                     }

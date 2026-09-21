@@ -76,6 +76,7 @@ find . -name '*.md' \
     -not -path '*/node_modules/*' \
     -not -path './.git/*' \
     -not -path './.build/*' \
+    -not -path './.claude/worktrees/*' \
     -not -path './docs/prompt-log/*' \
   | sed 's#^\./##' | grep -v '^docs/copy-approved\.txt$' | sort > "$TMP/files"
 
