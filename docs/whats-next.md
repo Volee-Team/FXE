@@ -64,7 +64,7 @@ Also his: a tick through `docs/copy-review.md` for the connective words in the u
 
 ## Blocked on nothing: what to build
 
-Done since 2026-09-01 (all merged; hosted pushed through 20260916000001; the files dated 2026-09-21 push with their PRs):
+Done since 2026-09-01 (all merged; hosted pushed through 20260921000010 on 2026-09-21; `delete-account` and `review-submit` deployed; the web admin redeployed with `review.html`):
 on the phone, the bell opens a notification center with read state in the
 database, My Clinics is its own screen grouped by week, players edit their own
 name, phone and rating, Tara cancels a clinic or removes a player from the

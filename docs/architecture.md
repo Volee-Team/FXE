@@ -52,7 +52,7 @@ most important thing to understand here, and it is section 5.
 
 | Area | State |
 |---|---|
-| Postgres schema, RLS, narrow views, RPCs | **Built**, 33 migrations, 28 applied to hosted (verified 2026-09-16; the five 20260921 files push with their PRs, `supabase migration list --linked`) |
+| Postgres schema, RLS, narrow views, RPCs | **Built**, 33 migrations, all 33 applied to hosted (verified 2026-09-21, `supabase migration list --linked`: 33 paired) |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | **Built**, enumerated by probes |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | **Built** |
 | SQL probe suite (24 probes; the suite prints its own total) + concurrency probe, in CI | **Built** |
