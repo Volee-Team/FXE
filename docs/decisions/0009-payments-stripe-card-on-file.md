@@ -1,6 +1,6 @@
 # 0009: Stripe with a card on file; Apple takes nothing
 
-**Date:** 2026-09-12 · **Status:** Active · **Supersedes:** the "Stripe in v1.1" half of 0003 (the "Zelle + a report for v1" half stays true until this ships)
+**Date:** 2026-09-12 · **Status:** Active; §1's Zelle fallback superseded by 0013 §3 (2026-09-21) · **Supersedes:** the "Stripe in v1.1" half of 0003 (the "Zelle + a report for v1" half stays true until this ships)
 
 ## What Tara asked for
 
@@ -21,6 +21,8 @@ once at sign-up. That is the shape this record commits to.
    3.1.3(e) requires those to be paid *outside* in-app purchase. Apple takes
    nothing. Stripe's card fee is about 2.9% + 30¢ (roughly $1 on a $23 clinic).
    Zelle stays as the free fallback, marked paid by hand as today (Q35).
+   (Withdrawn 2026-09-21, 0013 §3: "Everyone using the app has to input a
+   credit card." `zelle_allowed` is `false`.)
 2. **Card on file, collected in the app** with Stripe's PaymentSheet and a
    SetupIntent. Card numbers never touch our app code, our database, or our
    logs; Stripe holds them and we hold a customer id and "Visa ···4242" for

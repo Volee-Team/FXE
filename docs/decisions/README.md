@@ -12,14 +12,14 @@ The history of what we believed is part of the record.
 |---|---|---|---|
 | [0001](0001-registration-is-per-week.md) | Registration opens per service week, not per clinic | 2026-08-02 | Active |
 | [0002](0002-snapshot-the-price.md) | Copy the price onto the registration | 2026-08-10 | Active |
-| [0003](0003-payments.md) | Zelle + a report for v1, Stripe in v1.1 | 2026-08-10 | Superseded in part by 0009 (Stripe moved into v1 with a card on file; the Zelle + report half stands until it ships) |
+| [0003](0003-payments.md) | Zelle + a report for v1, Stripe in v1.1 | 2026-08-10 | Superseded in part by 0009 (Stripe moved into v1 with a card on file) and by 0013 (Zelle is not a payment path; the card is the only way to pay). `revenue_summary()` stands |
 | [0004](0004-adults-only-v1.md) | Adults only in v1, juniors stay in the schema | 2026-08-02 | Active |
 | [0005](0005-clinic-messaging.md) | Clinic messaging targets You're In!, Player Pool, or Both | 2026-08-12 | Active |
 | [0006](0006-three-tabs-no-news.md) | Three tabs, News deferred, no Community tab | 2026-08-12 | Active |
 | [0007](0007-tara-answers-2026-08-27.md) | Tara's answers: 3h close, 24h member head start, juniors to Nov/spring; §1 and §5 follow-ups closed 2026-08-28 (note at top of file) | 2026-08-27 | Active |
 | [0008](0008-push-notifications.md) | Push: APNs from an edge function on a notifications webhook; device registration now, delivery when Apple issues the key | 2026-09-02 | Active |
 | [0009](0009-payments-stripe-card-on-file.md) | Stripe direct with a card on file; every money event a row; policy as settings pending Tara's answers | 2026-09-12 | Active |
-| [0010](0010-cancellation-four-hour-honor-system.md) | Cancellation is a 4-hour honor system: free before, a concise emergency note after, charging is Tara's tap | 2026-09-12 | Partial |
+| [0010](0010-cancellation-four-hour-honor-system.md) | Cancellation is a 4-hour honor system: free before, a concise emergency note after, charging is Tara's tap | 2026-09-12 | Superseded: the emergency note by 0012, the 4-hour figure by 0013; the honor-system principle and Tara's tap stand |
 | [0012](0012-cancellation-policy-and-charging.md) | Tara's cancellation policy verbatim: 4 hours, one courtesy per 90 days, cards charged after the clinic, card required to register | 2026-09-16 | Active, §2 and §6 superseded by 0013 |
 | [0013](0013-tara-review-2026-09-21.md) | Tara's first full review: no courtesy, 3 hours, card only, the waiver signed in the app, deletion keeps history, her words on every screen | 2026-09-21 | Active |
 | [0011](0011-no-email-verification-v1.md) | No email verification in v1; hosted "Confirm email" is OFF by hand, and every new project needs the same flip | 2026-08-16 | Active |

@@ -13,7 +13,7 @@ weekly setup.
 * See every clinic, including drafts, with capacity and both prices
 * **Create and edit clinics** — the thing she asked for directly
 * Publish a draft
-* Invite from the Player Pool, mark players paid, cancel an invitation
+* Invite from the Player Pool, mark no-shows, cancel an invitation. (The Paid toggle and "Remind unpaid" are gated on `zelle_allowed`, which decision 0013 set to `false`: the card is the only way to pay, so neither renders today.)
 * Message any audience on a clinic
 * **Action Needed** at the top: players asking in after the 3-hour close (Put
   them in / No room) and cancellations or invitation replies she has not seen

@@ -37,6 +37,9 @@ the five have no moment where she would reach for them.
 
 **Removing the unused enum values.** They cost nothing sitting there, and
 `unpaid` is genuinely used by the reminder button. Archive, never delete.
+(2026-09-21, decision 0013 §3: the reminder button is gated on
+`zelle_allowed()` and does not render today. The enum value and the RPC stay;
+flipping the setting brings the button back.)
 
 ## How we would know this was wrong
 

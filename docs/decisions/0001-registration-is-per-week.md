@@ -36,12 +36,13 @@ inversion of the priority the rule exists to protect.
 It was wrong on the specific date Tara spelled out, and its test was green the
 whole time, because the test had been written by reading the code.
 
-## Open
+## Open, answered 2026-09-21 (decision 0013 §7)
 
 Her example ran Sunday–Friday and never mentioned Saturday. We extended the week
 to Saturday so every calendar date belongs to a week; otherwise `week_of(date)`
 is undefined for Saturdays. If she runs Saturday clinics, the two readings are a
-full week apart. **Ask her.**
+full week apart. She confirmed the week as built and added that she runs no
+Saturday clinics, so the Saturday case is theoretical. No change to the rule.
 
 ## Pinned by
 

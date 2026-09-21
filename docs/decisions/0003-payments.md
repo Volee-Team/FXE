@@ -6,6 +6,10 @@
 0009 (card on file, Stripe direct, switch off until Tara answers). Zelle plus
 `revenue_summary()` stays true until that ships.
 
+**Superseded again, 2026-09-21 (0013 §3):** Zelle is no longer a path at all:
+`zelle_allowed` is `false` and the Paid toggle and unpaid reminder do not
+render. `revenue_summary()` stays.
+
 ## Decision
 
 v1 moves no money. Tara keeps taking Zelle (preferred) and Venmo, and the app

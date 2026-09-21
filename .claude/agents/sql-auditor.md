@@ -44,7 +44,8 @@ coaching notes, and clinic location. They are hidden by revoked grants plus
 narrow views, never by the UI.
 - `authenticated` must never gain SELECT on `clinics`, `registrations`,
   `player_notes`, or `clinic_templates`. Players read only through
-  `clinics_public`, `my_registrations`, `my_clinic_messages`, `my_news`.
+  `clinics_public`, `my_registrations`, `my_past_clinics`, `my_clinic_messages`, `my_news`,
+  and the waiver text through `current_waiver()`.
 - No player-callable RPC or view may return a count, a location, a court
   number, a paid flag, or another player's name. "Player-callable" means
   `has_function_privilege('authenticated', 'public.f(args)', 'execute')` is true
@@ -130,13 +131,14 @@ operation run twice safely? Clients retry.
 - `select *` in a view is expanded once at creation and goes stale on the next
   migration (`clinics_admin`, 2026-08-15). Views list their columns.
 
-**8. Payments (decisions 0009 and 0010).** The `payments` ledger is written by
+**8. Payments (decisions 0009, 0012 and 0013).** The `payments` ledger is written by
 `service_role` (the Stripe webhook) and the `admin_*` RPCs only; a player can
 never insert or update a ledger row, and the card summary on `accounts` is
 webhook-only. Nothing charges while `app_settings.payments_enabled` is
-`'false'`. `cancel_registration(p_registration, p_note)` refuses a You're In!
-cancel inside `cancel_cutoff_hours` without a note; pool drop-outs and Tara's
-removals are never late.
+`'false'`. `cancel_registration(p_registration, p_note)` never refuses for a
+missing note (0012 §1); it marks `late_cancel` inside `cancel_cutoff_hours`
+(3, decision 0013 §2) and `courtesy_used` only while `courtesy_cancel_days() > 0`,
+which is `0` today. Pool drop-outs and Tara's removals are never late.
 
 ## How to report
 
