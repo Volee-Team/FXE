@@ -301,6 +301,14 @@ say it's an emergency to cancel."* These are the gaps that remain.
 **57. "Cards aren't set up yet." (before Stripe is connected): you wrote "Stripe needs to be connected". Was that a note to us, or the words a player should see?**
 *Default: a note to us; the line disappears once Stripe is live. Status: open, asked 2026-09-21.*
 
+### How 52 to 57 are being sent
+
+Round two of the review page (2026-09-21, later): the Words tab now shows her
+applied wording tagged "Your words", the chrome that arrived with the waiver,
+deletion and Past, and only these six questions. The artifact was republished
+at the same link; the same page on the admin site (`web/review.html`, page
+version 2) saves as she types once it is deployed.
+
 ### How 43 to 51 were sent
 
 Not as this file. On 2026-09-18 they went to Tara as the Questions tab of her review page (`docs/tara-review/index.html`, published privately at https://claude.ai/artifact/1H3fCuvG7pkc9scTAJmfkL for Alex to share), in the plainer wording that page uses. Her answers come back as one pasted text; record them here with a date and a decision number, as 0007 and 0012 were.

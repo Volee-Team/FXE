@@ -28,7 +28,7 @@ Y = True  # Tara's own words, tagged on the page
 # Bump it when items are inserted, removed or reordered, so old answers stay
 # in their own row instead of landing on the wrong item. Rewording an item in
 # place keeps its position and needs no bump.
-PAGE_VERSION = "1"
+PAGE_VERSION = "2"
 
 SECTIONS = [
  [
@@ -36,9 +36,9 @@ SECTIONS = [
   "The first screens a new player sees on the phone",
   [
    [
-    "Smart. Simple. Built for Tennis.",
-    "Under the FXE logo on the sign-in screen. This came from the AI mockups, not from you.",
-    False
+    "Let's Play.",
+    "Under the FXE logo on the sign-in screen",
+    Y
    ],
    [
     "Create an account",
@@ -51,9 +51,9 @@ SECTIONS = [
     False
    ],
    [
-    "Almost there",
+    "Almost there!",
     "Heading of the profile screen after sign-up",
-    False
+    Y
    ],
    [
     "Are you currently a Foxcroft East Racquet & Swim Club member?",
@@ -61,9 +61,9 @@ SECTIONS = [
     Y
    ],
    [
-    "Tara uses this to build her clinic lists.",
+    "Members get 24-hour early access to all clinics",
     "Under the membership question",
-    False
+    Y
    ],
    [
     "Your tennis rating",
@@ -81,7 +81,7 @@ SECTIONS = [
     False
    ],
    [
-    "just coming back from a back injury so I'm a low 3.5",
+    "Just coming back from a back injury - probably a low 3.5",
     "The grey example text inside that box (your example)",
     Y
    ],
@@ -91,14 +91,14 @@ SECTIONS = [
     False
    ],
    [
-    "Add your name, phone and rating, and answer the membership question to continue.",
+    "Add your name, phone number, and tennis rating. Please answer the membership question to continue",
     "Shown under a greyed-out Continue button",
-    False
+    Y
    ],
    [
-    "Signs you out. Your account is kept, and you can finish this later.",
+    "Signs you out, you can finish later if needed",
     "Under the Sign out link on the profile screen",
-    False
+    Y
    ],
    [
     "Clinic updates come through the app. Keep notifications on so you don't miss them.",
@@ -113,6 +113,36 @@ SECTIONS = [
    [
     "Not now",
     "Its other button",
+    False
+   ],
+   [
+    "Waiver",
+    "Title of the waiver screen, shown once after the profile",
+    False
+   ],
+   [
+    "I have read and agree to the Adult Tennis Participation Waiver and Release.",
+    "The required checkbox (from your document)",
+    Y
+   ],
+   [
+    "Full legal name",
+    "Label of the signature box (your document: 'Participant enters full legal name')",
+    False
+   ],
+   [
+    "First and last name",
+    "The grey example text inside it",
+    False
+   ],
+   [
+    "Agree and sign",
+    "The button",
+    False
+   ],
+   [
+    "Type your first and last name.",
+    "If they type one word",
     False
    ]
   ]
@@ -132,9 +162,9 @@ SECTIONS = [
     False
    ],
    [
-    "You're not in any clinics yet.",
-    "When they hold no spot and are in no Player Pool",
-    False
+    "You're not registered for any clinics this week",
+    "When they hold no spot and are in no Player Pool (also under My Clinics, which lists every upcoming week; question 54)",
+    Y
    ],
    [
     "View All Clinics",
@@ -147,13 +177,18 @@ SECTIONS = [
     False
    ],
    [
-    "Nothing open right now.",
+    "No clinics currently open for registration",
     "When no clinic is open for registration",
-    False
+    Y
    ],
    [
     "View Open Clinics (4)",
     "Button under the list; the number is how many are open",
+    False
+   ],
+   [
+    "Turn on notifications",
+    "Under the notifications sentence on Home, only while they have turned notifications off; opens their iPhone Settings",
     False
    ]
   ]
@@ -208,19 +243,14 @@ SECTIONS = [
     False
    ],
    [
-    "Each player receives one courtesy late cancellation every 90 days, no questions asked.",
-    "Inside 4 hours, when their courtesy is available (from your policy)",
+    "This cancellation is within 3 hours of clinic and the full clinic fee will apply. If there are circumstances you'd like us to consider, please leave a note below.",
+    "Inside 3 hours (your sentence, with the 3 you gave)",
     Y
    ],
    [
-    "This cancellation is within 4 hours of clinic and the full clinic fee will apply. If there are circumstances you'd like us to consider, please leave a note below.",
-    "Inside 4 hours, when the courtesy is used up (your sentence)",
-    Y
-   ],
-   [
-    "Note (optional)",
+    "Note for Tara (optional)",
     "The box under that sentence",
-    False
+    Y
    ],
    [
     "Cancel my spot",
@@ -258,9 +288,9 @@ SECTIONS = [
     False
    ],
    [
-    "She will let you know if there is room.",
+    "She will let you know asap if there is room in this clinic",
     "Under that",
-    False
+    Y
    ],
    [
     "This clinic has been canceled.",
@@ -278,9 +308,9 @@ SECTIONS = [
     False
    ],
    [
-    "That just changed. Here's the latest.",
+    "Sorry, someone beat you to the punch. Here's the latest!",
     "When someone else acted first (the spot filled, an invite was withdrawn)",
-    False
+    Y
    ],
    [
     "Couldn't load clinics.",
@@ -301,6 +331,21 @@ SECTIONS = [
     "No description yet.",
     "When a clinic has no description",
     False
+   ],
+   [
+    "Sign the waiver first.",
+    "If someone reaches Register without having signed",
+    False
+   ],
+   [
+    "PAST",
+    "Heading at the bottom of My Clinics",
+    False
+   ],
+   [
+    "Played · $18 / No-show / Canceled / Canceled late",
+    "The outcome on each past clinic, their own only",
+    False
    ]
   ]
  ],
@@ -319,8 +364,8 @@ SECTIONS = [
     False
    ],
    [
-    "Your card will only be charged for late cancellations or no-shows. Cancel at least 4 hours before clinic and you will not be charged.",
-    "Under that heading (your sentence). Note: every attendee's card is also charged after each clinic, so this may need a rewrite; question 4 asks.",
+    "Your card will only be charged after the clinic you attended, late cancellations, or no-shows. Cancel at least 3 hours before clinic and you will not be charged.",
+    "Under that heading (your sentence)",
     Y
    ],
    [
@@ -372,6 +417,21 @@ SECTIONS = [
     "Sign Out",
     "Button",
     False
+   ],
+   [
+    "Delete my account",
+    "Small red link at the bottom of Profile",
+    False
+   ],
+   [
+    "Delete your account? Your name, phone, email and card are removed and you are signed out. This can't be undone.",
+    "The confirmation before it",
+    False
+   ],
+   [
+    "Keep my account",
+    "Its safe choice",
+    False
    ]
   ]
  ],
@@ -385,9 +445,9 @@ SECTIONS = [
     False
    ],
    [
-    "Nothing yet.",
+    "No notifications yet",
     "When there are none",
-    False
+    Y
    ],
    [
     "Mark all read",
@@ -402,16 +462,6 @@ SECTIONS = [
    [
     "Tuesday Ladies 3.0+ has been canceled.",
     "Sent to everyone when you cancel a clinic",
-    False
-   ],
-   [
-    "Just a reminder that Tuesday Ladies 3.0+ (Tue, Sep 22) hasn't been paid yet. Payment can be made via zelle to fersctennispro@gmail.com (preferred) or Venmo FXE Tennis. Thanks!",
-    "The one-tap unpaid reminder; the middle sentence is yours",
-    False
-   ],
-   [
-    "Maria Alvarez canceled. Late, courtesy used.",
-    "What YOU see when a player cancels inside 4 hours with their courtesy",
     False
    ],
    [
@@ -451,11 +501,6 @@ SECTIONS = [
     False
    ],
    [
-    "Paid / Unpaid",
-    "The toggle on each You're In! row",
-    False
-   ],
-   [
     "Came / No-show",
     "The new toggle on each You're In! row",
     False
@@ -476,22 +521,12 @@ SECTIONS = [
     False
    ],
    [
-    "Remind unpaid (2)",
-    "One tap sends the reminder above to everyone unpaid",
-    False
-   ],
-   [
-    "Send reminder",
-    "Its confirmation",
-    False
-   ],
-   [
     "Charge clinic",
     "In the More menu once a clinic has ended",
     False
    ],
    [
-    "Charge every card for Tuesday Ladies 3.0+? Attendees pay the clinic fee; no-shows and late cancellations without a courtesy pay the full fee.",
+    "Charge every card for Tuesday Ladies 3.0+? Attendees pay the clinic fee; no-shows and late cancellations pay the full fee.",
     "Its confirmation",
     False
    ],
@@ -533,6 +568,11 @@ SECTIONS = [
    [
     "Only you can see this.",
     "Under it",
+    False
+   ],
+   [
+    "Waiver signed / Waiver not signed",
+    "On each player's page and beside their name in Players",
     False
    ]
   ]
@@ -612,8 +652,8 @@ SECTIONS = [
     False
    ],
    [
-    "Late · Courtesy / Late · Fee applies",
-    "On a canceled row, inside 4 hours",
+    "Late · Fee applies",
+    "On a canceled row, inside 3 hours",
     False
    ],
    [
@@ -677,40 +717,28 @@ SECTIONS = [
 
 QUESTIONS = [
  [
-  "Charging after a clinic",
-  "Once a clinic is over and you've marked any no-shows, you tap Charge clinic and every card is charged. Or should the app charge everyone by itself at the clinic's end time? Right now it's your tap."
+  "\"Set by Tara\"",
+  "Under a player's membership line on Edit details the app says \"Set by Tara\", so they know why they can't change it. You wrote \"Do we need anything?\" Keep it, or drop it?"
  ],
  [
-  "Courtesy for no-shows?",
-  "Your one courtesy every 90 days covers a late cancellation. A no-show is always the full fee. Right?"
+  "After they message you",
+  "Inside the 3-hour close a player can message you. Afterwards the app says \"Tara has your message.\" You chose Change and left it blank. What should it say?"
  ],
  [
-  "Adult waiver",
-  "The waiver page you sent is the tennis camp form for parents. Is there an adult version for clinics, or nothing for now?"
+  "\"This week\" under My Clinics",
+  "Your line \"You're not registered for any clinics this week\" also shows under My Clinics, which lists every upcoming clinic, not only this week's. Keep it, or \"You're not registered for any clinics\"?"
  ],
  [
-  "Your card sentence",
-  "It says the card is charged only for late cancellations and no-shows, but every attendee's card is charged after each clinic. Keep it and let the policy explain, or rewrite? If rewrite, type the new sentence."
+  "Let's Play",
+  "Under the logo: \"Let's Play.\" or \"Let's play!\"? You wrote both."
  ],
  [
-  "Where your-only note shows",
-  "The note a player writes at level entry that only you see: next to their rating on your roster, only on their player page, or both?"
+  "Your policy text",
+  "Your cancellation policy block still says 4 hours, the courtesy paragraph and the emergency email. The app shows only your two sentences today. Do you want a rewritten block (3 hours, no courtesy) shown somewhere? If so, where, and in what words?"
  ],
  [
-  "Deleting an account",
-  "Apple requires a Delete my account button. When a player deletes theirs, should their history and payment record stay with you (name removed), or go entirely?"
- ],
- [
-  "Saturday clinics",
-  "A Saturday clinic opens with the week before it (the Thursday 9 days out). Right?"
- ],
- [
-  "Short weeks",
-  "A holiday week with clinics only Monday to Wednesday still opens the Thursday and Friday before. Right?"
- ],
- [
-  "The splash line",
-  "\"Smart. Simple. Built for Tennis.\" under the logo came from the AI mockups. Keep it, change it, or drop it?"
+  "\"Stripe needs to be connected\"",
+  "Before cards are set up, the app says \"Cards aren't set up yet.\" You wrote \"Stripe needs to be connected\": a note to us, or the words a player should see?"
  ]
 ]
 
