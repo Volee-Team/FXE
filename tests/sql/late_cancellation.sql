@@ -1,8 +1,9 @@
 -- late_cancellation.sql
 --
--- Decision 0010 (Tara, 2026-09-12) as amended by 0012 (2026-09-16): inside 4
--- hours the cancel goes through, one courtesy per 90 days is applied by the
--- app, the next one owes the fee, the note is optional.
+-- Decision 0010 (Tara, 2026-09-12) as amended by 0012 (2026-09-16) and 0013
+-- (2026-09-21): inside 3 hours the cancel goes through, it is late, the full
+-- fee applies every time ("NOT DOING THIS ANYMORE" about the courtesy), and
+-- the note is optional.
 -- The rule lives in cancel_registration, so this probe drives it from the
 -- roles the app uses and reads back what Tara's roster will see.
 --
@@ -33,7 +34,7 @@ begin
   returning id into soon;
   insert into public.clinics (name, audience, category, description, starts_at, ends_at,
       member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
-  values ('Probe Soon 2', 'ladies', 'Clinic', 'probe', now() + interval '3 hours', now() + interval '4 hours',
+  values ('Probe Soon 2', 'ladies', 'Clinic', 'probe', now() + interval '2 hours 30 minutes', now() + interval '3 hours 30 minutes',
           now() - interval '3 days', now() - interval '2 days', 8, 'published', 60)
   returning id into soon2;
   insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
@@ -47,8 +48,10 @@ begin
 
   -- 1. The setting is Tara's number, and the helper reads it.
   select value into v from public.app_settings where key = 'cancel_cutoff_hours';
-  insert into _probe_result values ('cutoff_setting_is_4', '4', v);
-  insert into _probe_result values ('cutoff_helper_reads_setting', '4', public.cancel_cutoff_hours()::text);
+  insert into _probe_result values ('cutoff_setting_is_3', '3', v);
+  insert into _probe_result values ('cutoff_helper_reads_setting', '3', public.cancel_cutoff_hours()::text);
+  select value into v from public.app_settings where key = 'courtesy_cancel_days';
+  insert into _probe_result values ('courtesy_window_is_zero', '0', v);
 
   -- 2. Exactly one cancel_registration exists. Two overloads would make the
   --    app's one-argument call ambiguous.
@@ -64,20 +67,20 @@ begin
   r := public.cancel_registration(reg_far);
   insert into _probe_result values ('far_cancel_needs_no_note', 'canceled false', r.status::text || ' ' || r.late_cancel::text);
 
-  -- 4. Inside 4 hours, You're In!, no note (decision 0012): the cancel goes
-  --    through, it is late, and the courtesy is used. No fee.
+  -- 4. Inside 3 hours, You're In!, no note (decision 0013): the cancel goes
+  --    through, it is late, and no courtesy exists. The fee applies.
+  insert into _probe_result values ('no_courtesy_before_any_cancel', 'false', public.my_courtesy_available(MARIA_P)::text);
   r := public.cancel_registration(reg_soon);
-  insert into _probe_result values ('late_cancel_without_note_goes_through', 'canceled true true',
+  insert into _probe_result values ('late_cancel_without_note_goes_through', 'canceled true false',
     r.status::text || ' ' || r.late_cancel::text || ' ' || r.courtesy_used::text);
   insert into _probe_result values ('no_note_stored_when_none_sent', 'true', (r.cancel_note is null)::text);
 
-  -- 5. A second late cancel inside the 90 days: no courtesy left, the fee
-  --    applies, and the optional note is kept trimmed.
+  -- 5. A second late cancel: the fee applies again, and the optional note
+  --    is kept trimmed.
   perform set_config('role', 'postgres', true);
   insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
   values (soon2, MARIA_P, 'in', 'self', 1800, true, 60) returning id into reg_soon2;
   perform set_config('role', 'authenticated', true);
-  insert into _probe_result values ('courtesy_gone_after_use', 'false', public.my_courtesy_available(MARIA_P)::text);
   r := public.cancel_registration(reg_soon2, '  Kid has a fever.  ');
   insert into _probe_result values ('second_late_cancel_owes_fee_note_kept', 'canceled true false Kid has a fever.',
     r.status::text || ' ' || r.late_cancel::text || ' ' || r.courtesy_used::text || ' ' || r.cancel_note);
@@ -94,21 +97,40 @@ begin
   insert into _probe_result values ('admin_notified_with_note', '1', n::text);
   select count(*) into n from public.notifications
    where account_id = TARA and type = 'player_canceled' and entity_id = reg_soon
-     and body like '%Late, courtesy used.%';
-  insert into _probe_result values ('admin_notified_courtesy', '1', n::text);
+     and body like '%Late, fee applies.%' and body not like '%courtesy%';
+  insert into _probe_result values ('admin_notified_fee_no_courtesy_wording', '1', n::text);
 
   -- ------------------------------------------------------------ as Ken (pool)
   perform set_config('request.jwt.claims', json_build_object('sub', KEN)::text, true);
   perform set_config('role', 'authenticated', true);
-  -- 8. Pool inside 4 hours holds no spot: free, no note, not late.
+  -- 8. Pool inside 3 hours holds no spot: free, no note, not late.
   r := public.cancel_registration(reg_pool);
   insert into _probe_result values ('pool_dropout_is_not_late', 'canceled false', r.status::text || ' ' || r.late_cancel::text);
+  perform set_config('role', 'postgres', true);
+
+  -- 8b. leave_pool archives too (backlog 2026-09-12, fixed 2026-09-21): the
+  --     row survives as canceled with a stamp, and a second leave is refused.
+  perform set_config('role', 'postgres', true);
+  insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
+  values (soon2, KEN_P, 'pool', 'self', 1800, true, 60) returning id into reg_pool;
+  perform set_config('role', 'authenticated', true);
+  perform public.leave_pool(reg_pool);
+  perform set_config('role', 'postgres', true);
+  select status::text || ' ' || (canceled_at is not null)::text || ' ' || late_cancel::text into v from public.registrations where id = reg_pool;
+  insert into _probe_result values ('leave_pool_keeps_the_row_as_canceled', 'canceled true false', coalesce(v, 'ROW GONE'));
+  perform set_config('role', 'authenticated', true);
+  begin
+    perform public.leave_pool(reg_pool);
+    insert into _probe_result values ('leave_pool_twice_refused', 'not_in_pool', 'CALL SUCCEEDED');
+  exception when others then
+    insert into _probe_result values ('leave_pool_twice_refused', 'not_in_pool', sqlerrm);
+  end;
   perform set_config('role', 'postgres', true);
 
   -- ------------------------------------------------------------ as Tara
   perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
   perform set_config('role', 'authenticated', true);
-  -- 9. Tara removing someone inside 4 hours is not the player's late cancel.
+  -- 9. Tara removing someone inside 3 hours is not the player's late cancel.
   r := public.cancel_registration(reg_admin);
   insert into _probe_result values ('admin_removal_is_not_late', 'canceled false', r.status::text || ' ' || r.late_cancel::text || coalesce(' ' || r.cancel_note, ''));
 
@@ -117,7 +139,7 @@ begin
     from public.registrations_admin where id = reg_soon2;
   insert into _probe_result values ('roster_shows_note_and_no_card', 'true Kid has a fever. false false', v);
   select courtesy_used::text into v from public.registrations_admin where id = reg_soon;
-  insert into _probe_result values ('roster_shows_courtesy', 'true', v);
+  insert into _probe_result values ('roster_shows_no_courtesy', 'false', v);
   perform set_config('role', 'postgres', true);
 
   -- 11. Nothing was charged by the app on its own.

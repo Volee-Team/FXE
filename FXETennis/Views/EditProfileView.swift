@@ -45,7 +45,7 @@ struct EditProfileView: View {
                             Text("Note for Tara (optional)")
                                 .font(Brand.Typography.bodyEmphasis)
                                 .foregroundStyle(Brand.textPrimary)
-                            TextField("just coming back from a back injury so I'm a low 3.5", text: $levelNote, axis: .vertical)
+                            TextField("Just coming back from a back injury - probably a low 3.5", text: $levelNote, axis: .vertical)
                                 .lineLimit(2...4)
                                 .textFieldStyle(.roundedBorder)
                                 .accessibilityIdentifier("edit.levelNote")

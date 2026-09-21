@@ -247,30 +247,59 @@ say it's an emergency to cancel."* These are the gaps that remain.
 
 **43. Charging after a clinic: you tap "Charge clinic" once you've marked any no-shows, or should the app charge everyone automatically at the end time?**
 *Default: your tap. Nothing is charged until you press it, and the roster shows who will be charged what.*
+*ANSWERED 2026-09-21 (decision 0013): "I'll do this - I'll tap charge - app does nothing automatically w payments." Built as her tap.*
 
 **44. The one courtesy every 90 days covers a late cancellation only; a no-show is always the full fee. Right?**
 *Default: yes, as your policy lists them separately.*
+*ANSWERED 2026-09-21 (decision 0013): "No courtesy anymore." The courtesy is switched off entirely (courtesy_cancel_days = 0).*
 
 **45. The waiver page you sent is the tennis camp (parent/guardian) form. Is there an adult version for clinics, or should the app show that one?**
 *Default: we show nothing until there is an adult version; juniors are later anyway.*
+*ANSWERED 2026-09-21 (decision 0013): "Sent to you in text": FXE_Adult_Tennis_Participation_Waiver.docx, version September 2026, in `docs/copy.md` and the `waivers` table; signed in the app before the first spot.*
 
 **46. Your card sentence says the card is charged only for late cancellations and no-shows, but every attendee's card is charged after each clinic. Rewrite, or keep and let the cancellation policy explain?**
 *Default: one sentence: "Your card is charged after each clinic you attend. Late cancellations and no-shows are charged the full fee; the policy explains."* (ours, needs your words)
+*ANSWERED 2026-09-21 (decision 0013), her sentence: "Your card will only be charged after the clinic you attended, late cancellations, or no-shows. Cancel at least 3 hours before clinic and you will not be charged." Ships verbatim.*
 
 **47. The note only you see, at level entry: should it show on your roster next to the rating, or only on the player's page?**
 *Default: both, short.*
+*ANSWERED 2026-09-21 (decision 0013): "Both." search_players returns it; the roster row and the player page show it.*
 
 **48. Deleting an account. Apple requires a "Delete my account" button. When a player deletes theirs, should their history and payment record stay with you with the name removed, or go entirely?**
 *Default: the rows stay, the name, phone and email are blanked (a paid clinic in March should still add up in Money in April). Status: open, asked 2026-09-18 (launch checklist D5).*
+*ANSWERED 2026-09-21 (decision 0013): "Keep their history." Built: delete_my_account() plus the delete-account edge function.*
 
 **49. A Saturday clinic opens with the week before it: the Thursday nine days out for members, the Friday for everyone. Right?**
 *Default: yes, that is what is built (decision 0001; the first of the three open points under "Open questions on the window rule" in CLAUDE.md). Status: open, asked 2026-09-18.*
+*ANSWERED 2026-09-21 (decision 0013): "Yes. But no Saturday clinics. The 'week' starts on a Sunday to Friday. Membership opens Thursday Sept 1 for clinics Sunday, Sept 4th - Friday, Sept 9th." Confirms decision 0001 as built; Saturday is theoretical.*
 
 **50. A short week, say clinics only Monday to Wednesday over a holiday, still opens the Thursday and Friday before. Right?**
 *Default: yes, built that way. Status: open, asked 2026-09-18.*
+*ANSWERED 2026-09-21 (decision 0013): "Yes."*
 
 **51. "Smart. Simple. Built for Tennis." under the logo on the sign-in screen came from the AI mockups, not from you. Keep, change, or drop?**
 *Default: drop it; the logo needs no caption. Status: open, asked 2026-09-18.*
+*ANSWERED 2026-09-21 (decision 0013): "Let's play!" on the Questions tab, "Let's Play." on the Words tab. The Words version ships; question 55 confirms which.*
+
+## L. After her review of every word (added 2026-09-21)
+
+**52. Under your membership line on Edit details the app says "Set by Tara". You wrote "Do we need anything?" Drop the caption, or keep it so a player knows why they can't change it?**
+*Default: keep it. Status: open, asked 2026-09-21.*
+
+**53. After a player messages you inside the 3-hour close, the app says "Tara has your message." You chose Change and left it blank. What should it say?**
+*Default: keep "Tara has your message." Status: open, asked 2026-09-21.*
+
+**54. "You're not registered for any clinics this week" now shows under My Clinics, which lists every upcoming clinic, not only this week's. Keep it, or "You're not registered for any clinics"?**
+*Default: keep your words. Status: open, asked 2026-09-21.*
+
+**55. The line under the logo: "Let's Play." or "Let's play!"?**
+*Default: "Let's Play." Status: open, asked 2026-09-21.*
+
+**56. Your cancellation policy text still says 4 hours, the courtesy paragraph, and the emergency email. The app shows only your two sentences today. Do you want the block rewritten (3 hours, no courtesy) shown somewhere, and if so, where and in what words?**
+*Default: not shown until you rewrite it. Status: open, asked 2026-09-21.*
+
+**57. "Cards aren't set up yet." (before Stripe is connected): you wrote "Stripe needs to be connected". Was that a note to us, or the words a player should see?**
+*Default: a note to us; the line disappears once Stripe is live. Status: open, asked 2026-09-21.*
 
 ### How 43 to 51 were sent
 

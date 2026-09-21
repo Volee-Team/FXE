@@ -34,6 +34,31 @@ plus every "New since" block.
 
 ---
 
+## New since the last review — 2026-09-21 (waiver, deletion, decision 0013), awaiting Alex
+
+Tara's own words from her review are hers and are listed in `docs/copy.md`
+("Her review of every word"). These are the chrome around the two new
+screens, mine. The extractor sees the first seven; the rest are ternaries,
+dialog titles and error branches it cannot (backlog row on the extractor).
+
+| ✓ | String | Where |
+|---|--------|-------|
+| ☐ | Waiver | WaiverView, navigation title |
+| ☐ | Full legal name | WaiverView, field label (her spec: "Participant enters full legal name") |
+| ☐ | First and last name | WaiverView, field placeholder |
+| ☐ | Agree and sign | WaiverView, the button |
+| ☐ | Delete my account | ProfileView, the button and the dialog's destructive action |
+| ☐ | Keep my account | ProfileView, the dialog's cancel |
+| ☐ | The player's note at level entry; only you see it | web/index.html, Players tab, hover title on the note |
+| ☐ | Delete your account? Your name, phone, email and card are removed and you are signed out. This can't be undone. | ProfileView, confirmation dialog |
+| ☐ | Couldn't delete your account. | ProfileView, error line |
+| ☐ | Couldn't load the waiver. | WaiverView, load error |
+| ☐ | Type your first and last name. | WaiverView, legal_name_required |
+| ☐ | Couldn't save your signature. | WaiverView, other errors |
+| ☐ | Sign the waiver first. | ClinicDetailView, waiver_required from register_for_clinic |
+| ☐ | Waiver signed / Waiver not signed | PlayersDirectoryView detail and row; web Players tab ("Waiver not signed") |
+| ☐ | Charge every card for …? Attendees pay the clinic fee; no-shows and late cancellations pay the full fee. | AdminClinicDetailView, confirmation (courtesy clause removed) |
+
 ## New since the last review — 2026-09-12, awaiting Alex
 
 Web admin Money tab, the read-only card-payments list (decision 0009). Chrome,

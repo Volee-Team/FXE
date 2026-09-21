@@ -259,6 +259,22 @@ final class PlayerFlowUITests: XCTestCase {
         XCTAssertTrue(scrollUntilHittable(go), "Continue never became reachable")
         go.tap()
 
+        // The waiver comes next (decision 0013): her checkbox sentence, a typed
+        // full legal name, and the sign button stays disabled until both.
+        let agree = app.buttons["waiver.agree"]
+        XCTAssertTrue(agree.waitForExistence(timeout: 20), "Waiver never appeared after the profile")
+        let sign = app.buttons["waiver.sign"]
+        XCTAssertFalse(sign.isEnabled, "Sign was enabled before the box was ticked and a name typed")
+        agree.tap()
+        let name = app.textFields["waiver.name"]
+        name.tap()
+        name.typeText("Testcase Player")
+        XCTAssertTrue(sign.waitForExistence(timeout: 5))
+        if !sign.isHittable { app.swipeUp() }
+        XCTAssertTrue(sign.isEnabled, "Sign stayed disabled after ticking and typing a full name")
+        sign.tap()
+        XCTAssertTrue(agree.waitForNonExistence(timeout: 20), "Waiver did not dismiss after signing")
+
         // The greeting must name the person who just signed up. "there" is the
         // exact symptom of the original bug.
         let greeting = app.staticTexts["home.greeting"]

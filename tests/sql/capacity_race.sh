@@ -46,6 +46,9 @@ begin
     values (uid, 'Racer', i::text, 'racer' || i || '@probe.test', 'member');
     insert into public.players (account_id, kind, first_name, last_name, adult_rating, is_member)
     values (uid, 'adult', 'Racer', i::text, '3.5', true);
+    -- Decision 0013: a spot needs a signed waiver first.
+    insert into public.waiver_acceptances (account_id, version, legal_name, email, app_version)
+    values (uid, public.waiver_version(), 'Racer ' || i, 'racer' || i || '@probe.test', 'probe');
   end loop;
 end \$\$;
 SQL

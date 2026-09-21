@@ -70,9 +70,12 @@ final class ClinicDetailModel {
             // A card on file is required to register once payments are on
             // (decision 0012). Every other failure is a race, and the reload
             // shows the real state.
-            notice = String(describing: error).contains("card_required")
+            let text = String(describing: error)
+            notice = text.contains("card_required")
                 ? "Add a card on your Profile to register."
-                : "That just changed. Here's the latest."
+                : text.contains("waiver_required")
+                ? "Sign the waiver first."
+                : "Sorry, someone beat you to the punch. Here's the latest!"
         }
         working = false
     }
@@ -97,8 +100,7 @@ struct ClinicDetailView: View {
     @State private var pending: PendingAction?
     /// Inside the cutoff the cancel needs the player's note first (0010).
     @State private var lateCancel: MyRegistration?
-    @State private var cutoffHours = 4
-    @State private var courtesyAvailable = false
+    @State private var cutoffHours = 3
     let clinic: ClinicPublic
     let isMember: Bool
     var onChanged: () async -> Void = {}
@@ -130,13 +132,10 @@ struct ClinicDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task { if !model.loaded { await model.load(clinicId: clinic.id) } }
         .task {
-            cutoffHours = (try? await RegistrationRepository.cancelCutoffHours()) ?? 4
-            if let p = session.activePlayer?.id {
-                courtesyAvailable = (try? await RegistrationRepository.myCourtesyAvailable(player: p)) ?? false
-            }
+            cutoffHours = (try? await RegistrationRepository.cancelCutoffHours()) ?? 3
         }
         .sheet(item: $lateCancel) { reg in
-            LateCancelSheet(courtesyAvailable: courtesyAvailable) { note in
+            LateCancelSheet { note in
                 await model.act(clinicId: clinic.id, {
                     try await RegistrationRepository.cancelRegistration(registrationId: reg.id, note: note)
                 }, onChanged: onChanged)
@@ -342,7 +341,7 @@ struct ClinicDetailView: View {
                         .font(Brand.Typography.bodyEmphasis)
                         .foregroundStyle(Brand.textPrimary)
                 }
-                Text("She will let you know if there is room.")
+                Text("She will let you know asap if there is room in this clinic")
                     .font(Brand.Typography.subheadline)
                     .foregroundStyle(Brand.textSecondary)
                     .multilineTextAlignment(.center)
@@ -426,12 +425,11 @@ struct ClinicDetailView: View {
     }
 }
 
-/// The prompt inside the cutoff (decision 0012). Both sentences are Tara's,
-/// verbatim from her 2026-09-16 message: the courtesy line from her policy,
-/// the fee line from her answer to question 40. The note is optional and is
-/// the player's own words.
+/// The prompt inside the cutoff (decision 0013). The sentence is Tara's,
+/// verbatim from her 2026-09-16 answer to question 40 with the 3 hours she
+/// gave on 2026-09-21 ("3 hours instead of 4. Otherwise good"). No courtesy
+/// exists any more. The note is optional and is the player's own words.
 private struct LateCancelSheet: View {
-    let courtesyAvailable: Bool
     let confirm: (String) async -> Void
     @Environment(\.dismiss) private var dismiss
     @State private var note = ""
@@ -443,19 +441,15 @@ private struct LateCancelSheet: View {
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: Brand.Spacing.md) {
-                Text(courtesyAvailable
-                     ? "Each player receives one courtesy late cancellation every 90 days, no questions asked."
-                     : "This cancellation is within 4 hours of clinic and the full clinic fee will apply. If there are circumstances you'd like us to consider, please leave a note below.")
+                Text("This cancellation is within 3 hours of clinic and the full clinic fee will apply. If there are circumstances you'd like us to consider, please leave a note below.")
                     .font(Brand.Typography.body)
                     .foregroundStyle(Brand.textPrimary)
                     .accessibilityIdentifier("lateCancel.sentence")
-                if !courtesyAvailable {
-                    TextField("Note (optional)", text: $note, axis: .vertical)
-                        .lineLimit(3...6)
-                        .textFieldStyle(.roundedBorder)
-                        .focused($focused)
-                        .accessibilityIdentifier("lateCancel.note")
-                }
+                TextField("Note for Tara (optional)", text: $note, axis: .vertical)
+                    .lineLimit(3...6)
+                    .textFieldStyle(.roundedBorder)
+                    .focused($focused)
+                    .accessibilityIdentifier("lateCancel.note")
                 Button {
                     sending = true
                     Task { await confirm(trimmed); sending = false; dismiss() }
@@ -483,7 +477,7 @@ private struct LateCancelSheet: View {
                     Button("Keep my spot") { dismiss() }
                 }
             }
-            .onAppear { focused = !courtesyAvailable }
+            .onAppear { focused = true }
         }
     }
 }

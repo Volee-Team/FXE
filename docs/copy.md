@@ -172,6 +172,102 @@ and are marked for her edit. Question 46 flags the card sentence.
 
 **The note only Tara sees**, her ask: a place at level entry to write something like *"just coming back from a back injury so I'm a low, 3.5"*, with the app saying only Tara sees it.
 
+## Her review of every word (2026-09-21, decision 0013)
+
+Her first pass through `docs/tara-review/index.html`, pasted back by Alex.
+Everything not listed here she marked keep. Applied verbatim, including
+punctuation and the missing periods:
+
+| Where | Was (ours) | Now (hers) |
+|---|---|---|
+| Sign-in, under the logo | Smart. Simple. Built for Tennis. | **Let's Play.** (Questions tab: "Let's play!", question 55) |
+| Profile screen heading | Almost there | **Almost there!** |
+| Under the membership question | Tara uses this to build her clinic lists. | **Members get 24-hour early access to all clinics** |
+| Note box placeholder | just coming back from a back injury so I'm a low 3.5 | **Just coming back from a back injury - probably a low 3.5** |
+| Under a disabled Continue | Add your name, phone and rating, and answer the membership question to continue. | **Add your name, phone number, and tennis rating. Please answer the membership question to continue** |
+| Sign out hint on the profile screen | Signs you out. Your account is kept, and you can finish this later. | **Signs you out, you can finish later if needed** |
+| Home and My Clinics, empty | You're not in any clinics yet. | **You're not registered for any clinics this week** (question 54: My Clinics lists every upcoming week) |
+| Home, no open clinics | Nothing open right now. | **No clinics currently open for registration** |
+| Cancel sheet, note box | Note (optional) | **Note for Tara (optional)** |
+| After a late request | She will let you know if there is room. | **She will let you know asap if there is room in this clinic** |
+| Someone acted first | That just changed. Here's the latest. | **Sorry, someone beat you to the punch. Here's the latest!** |
+| Bell, empty | Nothing yet. | **No notifications yet** |
+| Profile, card section | (her 09-16 sentence) | **Your card will only be charged after the clinic you attended, late cancellations, or no-shows. Cancel at least 3 hours before clinic and you will not be charged.** |
+| Cancel sheet, inside the cutoff | (her 09-16 sentence, 4 hours) | same sentence with **3 hours** (*"3 hours instead of 4. Otherwise good"*) |
+
+Gone by her word: the courtesy sentence (*"NOT DOING THIS ANYMORE"*), the
+"Late, courtesy used." notification suffix, and the Zelle reminder, Paid and
+Remind unpaid controls (*"I don't want this to be an option. Everyone using
+the app has to input a credit card"*), which now sit behind `zelle_allowed`.
+
+Her policy text above is therefore superseded on three lines: **3 hours**
+where it says 4, no courtesy paragraph, and no emergency-email paragraph. She
+has not rewritten the block itself; question 56 asks for the new text, and
+until then the app shows only her two sentences, not the block.
+
+## The Adult Tennis Participation Waiver (2026-09-21)
+
+`FXE_Adult_Tennis_Participation_Waiver.docx`, version date September 2026,
+sent by Tara on 2026-09-21 in answer to question 45. Stored verbatim in
+`waivers` (migration 20260921000002) and shown by `WaiverView`. Her last page
+is the mechanism: required checkbox, typed full legal name, email from the
+account, time from the app, version with the record. The checkbox sentence
+below is hers and is the only waiver copy in the app besides the text.
+
+> **Adult Tennis Participation Waiver and Release**
+>
+> FXE Tennis LLC and Foxcroft East Racquet and Swim Club
+>
+> Please read carefully. This agreement affects your legal rights. By signing electronically, you agree to its terms for adult participation in tennis clinics, lessons, matches, events, and related activities organized, hosted, or provided by FXE Tennis, LLC or Foxcroft East Racquet and Swim Club.
+>
+> IMPORTANT NOTICE: This agreement includes an assumption of risk and a release of claims, including claims based on ordinary negligence, to the fullest extent permitted by North Carolina law.
+>
+> 1  Activities and Released Parties
+>
+> I wish to participate in adult tennis and related activities, including clinics, lessons, drills, games, matches, tournaments, social events, fitness or conditioning activities, and use of tennis courts, facilities, equipment, parking areas, walkways, and surrounding premises (collectively, the Activities). In this agreement, the Released Parties are FXE Tennis, LLC; Foxcroft East Racquet and Swim Club; and each of their respective owners, officers, directors, board members, employees, tennis professionals, coaches, agents, independent contractors, volunteers, members, affiliates, successors, assigns, and premises owners or lessors.
+>
+> 2  Acknowledgment of Risks
+>
+> I understand that tennis and related activities involve inherent and other risks that can cause property damage, illness, serious injury, disability, or death. Risks include, without limitation, strenuous physical exertion; rapid movement, twisting, falls, overuse, and loss of balance; contact with racquets, balls, nets, fences, court fixtures, equipment, other participants, instructors, spectators, or objects; uneven, wet, slippery, cracked, hot, or otherwise hazardous surfaces; weather, heat, humidity, lightning, and other environmental conditions; equipment failure or misuse; acts or omissions of other participants; and delayed access to medical care. I understand that this list is not complete and that unexpected risks may arise.
+>
+> 3  Voluntary Participation and Fitness
+>
+> I am at least 18 years old and voluntarily choose to participate. I am responsible for deciding whether I am physically and medically able to participate and for seeking medical advice when appropriate. I will stop participating and notify a tennis professional if I experience pain, dizziness, breathing difficulty, or another concerning symptom. I will follow reasonable safety rules and instructions, use appropriate footwear and equipment, and avoid participating while impaired by alcohol, drugs, illness, or medication that makes participation unsafe.
+>
+> 4  Assumption of Risk
+>
+> I knowingly and voluntarily accept and assume all known and unknown risks of the Activities, whether inherent or arising from the condition of the premises, equipment, weather, the conduct of participants or others, or the ordinary negligence of any Released Party, to the fullest extent permitted by law.
+>
+> 5  Release and Waiver of Claims
+>
+> To the fullest extent permitted by law, I release, waive, and discharge the Released Parties from claims, demands, causes of action, liabilities, damages, losses, or expenses arising out of or related to my participation in the Activities, including claims for personal injury, illness, death, or property damage caused in whole or in part by the ordinary negligence of a Released Party. This release does not apply to gross negligence, willful or wanton misconduct, intentional wrongdoing, or any liability that cannot legally be released.
+>
+> 6  Responsibility for My Conduct
+>
+> I am responsible for my own conduct and property. To the fullest extent permitted by law, I agree to indemnify and hold the Released Parties harmless from third-party claims, liabilities, damages, or expenses, including reasonable attorneys' fees, caused by my negligent or intentional conduct, my violation of safety rules or instructions, or my material breach of this agreement. This provision does not require me to indemnify a Released Party for that party's gross negligence, willful or wanton misconduct, or intentional wrongdoing.
+>
+> 7  Emergency Care
+>
+> If I become injured or ill and cannot make decisions for myself, I authorize the Released Parties to contact emergency services and arrange reasonably necessary emergency assistance. I understand that the Released Parties are not required to provide medical care and that I am responsible for costs charged by medical providers, emergency responders, or transportation services.
+>
+> 8  Duration and Revocation
+>
+> This agreement begins when I sign it and remains effective until I revoke it in writing by delivering notice to FXE Tennis, LLC. Revocation applies only to Activities occurring after the revocation is received and does not affect the agreement's application to Activities that occurred before then. I understand that I may be required to accept a current waiver before participating in future Activities.
+>
+> 9  North Carolina Law and Severability
+>
+> This agreement is governed by North Carolina law. Any provision found unenforceable will be enforced to the maximum extent permitted, and the remaining provisions will continue in effect. This agreement is intended to be as broad as North Carolina law permits.
+>
+> 10  Electronic Agreement
+>
+> I consent to using an electronic record and electronic signature. By checking the required box and entering my legal name, I intend to sign this agreement electronically. I understand that my electronic acceptance may be stored with the agreement version, date and time, account information, and available technical records.
+>
+> Participant Acknowledgment
+>
+> BY SIGNING, I CONFIRM THAT I HAVE READ AND UNDERSTAND THIS AGREEMENT, HAVE HAD THE OPPORTUNITY TO ASK QUESTIONS, AND VOLUNTARILY AGREE TO ALL OF ITS TERMS.
+>
+> Required checkbox: **I have read and agree to the Adult Tennis Participation Waiver and Release.**
+
 ## Still open with Tara
 
 1. ~~The NTRP rating guide~~ **CLOSED 2026-08-27**: *"Rating guide is good
@@ -184,10 +280,8 @@ and are marked for her edit. Question 46 flags the card sentence.
    lives in `app_settings.payment_instructions` and is pinned character for
    character by `tests/sql/schema_decisions.sql`. Read it through
    `payment_instructions()`, never hardcode it.
-5. **The splash line "Smart. Simple. Built for Tennis."** came from the
-   wireframe mockups, which she made with AI, so it is not hers either
-   (`copy-audit.md` section 3, `copy-review.md` section A). Moved out of
-   "already hers" 2026-09-12; needs her yes or no.
+5. ~~The splash line "Smart. Simple. Built for Tennis."~~ **CLOSED 2026-09-21**:
+   "Let's Play." (question 55 confirms the capitalisation).
 4. **Clinic categories**, question 8. Her real schedule suggests the axis is
    format and level ("105", "3.0+"), not "Drill / Cardio / Match Play". Worth
    re-asking now that "105" is understood.

@@ -59,6 +59,7 @@ struct RootView: View {
         case .signedIn:
             MainTabView()
                 .pushPermissionPrompt()
+                .waiverGate()
         }
     }
 }

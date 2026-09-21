@@ -48,8 +48,8 @@ What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision 00
 | 2 | Bundle id (replaces `com.fxetennis.app` placeholder), Team ID, App Store Connect record, APNs key | [Alex] | blocked on 1 |
 | 3 | Push delivery: the `push` edge function on the notifications webhook, audit columns (decision 0008) | [me] | blocked on the APNs key |
 | 4 | **Privacy manifest** (`PrivacyInfo.xcprivacy`): Apple rejects builds that use required-reason APIs without it | [me] | **done 2026-09-12** (PR #37) |
-| 5 | **Account deletion in the app**: App Store guideline 5.1.1(v) requires it for any app with account creation. What it deletes is a Tara question (a player's history and ledger rows vs. their name and contact), so: question for Tara, then build | [Tara] then [me] | not built; asked as Q48 on 2026-09-18 |
-| 6 | Privacy policy at a URL, terms, waiver wording (Tara said Volee's privacy policy can be reused, decision 16) | [Alex]/[Tara] | needs a place to host it (fersc.com?) |
+| 5 | **Account deletion in the app**: App Store guideline 5.1.1(v). Tara, 2026-09-21: "Keep their history." Built: `delete_my_account()` scrubs the person and keeps registrations, ledger and her notes; the `delete-account` edge function removes the sign-in through Supabase's admin API (soft delete). Profile → Delete my account, two taps. Probe `account_deletion` (18) | [me] | **built 2026-09-21**; edge function to deploy with the PR |
+| 6 | Privacy policy at a URL, terms (Tara said Volee's privacy policy can be reused, decision 16). **Waiver: done 2026-09-21**, her Adult Tennis Participation Waiver signed in the app before the first spot (decision 0013 §4) | [Alex]/[Tara] | privacy policy still needs a place to host it (fersc.com, she said) |
 | 7 | App Store listing: name, subtitle, description (Tara's words), screenshots on the required sizes, age rating, support URL, review notes with a test account | [Alex]+[me] | not started |
 | 8 | TestFlight internal build to Tara's phone, then external testers (external needs the privacy URL) | [Alex] | blocked on 1 |
 | 10 | **An annotated git tag and a changelog line at every TestFlight upload** (`git tag -a v0.1.0-tf1 -m ...`), so a build on a phone can always be matched to a commit. Alex asked for tags and patch notes on 2026-08-13; Volee once shipped a build no commit matched. No tags exist yet | [me] | at the first upload |
@@ -77,7 +77,7 @@ The rule (CLAUDE.md, verification asymmetry): the thing that builds a feature ca
 
 | Layer | Runs where | Count 2026-09-12 | Gap |
 |---|---|---|---|
-| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 386 checks, 19 probes | none known |
+| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 465 checks, 21 probes | none known |
 | Stripe pipeline against stripe-mock | every PR | 27 checks | real Stripe behaviour (3DS, declines) waits on keys |
 | Web admin browser tests (Playwright, real sign-in) | every PR | 12 | not idempotent (backlog); no test of the charge path with the switch on |
 | Swift unit tests (pure logic) | every PR | 23 | fine |

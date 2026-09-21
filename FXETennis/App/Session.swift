@@ -25,6 +25,8 @@ final class SessionStore {
 
     var phase: Phase = .loading
     var account: Account?
+    /// nil until known; false shows the waiver over the app (decision 0013).
+    var waiverAccepted: Bool?
     var players: [PlayerProfile] = []
     var activePlayer: PlayerProfile?
     var authError: String?
@@ -64,6 +66,7 @@ final class SessionStore {
             players = try await ProfileRepository.myPlayers()
             // v1 is adults-only: the account's own player is the active one.
             activePlayer = players.first
+            waiverAccepted = (try? await ProfileRepository.myWaiverAccepted()) ?? nil
         } catch {
             // A signed-in user with no profile row is a real state (see the
             // Volee "cannot load profile" lesson). Surface it rather than crash.
@@ -164,6 +167,7 @@ final class SessionStore {
         account = nil
         players = []
         activePlayer = nil
+        waiverAccepted = nil
         phase = .signedOut
     }
 

@@ -12,6 +12,9 @@ struct ProfileView: View {
     @Environment(SessionStore.self) private var session
     @State private var showNTRP = false
     @State private var editing = false
+    @State private var confirmDelete = false
+    @State private var deleting = false
+    @State private var deleteError: String?
 
     var body: some View {
         NavigationStack {
@@ -52,6 +55,44 @@ struct ProfileView: View {
                                 .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
                         }
                         .accessibilityIdentifier("profile.signOut")
+
+                        // App Store 5.1.1(v); decision 0013 §5: history stays,
+                        // the person is removed. Two taps, spelled out.
+                        Button(role: .destructive) {
+                            confirmDelete = true
+                        } label: {
+                            Text("Delete my account")
+                                .font(Brand.Typography.caption)
+                                .frame(maxWidth: .infinity)
+                                .frame(minHeight: Brand.Layout.minTapTarget)
+                                .foregroundStyle(Brand.Status.canceled.ink)
+                        }
+                        .disabled(deleting || session.account?.isAdmin == true)
+                        .accessibilityIdentifier("profile.delete")
+                        .confirmationDialog(
+                            "Delete your account? Your name, phone, email and card are removed and you are signed out. This can't be undone.",
+                            isPresented: $confirmDelete, titleVisibility: .visible
+                        ) {
+                            Button("Delete my account", role: .destructive) {
+                                Task {
+                                    deleting = true
+                                    do {
+                                        try await ProfileRepository.deleteMyAccount()
+                                        await session.signOut()
+                                    } catch {
+                                        deleteError = "Couldn't delete your account."
+                                    }
+                                    deleting = false
+                                }
+                            }
+                            Button("Keep my account", role: .cancel) {}
+                        }
+                        if let deleteError {
+                            Text(deleteError)
+                                .font(Brand.Typography.caption)
+                                .foregroundStyle(Brand.Status.canceled.ink)
+                                .frame(maxWidth: .infinity)
+                        }
 
                         // Which build is this? The first question in every
                         // "it looks wrong on my phone" text from Tara or a

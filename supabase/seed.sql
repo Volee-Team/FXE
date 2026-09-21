@@ -109,3 +109,15 @@ update auth.users set
   phone_change_token = coalesce(phone_change_token, ''),
   reauthentication_token = coalesce(reauthentication_token, '')
 where email like '%@fxe.test';
+
+-- Decision 0013 (2026-09-21): the waiver is signed before the first spot is
+-- held. Every seeded player has signed the current version; the waiver probe
+-- creates its own unsigned account so the refusal is tested without making a
+-- seeded person the odd one out.
+insert into public.waiver_acceptances (account_id, version, legal_name, email, app_version) values
+  ('22222222-2222-2222-2222-222222222222', '2026-09', 'Maria Alvarez',  'maria@fxe.test', 'seed'),
+  ('33333333-3333-3333-3333-333333333333', '2026-09', 'Ken Whitfield',  'ken@fxe.test',   'seed'),
+  ('44444444-4444-4444-4444-444444444444', '2026-09', 'Rob Delgado',    'rob@fxe.test',   'seed'),
+  ('55555555-5555-5555-5555-555555555555', '2026-09', 'Priya Raman',    'priya@fxe.test', 'seed'),
+  ('66666666-6666-6666-6666-666666666666', '2026-09', 'Dana Okonkwo',   'dana@fxe.test',  'seed')
+on conflict (account_id, version) do nothing;

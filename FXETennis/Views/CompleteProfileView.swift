@@ -94,10 +94,10 @@ struct CompleteProfileView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
-            Text("Almost there")
+            Text("Almost there!")
                 .font(Brand.Typography.display)
                 .foregroundStyle(Brand.textPrimary)
-            Text("Tara uses this to build her clinic lists.")
+            Text("Members get 24-hour early access to all clinics")
                 .font(Brand.Typography.subheadline)
                 .foregroundStyle(Brand.textSecondary)
         }
@@ -187,7 +187,7 @@ struct CompleteProfileView: View {
             Text("Note for Tara (optional)")
                 .font(Brand.Typography.bodyEmphasis)
                 .foregroundStyle(Brand.textPrimary)
-            TextField("just coming back from a back injury so I'm a low 3.5", text: $levelNote, axis: .vertical)
+            TextField("Just coming back from a back injury - probably a low 3.5", text: $levelNote, axis: .vertical)
                 .lineLimit(2...4)
                 .textFieldStyle(.roundedBorder)
                 .accessibilityIdentifier("profile.levelNote")
@@ -266,7 +266,7 @@ struct CompleteProfileView: View {
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("profile.signOutFromSetup")
-        .accessibilityHint("Signs you out. Your account is kept, and you can finish this later.")
+        .accessibilityHint("Signs you out, you can finish later if needed")
     }
 
     private var saveButton: some View {
@@ -301,7 +301,7 @@ struct CompleteProfileView: View {
 
             // A disabled control always gets visible helper text saying why.
             if !canSave && !saving {
-                Text("Add your name, phone and rating, and answer the membership question to continue.")
+                Text("Add your name, phone number, and tennis rating. Please answer the membership question to continue")
                     .font(Brand.Typography.caption)
                     .foregroundStyle(Brand.textSecondary)
             }
