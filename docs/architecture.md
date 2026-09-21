@@ -52,10 +52,10 @@ most important thing to understand here, and it is section 5.
 
 | Area | State |
 |---|---|
-| Postgres schema, RLS, narrow views, RPCs | **Built**, 31 migrations, 28 applied to hosted (verified 2026-09-16; the three 20260921 files push with their PR, `supabase migration list --linked`) |
+| Postgres schema, RLS, narrow views, RPCs | **Built**, 32 migrations, 28 applied to hosted (verified 2026-09-16; the four 20260921 files push with their PRs, `supabase migration list --linked`) |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | **Built**, enumerated by probes |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | **Built** |
-| SQL probe suite (22 probes; the suite prints its own total) + concurrency probe, in CI | **Built** |
+| SQL probe suite (23 probes; the suite prints its own total) + concurrency probe, in CI | **Built** |
 | iOS: sign-in, sign-up with profile, password reset, three tabs | **Built** |
 | iOS: browse by week, per-viewer pricing, register / cancel (4-hour note inside the cutoff) / leave pool / respond, closed-clinic "Message Tara", the bell, My Clinics, profile edit, card on file | **Built** |
 | iOS admin tab: rosters, invite, courts, paid, unpaid reminder, message audiences, late requests, Action Needed, player directory | **Built** |
@@ -99,7 +99,7 @@ flowchart TD
         auth -.->|"auth.uid() read by is_admin() / owns_player()"| pg
     end
 
-    edge["Edge functions (Deno, service_role)<br/>stripe-setup-intent, stripe-webhook, stripe-charge, delete-account"]
+    edge["Edge functions (Deno, service_role)<br/>stripe-setup-intent, stripe-webhook, stripe-charge, delete-account, review-submit"]
     edge --> pg
     gha["GitHub Actions<br/>probes, browser tests, Stripe pipeline (mocked), iOS build + tests,<br/>copy gate, secret scan, migration immutability, doc paths, nightly backup"] -.-> supa
 ```
@@ -303,6 +303,8 @@ the attack and asserts it fails.
 | `waivers` + `waiver_acceptances` | Tara's Adult Tennis Participation Waiver, one row per version, and each electronic signature (typed legal name, account email, time, app build). Reached only through `current_waiver`, `my_waiver_accepted`, `accept_waiver` (decision 0013). |
 | `payments` | The money ledger (decision 0009): one row per clinic fee, late cancel, no show or refund, with Stripe ids and a status only the edge functions or admin RPCs change. Players read their own rows. |
 | `app_settings` | Small admin-editable strings, e.g. Tara's payment line, and the payment policy keys (`payments_enabled`, `cancel_cutoff_hours`, …). Never anything hidden. |
+| `review_links` | One row per link to Tara's review page (`web/review.html?t=<token>`, 20260921000010). The token is the credential: 24 random bytes, URL-safe, minted by `admin_create_review_link`; `revoked_at` retires a link without deleting what it collected. No client role holds anything on it. |
+| `review_responses` | Her answers, one jsonb blob per (link, page version), replaced on every save; `updated_at` stamped by trigger with `clock_timestamp()`. Written only by the `review-submit` edge function as `service_role`, read back by `admin_review_responses`. |
 
 Enums: `account_type`, `account_role`, `player_kind`, `clinic_audience`
 (`juniors` kept, not offered), `clinic_status`, `registration_status`
@@ -335,6 +337,7 @@ always `auth.uid()`; `devices` stays client-unreadable), `current_waiver` / `wai
 | `publish_news` | Publish a draft post. |
 | `admin_charge_registration`, `admin_refund_payment` | Insert `pending` ledger rows for the Stripe edge functions to execute; refuse while `payments_enabled` is false. |
 | `revenue_summary` | The four numbers and the money (section 7). |
+| `admin_create_review_link`, `admin_review_responses` | Tara's review page (section 8): mint a link token with a label; list every saved response newest first, revoked links included (archive, never delete). |
 
 **Internal** (`notify_account`, `admin_account_ids`) is executable by no
 client role. Helper functions used by defaults and views (`service_week_start`,
@@ -427,6 +430,19 @@ cancel / Refund on the roster row, rendered only while `payments_enabled` is
 true (the late-cancel note shows always). Drag-and-drop courts are
 deliberately not built until the dropdown has been used for real.
 
+Added 2026-09-21: **Tara's review page lives here too.** `web/review.html`
+is the second target of `scripts/build-tara-review.py` (the first is the
+claude.ai artifact in `docs/tara-review/`, unchanged): the same three tabs,
+opened as `review.html?t=<token>`, saving her answers to `review_responses`
+through the `review-submit` edge function 1.5 s after every change and when
+the page goes to the background, with a one-line status (Saving, Saved,
+Couldn't save). She has no account, so the token in the URL is the
+credential and the function runs with `verify_jwt = false`. Without a token
+the page works from localStorage alone and says so. On the Players tab a
+**Review links** card mints a link (`admin_create_review_link`, label plus
+Copy) and lists every response (`admin_review_responses`) with a Show toggle
+revealing the same summary text the page's Copy my answers produces.
+
 ---
 
 ## 9. Testing and CI
@@ -457,6 +473,7 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `waiver` | Decision 0013 §4: her text is served, an unsigned account cannot register, a signature needs a full legal name and the current version, the email comes from the account, signing twice keeps the first record, Tara can place an unsigned player and see who has not signed, no client touches the tables | 23 |
 | `account_deletion` | Decision 0013 §5: the person is scrubbed, registrations, ledger and Tara's note stay, a spot in a future clinic is given back, a played clinic keeps its row and its revenue, Tara cannot delete herself, a deleted row is never an admin | 18 |
 | `late_cancellation` | Decision 0010 driven from the roles the app uses: a late You're In! cancel needs a note, pool drop-outs and Tara's removals are never late, the note reaches her roster |
+| `review_responses` | Only Tara mints a review link and the token is long and URL-safe; anon and authenticated hold no verb on either table; the edge function's role does; a repeat save on one (link, page version) is one row with a later `updated_at`; Tara reads every response back with its label, newest first; revoking a link keeps its responses |
 | `capacity_race.sh` | Two racing registrations; invite-vs-accept |
 
 **Swift**: 23 unit tests (`FXETennisTests`: price formatting, per-viewer
@@ -470,7 +487,7 @@ local stack and are order-dependent on a fresh seed. **They do not run in
 CI**: the macOS runner has no Docker for the stack; a `fxe-ci` Supabase
 project is the ask (`docs/launch-checklist.md` §F).
 
-**Web admin**: 12 Playwright tests (`web/tests/admin.spec.mjs`) walk Tara's
+**Web admin**: 14 Playwright tests (`web/tests/admin.spec.mjs`) walk Tara's
 side against a fresh seed: sign-in and the non-admin door, prices, walk-up,
 courts, unpaid reminder, a note round-trip, cancel clinic, template archive
 and restore, Money counts, the card-payments ledger, payments off. One worker,
