@@ -1,8 +1,10 @@
 # Edge functions
 
 Deno functions deployed to the Supabase project. Decision 0009 (payments)
-owns the three `stripe-*` functions; nothing else lives here yet (push
-delivery, decision 0008, will add `push` once Apple issues the key).
+owns the three `stripe-*` functions; `review-submit` (2026-09-21) saves
+Tara's review-page answers; `delete-account` (2026-09-21, decision 0013 §5)
+removes the sign-in after `delete_my_account()` has scrubbed the personal
+data; push delivery, decision 0008, will add `push` once Apple issues the key.
 
 ## Secrets (never in the repo, the app, or a log)
 
@@ -18,13 +20,15 @@ or with `supabase secrets set NAME=value`:
 `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` are
 injected by the platform.
 
-## The three functions
+## The functions
 
 | Function | Called by | Auth | Does |
 |---|---|---|---|
 | `stripe-setup-intent` | the iOS app, once per card | caller's JWT | creates or reuses the Stripe customer, returns a SetupIntent client secret + ephemeral key for PaymentSheet |
 | `stripe-webhook` | Stripe | Stripe signature (`verify_jwt = false`) | records the card summary on `setup_intent.succeeded`, and ledger outcomes on payment / refund events |
 | `stripe-charge` | the admin surfaces after `admin_charge_registration` / `admin_refund_payment` | admin JWT | turns up to 25 `pending` ledger rows per call (`.limit(25)`) into one PaymentIntent (off-session) or Refund each, with an idempotency key per row; safe to call again for the rest |
+| `review-submit` | `web/review.html?t=<token>`, Tara's review page | the token in the body or query, checked against `review_links` (`verify_jwt = false`: she has no account) | `POST {token, page_version, answers}` upserts one jsonb blob per (link, page version) into `review_responses` and returns `{saved_at}`; `GET ?token=&page_version=` returns `{answers, saved_at}` so she can continue on another device; unknown or revoked token is 404, answers over 200 KB or not an object is 400. Uses `_shared/supabase.ts`, not the Stripe module. No rate limiting |
+| `delete-account` | the iOS app, Delete my account | caller's JWT | calls `delete_my_account()` (blanks name, phone, email, level note and card summary; keeps registrations, payments and Tara's notes), then soft-deletes the auth user through Supabase's admin API. Admins are refused by the RPC. Never writes the auth schema in SQL |
 
 The database never talks to Stripe; the app never holds a key that can move
 money; the only writer of ledger status is the webhook (plus `stripe-charge`
@@ -34,7 +38,7 @@ moving pending → processing and recording a synchronous decline).
 
 ```bash
 supabase start
-supabase functions serve            # serves all three on :54321/functions/v1/
+supabase functions serve            # serves them all on :54321/functions/v1/
 stripe listen --forward-to localhost:54321/functions/v1/stripe-webhook
 ```
 
@@ -48,6 +52,8 @@ call fails, which is the intended state until the test keys exist.
 supabase functions deploy stripe-setup-intent
 supabase functions deploy stripe-webhook --no-verify-jwt
 supabase functions deploy stripe-charge
+supabase functions deploy review-submit --no-verify-jwt
+supabase functions deploy delete-account
 ```
 
 ## Testing without a Stripe account

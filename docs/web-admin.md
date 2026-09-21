@@ -9,9 +9,9 @@ deployed by hand with `vercel --prod` and deliberately not connected to the
 repo (`web/README.md`); there is no `_headers` file and no CSP; there is no
 generated `db.types.ts` and no `dist/` for CI to grep. The architecture
 arguments below (static SPA, no server, RPC-only authority) all still hold and
-are what the shipped page does. Verified 2026-09-12: `ls web` shows
-`index.html`, `reset.html`, `config.js`, `tokens.css` plus the Playwright
-tooling.
+are what the shipped page does. Verified 2026-09-21: `ls web` shows
+`index.html`, `reset.html`, `review.html`, `config.js`, `tokens.css` plus the
+Playwright tooling.
 **Date:** 2026-08-02
 **Decision owner:** Alex
 **Approved by:** Tara (split admin surface, per `for-tara.md` question 1)
@@ -286,7 +286,7 @@ Each of these is a decision, not an oversight.
 * **No admin-side push or email.** Notifications reach her phone. The laptop page is opened deliberately.
 * **No multi-admin UI, no roles beyond `member` and `admin`, no permission editor.** `accounts.role` already supports a second admin as an `UPDATE` statement. Do not build a screen for it before a second admin exists.
 * **No CSV import or export, no charts.** The Money tab is the one report: `revenue_summary()`, `revenue_by_clinic`, and the `payments_ledger` list (2026-09-01, 2026-09-12). The data is in Postgres and can be queried directly if a one-off question comes up.
-* **Payment processing, revised.** Zelle stays the Paid checkbox Tara ticks. Card charges are her tap: Charge fee, Charge late cancel and Refund exist on the card only while `app_settings.payments_enabled` is true, which it is not yet (decision 0009, 2026-09-12).
+* **Payment processing, revised twice.** Zelle is off: `app_settings.zelle_allowed` is `false` since decision 0013 (2026-09-21), so the Paid checkbox and Remind unpaid are rendered on neither admin surface. Card charging is one tap per clinic, Charge clinic (decision 0012), plus Refund on the Money tab; both exist only while `app_settings.payments_enabled` is true, which it is not yet (decision 0009).
 * **No print stylesheet or printable court sheet.** Flagged as the most likely first request after launch, because a paper sheet on a clipboard is a real thing at tennis clubs. Cheap to add later, roughly a `@media print` block. Not built until asked.
 * **No undo, no audit log, no change history.** `canceled_at`, `canceled_by`, `invited_at`, and `responded_at` already record the transitions that matter. A general audit trail is a different project.
 * **No touch or keyboard drag-and-drop.** The dropdown covers both, permanently.
@@ -302,3 +302,49 @@ Each of these is a decision, not an oversight.
 * **Do PR preview deploys get their own Supabase project, or are they disabled?** Must be resolved before the first pull request, not after. **Resolved:** the repo is not connected to Vercel; deploys are manual `vercel --prod` from `web/`, so there are no previews (`web/README.md`).
 * **Does Tara want the court board grouped by anything within a court,** for example rating or age, or is a flat list per court correct? Assuming flat until told otherwise.
 * **Adult rating value list** is still open in `for-tara.md` question 6 and blocks the Player Directory filter UI, though not the rest of the screen. **Resolved 2026-08-02:** NTRP 2.0 to 5.0 in half steps, stored as `numeric(2,1)` (CLAUDE.md decisions 6+7).
+
+---
+
+## 9. Tara's review page (added 2026-09-21)
+
+`web/review.html` is the page from `docs/tara-review/` (the claude.ai
+artifact of 2026-09-18) rebuilt on this site, because the artifact could
+only keep her answers in the phone's localStorage and she had to redo them
+once when the browser lost them. Both pages come from one generator,
+`scripts/build-tara-review.py` (`--target artifact` / `--target web`; no
+flag builds both), from one data block, so the words she reviews cannot
+differ between them.
+
+How it works, and why it is shaped this way:
+
+* **The token is the credential.** Tara has no account and opens the page
+  from a text message, so the URL carries a 32-character random token
+  (`review_links`, minted only by an admin through `admin_create_review_link`).
+  The `review-submit` edge function runs with `verify_jwt = false` and checks
+  the token against the table on every call; a revoked or unknown token gets
+  404. No client role can read or write `review_links` or `review_responses`
+  (20260921000010, probe `review_responses`, 26 checks).
+* **Saves are debounced 1.5 s and flushed on `visibilitychange`**, with
+  `keepalive` so a backgrounded tab's last request still lands. The answers
+  travel as one JSON blob per (link, page version): the raw state plus the
+  summary text, so the admin page shows exactly what Copy my answers gives
+  her, from one formatter, not two.
+* **Local first, server wins if newer.** Every change lands in localStorage
+  with a timestamp before the server is asked; on load, the server copy
+  replaces the local one when its `updated_at` is at least as new, otherwise
+  the phone is ahead (it saved offline) and pushes. She can continue on
+  another device by opening the same link.
+* **Without a token** the page still works from localStorage and says so; the
+  Copy my answers fallback stays.
+* **Page version.** Answers are keyed by item position; `PAGE_VERSION` in the
+  generator must be bumped when items are inserted, removed or reordered, so
+  old answers stay in their own row. Rewording in place needs no bump.
+
+On the admin site, the Players tab's **Review links** card mints a link (a
+label so Alex knows which is which, the full URL, Copy) and lists every
+response with when it was last saved and a Show toggle. Not built: rate
+limiting on the function (a miss is one primary-key lookup), an RPC to
+revoke a link (`revoked_at` exists; set it by migration or as `service_role`
+until a caller is needed), and Playwright coverage of the server round trip
+(CI serves no edge runtime; the round trip was verified by curl and in the
+browser on 2026-09-21).

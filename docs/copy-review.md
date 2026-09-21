@@ -10,8 +10,9 @@ Regenerate any time: `python3 scripts/extract-copy.py --report`
 scripts/build-tara-review.py` writes `docs/tara-review/index.html`, a
 phone-first page with every user-visible string, where it appears in plain
 language, and Keep or Change with a box for her wording; her own sentences are
-marked "Your words". It also carries the open questions (43 to 51) and a
-try-it list for the web admin. Answers stay in her browser and come back as
+marked "Your words". It also carries the open questions (52 to 57 since the round-two republish
+of 2026-09-21; the 2026-09-18 version carried 43 to 51) and a try-it list for
+the web admin. Answers stay in her browser and come back as
 one pasted text from "Copy my answers". Published privately at
 https://claude.ai/artifact/1H3fCuvG7pkc9scTAJmfkL; Alex shares the link. When
 her answers arrive, apply them to the code, then tick the rows below: her
@@ -33,6 +34,18 @@ plus every "New since" block.
 > only scanned Swift and that string was in a web page. Now it scans everything.
 
 ---
+
+## New since the last review — 2026-09-21 (Past under My Clinics), awaiting Alex
+
+Chrome, mine, all in ternaries or returns the extractor cannot see.
+
+| ✓ | String | Where |
+|---|--------|-------|
+| ☐ | PAST | MyClinicsView, section heading |
+| ☐ | Played · $18 | MyClinicsView, outcome on a played clinic (price is the snapshot) |
+| ☐ | Played | MyClinicsView, when no price was snapshotted |
+| ☐ | No-show | MyClinicsView, outcome |
+| ☐ | Canceled / Canceled late | MyClinicsView, outcome |
 
 ## New since the last review — 2026-09-21 (waiver, deletion, decision 0013), awaiting Alex
 
@@ -58,6 +71,28 @@ dialog titles and error branches it cannot (backlog row on the extractor).
 | ☐ | Sign the waiver first. | ClinicDetailView, waiver_required from register_for_clinic |
 | ☐ | Waiver signed / Waiver not signed | PlayersDirectoryView detail and row; web Players tab ("Waiver not signed") |
 | ☐ | Charge every card for …? Attendees pay the clinic fee; no-shows and late cancellations pay the full fee. | AdminClinicDetailView, confirmation (courtesy clause removed) |
+## New since the last review — 2026-09-21 (the review page saves to the server), awaiting Alex
+
+Tara's review page now lives on the admin site as `web/review.html`
+(`scripts/build-tara-review.py --target web`) and saves her answers to our
+database as she types (`review_responses`, through the `review-submit` edge
+function), so nothing is lost and Alex never relays. The 120 review items on
+it are not new copy: they are the strings already in this snapshot or Tara's
+own words, rendered from a JSON block the extractor does not read (they are
+the copy under review, not copy of the product). What the gate sees is the
+chrome below, mine.
+
+| ✓ | String | Where |
+|---|--------|-------|
+| ☐ | Your answers save as you go. | web/review.html, last sentence of the lede (replaces the artifact's "Your answers stay on this phone; when you're done, copy the summary at the bottom and text it to Alex.") |
+| ☐ | Saving… · Saved · Couldn't save, still on this phone | web/review.html, the status line under the lede |
+| ☐ | Couldn't load saved answers, still on this phone | web/review.html, status line when the first load fails |
+| ☐ | This link has no code, answers stay on this phone. | web/review.html opened without ?t= |
+| ☐ | This link isn't active, answers stay on this phone. | web/review.html when the token is unknown or revoked |
+| ☐ | Your answers as text · Alex sees your answers as they save. Copy them here if you want to text them as well. | web/review.html, the box above Copy my answers (replaces "Send it to Alex" and "This gathers everything you've decided across all three tabs.") |
+| ☐ | Review links · Label · Make link · Copy · Responses · Show · Hide | web/index.html, Players tab, the Review links card |
+| ☐ | Give the link a label. · Copied. · Couldn't copy. Select the link and copy it. · No responses yet. | web/index.html, the card's messages |
+| ☐ | Tara, this is your app's words · FXE Tennis, Tara's Review · Copy my answers · Copied · Selected. Press and hold to copy. · Your answer · Write it the way you'd say it · What happened? Anything odd? · On your laptop, with your real account. Whatever you set up here is real: it is your schedule. · N of 128 decided · 6 questions. One line each is plenty. | Not new: on the artifact since 2026-09-18 (`docs/`, outside the gate), in the snapshot now because `web/review.html` is scanned. Listed so the snapshot diff has a home. "Saving…" in the snapshot is the JS escape for the ellipsis |
 
 ## New since the last review — 2026-09-12, awaiting Alex
 
@@ -79,13 +114,13 @@ These are the chrome around them, mine.
 | ✓ | String | Where |
 |---|--------|-------|
 | ☐ | Cancel my spot | the cancel sheet button inside 4 hours |
-| ☐ | Note (optional) | the cancel sheet field when the fee applies |
+| ☒ | ~~Note (optional)~~ → **Note for Tara (optional)** | the cancel sheet field (her wording, 2026-09-21) |
 | ☐ | Add a card on your Profile to register. | Register tap refused for want of a card |
 | ☐ | Note for Tara (optional) · Only Tara sees this. | sign-up and Edit details |
-| ☐ | Add your name, phone and rating, and answer the membership question to continue. | sign-up helper line (replaces "Optional. Tara can set this for you later.", removed) |
+| ☒ | ~~Add your name, phone and rating, and answer the membership question to continue.~~ | sign-up helper line; **replaced 2026-09-21 by Tara's wording, see docs/copy.md** |
 | ☐ | Came · No-show | roster toggle, phone and web |
 | ☐ | Charge clinic · Not now | the tap after a clinic, phone and web |
-| ☐ | Charge every card for <clinic>? Attendees pay the clinic fee; no-shows and late cancellations without a courtesy pay the full fee. | phone confirmation |
+| ☒ | ~~Charge every card for <clinic>? … without a courtesy pay the full fee.~~ | phone confirmation; **courtesy clause removed 2026-09-21, superseded by the row in the 09-21 block above** |
 | ☐ | Charged N. Already charged N. No card N. | after the tap |
 | ☐ | The clinic hasn't ended yet. · Payments are switched off. · That didn't go through. Try again. | errors |
 | ☐ | Courtesy · Fee applies | web roster, late canceled rows |
@@ -98,8 +133,8 @@ Web admin roster and Money tab. Chrome, mine. None of it shows until
 
 | ✓ | String | Where |
 |---|--------|-------|
-| ☐ | Charge fee | roster, You're In! row, when a card exists and it is unpaid |
-| ☐ | Charge late cancel | roster, Canceled row flagged late |
+| ☒ | ~~Charge fee~~ | **Removed 2026-09-16 (decision 0012): one per-clinic "Charge clinic" button replaced both per-row buttons** |
+| ☒ | ~~Charge late cancel~~ | **Removed 2026-09-16 (decision 0012)** |
 | ☐ | Late | chip on a late cancellation |
 | ☐ | No card | in place of a Charge button |
 | ☐ | Refund | Money tab, on a paid charge |
@@ -116,8 +151,8 @@ iOS, the late-cancel prompt. The sentence Tara reads above the box is hers
 
 | ✓ | String | Where |
 |---|--------|-------|
-| ☐ | Reason (required) | text field placeholder inside 4 hours |
-| ☐ | Send and cancel my spot | the confirm button inside 4 hours |
+| ☒ | ~~Reason (required)~~ | **Removed 2026-09-16 (decision 0012): the emergency claim is gone** |
+| ☒ | ~~Send and cancel my spot~~ | **Removed 2026-09-16 (decision 0012): the button is "Cancel my spot"** |
 
 ## New since the last review — 2026-09-12 (notes stamp, version line), awaiting Alex
 
@@ -153,10 +188,10 @@ mine until Alex ticks them. Nothing here is attributed to Tara.
 | ☐ | Show canceled · N canceled clinics hidden. | Web admin, This week |
 | ☐ | Templates · Show archived · Archive · Restore · archived · No templates yet. | Web admin, templates card |
 | ☐ | Remove from clinic · Remove · Keep · Remove {name} from {clinic}? | Roster row menu, iOS admin |
-| ☐ | This week · Players · Money · Sections | Web admin tabs |
+| ☐ | This week · Players · Money | Web admin tabs ("Sections" is the tablist's `aria-label`, not a tab) |
 | ☐ | My Clinics (screen title) | My Clinics screen, iOS |
 | ☐ | Turn on notifications · Not now | Permission sheet, iOS. The sentence above the buttons is Tara's (Screen 3) |
-| ☐ | Notifications · Nothing yet. · Mark all read · Done · Couldn't load notifications. Pull to try again. | Notification center, iOS |
+| ☐ | Notifications · ~~Nothing yet.~~ **No notifications yet** (Tara's, 2026-09-21) · Mark all read · Done · Couldn't load notifications. Pull to try again. | Notification center, iOS |
 | ☐ | Edit details · Set by Tara · Save · Cancel · Saving… | Profile editing, iOS |
 | ☐ | Cancel clinic · Really cancel? Everyone is told. · Canceled · Cancel {clinic}? Everyone registered or waiting is told. · Keep the clinic · More · Couldn't cancel · That clinic is already canceled. | Cancel clinic, web and iOS |
 | ☐ | Players · Search by name · Show inactive players · Type at least two letters of a name. · Make member · Make non-member · Deactivate · Reactivate · Note · Save note · Private note · Only you can see this. · Saved. · Has a note · Couldn't search right now. Check your connection and try again. | Player directory, web and iOS |
@@ -170,7 +205,7 @@ every snapshot line against the three docs. The first three speak for Tara
 
 | ✓ | String | Where | Note |
 |---|---|---|---|
-| ☐ | **She will let you know if there is room.** | `ClinicDetailView.swift`, after a late request | Speaks for Tara |
+| ☒ | ~~**She will let you know if there is room.**~~ | `ClinicDetailView.swift`, after a late request | **Replaced 2026-09-21 by Tara: "She will let you know asap if there is room in this clinic"** |
 | ☐ | **Tara has your message.** | `ClinicDetailView.swift`, late request sent | Speaks for Tara |
 | ☐ | **You can still ask Tara to fit you in.** | `ClinicDetailView.swift`, after close | Speaks for Tara |
 | ☐ | Registration has closed for this clinic. | `ClinicDetailView.swift` | Chrome |
@@ -182,8 +217,8 @@ every snapshot line against the three docs. The first three speak for Tara
 | ☐ | Add your first and last name. | `web/index.html`, sign-up | Chrome |
 | ☐ | First time? Create your account | `web/index.html`, sign-in | Chrome |
 | ☐ | Add a player · Put in clinic · Start from a template | `web/index.html` | Chrome |
-| ☐ | FXE Tennis · Admin | `web/index.html` page title | **Em-dash.** Reword to a colon or split |
-| ☐ | FXE Tennis · Reset password | `web/reset.html` page title | **Em-dash.** Reword to a colon or split |
+| ☐ | FXE Tennis · Admin | `web/index.html` page title | **Middle dot (·), not an em-dash.** No change needed |
+| ☐ | FXE Tennis · Reset password | `web/reset.html` page title | **Middle dot (·), not an em-dash.** No change needed |
 
 ---
 
@@ -191,14 +226,14 @@ every snapshot line against the three docs. The first three speak for Tara
 
 | ✓ | String | Where | Note |
 |---|---|---|---|
-| ☐ | **Smart. Simple. Built for Tennis.** | Sign-in | From the AI mockups, so not really hers either. Keep? |
-| ☐ | **Almost there** | Profile setup | Ours |
-| ☐ | **Tara uses this to build her clinic lists.** | Profile setup | Ours, and it makes a claim about how she works |
-| ☐ | **Optional. Tara can set this for you later.** | Profile setup | Ours, promises something on her behalf |
-| ☐ | Add your name and answer the membership question to continue. | Profile setup | Ours, functional |
-| ☐ | Signs you out. Your account is kept, and you can finish this later. | Profile setup | Ours, VoiceOver only |
-| ☐ | **You're not in any clinics yet.** | Home | Ours |
-| ☐ | **Nothing open right now.** | Home | Ours |
+| ☒ | ~~**Smart. Simple. Built for Tennis.**~~ | Sign-in | **Replaced 2026-09-21 by Tara: "Let's Play." (decision 0013, question 55)** |
+| ☒ | ~~**Almost there**~~ | Profile setup | **Replaced 2026-09-21 by Tara: "Almost there!"** |
+| ☒ | ~~**Tara uses this to build her clinic lists.**~~ | Profile setup | **Replaced 2026-09-21 by Tara: "Members get 24-hour early access to all clinics"** |
+| ☒ | ~~**Optional. Tara can set this for you later.**~~ | Profile setup | **Removed 2026-09-16 (rating required)** |
+| ☒ | ~~Add your name and answer the membership question to continue.~~ | Profile setup | **Replaced 2026-09-21 by Tara's wording, see docs/copy.md** |
+| ☒ | ~~Signs you out. Your account is kept, and you can finish this later.~~ | Profile setup | **Replaced 2026-09-21 by Tara: "Signs you out, you can finish later if needed"** |
+| ☒ | ~~**You're not in any clinics yet.**~~ | Home | **Replaced 2026-09-21 by Tara: "You're not registered for any clinics this week"** |
+| ☒ | ~~**Nothing open right now.**~~ | Home | **Replaced 2026-09-21 by Tara: "No clinics currently open for registration"** |
 | ☐ | **This clinic has been canceled.** | Clinic detail | Ours. Tara may want a reason shown |
 | ☐ | **No description yet.** | "?" sheet | Ours. Shows when she hasn't written one |
 | ☐ | **FROM TARA** | Clinic detail | Ours. Labels her messages to players |
@@ -231,7 +266,7 @@ promotional. Still ours.
 | ✓ | String |
 |---|---|
 | ☐ | Admin sign-in. |
-| ☐ | No clinics yet. Use "New clinic" to add your first one. |
+| ☐ | No clinics yet. Use “New clinic” to add your first one. |
 | ☐ | Description (players see this under the "?") |
 | ☐ | That account is not an administrator. |
 | ☐ | A clinic needs a name. |

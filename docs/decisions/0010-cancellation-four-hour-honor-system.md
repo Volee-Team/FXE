@@ -1,6 +1,8 @@
 # 0010: Cancellation is a 4-hour honor system
 
-**Date:** 2026-09-12 · **Status:** Partial (the cutoff and the principle are Tara's; the charge amount and who taps are still open) · **Extends:** 0009
+**Date:** 2026-09-12 · **Status:** Superseded on two counts (see below); the honor-system principle and Tara's tap stand · **Extends:** 0009
+
+**Superseded, 2026-09-16 and 2026-09-21:** §3 (the required emergency note) is replaced by 0012 §1; the 4-hour cutoff in §1 is replaced by 0013 §2 (3 hours); "who taps" is closed by 0012 §4 and 0013 §8. Read 0013 first.
 
 ## What Tara said
 
@@ -17,9 +19,9 @@ that quote is an inference and is marked as one.
 
 ## What this decides
 
-1. **The cutoff is 4 hours** before the clinic starts. `app_settings.cancel_cutoff_hours` was 24 by our default; it is now 4 by her word.
+1. **The cutoff is 4 hours** before the clinic starts. `app_settings.cancel_cutoff_hours` was 24 by our default; it became 4 by her word, and 3 on 2026-09-21 (decision 0013 §2).
 2. **Before the cutoff, any cancellation is free** and needs no reason.
-3. **Inside the cutoff, a player has to say it is an emergency to cancel**, with a very concise message. The app therefore requires a short note on a late cancellation by the player, and stores it. (Inference: the note is the player's own words, the same way a late request is; the app invents nothing.)
+3. **Inside the cutoff, a player has to say it is an emergency to cancel**, with a very concise message. The app therefore requires a short note on a late cancellation by the player, and stores it. (Withdrawn 2026-09-16 by 0012 §1: the note is optional and `late_cancel_needs_note` is no longer raised.) (Inference: the note is the player's own words, the same way a late request is; the app invents nothing.)
 4. **Honor system.** The app does not judge the note and charges nobody on its own. A late cancellation shows up on Tara's roster with the note beside it; charging is her tap, as question 34's default already said. (Inference from "honor system" plus 0009's rule that a late charge waits for her tap.)
 5. Pool and Response Needed players who drop out inside 4 hours are not "late": only a You're In! player holds a spot (question 30's default, unchanged).
 6. Tara removing a player inside 4 hours is not the player's late cancel and records no note.
@@ -34,7 +36,7 @@ that quote is an inference and is marked as one.
 ## Consequences in the code
 
 - `registrations.late_cancel` and `registrations.cancel_note` (20260912000005).
-- `cancel_registration(p_registration, p_note)` raises `late_cancel_needs_note` for a You're In! player inside the cutoff with no note; the old single-argument signature is dropped so the call cannot be ambiguous.
+- `cancel_registration(p_registration, p_note)` raised `late_cancel_needs_note` for a You're In! player inside the cutoff with no note (withdrawn 2026-09-16 by 0012 §1: the note is optional); the old single-argument signature is dropped so the call cannot be ambiguous.
 - `registrations_admin` carries `late_cancel`, `cancel_note`, `has_card`; the web roster shows the note and, once payments are on, a Charge button.
 - The player's cancel flow in the app asks for the note inside the cutoff.
 

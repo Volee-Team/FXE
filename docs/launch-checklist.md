@@ -18,10 +18,10 @@ Owners: **[me]** built by the model, **[Alex]** needs his hands or his accounts,
 |---|---|---|---|
 | 1 | Stripe test-mode account and the three keys in Supabase secrets (steps in section B) | [Alex] | deferred by Alex 2026-09-13 ("figure that stuff out then I'll do the stripe stuff later"): after the CI project and the doc mechanisms |
 | 2 | Run `tests/stripe/run.sh` against real Stripe with test cards, `stripe listen` for webhooks, fix what the mock could not show | [me] | blocked on 1 |
-| 3 | Tara's answers to questions 28–42 | [Tara] | **answered 2026-09-16**, decision 0012; follow-ups 43–47 open |
-| 4 | Her policy in the code: one courtesy per 90 days, no-shows, one tap per clinic after it ends, card required to register, her two sentences | [me] | **built 2026-09-16** (migration 20260916000001); `payments_enabled` still off until Stripe keys and question 43 |
+| 3 | Tara's answers to questions 28–42 | [Tara] | **answered 2026-09-16**, decision 0012; follow-ups 43–47 **answered 2026-09-21**, decision 0013; questions 52–57 open |
+| 4 | Her policy in the code: no courtesy (switched off at 0 days, 2026-09-21), no-shows, one tap per clinic after it ends, card required to register, her two sentences | [me] | **built 2026-09-16** (20260916000001), **amended 2026-09-21** (20260921000001, decision 0013); `payments_enabled` still off until Stripe keys and question 43 |
 | 5 | Refund on her clinic cancel | [me] | **moot 2026-09-16**: nothing is charged before a clinic ends (her answer 7) |
-| 6 | Player-side payment history and receipts on Profile (Stripe sends email receipts if we pass `receipt_email`; decide whether to) | [me] | policy-independent, not built |
+| 6 | Player-side payment history: **the Past section of My Clinics** shipped 2026-09-21 (`my_past_clinics`: what I played and what it cost). Still not built: Stripe email receipts (decide whether to pass `receipt_email`) | [me] | Past built; receipts open |
 | 7 | Live-mode activation on stripe.com. Tara sent Alex her business details on 2026-09-16; **they go into Stripe's own form and nowhere else** (not the repo, not chat, not the prompt log, which now redacts them) | [Alex] with Tara's details | ready to do with the test account |
 | 8 | Stripe webhook endpoint for hosted (`https://amnaxvznkadkgzdxzegw.supabase.co/functions/v1/stripe-webhook`, five events, section B) | [Alex] | with 1 |
 
@@ -77,27 +77,27 @@ The rule (CLAUDE.md, verification asymmetry): the thing that builds a feature ca
 
 | Layer | Runs where | Count 2026-09-12 | Gap |
 |---|---|---|---|
-| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 479 checks, 22 probes | none known |
+| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 513 checks, 24 probes | none known |
 | Stripe pipeline against stripe-mock | every PR | 27 checks | real Stripe behaviour (3DS, declines) waits on keys |
-| Web admin browser tests (Playwright, real sign-in) | every PR | 12 | not idempotent (backlog); no test of the charge path with the switch on |
+| Web admin browser tests (Playwright, real sign-in) | every PR | 14 | not idempotent (backlog); no test of the charge path with the switch on |
 | Swift unit tests (pure logic) | every PR | 23 | fine |
-| XCUITests, player and admin flows on the simulator | **local only** | 13 | **not in CI**: the macOS runner cannot host the local database. Fix: a CI Supabase project (section F) |
+| XCUITests, player and admin flows on the simulator | **local only** | 13 | **not in CI** by decision (§F, 2026-09-18): run on a laptop before every TestFlight build and pasted into that build's changelog entry |
 | Hand-driven simulator and browser passes with screenshots | every feature, by me | – | not repeatable; that is what the two layers above are for |
 | Copy gate, secret scan, migration immutability, icon gate | every PR | – | none |
 | Nightly backup | nightly | – | never restored (D4) |
 
 Missing kinds of testing, in the order they matter:
 
-1. **UI tests in CI** (section F). The largest gap: today a Swift change is proven only on my machine.
+1. **UI tests in CI**: deliberately deferred 2026-09-18 (section F); until then the laptop run before each TestFlight build is the control.
 2. **A restore drill** (D4).
 3. **Real-device pass** (C9).
 4. **Accessibility pass**: VoiceOver on every screen, Dynamic Type at the largest size, colour never the only signal (the design system promises this; nothing checks it). Build: an XCUITest that reads every button's accessibility label on each screen and fails on an empty one.
 5. **Offline and bad network**: airplane mode on every action; the app should say "Couldn't…" and keep state. Build: a UI test with a stubbed network is expensive; a manual checklist first.
-6. **Time-zone and DST**: the window rule has probes across DST; the app's week grouping has unit tests. Missing: a probe on the 4-hour cutoff across a DST change (add to `late_cancellation.sql`).
+6. **Time-zone and DST**: the window rule has probes across DST; the app's week grouping has unit tests. Missing: a probe on the 3-hour cutoff across a DST change (add to `late_cancellation.sql`).
 7. **Load at club scale**: the capacity race runs 24-way; a season publish of 60 clinics has never been listed on a phone. Build: seed 60 clinics locally once and screenshot Home and Clinics.
 8. **Security review of the edge functions** with the `sql-auditor` agent (rewritten for FXE 2026-09-12) and an adversarial pass: call every function as anon, as a player, as a player with a forged body.
 9. **Dependency audit**: `npm audit` for the web tests. Swift packages: Stripe SDK pinned exactly 2026-09-12 (PR #37); supabase-swift was already exact.
-10. **Copy review with Tara**: the 60-odd chrome strings in `docs/copy-review.md` and every sentence marked hers.
+10. **Copy review with Tara**: done 2026-09-21 (decision 0013, her Words tab applied verbatim); round two sent the same day, questions 52–57 outstanding.
 
 ## F. The CI Supabase project (Alex asked 2026-09-12; corrected 2026-09-13; decided 2026-09-18)
 
