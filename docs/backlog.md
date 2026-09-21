@@ -9,7 +9,6 @@ Priority: 🔴 blocks a person · 🟡 should fix · 🟢 whenever
 
 | | Item | Found | Note |
 |---|---|---|---|
-| 🟢 | **The DIRTY DATABASE warning missed the browser suite's leftovers once** | 2026-09-21 | After `npx playwright test` on a fresh seed, `run-probes.sh` reported two false failures (`pricing_and_revenue`, `view_write_paths`) and no DIRTY line, although the walk-up and the cancel had written rows. Re-derive: run the browser suite, then the runner's stray-row query by hand, and see which table the residue is in (a `clinic_messages` or `notifications` row is not counted). Fix the query, then the runner is trustworthy again |
 | 🟢 | **The August prompt-log backfill truncates long tool results at about 8,000 characters** | 2026-09-13 | `scripts/backfill-prompt-log.py` capped results, so the 2026-08-14 audit's per-area grades survive only as the summary table (`docs/prompt-log/2026-08-backfilled.md` around line 1160). Anything long in that file is a fragment; the live hooks do not truncate |
 | 🟢 | **SpringBoard crash on launch is the simulator, not the app** | 2026-09-02 | Alex saw it twice (09-02, 09-10): "springBoard can't be used on this version of macOS" then a crash. It is the simulator's own SpringBoard on Xcode 26.2 / iOS 26.2 runtime under macOS 15.7. Quit Simulator.app and relaunch; nothing in the app is involved. Recorded so it is not diagnosed a third time |
 | 🟡 | **Four seed clinic names are invented** | 2026-08-19 | "Thursday Morning Cardio", "Coed Cardio", "Saturday Members Only", "Sunday Social" in `supabase/seed.sql` are ours; only Tuesday Ladies 3.0+ is Tara's. Probes and UI tests reference them by name, so replacing them with her real week (`docs/taras-real-week.md`) is a coordinated rename, not a seed edit. A screenshot with them reads as her schedule; label it |
@@ -35,6 +34,7 @@ Priority: 🔴 blocks a person · 🟡 should fix · 🟢 whenever
 
 | | Item | Fixed | Fix |
 |---|---|---|---|
+| 🟢 | ~~**The DIRTY DATABASE warning missed the browser suite's leftovers**~~ | 2026-09-21 | The grace window after the seed was 60 seconds and the browser suite writes its rows about 23 seconds after a reset. Seed rows share one `now()` (one transaction), so the window is 5 seconds now; the same residue then printed the warning |
 | 🟡 | ~~**Decision 0005 claims a probe pins targeted-message visibility; none does**~~ | 2026-09-21 | `tests/sql/clinic_messaging.sql`, 14 checks, red on three under a leaky view |
 | 🟡 | ~~**The persistent notice while notification permission is denied is not built**~~ | 2026-09-21 | `NotificationsOffLine` at the top of Home whenever iOS reports denied, with the approved sentence and a Turn on notifications button into Settings; re-checked when the app comes back to the foreground |
 | 🟡 | ~~**`leave_pool` hard-deletes the registration**~~ | 2026-09-21 | Conditional update to `canceled` with the stamp (20260921000001); `late_cancellation.sql` asserts the row survives |

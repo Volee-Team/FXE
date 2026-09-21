@@ -34,6 +34,18 @@ plus every "New since" block.
 
 ---
 
+## New since the last review — 2026-09-21 (Past under My Clinics), awaiting Alex
+
+Chrome, mine, all in ternaries or returns the extractor cannot see.
+
+| ✓ | String | Where |
+|---|--------|-------|
+| ☐ | PAST | MyClinicsView, section heading |
+| ☐ | Played · $18 | MyClinicsView, outcome on a played clinic (price is the snapshot) |
+| ☐ | Played | MyClinicsView, when no price was snapshotted |
+| ☐ | No-show | MyClinicsView, outcome |
+| ☐ | Canceled / Canceled late | MyClinicsView, outcome |
+
 ## New since the last review — 2026-09-21 (waiver, deletion, decision 0013), awaiting Alex
 
 Tara's own words from her review are hers and are listed in `docs/copy.md`

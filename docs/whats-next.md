@@ -82,7 +82,7 @@ Charge late cancel / Refund as Tara's tap, rendered only while
 grants), the three Stripe edge functions deployed, the card screen on Profile
 with PaymentSheet, `payments_ledger`, and `cancel_registration` refusing a late
 You're In! cancel without a note. Testing: 14 Playwright tests, 13 XCUITests
-(5 on Tara's side), 23 unit tests, 23 SQL probes, and a 27-check Stripe
+(5 on Tara's side), 23 unit tests, 24 SQL probes, and a 27-check Stripe
 pipeline against stripe-mock in CI. `docs/architecture.md` was regenerated
 2026-09-01 and refreshed 2026-09-12. Nothing charges anyone: the switch is off.
 
@@ -107,6 +107,6 @@ late requests, remove a player, cancel a clinic, and search the directory with
 private notes.
 
 Missing on the phone: creating or editing a clinic (web only), push delivery
-(rows are written, nothing sends), News (deferred, decision 0006), and the
-persistent notice while notification permission is denied (decision 0008
-item 3, not built).
+(rows are written, nothing sends), and News (deferred, decision 0006). Built
+2026-09-21: the waiver, Delete my account, the notifications-off line on Home
+(decision 0008 item 3), and Past under My Clinics.

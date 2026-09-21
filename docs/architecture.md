@@ -52,10 +52,10 @@ most important thing to understand here, and it is section 5.
 
 | Area | State |
 |---|---|
-| Postgres schema, RLS, narrow views, RPCs | **Built**, 32 migrations, 28 applied to hosted (verified 2026-09-16; the four 20260921 files push with their PRs, `supabase migration list --linked`) |
+| Postgres schema, RLS, narrow views, RPCs | **Built**, 33 migrations, 28 applied to hosted (verified 2026-09-16; the five 20260921 files push with their PRs, `supabase migration list --linked`) |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | **Built**, enumerated by probes |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | **Built** |
-| SQL probe suite (23 probes; the suite prints its own total) + concurrency probe, in CI | **Built** |
+| SQL probe suite (24 probes; the suite prints its own total) + concurrency probe, in CI | **Built** |
 | iOS: sign-in, sign-up with profile, password reset, three tabs | **Built** |
 | iOS: browse by week, per-viewer pricing, register / cancel (4-hour note inside the cutoff) / leave pool / respond, closed-clinic "Message Tara", the bell, My Clinics, profile edit, card on file | **Built** |
 | iOS admin tab: rosters, invite, courts, paid, unpaid reminder, message audiences, late requests, Action Needed, player directory | **Built** |
@@ -161,7 +161,8 @@ FXETennis/
     ├── HomeView.swift           My Clinics + Available Clinics glance, the bell with its badge
     ├── NotificationsView.swift  what the bell opens: rows the RPCs wrote, newest first, mark read
     │   (NotificationPermissionView.swift also holds NotificationsOffLine: the standing line on Home while permission is denied)
-    ├── MyClinicsView.swift      the clinics I hold a live registration in, grouped by week, with chips
+    ├── MyClinicsView.swift      the clinics I hold a live registration in, grouped by week, with chips,
+    │                            then Past: what I played and what it cost me (my_past_clinics)
     ├── ClinicsView.swift        the list, grouped This week / Next week / Week of …
     ├── ClinicDetailView.swift   register / cancel / leave pool / respond, confirmations,
     │                            "Message Tara" once the clinic has closed
@@ -300,6 +301,7 @@ the attack and asserts it fails.
 | `news_posts` + `news_reads` | Announcements; read state per account. |
 | `notifications` | In-app rows written by RPCs (players and Tara). Readable by the owner; only `read_at` is writable. |
 | `devices` | APNs tokens (groundwork; nothing delivers yet). |
+| `my_past_clinics` (view) | A player's own finished clinics with only their own outcome: name, time, status, no-show, late, price snapshot, paid. Own rows only, none of the nine hidden facts (feature review 09-02; decision 0012 §10). |
 | `waivers` + `waiver_acceptances` | Tara's Adult Tennis Participation Waiver, one row per version, and each electronic signature (typed legal name, account email, time, app build). Reached only through `current_waiver`, `my_waiver_accepted`, `accept_waiver` (decision 0013). |
 | `payments` | The money ledger (decision 0009): one row per clinic fee, late cancel, no show or refund, with Stripe ids and a status only the edge functions or admin RPCs change. Players read their own rows. |
 | `app_settings` | Small admin-editable strings, e.g. Tara's payment line, and the payment policy keys (`payments_enabled`, `cancel_cutoff_hours`, …). Never anything hidden. |
@@ -463,6 +465,7 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `create_my_account` | Sign-up creates rows, cannot impersonate, cannot self-promote, is idempotent |
 | `admin_clinic_crud`, `templates_floor_bootstrap` | CRUD, template pricing, the date floor, Tara's bootstrap |
 | `late_requests`, `player_directory` | The late path and the directory, including "a member cannot read their own note" and "a non-member cannot flip their own is_member column" |
+| `past_clinics` | `my_past_clinics`: own rows only, a future clinic is not past, Ken never sees Maria's row, no hidden column, select-only for the signed-in |
 | `clinic_messaging` | Decision 0005: a targeted message is readable only by the group it went to; the whole list each player sees is asserted; the recipients table is hidden; each recipient notified once |
 | `schema_decisions` | Tara's decisions with a DB consequence stay true |
 | `push_devices` | `register_device` / `unregister_device`, attacked: nobody but the owner sees a token, the account is never a parameter, re-registering is idempotent |

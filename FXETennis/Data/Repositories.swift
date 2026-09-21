@@ -79,7 +79,49 @@ enum ClinicRepository {
 
 // MARK: - Registrations
 
+/// One row of my_past_clinics: a clinic that has ended, with only this
+/// player's own outcome on it (feature review 09-02, decision 0012 §10).
+struct PastClinic: Codable, Identifiable, Sendable {
+    let registrationId: UUID
+    let clinicId: UUID
+    let name: String
+    let startsAt: Date
+    let endsAt: Date
+    let durationMinutes: Int
+    let category: String?
+    let status: RegistrationStatus
+    let noShow: Bool?
+    let lateCancel: Bool?
+    let priceCentsCharged: Int?
+    let paid: Bool
+
+    var id: UUID { registrationId }
+
+    enum CodingKeys: String, CodingKey {
+        case name, category, status, paid
+        case registrationId = "registration_id"
+        case clinicId = "clinic_id"
+        case startsAt = "starts_at"
+        case endsAt = "ends_at"
+        case durationMinutes = "duration_minutes"
+        case noShow = "no_show"
+        case lateCancel = "late_cancel"
+        case priceCentsCharged = "price_cents_charged"
+    }
+}
+
 enum RegistrationRepository {
+
+    /// Finished clinics I was part of, newest first.
+    static func past() async throws -> [PastClinic] {
+        try await supabase
+            .from("my_past_clinics")
+            .select()
+            .order("starts_at", ascending: false)
+            .limit(40)
+            .execute()
+            .value
+    }
 
     static func mine() async throws -> [MyRegistration] {
         try await supabase

@@ -77,7 +77,7 @@ The rule (CLAUDE.md, verification asymmetry): the thing that builds a feature ca
 
 | Layer | Runs where | Count 2026-09-12 | Gap |
 |---|---|---|---|
-| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 505 checks, 23 probes | none known |
+| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 513 checks, 24 probes | none known |
 | Stripe pipeline against stripe-mock | every PR | 27 checks | real Stripe behaviour (3DS, declines) waits on keys |
 | Web admin browser tests (Playwright, real sign-in) | every PR | 12 | not idempotent (backlog); no test of the charge path with the switch on |
 | Swift unit tests (pure logic) | every PR | 23 | fine |

@@ -113,6 +113,7 @@ her email to admin, so the bootstrap is entirely hers.
 | ✅ | ~~Charge fee / Charge late cancel~~ **Refund** (2026-09-12; the per-row charge buttons were replaced on 2026-09-16 by one tap per clinic, below): Tara's tap on the roster row, rendered only while `payments_enabled` is true; the late-cancel note shows always |
 | ✅ | **Tara's cancellation policy** (2026-09-16, decision 0012): one courtesy late cancellation per 90 days applied by the app; no-shows marked on the roster (web and phone); **Charge clinic**, one tap after a clinic ends, charges every attendee the clinic fee and every no-show and non-courtesy late cancel the full fee, skipping and counting anyone without a card; a card is required to register once payments are on; her policy text and her two sentences verbatim; rating and phone required at sign-up; a note at level entry only she reads. Nothing charges until `payments_enabled` and question 43 |
 | ✅ | **Her review of every word** (2026-09-21, decision 0013): no courtesy (`courtesy_cancel_days` 0), 3-hour cutoff, card only (`zelle_allowed` false hides Paid and Remind unpaid), her wording on 14 strings, the waiver signed in the app before the first spot, Delete my account keeping history, the level note on the player page too
+| ✅ | **Past under My Clinics** (2026-09-21): `my_past_clinics`, the player's own finished clinics and outcomes (played and price, no-show, canceled); the notifications-off line on Home; the targeted-message probe
 
 ### Ship ⬜
 

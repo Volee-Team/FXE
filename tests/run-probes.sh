@@ -18,10 +18,13 @@ fi
 # tests and simulator runs leave rows behind, and a probe that fails on those
 # rows looks exactly like a real regression. This cost an afternoon on
 # 2026-09-12 (three "failures" that vanished after a reset). Every seed row is
-# stamped inside the same reset, so anything created well after the first seed
-# account was added later, by something other than the seed.
+# stamped inside the same reset (one transaction, so one now()), so anything
+# created more than a few seconds after the first seed account was added
+# later, by something other than the seed. The window was 60 seconds until
+# 2026-09-21, when the browser suite's rows, written 23 seconds after a
+# reset, slipped inside it and two false failures came back with no warning.
 STRAY=$(docker exec "$DB" psql -U postgres -d postgres -Atc "
-  with seed as (select min(created_at) + interval '60 seconds' as t from public.accounts)
+  with seed as (select min(created_at) + interval '5 seconds' as t from public.accounts)
   select (select count(*) from public.accounts, seed where created_at > seed.t)
        + (select count(*) from public.players, seed where created_at > seed.t)
        + (select count(*) from public.clinics, seed where created_at > seed.t)
