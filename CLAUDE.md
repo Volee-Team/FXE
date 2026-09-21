@@ -145,7 +145,7 @@ That exercise is what exposed a defect in the probe harness itself: the pass con
 
 ## Hard rules
 
-1. **Information hiding is a database concern, never a UI concern.** Nine things are hidden from players: clinic capacity, number registered, spots remaining, Player Pool size, other players' names, court assignments, other players' payment status, private coaching notes, and clinic location. Hiding these in SwiftUI hides nothing. They are enforced by revoked table grants plus narrow views (`clinics_public`, `my_registrations`, `my_clinic_messages`, `my_news`). **Never grant a client direct SELECT on `clinics`, `registrations`, `player_notes`, or `clinic_templates`. Never return a count of anything to a player.** Pinned by `tests/sql/information_hiding.sql`.
+1. **Information hiding is a database concern, never a UI concern.** Nine things are hidden from players: clinic capacity, number registered, spots remaining, Player Pool size, other players' names, court assignments, other players' payment status, private coaching notes, and clinic location. Hiding these in SwiftUI hides nothing. They are enforced by revoked table grants plus narrow views (`clinics_public`, `my_registrations`, `my_clinic_messages`, `my_news`, `my_past_clinics`). **Never grant a client direct SELECT on `clinics`, `registrations`, `player_notes`, or `clinic_templates`. Never return a count of anything to a player.** Pinned by `tests/sql/information_hiding.sql`.
 
 2. **Nothing is ever auto-promoted.** Tara picks every Player Pool invitation by hand. The app never invites the next player automatically, never auto-expires an invitation, and never confirms someone without their acceptance.
 
@@ -201,7 +201,7 @@ That exercise is what exposed a defect in the probe harness itself: the pass con
     This matters more for a view than a table. Four of our views
     (`clinics_public`, `my_registrations`, `clinics_admin`, `templates_admin`)
     are single-table selects, so Postgres makes them **auto-updatable**; the
-    joined ones are not, but revoke-before-grant applies to all ten; they were created without
+    joined ones are not, but revoke-before-grant applies to all eleven; they were created without
     `security_invoker`, so they execute as their **owner** (postgres); and
     `relforcerowsecurity` is false, so the owner is **exempt from RLS**. A write
     through a view therefore runs as postgres with RLS switched off. The
@@ -222,7 +222,7 @@ That exercise is what exposed a defect in the probe harness itself: the pass con
     views reading with owner rights. The five `sanity_*` rows in that probe
     exist to fail loudly if anyone tries it. For the same reason the
     `security_definer_view` ERROR lints in Supabase's advisor (one per
-    owner-rights view; ten views today) are **permanent and accepted**, not a
+    owner-rights view; eleven views today) are **permanent and accepted**, not a
     to-do list.
 
     The general shape, and the third time this project has been bitten by an
@@ -243,8 +243,8 @@ That exercise is what exposed a defect in the probe harness itself: the pass con
     the project's own commit message. `CLAUDE.md` said the probe suite ran 142
     checks while it ran 164, and that number had been copied forward through
     four documents. This file said `.env.local` was gitignored; it was not.
-    `.claude/agents/sql-auditor.md` audits *Volee's* age brackets, in a repo that
-    has no age brackets. Fifteen of the first sixteen commits were AI-authored
+    `.claude/agents/sql-auditor.md` audited *Volee's* age brackets in a repo that
+    has none (rewritten for FXE since). Fifteen of the first sixteen commits were AI-authored
     with no reviewer, and every one of those errors is the same failure: a
     generated assertion accepted without independent re-derivation.
 
@@ -322,6 +322,7 @@ Use these exact words in all UI copy. Do not substitute synonyms.
 
 | Situation | Result |
 |---|---|
+| Anyone who has not signed the current waiver | Rejected by `register_for_clinic` (`waiver_required`), admins exempt (decision 0013 §4) |
 | Member, inside priority window, room available | You're In! |
 | Member, inside priority window, clinic full | Player Pool |
 | Member, after priority window | Player Pool |
@@ -361,8 +362,8 @@ Capacity is decided in exactly one place: `register_for_clinic`, which locks the
 
 Tara's example is consistent with more than one reading. The most defensible reading is implemented; these are the points where a wrong guess costs someone a seat.
 
-1. **Saturday clinics.** Tara's range names Sunday to Friday. That is read here as the clinic *footprint*, not the boundary of a registration block, because a 6-day week leaves Saturday in no week at all and makes `week_of(date)` a partial function. Under the 6-day reading a Saturday clinic opens **a full week later**. Ask her: does a Saturday clinic open with the week before it, or with the week starting the next day?
-2. **Anchor point.** Her example cannot distinguish week-start-anchored (`Sunday - 3`) from week-end-anchored (`last clinic day - 8`); both give 9/3 for a full week. Start-anchored is implemented, because end-anchoring only agrees with the Guide's "Thursday / Friday" on full weeks: on a Sunday-to-Wednesday holiday week it would open on a Tuesday and a Wednesday. Ask her: if a week has clinics on only some days, does registration still open that same Thursday and Friday?
+1. **Saturday clinics: answered 2026-09-21 (decision 0013, question 49).** *"Yes. But no Saturday clinics. The 'week' starts on a Sunday to Friday."* The week-start anchor as built is confirmed; Saturday is theoretical.
+2. **Anchor point: answered 2026-09-21 (decision 0013, question 50).** A short week still opens that same Thursday and Friday. Start-anchored, as implemented.
 3. **Holidays.** The rule has no holiday awareness. Christmas Day 2026 is a Friday public open, and Christmas Eve is its Thursday member open. Ask her whether registration still opens at 8:00 that morning.
 4. **"Member"** means an FXE club member, not a paying app subscriber. `players.is_member`. Confirm with her if it ever becomes ambiguous.
 5. **`closes_at`: answered 2026-08-27 (decision 0007 §5).** Registration closes 3 hours before start by default (`default_closes_at()` plus trigger `apply_default_clinic_close`, migration 20260827000001); Tara can override any clinic through `admin_upsert_clinic`. Inside the window a player can file a late request (`request_late_spot`, 20260827000002) that she resolves by hand.
@@ -378,12 +379,12 @@ Answered and now binding. Numbering is hers. Only the ones with a lasting conseq
 | 1 | Admin surface splits in two: a phone app for courtside work (invites, messages, marking paid) and a laptop/web page for weekly setup and court assignment. | Client |
 | 3 | Tara can add anyone to any clinic directly, and move anyone between You're In! and Player Pool by hand. | `place_player()` |
 | 4 | **Capacity never blocks Tara.** Show counts, never block an invite. | `place_player()` does no capacity check. Pinned. |
-| 5 | Member status is **self-reported** once at sign-up, and Tara can override it on the profile (`admin_set_membership`, web and iOS). Since 2026-09-02 the player's own Profile shows it as "Set by Tara" with no control. Note `players.is_member` is still column-writable by the owning account at the DB level, so that restriction is UI-only (backlog). | `players_update_own` policy, `admin_set_membership()` |
+| 5 | Member status is **self-reported** once at sign-up, and Tara can override it on the profile (`admin_set_membership`, web and iOS). Since 2026-09-02 the player's own Profile shows it as "Set by Tara" with no control. Since 2026-09-21 the column is Tara's at the DB level too: `revoke update (is_member)` (20260921000001), asserted by `tests/sql/player_directory.sql`. | `players_update_own` policy, `admin_set_membership()` |
 | 6+7 | Adult rating uses the **same NTRP scale and the same chart as Volee**, behind a tappable "?" button. Stored as `numeric(2,1)`, 2.0 to 5.0 in half steps, exactly as Volee stores it, so a rating crosses between the apps untranslated. **"5.0+" is a display label, never a stored value.** | `players.adult_rating`, `docs/ntrp-chart.md` |
 | 8 | Audience is **Ladies / Men / Coed** in v1. **No category filter**: Tara said there is no need to filter anything, because there are not many clinics weekly and they are simply listed by week. | See below |
 | 9 | Junior age groups deferred to the fall. Do not build. | none |
 | 10 | **Clinic location is hidden**, and the reason matters: FXE is a member club and must not read as open to non-members. Location must not appear anywhere player-facing, in any form, including maps, addresses, and directions links. | Pinned by `information_hiding.sql` |
-| 11 | Payment copy, exact string, Zelle preferred. | `app_settings.payment_instructions` |
+| 11 | Payment copy, exact string, Zelle preferred. **Superseded by decision 0013 (2026-09-21): card only, `zelle_allowed` false. The string stays in `app_settings`; nothing sends it.** | `app_settings.payment_instructions` |
 | 12 | Targeted messages are visible only to the group they were sent to. | Already built: `clinic_message_recipients` |
 | 13 | **Notifications-off is not Tara's problem.** See below. | Client |
 | 14 | Every notification is 1 to 2 sentences and readable on a lock screen. Her drafts are verbatim. | `docs/notifications.md` |
@@ -416,7 +417,7 @@ What replaces it is app behaviour, and it is a real requirement, not a nicety:
 | 17 | **Court number is never shown to a player.** Confirms hard rule 1. She reads it off her own screen |
 | 18 | **Capacity is never shown to a player.** The wireframe's "Max: 12 Players" is not built |
 | 19 | **Adults only, confirmed again.** Juniors return in the fall. The wireframe's child-profile screen is not v1 |
-| 20 | **Clinic messaging: three audiences.** You're In!, Player Pool, or Both. Her example: a pro calls in sick. See `docs/decisions/0005-clinic-messaging.md` |
+| 20 | **Clinic messaging.** Her ask was three audiences (You're In!, Player Pool, Both; `docs/decisions/0005`). **Built with five**, matching `message_audience`: Everyone, You're In!, Player Pool, Response Needed, Unpaid, on web and iOS; Unpaid is hidden while `zelle_allowed` is false. Decision 0005 records the three; the extra two are the enum's, kept (hard rule 4) |
 | 21 | **Three tabs, no Community tab.** Home, Clinics, Profile for players. An admin account also gets a Manage tab (Alex, 2026-08-15; `MainTabView.swift`) |
 | 22 | **The gator-with-crossed-racquets mark**, not the tennis-ball one. Gets redrawn in whichever palette she picks |
 | 23 | **Palette: racquet club / country club.** Her `#6dbe45` green kept but restrained; navy warms; cream ground. Three options sent for her to choose |
@@ -468,7 +469,7 @@ Never apply a migration to a hosted project without running the probe suite loca
 
 ### `app_settings`
 
-A small key/value table for **player-safe strings and switches**. Read by any authenticated user. **No client can write it today** (2026-09-12 audit): `authenticated` holds SELECT only and no RPC updates it, so the `app_settings_admin_write` policy is unreachable and every value is set by migration; an admin edit path is a backlog item, and until it exists the "no migration for a typo" benefit below is not real. Holds `payment_instructions`, Tara's exact wording, plus the six payment-policy keys added 2026-09-12 (`payments_enabled`, `cancel_cutoff_hours`, `late_cancel_fee`, `charge_fee_at`, `late_charge_needs_tap`, `zelle_allowed`):
+A small key/value table for **player-safe strings and switches**. Read by any authenticated user. **No client can write it today** (2026-09-12 audit): `authenticated` holds SELECT only and no RPC updates it, so the `app_settings_admin_write` policy is unreachable and every value is set by migration; an admin edit path is a backlog item, and until it exists the "no migration for a typo" benefit below is not real. Holds `payment_instructions`, Tara's exact wording, plus the six payment-policy keys added 2026-09-12 (`payments_enabled`, `cancel_cutoff_hours`, `late_cancel_fee`, `charge_fee_at`, `late_charge_needs_tap`, `zelle_allowed`), `card_required` and `courtesy_cancel_days` (2026-09-16), and `waiver_version` (2026-09-21):
 
 ```
 Payment can be made via zelle to fersctennispro@gmail.com (preferred) or Venmo FXE Tennis

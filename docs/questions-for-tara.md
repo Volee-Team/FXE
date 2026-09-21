@@ -186,6 +186,7 @@ default we would otherwise pick, so "yes" is a complete answer.
 
 **30. Player Pool and Response Needed players who drop out: charged anything?**
 *Default: never. Only You're In! players owe money.*
+*ANSWERED 2026-09-12 and 2026-09-16 (decisions 0010, 0012): never. A Pool or Response Needed row holds no spot, so leaving it is not a late cancel and nothing is charged; `late_cancellation.sql` asserts it.*
 
 **31. When YOU cancel a clinic, does everyone get an automatic refund of anything already paid?**
 *Default: yes, automatic, same day, no action from you.*
@@ -207,6 +208,7 @@ default we would otherwise pick, so "yes" is a complete answer.
 
 **35. Do you want Zelle to stay as an option once cards work?**
 *Default: yes, for members who prefer it; you mark those paid by hand as today.*
+*ANSWERED 2026-09-21 (decision 0013 §3): no. "Everyone using the app has to input a credit card." `zelle_allowed` is false; the Paid toggle and reminder are hidden.*
 
 **36. Stripe account: can you create one at stripe.com this week? It asks for your bank account, a business address, and your SSN or an EIN. Your personal details work now; it can switch to the LLC later.**
 *Default: you create it and Alex adds the two keys to the app; nobody else ever sees them.*

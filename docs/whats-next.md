@@ -19,7 +19,7 @@ Ordered by what it unblocks, not by how hard it is to answer.
 
 1. **Stripe test keys** (§B): a Stripe *test-mode* account, its secret key and webhook secret set as Supabase Edge Function secrets (dashboard only, never the repo). Everything else on the payments path is built and deployed: schema, ledger, RPCs, three edge functions, the card screen on Profile, the Money tab ledger. Until the key exists, Add a card answers "Cards aren't set up yet."
 2. **The public half of the backup key** into `.github/backup-recipient.txt` (§D10): the `age1...` line, pasted into the file or into chat. The nightly backup fails until it is there, and the old unencrypted artifacts are gone (2026-09-18), so right now there is no backup at all.
-3. **Share Tara's review page** (`docs/tara-review/index.html`, published at https://claude.ai/artifact/1H3fCuvG7pkc9scTAJmfkL): open it, use the page's share menu to make a link, text it to her. Her answers come back as one pasted block from the page's "Copy my answers".
+3. **Share the review page, version 2** (`web/review.html` on the admin site, once deployed): mint a link on the Players tab, text her the `review.html?t=…` URL. Her answers save to `review_responses` through the `review-submit` edge function as she types and read back on the Players tab. Round one (the claude.ai artifact) is answered and closed: decision 0013; round two's six questions are on both pages.
 
 Dropped 2026-09-18: the `fxe-ci` Supabase project (§F option 3 chosen, no money for now; UI tests run on a laptop before each TestFlight build).
 
@@ -64,39 +64,39 @@ Also his: a tick through `docs/copy-review.md` for the connective words in the u
 
 ## Blocked on nothing: what to build
 
-Done since 2026-09-01 (all merged; hosted pushed through 20260912000005):
+Done since 2026-09-01 (all merged; hosted pushed through 20260916000001; the files dated 2026-09-21 push with their PRs):
 on the phone, the bell opens a notification center with read state in the
 database, My Clinics is its own screen grouped by week, players edit their own
 name, phone and rating, Tara cancels a clinic or removes a player from the
 roster's More menu, a notification row opens the clinic it is about, the push
 client half (permission sheet, APNs registration, `register_device` /
 `unregister_device`, decision 0008), week grouping on the clinic list with a
-five-week ceiling, and the 4-hour cancel note sheet (decision 0010). On the
+five-week ceiling, and the cancel note sheet at the 3-hour cutoff (decisions 0010, 0013). On the
 web, three tabs (This week · Players · Money), canceled clinics hidden behind
 a toggle, templates archived and restored instead of deleted, "Edited <date>"
-under every note, the card-payments ledger on the Money tab, and Charge fee /
-Charge late cancel / Refund as Tara's tap, rendered only while
+under every note, the card-payments ledger on the Money tab, and Charge clinic (one tap per clinic once it has ended) and
+Refund as Tara's tap, rendered only while
 `payments_enabled` is true. Underneath: the whole payments foundation
 (decision 0009: ledger, card summary on accounts, `admin_charge_registration`
 / `admin_refund_payment`, the ledger-drives-Paid trigger, `service_role`
 grants), the three Stripe edge functions deployed, the card screen on Profile
-with PaymentSheet, `payments_ledger`, and `cancel_registration` refusing a late
-You're In! cancel without a note. Testing: 14 Playwright tests, 13 XCUITests
+with PaymentSheet, `payments_ledger`, and `cancel_registration` recording a late
+You're In! cancel with an optional note ("Note for Tara (optional)", decision 0013). Testing: 14 Playwright tests, 13 XCUITests
 (5 on Tara's side), 23 unit tests, 24 SQL probes, and a 27-check Stripe
 pipeline against stripe-mock in CI. `docs/architecture.md` was regenerated
-2026-09-01 and refreshed 2026-09-12. Nothing charges anyone: the switch is off.
+2026-09-01 and refreshed by hand 2026-09-12 and 2026-09-21. Nothing charges anyone: the switch is off.
 
 1. **Tara's real clinics in hosted.** Hers to create at
    `fxe-tennis-admin.vercel.app`; asked 2026-09-01.
 2. **Push notifications** — client half built 2026-09-02 (decision 0008). What remains needs the Apple Developer account: the APNs key, then the `push` edge function, the webhook, and the audit columns.
 3. **Crash reporting** — none, before real members are on it.
-4. **Account deletion in the app** — App Store guideline 5.1.1(v); what it deletes is a Tara question (`docs/launch-checklist.md` §C). Privacy policy needs a URL (Volee's can be reused, decision 16).
-5. **XCUITests in CI** — waits on the `fxe-ci` project above.
+4. **Account deletion in the app**: built 2026-09-21 (decision 0013 §5, `delete_my_account()` + the `delete-account` edge function; history kept). What remains for guideline 5.1.1(v): the privacy policy at a URL (Volee's can be reused, decision 16).
+5. **XCUITests before each TestFlight build**: run on a laptop and pasted into the changelog (§F option 3, 2026-09-18). The `ios-ui-tests` job stays green with a notice until three CI secrets exist.
 
 ## The honest state of the iOS app
 
 Works: sign in, sign up, forgot password, browse by week with a date floor
-and a five-week ceiling, register, cancel (with the 4-hour note inside the
+and a five-week ceiling, register, cancel (with the optional note inside the 3-hour
 cutoff), leave pool, accept/decline, the late request ("Message Tara" after
 the close), clinic messages, the "?" explainer, the bell and its notification
 center, My Clinics, profile editing, a card on file behind Stripe's

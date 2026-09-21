@@ -65,11 +65,11 @@ itself the finding.
 | | |
 |---|---|
 | ✅ | SQL probe suite: 19 probes as of 2026-09-12 (the suite prints its own total), plus the concurrency probe. Green in CI on every push |
-| ✅ | **Web admin browser tests** (2026-09-02): 12 Playwright tests as of 2026-09-12 walk Tara's side against a fresh seed (sign-in and the non-admin door, prices, walk-up, courts, unpaid reminder, directory note round-trip, cancel clinic, template archive and restore, Money counts, the card-payments ledger, payments off). Run in CI on every push |
+| ✅ | **Web admin browser tests** (2026-09-02): 12 Playwright tests as of 2026-09-12 walk Tara's side against a fresh seed (sign-in and the non-admin door, prices, walk-up, courts, the Zelle controls hidden while the card is the only way to pay, directory note round-trip, cancel clinic, template archive and restore, Money counts, the card-payments ledger, payments off). Run in CI on every push |
 | ✅ | **Stripe pipeline against a mock** (2026-09-12): `tests/stripe/run.sh`, 27 checks from SetupIntent through webhook, charge, refund and decline, with the switch off proving nothing charges. Runs in CI on every PR |
 | ✅ | **Admin XCUITests** (2026-09-02): four flows on Tara's side of the phone: register → court → unpaid reminder → paid; Player Pool → invite → the player's own Accept (hard rule 2 end to end); directory note round-trip; cancel clinic with confirmation. The phone's UI suite is now 13 tests, 8 player + 5 admin (Remove from clinic added 2026-09-10) |
-| ✅ | Unit tests: 23 as of 2026-09-12, covering the pure logic the probes cannot see (price formatting, member rate selection, NTRP bucketing, service-week edges, the 4-hour cancel policy) |
-| ⬜ | **XCUITests do not run in CI**: the macOS runner has no Docker for the local stack. Needs a `fxe-ci` Supabase project in the FXE org (`docs/launch-checklist.md` §F, Alex) |
+| ✅ | Unit tests: 23 as of 2026-09-12, covering the pure logic the probes cannot see (price formatting, member rate selection, NTRP bucketing, service-week edges, the cancel cutoff (parameterised; the live setting is 3 hours, decision 0013)) |
+| ⬜ | **XCUITests do not run in CI.** The `ios-ui-tests` job is built and stays green with a notice until three CI secrets exist. Decided 2026-09-18 (§F option 3): no `fxe-ci` project; the suite runs on a laptop before each TestFlight build and the run goes in the changelog |
 
 The XCUITest suite was 0 of 4, not the "2 of 4" claimed in `ed88c1f`. Three
 causes, all worth remembering because two are the same mistake:
@@ -96,12 +96,12 @@ her email to admin, so the bootstrap is entirely hers.
 | ✅ | Sign in / first-time sign up; create + edit + publish clinics; windows and prices derived automatically |
 | ✅ | Templates: "Start from a template" picker and save-as-template — a clinic in ~3 clicks |
 | ✅ | Rosters: You're In! / Player Pool / Response Needed, invite, cancel invite, paid toggle |
-| ✅ | Message players by audience (Everyone / You're In! / Player Pool / Response Needed / Unpaid) |
+| ✅ | Message players by audience (Everyone / You're In! / Player Pool / Response Needed / Unpaid). **Five, not the three of decision 0005; the enum's extra two are kept, Unpaid hidden while `zelle_allowed` is false** |
 | ✅ | **Walk-up "Add player"**: forgiving search, one tap to You're In! |
 | ✅ | **Cancel clinic** (2026-09-02), web (two clicks, five seconds apart) and iOS (More menu with a confirmation). `cancel_clinic` had waited since July for a caller; it notifies everyone live |
 | ✅ | **Court dropdown on every roster row** (2026-09-01), web and iOS, re-arrangeable any time. You're In! reads in court order, so the list is the court sheet. `assign_court` had waited since July for a caller |
-| ✅ | **One-tap unpaid reminder** (2026-09-01), web and iOS. Body is the clinic name, its date and Tara's own payment line; the audience is resolved server-side. The connective words await Alex's tick in `docs/copy-review.md` |
-| ✅ | **Money** (2026-09-01): the four numbers, expected / collected / still owed, and a per-clinic line. Web only; `revenue_summary()` + `revenue_by_clinic()` |
+| ✅ | **One-tap unpaid reminder** (2026-09-01), web and iOS. **Not rendered since 2026-09-21: gated on `zelle_allowed`, which decision 0013 set false.** Body is the clinic name, its date and Tara's own payment line; the audience is resolved server-side |
+| ✅ | **Money** (2026-09-01): the four numbers, expected / collected / still owed, and a per-clinic line. Web only; `revenue_summary()` + the `revenue_by_clinic` view |
 | ✅ | **Player directory** (2026-09-01), web and iOS: forgiving search, private notes, membership correction, deactivate/reactivate. Notes travel only through admin-only RPCs (20260902000002, 14-check probe, red first) |
 | ✅ | **Action Needed** (2026-09-01): late requests with Put them in / No room, and unread cancellations and invitation replies with Seen. Web and iOS (iOS shows late requests on the roster) |
 | ✅ | **Forgot password?** (2026-09-01) on both sign-in screens, landing on `web/reset.html`. Reset URL added to the hosted redirect list 2026-09-01, verified 2026-09-10 |
@@ -111,7 +111,7 @@ her email to admin, so the bootstrap is entirely hers.
 | ✅ | **"Edited <date>" under every note** (2026-09-12): `admin_player_note_edited` returns the note's `updated_at`, so a note from March no longer reads like one from yesterday |
 | ✅ | **Card payments on the Money tab** (2026-09-12): `payments_ledger` listed newest first, or "No card payments yet." while `payments_enabled` is false |
 | ✅ | ~~Charge fee / Charge late cancel~~ **Refund** (2026-09-12; the per-row charge buttons were replaced on 2026-09-16 by one tap per clinic, below): Tara's tap on the roster row, rendered only while `payments_enabled` is true; the late-cancel note shows always |
-| ✅ | **Tara's cancellation policy** (2026-09-16, decision 0012): one courtesy late cancellation per 90 days applied by the app; no-shows marked on the roster (web and phone); **Charge clinic**, one tap after a clinic ends, charges every attendee the clinic fee and every no-show and non-courtesy late cancel the full fee, skipping and counting anyone without a card; a card is required to register once payments are on; her policy text and her two sentences verbatim; rating and phone required at sign-up; a note at level entry only she reads. Nothing charges until `payments_enabled` and question 43 |
+| ✅ | **Tara's cancellation policy** (2026-09-16, decision 0012): one courtesy late cancellation per 90 days applied by the app; no-shows marked on the roster (web and phone); **Charge clinic**, one tap after a clinic ends, charges every attendee the clinic fee and every no-show and non-courtesy late cancel the full fee, skipping and counting anyone without a card; a card is required to register once payments are on; her policy text and her two sentences verbatim; rating and phone required at sign-up; a note at level entry only she reads. Nothing charges until `payments_enabled` and question 43 | **Superseded in part by decision 0013: no courtesy (`courtesy_cancel_days` 0) and a 3-hour cutoff; the columns and functions stay as a switch.**
 | ✅ | **Her review of every word** (2026-09-21, decision 0013): no courtesy (`courtesy_cancel_days` 0), 3-hour cutoff, card only (`zelle_allowed` false hides Paid and Remind unpaid), her wording on 14 strings, the waiver signed in the app before the first spot, Delete my account keeping history, the level note on the player page too
 | ✅ | **Past under My Clinics** (2026-09-21): `my_past_clinics`, the player's own finished clinics and outcomes (played and price, no-show, canceled); the notifications-off line on Home; the targeted-message probe
 
@@ -134,7 +134,7 @@ Alex, 2026-08-19: *"we're not in a big rush, I can do it as an org from the star
 | ✅ | ~~Sign-up that produces a usable account~~ Done 2026-08-15, regression-tested |
 | 🔨 | Tara's real clinics in hosted — the path is open (live web admin + her self-promoting sign-up, 2026-09-01); the step is hers |
 | ✅ | **Privacy manifest** (`PrivacyInfo.xcprivacy` under FXETennis/Resources), 2026-09-12, PR #37 on `main`. Apple rejects builds that touch required-reason APIs without one |
-| ⬜ | **Account deletion in the app.** App Store guideline 5.1.1(v) requires it for any app with account creation. What it deletes (history and ledger rows vs. name and contact) is a Tara question, then a build |
+| ✅ | **Account deletion in the app** (2026-09-21, decision 0013 §5): `delete_my_account()` scrubs name, phone, email, card and devices and keeps history; the `delete-account` edge function soft-deletes the sign-in; Delete my account on Profile behind a spelled-out confirmation |
 
 **Gates an external round and App Store release, but NOT an internal one:**
 
@@ -143,7 +143,7 @@ Alex, 2026-08-19: *"we're not in a big rush, I can do it as an org from the star
 | ✅ | FXE Tennis, LLC exists. **D-U-N-S 11-654-7195**, registered, address on file with D&B |
 | 🔨 | Apple Developer Program enrollment as the LLC — **in review**: fersc.com email accepted, ID + business docs submitted |
 | ✅ | ~~A website at the entity's domain~~ fersc.com accepted by Apple |
-| ⬜ | Privacy policy live on a URL, FXE waiver wording |
+| ⬜ | Privacy policy live on a URL. (Waiver wording: done, her September 2026 text ships in `waivers`, decision 0013) |
 | ⬜ | Beta App Review, then the App Store listing |
 
 ---
@@ -152,7 +152,7 @@ Alex, 2026-08-19: *"we're not in a big rush, I can do it as an org from the star
 
 | | |
 |---|---|
-| 🔨 | **Stripe, card on file** (decision 0009, 2026-09-12). Built: schema (Stripe customer + card summary on accounts, a `payments` ledger with RLS), `admin_charge_registration` / `admin_refund_payment`, the ledger-drives-Paid trigger, policy as `app_settings`, 21-check probe. `payments_enabled` is false until Tara answers Q27–Q37. Also built: the three edge functions, the card screen on Profile (PaymentSheet), `payments_ledger` and its read-only list on the Money tab, the 4-hour honor-system cancel (decision 0010), Charge/Refund as Tara's tap on the web (hidden while the switch is off), and the stripe-mock harness in CI. Next, once Alex adds Stripe test keys: end-to-end with test cards. Once Tara answers: Charge and Refund buttons on the roster and Money tab, refunds on her cancel, her card-entry sentence. Target October 1 |
+| 🔨 | **Stripe, card on file** (decision 0009, 2026-09-12). Built: schema (Stripe customer + card summary on accounts, a `payments` ledger with RLS), `admin_charge_registration` / `admin_refund_payment`, the ledger-drives-Paid trigger, policy as `app_settings`, 21-check probe. `payments_enabled` is false until Alex's Stripe test keys exist (Q27–Q37 are all answered: decisions 0010, 0012, 0013). Also built: the three edge functions, the card screen on Profile (PaymentSheet), `payments_ledger` and its read-only list on the Money tab, the 3-hour honor-system cancel (decisions 0010, 0013), Charge/Refund as Tara's tap on the web (hidden while the switch is off), and the stripe-mock harness in CI. Next, once Alex adds Stripe test keys: end-to-end with test cards. Once Tara answers: Charge and Refund buttons on the roster and Money tab, refunds on her cancel, her card-entry sentence. Target October 1 |
 | ⬜ | **Juniors.** Deferred by Tara to November or the spring session (decision 0007 §6). Enum values already in the schema so this is UI work, not a migration |
 | ⬜ | Parent accounts managing children, junior age groups |
 | ⬜ | Duplicate an entire week and adjust dates |
@@ -201,8 +201,8 @@ rejected; it means nobody has decided when.
 
 | Idea | Raised | Note |
 |---|---|---|
-| Saturday clinics | 2026-08-02 | Her example ran Sunday–Friday. The service week is Sunday–Saturday so a Saturday clinic works, but she has never confirmed she runs them. **Open question** |
-| Short holiday weeks | 2026-08-10 | Does the Thursday still anchor to that week's Sunday when there are only clinics Mon–Wed? **Open question** |
+| Saturday clinics | 2026-08-02 | **Answered 2026-09-21 (decision 0013, question 49): "Yes. But no Saturday clinics."** The Sunday–Saturday service week is confirmed as built; Saturday is theoretical |
+| Short holiday weeks | 2026-08-10 | **Answered 2026-09-21 (decision 0013, question 50): yes, the Thursday still anchors to that week's Sunday.** Holiday-morning timing (8:00 on Christmas Day) is still open |
 | Category field | 2026-08-02 | She was unsure what it meant and said no filtering is needed. Column exists, deliberately unindexed, no UI |
 | What the club actually needs | 2026-08-10 | Report gives counts by membership × length plus the total. Not confirmed that this is what she hands them |
 
