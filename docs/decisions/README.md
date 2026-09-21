@@ -22,6 +22,7 @@ The history of what we believed is part of the record.
 | [0010](0010-cancellation-four-hour-honor-system.md) | Cancellation is a 4-hour honor system: free before, a concise emergency note after, charging is Tara's tap | 2026-09-12 | Superseded: the emergency note by 0012, the 4-hour figure by 0013; the honor-system principle and Tara's tap stand |
 | [0012](0012-cancellation-policy-and-charging.md) | Tara's cancellation policy verbatim: 4 hours, one courtesy per 90 days, cards charged after the clinic, card required to register | 2026-09-16 | Active, §2 and §6 superseded by 0013 |
 | [0013](0013-tara-review-2026-09-21.md) | Tara's first full review: no courtesy, 3 hours, card only, the waiver signed in the app, deletion keeps history, her words on every screen | 2026-09-21 | Active |
+| [0014](0014-testflight-through-johns-account.md) | Internal TestFlight builds from John's Apple account until the LLC is enrolled; `main` is the only source of a build | 2026-09-21 | Active until the LLC enrollment |
 | [0011](0011-no-email-verification-v1.md) | No email verification in v1; hosted "Confirm email" is OFF by hand, and every new project needs the same flip | 2026-08-16 | Active |
 
 Tara's own numbered decisions (1–23, calls of 2026-08-02 and 2026-08-12) are

@@ -56,7 +56,7 @@ Also his: a tick through `docs/copy-review.md` for the connective words in the u
 
 | | Status |
 |---|---|
-| FXE Tennis, LLC Developer Program enrollment | **In review.** fersc.com email accepted; ID and business docs submitted (same state as `docs/roadmap.md`) |
+| FXE Tennis, LLC Developer Program enrollment | **In review** (3+ weeks; meanwhile internal TestFlight through John's account, decision 0014, `docs/testflight.md`). fersc.com email accepted; ID and business docs submitted (same state as `docs/roadmap.md`) |
 | Company email at own domain | **Done.** `fersc.com` accepted |
 | D-U-N-S 11-654-7195 | Done |
 | Team ID, bundle id, App Store Connect record | Waiting on enrollment |
