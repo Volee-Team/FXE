@@ -3,3 +3,4 @@
 #   age-keygen -o fxe-backup-key.txt
 # Keep fxe-backup-key.txt (the PRIVATE key) out of the repo, in Alex's password
 # manager. Until a real key is here the backup job fails on purpose.
+age1d4rcxs4427j4fcghgvsalqcsrsu04gqfg3asdu0mah939496sg4sgaxrd3
