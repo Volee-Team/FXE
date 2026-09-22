@@ -443,6 +443,18 @@ jobs:
   # A migration that has been applied to the hosted database can never be
   # edited in place, only superseded. This catches the most common way that
   # rule gets broken by accident.
+  hosted-smoke:
+    name: Hosted is closed to a signed-out caller
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      # Read-only, 48 requests with the publishable key that ships in the app.
+      # Asks production the probe suite's grant question: every table, view,
+      # RPC and edge function answers a signed-out caller with 401/403/404.
+      - name: Signed-out smoke against the hosted project
+        run: bash scripts/hosted-smoke.sh
+
   migration-immutability:
     name: No edits to existing migrations
     runs-on: ubuntu-latest

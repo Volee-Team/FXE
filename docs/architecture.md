@@ -513,7 +513,7 @@ stack, then Playwright), `stripe-pipeline` (the stack plus stripe-mock on its
 network, then `tests/stripe/run.sh`), `ios-changes` (did any Swift or
 `project.yml` change? gates the next job so a docs PR does not wait on Xcode),
 `ios-build-and-test` (XcodeGen, Debug and Release builds, unit tests, app-icon
-gate, simulator chosen at run time), `copy-gate`, `secret-scan`,
+gate, simulator chosen at run time), `copy-gate`, `secret-scan`, `hosted-smoke` (read-only: 48 hosted targets must answer a signed-out caller with 401/403/404; `scripts/hosted-smoke.sh`),
 `migration-immutability`, `ios-ui-tests` (the 13 XCUITests against a
 throwaway CI Supabase project, reset to the seed first; green with a notice
 until that project's secrets exist, see `docs/launch-checklist.md` §F, added

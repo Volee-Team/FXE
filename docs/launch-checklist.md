@@ -81,6 +81,7 @@ The rule (CLAUDE.md, verification asymmetry): the thing that builds a feature ca
 | Stripe pipeline against stripe-mock | every PR | 27 checks | real Stripe behaviour (3DS, declines) waits on keys |
 | Web admin browser tests (Playwright, real sign-in) | every PR | 14 | not idempotent (backlog); no test of the charge path with the switch on |
 | Swift unit tests (pure logic) | every PR | 23 | fine |
+| Hosted signed-out smoke (`scripts/hosted-smoke.sh`) | every PR, read-only against production | 48 targets | only the anon side; a signed-in run needs a real person's session |
 | XCUITests, player and admin flows on the simulator | **local only** | 13 | **not in CI** by decision (§F, 2026-09-18): run on a laptop before every TestFlight build and pasted into that build's changelog entry |
 | Hand-driven simulator and browser passes with screenshots | every feature, by me | – | not repeatable; that is what the two layers above are for |
 | Copy gate, secret scan, migration immutability, icon gate | every PR | – | none |
