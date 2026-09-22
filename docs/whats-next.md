@@ -18,7 +18,7 @@ Ordered by what it unblocks, not by how hard it is to answer.
 **Blocked on Alex (2026-09-12), two asks, both spelled out in `docs/launch-checklist.md`:**
 
 1. **Stripe test keys** (§B): a Stripe *test-mode* account, its secret key and webhook secret set as Supabase Edge Function secrets (dashboard only, never the repo). Everything else on the payments path is built and deployed: schema, ledger, RPCs, three edge functions, the card screen on Profile, the Money tab ledger. Until the key exists, Add a card answers "Cards aren't set up yet."
-2. **The public half of the backup key** into `.github/backup-recipient.txt` (§D10): the `age1...` line, pasted into the file or into chat. The nightly backup fails until it is there, and the old unencrypted artifacts are gone (2026-09-18), so right now there is no backup at all.
+2. ~~The public half of the backup key~~ **done 2026-09-22**: in `.github/backup-recipient.txt`, first encrypted backup decrypted and checked.
 3. **Share the review page, version 2** (`web/review.html` on the admin site, once deployed): mint a link on the Players tab, text her the `review.html?t=…` URL. Her answers save to `review_responses` through the `review-submit` edge function as she types and read back on the Players tab. Round one (the claude.ai artifact) is answered and closed: decision 0013; round two's six questions are on both pages.
 
 Dropped 2026-09-18: the `fxe-ci` Supabase project (§F option 3 chosen, no money for now; UI tests run on a laptop before each TestFlight build).
