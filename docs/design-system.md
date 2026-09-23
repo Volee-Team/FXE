@@ -1,5 +1,7 @@
 # FXE Tennis Design System
 
+> **Superseded by `docs/style-guide.md` on 2026-09-22.** Kat's guide is the source of truth; the tokens below were palette B and are kept as the record of what shipped before it. Where they disagree, the guide and `Brand.swift` win.
+
 Single source of truth: **`FXETennis/Resources/Brand.swift`**. This document
 transcribes that file. If a value here disagrees with `Brand.swift`, the Swift
 file wins and this document is stale. The web admin mirrors the same tokens at

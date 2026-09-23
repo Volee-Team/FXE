@@ -1,4 +1,6 @@
-/* PALETTE B, transcribed from FXETennis/Resources/Brand.swift.
+/* KAT'S STYLE GUIDE (2026-09-22, docs/style-guide.md), transcribed from
+   FXETennis/Resources/Brand.swift. The history below is history.
+   PALETTE B, transcribed from FXETennis/Resources/Brand.swift.
    History: this file sat on palette A from 2026-08-12 while Brand.swift moved
    to B, and each file's header claimed to mirror the other. Two sources of
    truth that both say "see the other one" is worse than one that is wrong.
@@ -33,28 +35,30 @@
 
 :root {
   /* ---- Brand core ---- */
-  --fxe-navy: #16264C;  /* Brand.navy */
-  --fxe-court: #3E7C55;  /* Brand.court. FILL ONLY */
-  --fxe-accent: #B08D57;  /* Brand.accent, brass. FILL ONLY */
+  --fxe-navy: #0A1B3D;  /* Brand.navy */
+  --fxe-court: #4F7A38;  /* Brand.court. FILL ONLY */
+  --fxe-accent: #4F7A38;  /* Brand.accent, brass. FILL ONLY */
 
   /* ---- Surfaces ---- */
-  --fxe-surface: #F7F4EC;  /* Brand.surface */
+  --fxe-surface: #F2F0EC;  /* Brand.surface */
   --fxe-surface-raised: #FFFFFF;  /* Brand.surfaceRaised */
-  --fxe-surface-inverted: #16264C;  /* Brand.surfaceInverted */
+  --fxe-surface-warm: #EAE6DF;  /* Brand.surfaceWarm: bottom of the page gradient */
+  --fxe-navy-pressed: #16295C;  /* Brand.navyPressed */
+  --fxe-surface-inverted: #0A1B3D;  /* Brand.surfaceInverted */
 
   /* ---- Text ---- */
-  --fxe-text-primary: #16264C;  /* Brand.textPrimary, 13.50:1 on surface */
-  --fxe-text-secondary: #6E6552;  /* Brand.textSecondary, 5.24:1 on surface */
-  --fxe-text-on-navy: #F6F3EA;  /* Brand.textOnNavy */
-  --fxe-text-on-navy-muted: #CFC9BC;  /* Brand.textOnNavyMuted */
+  --fxe-text-primary: #0A1B3D;  /* Brand.textPrimary, 13.50:1 on surface */
+  --fxe-text-secondary: #5C5A55;  /* Brand.textSecondary, 5.24:1 on surface */
+  --fxe-text-on-navy: #FFFFFF;  /* Brand.textOnNavy */
+  --fxe-text-on-navy-muted: #C9CCD6;  /* Brand.textOnNavyMuted */
   --fxe-text-on-court: #FFFFFF;  /* Brand.textOnCourt, 4.98:1 on court */
-  --fxe-text-on-accent: #231A0C;  /* Brand.textOnAccent, 5.55:1 on accent */
+  --fxe-text-on-accent: #FFFFFF;  /* Brand.textOnAccent, 5.55:1 on accent */
 
   /* ---- Lines and states ---- */
-  --fxe-border: #6E6552;  /* Brand.border */
-  --fxe-hairline: #E3DCCB;  /* Brand.hairline */
-  --fxe-disabled: #B7B0A2;  /* Brand.disabled */
-  --fxe-focus-ring: #16264C;  /* Brand.focusRing */
+  --fxe-border: #5C5A55;  /* Brand.border */
+  --fxe-hairline: #E3E0DA;  /* Brand.hairline */
+  --fxe-disabled: #B5B2AC;  /* Brand.disabled */
+  --fxe-focus-ring: #0A1B3D;  /* Brand.focusRing */
 
   /* ---- Status ----
    * Never use a status colour on its own. Every status renders as
@@ -76,15 +80,15 @@
    * the web equivalent of Dynamic Type. Never set a font-size in px.
    * Serif on display and title matches Brand.Typography.displayDesign.
    */
-  --fxe-font-display: ui-serif, "New York", Georgia, "Times New Roman", serif;
-  --fxe-font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text",
+  --fxe-font-display: "Playfair Display", Georgia, "Times New Roman", serif;
+  --fxe-font-body: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text",
     "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --fxe-font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 
   --fxe-text-display: 2.125rem;   /* 34px at default root */
   --fxe-text-title: 1.375rem;     /* 22px */
   --fxe-text-headline: 1.0625rem; /* 17px */
-  --fxe-text-body: 1rem;          /* 16px */
+  --fxe-text-body: 0.9375rem;     /* 15px, guide body */
   --fxe-text-subheadline: 0.9375rem;
   --fxe-text-caption: 0.8125rem;
   --fxe-text-chip: 0.8125rem;
@@ -104,14 +108,14 @@
   --fxe-space-lg: 1.5rem;    /* 24 */
   --fxe-space-xl: 2rem;      /* 32 */
   --fxe-space-xxl: 3rem;     /* 48 */
-  --fxe-page-margin: 1.25rem;
+  --fxe-page-margin: 1.5rem;     /* 24px, space-6 */
   --fxe-card-padding: 1rem;
 
   /* ---- Radius ---- */
   --fxe-radius-xs: 6px;
-  --fxe-radius-sm: 10px;
-  --fxe-radius-md: 14px;   /* default card */
-  --fxe-radius-lg: 20px;   /* sheets, hero panels */
+  --fxe-radius-sm: 8px;    /* icon glyph containers */
+  --fxe-radius-md: 16px;   /* chips, secondary controls, cards */
+  --fxe-radius-lg: 28px;   /* any tappable row or button */
   --fxe-radius-pill: 999px;
 
   /* ---- Layout ---- */

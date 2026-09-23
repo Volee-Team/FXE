@@ -32,25 +32,16 @@ struct AuthView: View {
                 // screen opens on navy rather than a field of white. It also
                 // anchors the layout, so nothing shifts when the keyboard or an
                 // error message appears.
-                ZStack {
-                    Brand.navy
-                    VStack(spacing: Brand.Spacing.sm) {
-                        Image("gator-x")
-                            .resizable().scaledToFit()
-                            .frame(width: 84, height: 84)
-                        Text("FXE TENNIS")
-                            .font(Brand.Typography.display)
-                            .tracking(1.5)
-                            .foregroundStyle(Brand.textOnNavy)
-                        // Her tagline from the mockups, not invented here.
-                        Text("Let's Play.")
-                            .font(Brand.Typography.subheadline)
-                            .foregroundStyle(Brand.textOnNavy.opacity(0.72))
-                    }
-                    .padding(.top, Brand.Spacing.xl)
+                ArchedHeader(height: 270) {
+                    Wordmark()
+                        .padding(.top, Brand.Spacing.xxl + Brand.Spacing.sm)
                 }
-                .frame(height: 320)
-                .ignoresSafeArea(edges: .top)
+                // Her line (question 55), as the guide's greeting-accent: italic,
+                // gator-green, centered under the header.
+                Text("Let's Play.")
+                    .font(Brand.Typography.greetingAccent)
+                    .foregroundStyle(Brand.court)
+                    .padding(.top, Brand.Spacing.md)
 
                 // The form sits on cream, lifted slightly into the banner so the
                 // two planes overlap rather than sitting in separate boxes.
@@ -157,6 +148,7 @@ struct AuthView: View {
             }
             .padding(.horizontal, Brand.Spacing.pageMargin)
             }
+            .ignoresSafeArea(edges: .top)
         }
     }
 }
