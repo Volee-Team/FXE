@@ -19,7 +19,7 @@ KEY="${SUPABASE_ANON_KEY:-$(grep -o 'sb_publishable_[A-Za-z0-9_-]*' "$(dirname "
 
 RELATIONS="clinics registrations players accounts player_notes clinic_templates payments devices notifications app_settings waivers waiver_acceptances review_links review_responses late_requests clinic_messages clinic_message_recipients news_posts news_reads clinics_public my_registrations my_clinic_messages my_news my_past_clinics clinics_admin templates_admin registrations_admin payments_ledger revenue_by_clinic"
 FUNCTIONS="register_for_clinic cancel_registration leave_pool delete_my_account accept_waiver current_waiver my_waiver_accepted admin_charge_clinic admin_set_no_show place_player cancel_clinic search_players revenue_summary admin_create_review_link admin_review_responses create_my_account"
-EDGE="delete-account stripe-charge stripe-setup-intent"
+EDGE="delete-account stripe-charge stripe-setup-intent push"
 
 bad=0; n=0
 check() {  # kind name code
@@ -41,5 +41,13 @@ for e in $EDGE; do
   code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$URL/functions/v1/$e" -H "apikey: $KEY" -H "Content-Type: application/json" -d '{}')
   check edge "$e" "$code"
 done
+# pg_net's schema (20260923000001). Its queue holds each push request's
+# X-Push-Secret header until sent and grants PUBLIC everything; a migration
+# cannot revoke that (supabase_admin owns it), so what keeps it closed is the
+# API exposing only public and graphql_public. PostgREST answers 406 PGRST106.
+code=$(curl -s -o /dev/null -w '%{http_code}' "$URL/rest/v1/http_request_queue?select=*&limit=1" -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Accept-Profile: net")
+check net-schema http_request_queue "$code"
+code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$URL/rest/v1/rpc/http_post" -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Profile: net" -H "Content-Type: application/json" -d '{"url":"https://example.invalid"}')
+check net-schema http_post "$code"
 echo "checked $n targets, $bad open to a signed-out caller"
 [ "$bad" = "0" ]

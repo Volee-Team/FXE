@@ -178,6 +178,67 @@ jobs:
           docker logs --tail 100 supabase_edge_runtime_FXE-Tennis || true
           docker logs --tail 30 stripe-mock || true
 
+  # Push delivery (decision 0008), against a mock of APNs: the provider-token
+  # signature, the headers, the verbatim body, token pruning, idempotency, the
+  # audit columns a player cannot read, and the trigger -> pg_net -> function
+  # path with nobody calling the function by hand. Apple's own acceptance of
+  # the key is the one thing this cannot prove.
+  push-pipeline:
+    name: Push pipeline (mocked)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.115.0
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Start local stack (auth, rest, edge runtime)
+        run: supabase start -x realtime,storage-api,imgproxy,studio,logflare,vector,supavisor
+
+      - name: Reset to the seed
+        run: supabase db reset
+
+      # The mock runs on the runner, not in a container. On Linux the edge
+      # runtime reaches the host at the docker network's gateway address;
+      # host.docker.internal is a Docker Desktop name and may not resolve.
+      - name: Generate the env and start the mock APNs
+        run: |
+          GW=$(docker network inspect supabase_network_FXE-Tennis -f '{{(index .IPAM.Config 0).Gateway}}')
+          echo "docker gateway: $GW"
+          bash tests/push/make-env.sh "http://$GW:12222" > push.env
+          nohup deno run --allow-net --allow-read --allow-write tests/push/mock-apns.ts push.env mock-apns.json 12222 > mock-apns.log 2>&1 &
+          for i in $(seq 1 20); do
+            curl -s -o /dev/null http://127.0.0.1:12222/ && break || sleep 1
+          done
+          curl -s -o /dev/null -w "mock APNs answers with http %{http_code}\n" http://127.0.0.1:12222/
+
+      - name: Serve the edge functions against the mock
+        run: |
+          nohup supabase functions serve --env-file push.env > functions.log 2>&1 &
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:54321/functions/v1/push)
+            [ "$code" = "401" ] && break || sleep 2
+          done
+
+      - name: Run the push harness
+        run: bash tests/push/run.sh push.env mock-apns.json
+
+      - name: Logs on failure
+        if: failure()
+        run: |
+          tail -100 functions.log || true
+          docker logs --tail 100 supabase_edge_runtime_FXE-Tennis || true
+          tail -50 mock-apns.log || true
+          cat mock-apns.json || true
+
   # The app itself. Until 2026-08-13 CI never compiled a line of Swift, which
   # is exactly how a test target with zero sources survived for days while the
   # suite reported green: nothing here ever tried to run it.

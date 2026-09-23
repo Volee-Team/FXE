@@ -420,3 +420,9 @@ verify_jwt = true
 # checks it against review_links.
 [functions.review-submit]
 verify_jwt = false
+
+# Push delivery (decision 0008). The caller is the database: the trigger
+# push_on_notification posts through pg_net, which has no JWT to send. The
+# credential is the X-Push-Secret header, checked against PUSH_WEBHOOK_SECRET.
+[functions.push]
+verify_jwt = false
