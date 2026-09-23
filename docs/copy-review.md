@@ -35,6 +35,17 @@ plus every "New since" block.
 
 ---
 
+## New since the last review — 2026-09-22 (TestFlight feedback), awaiting Alex
+
+| ✓ | String | Where |
+|---|--------|-------|
+| ☐ | At least 6 characters. | AuthView, under the password field while creating an account (the hosted rule, stated before the server has to) |
+| ☐ | Password should be at least 6 characters. | Session.friendly: GoTrue's own sentence, shown instead of "Something went wrong" |
+| ☐ | That email already has an account. Sign in instead. | Session.friendly, duplicate email at sign-up |
+| ☐ | Testing | web/index.html, the fourth tab, muted, for the review links |
+| ☐ | For testing with Tara and Kat. Nothing here is part of running the clinics. | web/index.html, under the Testing heading |
+| ☐ | Manage payments in Stripe | web/index.html, Money tab, link to Stripe's dashboard (Kat, v1) |
+
 ## New since the last review — 2026-09-21 (Past under My Clinics), awaiting Alex
 
 Chrome, mine, all in ternaries or returns the extractor cannot see.

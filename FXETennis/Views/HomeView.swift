@@ -40,7 +40,7 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             ZStack(alignment: .top) {
-                Brand.surface.ignoresSafeArea()
+                Brand.surfaceGradient.ignoresSafeArea()
 
                 VStack(spacing: 0) {
                     NavyHeaderBar(title: greetingText, unread: unread, onBell: { showNotifications = true },

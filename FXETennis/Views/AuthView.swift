@@ -25,7 +25,7 @@ struct AuthView: View {
 
     var body: some View {
         ZStack {
-            Brand.surface.ignoresSafeArea()
+            Brand.surfaceGradient.ignoresSafeArea()
 
             VStack(spacing: 0) {
                 // Navy banner, straight from Tara's mockups: every important
@@ -83,6 +83,14 @@ struct AuthView: View {
                             .padding()
                             .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
                             .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
+                        if mode == .signUp {
+                            // The hosted rule, stated before the server has to.
+                            Text("At least 6 characters.")
+                                .font(Brand.Typography.caption)
+                                .foregroundStyle(Brand.textSecondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .accessibilityIdentifier("auth.passwordRule")
+                        }
                     }
 
                     // Reserve the error row's height always, so the button never

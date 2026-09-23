@@ -19,7 +19,7 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Brand.surface.ignoresSafeArea()
+                Brand.surfaceGradient.ignoresSafeArea()
                 ScrollView {
                     VStack(alignment: .leading, spacing: Brand.Spacing.lg) {
                         header
@@ -44,16 +44,19 @@ struct ProfileView: View {
                         // which is why every UI test that signs out failed with
                         // "No sign-out control on Profile". Same drift as the
                         // Home clinic card.
+                        // A text link, not a button: signing out is not the
+                        // screen's main action (TestFlight, 2026-09-22).
                         Button(role: .destructive) {
                             Task { await session.signOut() }
                         } label: {
                             Text("Sign Out")
-                                .font(Brand.Typography.button)
+                                .font(Brand.Typography.body)
+                                .underline()
+                                .foregroundStyle(Brand.textSecondary)
                                 .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
-                                .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
+                                .frame(minHeight: Brand.Layout.minTapTarget)
                         }
+                        .buttonStyle(.plain)
                         .accessibilityIdentifier("profile.signOut")
 
                         // App Store 5.1.1(v); decision 0013 §5: history stays,
@@ -159,12 +162,14 @@ struct ProfileView: View {
         .overlay(RoundedRectangle(cornerRadius: Brand.Radius.lg).stroke(Brand.hairline))
     }
 
+    /// Label above value, both left-aligned. TestFlight, 2026-09-22 (Kat):
+    /// the right-justified values sat too far from their labels to read as pairs.
     private func row(_ label: String, _ value: String) -> some View {
-        HStack {
-            Text(label).font(Brand.Typography.subheadline).foregroundStyle(Brand.textSecondary)
-            Spacer()
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label).font(Brand.Typography.caption).foregroundStyle(Brand.textSecondary)
             Text(value).font(Brand.Typography.body).foregroundStyle(Brand.textPrimary)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -191,7 +196,7 @@ struct NTRPExplainerSheet: View {
                 }
                 .padding(Brand.Spacing.pageMargin)
             }
-            .background(Brand.surface)
+            .background(Brand.surfaceGradient)
             .navigationTitle("Rating Guide")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

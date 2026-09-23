@@ -173,6 +173,20 @@ final class SessionStore {
 
     private func friendly(_ error: Error) -> String {
         let raw = error.localizedDescription
+        let full = String(describing: error)
+        // GoTrue states the password rule itself ("Password should be at
+        // least 6 characters."); show that sentence rather than a generic
+        // line. TestFlight, 2026-09-22: a weak password read "Something went
+        // wrong", which told the person nothing they could act on.
+        if full.localizedCaseInsensitiveContains("weak_password") || raw.localizedCaseInsensitiveContains("password should") {
+            if let range = raw.range(of: "Password should[^.]*\\.", options: .regularExpression) {
+                return String(raw[range])
+            }
+            return "Password should be at least 6 characters."
+        }
+        if full.localizedCaseInsensitiveContains("already registered") || raw.localizedCaseInsensitiveContains("already registered") {
+            return "That email already has an account. Sign in instead."
+        }
         if raw.localizedCaseInsensitiveContains("invalid") { return "That email or password didn't work." }
         if raw.localizedCaseInsensitiveContains("network") { return "Couldn't reach the server. Check your connection." }
         return "Something went wrong. Please try again."

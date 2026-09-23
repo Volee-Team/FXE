@@ -55,7 +55,7 @@ struct NotificationPermissionView: View {
             .accessibilityIdentifier("push.notNow")
         }
         .padding(Brand.Spacing.pageMargin)
-        .background(Brand.surface.ignoresSafeArea())
+        .background(Brand.surfaceGradient.ignoresSafeArea())
         .presentationDetents([.medium])
     }
 }

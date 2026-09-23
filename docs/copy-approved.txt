@@ -12,6 +12,7 @@ Alex sees your answers as they save. Copy them here if you want to text them as 
 Almost there!
 Ann finds Anna, Annette, Joann…
 Are you currently a Foxcroft East Racquet & Swim Club member?
+At least 6 characters.
 Cancel
 Cancel Invite
 Cancel Registration
@@ -50,6 +51,7 @@ FXE Tennis · Reset password
 FXE Tennis, Tara's Review
 First time? Create your account
 For someone who called or grabbed you at the club. They go straight to You&rsquo;re In!
+For testing with Tara and Kat. Nothing here is part of running the clinics.
 Forgot password?
 Full legal name
 Give the link a label.
@@ -69,6 +71,7 @@ Length must be more than 0 minutes.
 Let's Play.
 Link label
 Manage
+Manage payments in Stripe
 Mark all read
 Max players must be at least 1.
 Members get 24-hour early access to all clinics
@@ -102,6 +105,7 @@ On your laptop, with your real account. Whatever you set up here is real: it is 
 Only Tara sees this.
 Only a You're In! player can be a no-show.
 Only a paid charge can be refunded.
+Only for testing the app with Tara and Kat
 Only you can see this.
 Payment method
 Payments are switched off.

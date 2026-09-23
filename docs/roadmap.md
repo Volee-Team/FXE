@@ -117,6 +117,8 @@ her email to admin, so the bootstrap is entirely hers.
 
 ### Ship ⬜
 
+**Dates (2026-09-22):** internal TestFlight is live through John's account (decision 0014). Next: Tara, Kat and Alex define the MVP-critical list (`docs/mvp.md`), a testing group, then full launch hoped for the launch party on **2026-10-16**.
+
 Split by what actually gates what. An **internal** TestFlight round (Tara added
 as an App Store Connect user on our own team) needs far less than an external
 one, and conflating the two is what made this section look like a wall.
