@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Pinned to the SAME version as the laptop (2.115.0), which is the
       # whole point. This job was red for days while local was green, because
@@ -90,7 +90,7 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Same pinned CLI and the same reset as the probes job: the browser
       # tests are Tara's side of the web admin walked against a fresh seed.
@@ -135,7 +135,7 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install Supabase CLI
         uses: supabase/setup-cli@v1
@@ -189,7 +189,7 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install Supabase CLI
         uses: supabase/setup-cli@v1
@@ -253,7 +253,7 @@ jobs:
     outputs:
       ios: ${{ steps.diff.outputs.ios }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - id: diff
@@ -275,7 +275,7 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # The .xcodeproj is gitignored and regenerated, so a fresh clone has no
       # project until this runs. That also makes this step the guard on the
@@ -358,7 +358,7 @@ jobs:
       group: fxe-ci-supabase
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - id: cfg
         name: Is the CI project configured?
@@ -429,7 +429,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Every repo path a doc names exists
         run: bash scripts/check-doc-paths.sh
       # Counts match the repo, decisions are indexed, every Tara question has
@@ -443,7 +443,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Check user-visible strings against the approved snapshot
         run: bash scripts/check-copy.sh
 
@@ -455,7 +455,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -509,7 +509,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # Read-only, 48 requests with the publishable key that ships in the app.
       # Asks production the probe suite's grant question: every table, view,
       # RPC and edge function answers a signed-out caller with 401/403/404.
@@ -521,7 +521,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
