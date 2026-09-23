@@ -82,7 +82,7 @@ Refund as Tara's tap, rendered only while
 grants), the three Stripe edge functions deployed, the card screen on Profile
 with PaymentSheet, `payments_ledger`, and `cancel_registration` recording a late
 You're In! cancel with an optional note ("Note for Tara (optional)", decision 0013). Testing: 14 Playwright tests, 13 XCUITests
-(5 on Tara's side), 23 unit tests, 24 SQL probes, and a 27-check Stripe
+(5 on Tara's side), 23 unit tests, 25 SQL probes, and a 27-check Stripe
 pipeline against stripe-mock in CI. `docs/architecture.md` was regenerated
 2026-09-01 and refreshed by hand 2026-09-12 and 2026-09-21. Nothing charges anyone: the switch is off.
 
