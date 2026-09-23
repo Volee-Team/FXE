@@ -348,3 +348,8 @@ revoke a link (`revoked_at` exists; set it by migration or as `service_role`
 until a caller is needed), and Playwright coverage of the server round trip
 (CI serves no edge runtime; the round trip was verified by curl and in the
 browser on 2026-09-21).
+
+
+## Deploying
+
+`bash scripts/deploy-web.sh` (2026-09-22): deploys to Vercel production and verifies the live site against the working tree, deploying a second time if the first silently did nothing, which it has done three times. `npx vercel --prod --yes` by hand is no longer the sanctioned way.
