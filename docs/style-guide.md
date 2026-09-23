@@ -114,6 +114,14 @@ control.
    page; if that was deliberate, one token change removes the gradient.
 4. **Line heights and 0.2px tracking** are not set explicitly on iOS; the
    fonts' own metrics apply.
+5. **The header's arch, how deep.** The guide says the header "arches into
+   the porcelain body" with the hairline following it. Built as a bowed
+   bottom edge 28pt deep on sign-in and 22pt on Home (`ArchedBottom` in
+   `ArchedHeader.swift`). Alex, 2026-09-23: *"thats legit ugly idk if kat
+   will like it either"*; a straight edge with rounded bottom corners was
+   tried the same day and he liked it less. The arch as built stays on
+   `main` until Kat says what "arches" means to her: a depth in points, or
+   corners, or a straight line. One number in `ArchedHeader.swift` changes it.
 
 ## When the guide changes
 
