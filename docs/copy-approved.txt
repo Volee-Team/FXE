@@ -11,6 +11,8 @@ Agree and sign
 Alex sees your answers as they save. Copy them here if you want to text them as well.
 Almost there!
 Ann finds Anna, Annette, Joann…
+Any personal information that we collect is stored on secure hosted servers. We are always striving to ensure a safe and convenient experience with the Services. This goes beyond our technologies to include physical, contractual, and managerial safeguards to protect your personal information.
+Apple Inc. delivers notifications to your device.
 Are you currently a Foxcroft East Racquet & Swim Club member?
 At least 6 characters.
 Cancel
@@ -24,9 +26,11 @@ Canceled inside ${cutoffHours} hours
 Card payments
 Charge clinic
 Checking your reset link…
+Children's privacy
 Choose a new password
 Clinic updates come through the app. Keep notifications on so you don't miss them.
 Clinics
+Cookies and tracking technologies
 Copy my answers
 Couldn't load card payments.
 Couldn't load saved answers, still on this phone
@@ -35,28 +39,39 @@ Couldn't reach the server. Check your connection.
 Couldn't save, still on this phone
 Court
 Court \(n)
+Data retention
 Date &amp; time
 Decline
 Delete my account
 Description (players see this under the “?”)
+Disclosure of your information
 Done
 Draft
+Draft. Not yet in effect.
 Edit details
 Every sentence a player or you will read, with where it shows up. Tap Keep, or Change and write it your way. Your answers save as you go.
 FROM TARA
 FXE Tennis
+FXE Tennis does not share your personal information with third parties for marketing or promotional purposes. Your personal information is kept confidential and is not disclosed to outside organizations, except to the service providers that operate the Services on our behalf and as described here:
 FXE Tennis · Admin
+FXE Tennis · Privacy Policy
 FXE Tennis · Reset password
+FXE Tennis, LLC
 FXE Tennis, Tara's Review
 First time? Create your account
 For someone who called or grabbed you at the club. They go straight to You&rsquo;re In!
 For testing with Tara and Kat. Nothing here is part of running the clinics.
+For the performance of a contract: the clinics you register for through the Services and any other contract with us through the Services.
 Forgot password?
 Full legal name
 Give the link a label.
 Has a note
 Home
+How we use your information
 I have read and agree to the Adult Tennis Participation Waiver and Release.
+If you have any concerns or questions about your data, please contact us at:
+Information collection
+International data
 Invite
 Invite \(entry.displayName)
 Keep
@@ -64,6 +79,7 @@ Keep my account
 Keep my spot
 Keep the clinic
 Label
+Last updated: [DATE, when approved]
 Leave Player Pool
 Length (minutes)
 Length must be more than 0 minutes.
@@ -106,11 +122,14 @@ Only a You're In! player can be a no-show.
 Only a paid charge can be refunded.
 Only for testing the app with Tara and Kat
 Only you can see this.
+Our hosting provider stores the Services' data on servers in the United States.
 Payment method
 Payments are switched off.
 Pick something you'll remember. At least 8 characters.
 Player
 Players
+Policy changes
+Privacy Policy
 Private note
 Profile
 Put in clinic
@@ -135,6 +154,7 @@ Saving\u2026
 Search by name
 Search players by name
 Sections
+Security of data
 Selected. Press and hold to copy.
 Send reminder
 Set by Tara
@@ -145,6 +165,7 @@ Signs you out, you can finish later if needed
 Someone already handled that one.
 Start from a template
 Stripe isn't connected yet.
+Stripe, Inc. processes card payments. Your card details go to Stripe directly and are governed by Stripe's privacy policy.
 Tara has your message.
 Tara, this is your app's words
 That account is not an administrator.
@@ -155,8 +176,15 @@ That email or password didn't work.
 That one is already charged.
 That one is already refunded.
 That player has no card on file.
+The Services are for adults. We do not knowingly collect personal information from anyone under the age of 18. In the event of any inadvertent collection of personal information related to a minor, we will delete such personal information upon notice.
+The Services are intended to be used by U.S. residents. Personal information you provide to us will be maintained and processed on servers located in the United States.
+The Services may contain links to websites operated and maintained by third parties, over which we have no control. Privacy policies on such linked websites may be different from our privacy policy. You access such linked websites at your own risk. You should always read the privacy policy of a linked website before disclosing any of your information on such website.
+The app does not use cookies or tracking technologies. The web page your coach uses to manage clinics keeps you signed in with a browser session.
 The clinic hasn't ended yet.
+The information collected is used solely for providing the Services: clinic registration, communication from your coach about clinics, charging for clinics you attend under the club's cancellation policy, and keeping your clinic history. We do not share or sell your personal information with external parties for marketing purposes.
 The player's note at level entry; only you see it
+Third parties
+This Privacy Policy describes the policies and procedures of FXE Tennis, LLC (&quot;FXE Tennis,&quot; &quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) on the collection, use and disclosure of your information when you use the FXE Tennis application (the &quot;Services&quot;) and tells you about your privacy rights and how the law protects you.
 This cancellation is within 3 hours of clinic and the full clinic fee will apply. If there are circumstances you'd like us to consider, please leave a note below.
 This clinic has been canceled.
 This link has expired or was already used. Go back and request a new one.
@@ -164,6 +192,9 @@ This link has no code, answers stay on this phone.
 This link isn't active, answers stay on this phone.
 Those don’t match.
 To
+To contact you: by notification in the app, email, telephone, or other equivalent forms of electronic communication, about clinics and the Services.
+To manage your requests: to attend to and manage your requests to us. Messages sent through the Services are stored on our servers.
+To provide and maintain our Services, including to monitor the usage of our Services.
 Turn on notifications
 Type at least two letters of a name.
 Type it again
@@ -171,9 +202,20 @@ USTA \(level.label)
 View All Clinics
 View Open Clinics
 Waiver
+We collect only the information necessary to provide and improve our Services. This includes your name, email address, phone number, your self-reported club membership status, your tennis rating, an optional note to your coach, and the record of the clinics you register for, attend, cancel, or miss. If you add a payment card, the card is collected and stored by our payment processor, Stripe; we store only the card's brand and last four digits. If you allow notifications, we store the device token that lets us send them. We do not collect your location.
+We have obtained your consent.
+We may share aggregated, non-identifiable information with others without further notice to you, such as the total number of people who registered for clinics in a specific month.
+We may update this Policy from time to time. Your continued use of our Services implies your acceptance of the updated Policy.
+We may use personal information for the following purposes:
+We need to enforce our terms.
+We respond to subpoenas, court orders, or legal processes, or to establish or exercise our legal rights, or the legal rights of others, or defend against legal claims.
+We retain your personal information only as long as necessary to fulfill the purposes outlined in this Policy unless a longer retention period is required or permitted by law. You can delete your account from inside the app. When you do, your name, email address, phone number, note to your coach and card summary are removed; the record of clinics you attended and payments you made is kept, without your name, so that the club's records stay accurate. We will also retain and use personal information as necessary to comply with legal obligations, resolve disputes, and enforce our agreements.
+We transfer personal information about you if FXE Tennis or its assets are acquired by or merged with another company.
+We use your personal information to provide and improve the Services. By using the Services, you agree to the collection and use of information in accordance with this Privacy Policy. FXE Tennis is committed to safeguarding the privacy of our users. We do not sell your personal information. This Privacy Policy outlines how we collect, use, and protect the information you provide to us.
 What do the ratings mean?
 What happened? Anything odd?
 What is 105?
+When we believe it is necessary to disclose personal information to investigate, prevent, or take action regarding illegal activities, suspected fraud, potential threats to anyone's physical safety, or as otherwise required by law.
 Write a message first.
 Write it the way you'd say it
 You can still ask Tara to fit you in.
