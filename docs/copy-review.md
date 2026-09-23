@@ -35,6 +35,12 @@ plus every "New since" block.
 
 ---
 
+## New since the last review — 2026-09-22 (style guide), awaiting Alex
+
+| ✓ | String | Where |
+|---|--------|-------|
+| ☐ | TENNIS | Wordmark lockup under the gator (the F and E are in the artwork); sign-in header and Home |
+
 ## New since the last review — 2026-09-22 (TestFlight feedback), awaiting Alex
 
 | ✓ | String | Where |

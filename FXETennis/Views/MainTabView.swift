@@ -25,22 +25,34 @@ import SwiftUI
 struct MainTabView: View {
     @Environment(SessionStore.self) private var session
 
+    /// The guide asks for a navy-900 tab bar with the active item in
+    /// gator-green. iOS 26 draws the tab bar as floating glass and ignores a
+    /// solid fill from the toolbar-background APIs (tried 2026-09-22; the
+    /// bar went frosted with white glyphs, unreadable). So: the system bar,
+    /// active in gator-green, inactive in navy-900. A custom navy bar would
+    /// mean replacing the system bar; flagged in docs/style-guide.md for Kat.
+    init() {
+        Brand.Fonts.register()
+        UITabBar.appearance().unselectedItemTintColor = UIColor(Brand.navy)
+    }
+
     var body: some View {
         TabView {
             HomeView()
-                .tabItem { Label("Home", systemImage: "house.fill") }
+                .tabItem { Label("Home", systemImage: "house") }
             ClinicsView()
                 .tabItem { Label("Clinics", systemImage: "figure.tennis") }
 
             if session.account?.isAdmin == true {
                 AdminClinicsView()
-                    .tabItem { Label("Manage", systemImage: "list.clipboard.fill") }
+                    .tabItem { Label("Manage", systemImage: "list.clipboard") }
                     .accessibilityIdentifier("tab.admin")
-            }
+                }
 
             ProfileView()
-                .tabItem { Label("Profile", systemImage: "person.fill") }
+                .tabItem { Label("Profile", systemImage: "person") }
                 .accessibilityIdentifier("tab.profile")
         }
+        .tint(Brand.court)
     }
 }

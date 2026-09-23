@@ -43,11 +43,33 @@ struct HomeView: View {
                 Brand.surfaceGradient.ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    NavyHeaderBar(title: greetingText, unread: unread, onBell: { showNotifications = true },
-                                  titleIdentifier: "home.greeting")
+                    ArchedHeader(height: 150, depth: 22) {
+                        HStack {
+                            Wordmark(compact: true)
+                            Spacer()
+                            BellButton(unread: unread) { showNotifications = true }
+                        }
+                        .padding(.horizontal, Brand.Spacing.pageMargin)
+                        .padding(.top, Brand.Spacing.xxl + Brand.Spacing.xs)
+                    }
 
                     ScrollView {
                         VStack(alignment: .leading, spacing: Brand.Spacing.lg) {
+                            // The greeting block from the guide: centered under
+                            // the header, serif greeting in navy, then the accent
+                            // line in italic gator-green.
+                            VStack(spacing: Brand.Spacing.xxs) {
+                                Text(greetingText)
+                                    .font(Brand.Typography.greeting)
+                                    .foregroundStyle(Brand.navy)
+                                    .multilineTextAlignment(.center)
+                                    .accessibilityIdentifier("home.greeting")
+                                Text("Let's Play.")
+                                    .font(Brand.Typography.greetingAccent)
+                                    .foregroundStyle(Brand.court)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, Brand.Spacing.xs)
                             NotificationsOffLine()
 
                             SectionBlock(title: "My Clinics") {
@@ -59,7 +81,7 @@ struct HomeView: View {
                                     }
                                 }
                                 NavigationLink { MyClinicsView() } label: {
-                                    OutlinedButtonLabel("View All Clinics")
+                                    OutlinedButtonLabel("View All Clinics", icon: "calendar")
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityIdentifier("home.viewMyClinics")
@@ -75,14 +97,17 @@ struct HomeView: View {
                                 }
                                 NavigationLink { ClinicsView() } label: {
                                     // "(7)" so three rows never read as the whole list.
-                                    FilledButtonLabel(available.count > 3 ? "View Open Clinics (\(available.count))" : "View Open Clinics")
+                                    FilledButtonLabel(available.count > 3 ? "View Open Clinics (\(available.count))" : "View Open Clinics", icon: "figure.tennis")
                                 }
                                 .buttonStyle(.plain)
                             }
                         }
                         .padding(Brand.Spacing.pageMargin)
                     }
+                    // Room for the floating tab bar, so the last row is never under it.
+                    .contentMargins(.bottom, Brand.Spacing.xxl + Brand.Spacing.xl, for: .scrollContent)
                 }
+                .ignoresSafeArea(edges: .top)
             }
             .navigationBarHidden(true)
             .task { await model.load(); await refreshUnread() }
@@ -134,6 +159,25 @@ struct HomeView: View {
 /// The navy bar her mockups put at the top of every important screen. The
 /// greeting or screen name sits inside it, small and left-aligned, with the
 /// notification bell on the right.
+/// The bell that used to live in NavyHeaderBar; the header now carries the
+/// wordmark (style guide) and the bell sits beside it.
+struct BellButton: View {
+    let unread: Int
+    let onBell: () -> Void
+    var body: some View {
+        Button(action: onBell) {
+            Image(systemName: unread > 0 ? "bell.badge" : "bell")
+                .font(.system(size: 20, weight: .regular))
+                .symbolRenderingMode(.palette)
+                .foregroundStyle(Brand.court, Brand.textOnNavy)
+                .frame(minWidth: Brand.Layout.minTapTarget, minHeight: Brand.Layout.minTapTarget)
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("home.bell")
+        .accessibilityLabel(unread > 0 ? "Notifications, \(unread) unread" : "Notifications")
+    }
+}
+
 struct NavyHeaderBar: View {
     let title: String
     var showsBell: Bool = true
@@ -259,32 +303,21 @@ struct StatusDot: View {
     }
 }
 
+/// The guide's nav rows (docs/style-guide.md): white and navy alternate row
+/// to row, not primary over secondary. These two names stay so every call
+/// site keeps working; the shape is NavRowLabel's.
 struct OutlinedButtonLabel: View {
     let title: String
-    init(_ title: String) { self.title = title }
-    var body: some View {
-        Text(title)
-            .font(Brand.Typography.button)
-            .foregroundStyle(Brand.navy)
-            .frame(maxWidth: .infinity)
-            .frame(minHeight: Brand.Layout.comfortableTapTarget)
-            .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
-            .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md)
-                .stroke(Brand.navy, lineWidth: Brand.Layout.borderWidth))
-    }
+    var icon: String? = nil
+    init(_ title: String, icon: String? = nil) { self.title = title; self.icon = icon }
+    var body: some View { NavRowLabel(title: title, icon: icon, navy: false) }
 }
 
 struct FilledButtonLabel: View {
     let title: String
-    init(_ title: String) { self.title = title }
-    var body: some View {
-        Text(title)
-            .font(Brand.Typography.button)
-            .foregroundStyle(Brand.textOnNavy)
-            .frame(maxWidth: .infinity)
-            .frame(minHeight: Brand.Layout.comfortableTapTarget)
-            .background(Brand.navy, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
-    }
+    var icon: String? = nil
+    init(_ title: String, icon: String? = nil) { self.title = title; self.icon = icon }
+    var body: some View { NavRowLabel(title: title, icon: icon, navy: true) }
 }
 
 struct EmptyLine: View {

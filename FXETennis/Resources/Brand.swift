@@ -4,6 +4,10 @@
 //
 //  Design tokens for the FXE Tennis app.
 //  Single source of truth for colour, type, spacing, and radius.
+//
+//  SINCE 2026-09-22 THE VALUES COME FROM KAT'S STYLE GUIDE (docs/style-guide.md),
+//  which is the source of truth for style (Alex, 2026-09-22). The palette
+//  history below (Tara's sheets, palette A, palette B) is kept as history.
 //  The web admin mirrors this file at web/tokens.css. Change one, change both.
 //
 //  ============================================================================
@@ -73,6 +77,8 @@
 //
 
 import SwiftUI
+import UIKit
+import CoreText
 
 // MARK: - Colour
 
@@ -85,25 +91,31 @@ public enum Brand {
 
     /// Primary brand colour. Bars, headings, primary buttons, body text.
     /// #16264C on the cream surface is ~13.6:1 — headings stay crisp in sunlight.
-    public static let navy = Color(hex: 0x16264C)
+    public static let navy = Color(hex: 0x0A1B3D)          // style guide navy-900
+    /// navy-700: pressed/hover state, divider shadow edge.
+    public static let navyPressed = Color(hex: 0x16295C)
 
     /// Forest green. Fill and small markers only. ~4.0:1 on the surface, below the
     /// 4.5 text floor, so it may never carry body text — use `textOnCourt` on it,
     /// or keep it to fills and the You're In! dot.
-    public static let court = Color(hex: 0x3E7C55)
+    public static let court = Color(hex: 0x4F7A38)         // gator-green: mascot, accent stripe, active tab, "Let's Play"
+    /// green-shade: mascot shading/outline only.
+    public static let courtShade = Color(hex: 0x33501F)
+    /// ace-yellow: photography accent only, never text or UI fill.
+    public static let aceYellow = Color(hex: 0xABC040)
 
     /// Brass accent. Small highlights and the Player Pool marker. Fill, never text.
-    public static let accent = Color(hex: 0xB08D57)
+    public static let accent = Color(hex: 0x4F7A38)        // no brass in the guide; the one UI accent is gator-green
 
     // Surfaces.
 
     /// Page background. Warm cream — the country-club ground from option B.
-    public static let surface = Color(hex: 0xF7F4EC)
+    public static let surface = Color(hex: 0xF2F0EC)       // porcelain: page background, secondary surfaces
     /// The bottom of the page gradient: the same cream, a shade warmer. Tara
     /// asked (2026-09-22, via Alex) for "a bit of separation of colors, not
     /// just pure white", the way Volee's screens run from one cream to a
     /// warmer one. Pages use `surfaceGradient`; cards stay `surfaceRaised`.
-    public static let surfaceWarm = Color(hex: 0xEFE8DA)
+    public static let surfaceWarm = Color(hex: 0xEAE6DF)   // porcelain, a shade warmer: the bottom of the page gradient (Tara's ask)
     public static var surfaceGradient: LinearGradient {
         LinearGradient(colors: [surface, surfaceWarm], startPoint: .top, endPoint: .bottom)
     }
@@ -112,36 +124,36 @@ public enum Brand {
     public static let surfaceRaised = Color(hex: 0xFFFFFF)
 
     /// Inverted surface: navy panels, the tab bar, hero headers.
-    public static let surfaceInverted = Color(hex: 0x16264C)
+    public static let surfaceInverted = Color(hex: 0x0A1B3D)
 
     // Text.
 
-    public static let textPrimary = Color(hex: 0x16264C)
+    public static let textPrimary = Color(hex: 0x0A1B3D)
     /// Secondary text. #6E6552 warm grey-brown is ~5.0:1 on the cream surface.
-    public static let textSecondary = Color(hex: 0x6E6552)
+    public static let textSecondary = Color(hex: 0x5C5A55)  // neutral grey, 5.5:1 on the gradient's warm end
     /// On navy: warm cream rather than pure white, so it belongs to this palette.
-    public static let textOnNavy = Color(hex: 0xF6F3EA)
-    public static let textOnNavyMuted = Color(hex: 0xCFC9BC)
+    public static let textOnNavy = Color(hex: 0xFFFFFF)     // surface-white, reversed
+    public static let textOnNavyMuted = Color(hex: 0xC9CCD6)
     public static let textOnCourt = Color(hex: 0xFFFFFF)
-    public static let textOnAccent = Color(hex: 0x231A0C)
+    public static let textOnAccent = Color(hex: 0xFFFFFF)
 
     // Lines and states.
 
     /// Outline for interactive controls. #6E6552 clears the 3:1 non-text
     /// threshold on the surface, so it is safe as the sole marker of a control.
-    public static let border = Color(hex: 0x6E6552)
+    public static let border = Color(hex: 0x5C5A55)
 
     /// Decorative separators between rows inside an already bounded card.
     /// Warm and low-contrast by design; WCAG 1.4.11 exempts purely decorative
     /// graphics. Never use it to outline a control.
-    public static let hairline = Color(hex: 0xE3DCCB)
+    public static let hairline = Color(hex: 0xE3E0DA)
 
     /// Disabled controls. WCAG exempts inactive components from contrast.
     /// Always pair a disabled control with visible helper text explaining why.
-    public static let disabled = Color(hex: 0xB7B0A2)
+    public static let disabled = Color(hex: 0xB5B2AC)
 
     /// Focus and selection ring. Navy, for ~13.6:1 against the surface.
-    public static let focusRing = Color(hex: 0x16264C)
+    public static let focusRing = Color(hex: 0x0A1B3D)
 }
 
 // MARK: - Status
@@ -230,39 +242,73 @@ public extension Brand {
 /// legibility outdoors. Flip `displayDesign` to `.default` to undo that in one
 /// place if she dislikes it.
 public extension Brand {
+    /// The two families from Kat's style guide, bundled as variable fonts
+    /// (SIL Open Font License; the licences sit beside the files). Registered
+    /// at first use by `register()`, so no Info.plist key is needed and a
+    /// fresh XcodeGen project cannot forget them. A variable font's weight is
+    /// set through the `wght` axis on a font descriptor: `UIFont(name:)` alone
+    /// would give the Regular instance whatever weight was asked for.
+    enum Fonts {
+        nonisolated(unsafe) private static var registered = false
+        static func register() {
+            guard !registered else { return }
+            registered = true
+            let urls = Bundle.main.urls(forResourcesWithExtension: "ttf", subdirectory: nil) ?? []
+            for url in urls {
+                CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
+            }
+        }
+        private static let wghtAxis = 0x77676874   // 'wght'
+        private static let opszAxis = 0x6F70737A   // 'opsz'
 
+        static func playfair(_ size: CGFloat, weight: CGFloat, italic: Bool = false) -> Font {
+            custom(italic ? "PlayfairDisplay-Italic" : "PlayfairDisplay-Regular", size: size, weight: weight, opticalSize: nil)
+        }
+        static func inter(_ size: CGFloat, weight: CGFloat) -> Font {
+            custom("Inter-Regular", size: size, weight: weight, opticalSize: size)
+        }
+        private static func custom(_ name: String, size: CGFloat, weight: CGFloat, opticalSize: CGFloat?) -> Font {
+            register()
+            var axes: [Int: CGFloat] = [wghtAxis: weight]
+            if let opticalSize { axes[opszAxis] = opticalSize }
+            let descriptor = UIFontDescriptor(fontAttributes: [
+                .name: name,
+                UIFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String): axes,
+            ])
+            return Font(UIFont(descriptor: descriptor, size: size))
+        }
+    }
+
+    /// Type styles, name for name from the style guide, then the app's older
+    /// role names mapped onto them so every screen picks up the guide at once.
+    /// Rule from the guide: serif for anything that greets or names; sans for
+    /// anything tapped or read as an instruction. Never the serif inside a
+    /// UI control.
     enum Typography {
-
         public static let displayDesign: Font.Design = .serif
         public static let bodyDesign: Font.Design = .default
 
-        /// Screen hero, one per screen at most.
-        public static let display = Font.system(.largeTitle, design: displayDesign, weight: .bold)
-        /// Section heading.
-        public static let title = Font.system(.title2, design: displayDesign, weight: .semibold)
-        /// Card heading, for example a clinic name.
-        public static let headline = Font.system(.headline, design: bodyDesign, weight: .semibold)
-        /// Default reading size.
-        public static let body = Font.system(.body, design: bodyDesign)
-        /// Emphasised body, for example a date inside a card.
-        public static let bodyEmphasis = Font.system(.body, design: bodyDesign, weight: .semibold)
-        /// Supporting line under a heading.
-        public static let subheadline = Font.system(.subheadline, design: bodyDesign)
-        /// Metadata, timestamps.
-        public static let caption = Font.system(.caption, design: bodyDesign)
-        /// Status chips and small pills. Semibold because it is set small.
-        public static let chip = Font.system(.caption, design: bodyDesign, weight: .semibold)
-        /// Button text. Never smaller than body: these are pressed outdoors.
-        public static let button = Font.system(.body, design: bodyDesign, weight: .semibold)
+        // Guide styles (size / line; tracking applied at the call site).
+        public static var greeting: Font        { Fonts.playfair(34, weight: 700) }
+        public static var greetingAccent: Font  { Fonts.playfair(23, weight: 500, italic: true) }
+        public static var wordmarkInitial: Font { Fonts.playfair(56, weight: 700) }
+        public static var wordmarkLockup: Font  { Fonts.playfair(22, weight: 600) }
+        public static var navRowLabel: Font     { Fonts.inter(19, weight: 600) }
+        public static var tabBarLabel: Font     { Fonts.inter(12, weight: 500) }
+        public static var body: Font            { Fonts.inter(15, weight: 400) }
+
+        // Roles the screens already use.
+        public static var display: Font       { greeting }
+        public static var title: Font         { Fonts.playfair(22, weight: 600) }
+        public static var headline: Font      { Fonts.inter(17, weight: 600) }
+        public static var bodyEmphasis: Font  { Fonts.inter(15, weight: 600) }
+        public static var subheadline: Font   { Fonts.inter(13, weight: 400) }
+        public static var caption: Font       { Fonts.inter(12, weight: 400) }
+        public static var chip: Font          { Fonts.inter(12, weight: 500) }
+        public static var button: Font        { navRowLabel }
     }
 }
 
-// MARK: - Spacing
-
-/// Four point base grid. These are raw points and do NOT scale with Dynamic
-/// Type by design: scaling both text and gaps double-counts and pushes content
-/// off screen at the accessibility sizes. Where a gap must track the text, wrap
-/// it locally: `@ScaledMetric(relativeTo: .body) var gap = Brand.Spacing.md`.
 public extension Brand {
 
     enum Spacing {
@@ -275,7 +321,7 @@ public extension Brand {
         public static let xxl: CGFloat = 48
 
         /// Standard page gutter.
-        public static let pageMargin: CGFloat = 20
+        public static let pageMargin: CGFloat = 24    // space-6, screen outer margin (guide)
         /// Padding inside a card.
         public static let cardPadding: CGFloat = 16
     }
@@ -287,11 +333,11 @@ public extension Brand {
 
     enum Radius {
         public static let xs: CGFloat = 6
-        public static let sm: CGFloat = 10
+        public static let sm: CGFloat = 8     // radius-sm: icon glyph containers only
         /// Default for cards.
-        public static let md: CGFloat = 14
+        public static let md: CGFloat = 16    // radius-md: compact chips, secondary controls, cards
         /// Sheets and hero panels.
-        public static let lg: CGFloat = 20
+        public static let lg: CGFloat = 28    // radius-lg: every tappable row or button
         /// Fully rounded. Status chips and pills.
         public static let pill: CGFloat = 999
     }
