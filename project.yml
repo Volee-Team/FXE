@@ -47,7 +47,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.fxetennis.app
         MARKETING_VERSION: "0.1.0"
-        CURRENT_PROJECT_VERSION: "1"
+        CURRENT_PROJECT_VERSION: "3"
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
@@ -55,6 +55,13 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"     # iPhone only for v1
         ENABLE_USER_SCRIPT_SANDBOXING: YES
         INFOPLIST_KEY_CFBundleDisplayName: "FXE Tennis"
+        # Apple rejected TestFlight build 1 (ITMS-90683, 2026-09-21): a dependency
+        # references the camera API, so the purpose string is required even though
+        # the app never opens the camera.
+        INFOPLIST_KEY_NSCameraUsageDescription: "FXE Tennis does not use the camera."
+        INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "FXE Tennis does not use your photo library."
+        # Only standard HTTPS: skips the export-compliance question on every upload.
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
 
   FXETennisTests:
     type: bundle.unit-test
