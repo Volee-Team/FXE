@@ -19,7 +19,7 @@ KEY="${SUPABASE_ANON_KEY:-$(grep -o 'sb_publishable_[A-Za-z0-9_-]*' "$(dirname "
 
 RELATIONS="clinics registrations players accounts player_notes clinic_templates payments devices notifications app_settings waivers waiver_acceptances review_links review_responses late_requests clinic_messages clinic_message_recipients news_posts news_reads clinics_public my_registrations my_clinic_messages my_news my_past_clinics clinics_admin templates_admin registrations_admin payments_ledger revenue_by_clinic"
 FUNCTIONS="register_for_clinic cancel_registration leave_pool delete_my_account accept_waiver current_waiver my_waiver_accepted admin_charge_clinic admin_set_no_show place_player cancel_clinic search_players revenue_summary admin_create_review_link admin_review_responses create_my_account"
-EDGE="delete-account stripe-charge stripe-setup-intent"
+EDGE="delete-account stripe-charge stripe-setup-intent push"
 
 bad=0; n=0
 check() {  # kind name code
