@@ -39,8 +39,17 @@ select 'app_can_read_' || t.relname,
 from (values ('accounts'), ('players'), ('app_settings'),
              ('clinics_public'), ('my_registrations'), ('my_clinic_messages'),
              ('my_news'), ('clinics_admin'), ('registrations_admin'),
-             ('templates_admin'), ('late_requests'), ('notifications'),
+             ('templates_admin'), ('late_requests'),
              ('revenue_by_clinic'), ('revenue_by_segment'), ('payments_ledger')) as t(relname);
+
+-- notifications is read by column, not by table, since 20260923000001: the
+-- push audit columns are withheld, so has_table_privilege is false by design.
+-- Each column the app selects is asserted instead (push_delivery.sql asserts
+-- the two withheld ones).
+insert into _probe_result
+select 'app_can_read_notifications_' || c, 'true',
+       has_column_privilege('authenticated', 'public.notifications'::regclass, c, 'SELECT')::text
+from unnest(array['id', 'account_id', 'type', 'entity_type', 'entity_id', 'body', 'created_at', 'read_at']) as c;
 
 -- A recipient may mark their own notification read, and nothing else about it.
 insert into _probe_result

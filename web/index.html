@@ -416,7 +416,9 @@ async function loadActionNeeded(clinics, byPlayer) {
   const byClinic = Object.fromEntries(clinics.map(c => [c.id, c]));
   const { data: late } = await sb.from("late_requests").select("*")
     .eq("status", "pending").order("created_at");
-  const { data: notes } = await sb.from("notifications").select("*")
+  // Named columns, never "*": authenticated holds SELECT on eight columns
+  // only (20260923000001), so "*" names the push audit columns and is refused.
+  const { data: notes } = await sb.from("notifications").select("id,type,entity_type,entity_id,body,created_at,read_at")
     .is("read_at", null)
     .in("type", ["player_canceled", "invitation_declined", "invitation_accepted"])
     .order("created_at", { ascending: false }).limit(30);
