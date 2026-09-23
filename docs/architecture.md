@@ -52,16 +52,16 @@ most important thing to understand here, and it is section 5.
 
 | Area | State |
 |---|---|
-| Postgres schema, RLS, narrow views, RPCs | **Built**, 33 migrations, all 33 applied to hosted (verified 2026-09-21, `supabase migration list --linked`: 33 paired) |
+| Postgres schema, RLS, narrow views, RPCs | **Built**, 34 migrations; the first 33 applied to hosted (verified 2026-09-21, `supabase migration list --linked`: 33 paired); `20260923000001_push_delivery.sql` not pushed yet |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | **Built**, enumerated by probes |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | **Built** |
-| SQL probe suite (24 probes; the suite prints its own total) + concurrency probe, in CI | **Built** |
+| SQL probe suite (25 probes; the suite prints its own total) + concurrency probe, in CI | **Built** |
 | iOS: sign-in, sign-up with profile, password reset, three tabs | **Built** |
 | iOS: browse by week, per-viewer pricing, register / cancel (inside the 3-hour cutoff the full fee applies; the note is optional) / leave pool / respond, closed-clinic "Message Tara", the bell, My Clinics, profile edit, card on file | **Built** |
 | iOS admin tab: rosters, invite, courts, paid, unpaid reminder, message audiences, late requests, Action Needed, player directory | **Built** |
 | Web admin: clinic + template CRUD (archive, never delete), rosters, walk-up, courts, reminder, Action Needed, Money with the card ledger, directory, password reset | **Built**, live on Vercel |
 | Nightly `pg_dump` backup + keep-warm | **Built**, first artifact 2026-09-01 |
-| APNs push delivery | **Client half built** (permission sheet, registration, `register_device`; decision 0008). The sender waits on the APNs key, which only the Apple Developer account can issue. `notifications` rows are written; nothing delivers them |
+| APNs push delivery | **Built, waiting on the key** (decision 0008). Client half: permission sheet, registration, `register_device`. Sender (2026-09-23): trigger `push_on_notification` → pg_net → the `push` edge function → APNs, with `delivered_at` / `delivery_error` on each row, proven against a mock by `tests/push/run.sh`. Nothing is sent until Apple issues the key and the two vault secrets exist (`supabase/functions/README.md`, "What Alex does when the key arrives") |
 | Stripe card payments | **Built, switched off** (decision 0009): ledger, RPCs, three edge functions ACTIVE on hosted, card screen, `payments_ledger`. `app_settings.payments_enabled` is `false`; nothing charges until the Stripe keys are set (launch checklist A1); her policy answers landed 2026-09-16 and 2026-09-21 (decisions 0012, 0013) |
 | Juniors / parent accounts | **Deferred** to November or the spring session (decision 0007) |
 | App Store / TestFlight | **Blocked** on Apple Developer enrollment for FXE Tennis, LLC |
@@ -99,9 +99,9 @@ flowchart TD
         auth -.->|"auth.uid() read by is_admin() / owns_player()"| pg
     end
 
-    edge["Edge functions (Deno, service_role)<br/>stripe-setup-intent, stripe-webhook, stripe-charge, delete-account, review-submit"]
+    edge["Edge functions (Deno, service_role)<br/>stripe-setup-intent, stripe-webhook, stripe-charge, delete-account, review-submit, push"]
     edge --> pg
-    gha["GitHub Actions<br/>probes, browser tests, Stripe pipeline (mocked), iOS build + tests,<br/>copy gate, secret scan, migration immutability, doc paths, nightly backup"] -.-> supa
+    gha["GitHub Actions<br/>probes, browser tests, Stripe pipeline (mocked), push pipeline (mocked), iOS build + tests,<br/>copy gate, secret scan, migration immutability, doc paths, nightly backup"] -.-> supa
 ```
 
 The phone and the web page are two clients of one API. Postgres cannot tell
@@ -238,7 +238,9 @@ JSON. The hiding is done in the database by three mechanisms:
    granted exactly (`information_schema.table_privileges` and
    `column_privileges`, 2026-09-12): `SELECT` on `accounts`, `players`,
    `notifications`, `late_requests`, `payments` and `app_settings` (RLS scopes
-   the first five to the caller; settings are player-safe by rule), column
+   the first five to the caller; settings are player-safe by rule; on
+   `notifications` the SELECT is a column list since 20260923000001, so the
+   push audit columns `delivered_at` and `delivery_error` are withheld), column
    `UPDATE` on `accounts(first_name, last_name, phone)`,
    `players(first_name, last_name, adult_rating, date_of_birth)` and
    `notifications(read_at)`, `SELECT` on the narrow views, and `EXECUTE` on the
@@ -299,7 +301,7 @@ the attack and asserts it fails.
 | `late_requests` | "Can I still get in?" after the close; Tara approves or declines. |
 | `clinic_messages` + `clinic_message_recipients` | Broadcasts; targeted audiences are snapshotted at send time. |
 | `news_posts` + `news_reads` | Announcements; read state per account. |
-| `notifications` | In-app rows written by RPCs (players and Tara). Readable by the owner; only `read_at` is writable. |
+| `notifications` | In-app rows written by RPCs (players and Tara). Readable by the owner, eight named columns; only `read_at` is writable. `delivered_at` / `delivery_error` are written by the `push` edge function and readable by no client (20260923000001). Every insert fires `push_on_notification`, which posts the row id to `push` through pg_net once the vault secrets `push_function_url` and `push_webhook_secret` exist, and does nothing until then. |
 | `devices` | APNs tokens (groundwork; nothing delivers yet). |
 | `my_past_clinics` (view) | A player's own finished clinics with only their own outcome: name, time, status, no-show, late, price snapshot, paid. Own rows only, none of the nine hidden facts (feature review 09-02; decision 0012 §10). |
 | `waivers` + `waiver_acceptances` | Tara's Adult Tennis Participation Waiver, one row per version, and each electronic signature (typed legal name, account email, time, app build). Reached only through `current_waiver`, `my_waiver_accepted`, `accept_waiver` (decision 0013). |
@@ -474,6 +476,7 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `clinic_messaging` | Decision 0005: a targeted message is readable only by the group it went to; the whole list each player sees is asserted; the recipients table is hidden; each recipient notified once |
 | `schema_decisions` | Tara's decisions with a DB consequence stay true |
 | `push_devices` | `register_device` / `unregister_device`, attacked: nobody but the owner sees a token, the account is never a parameter, re-registering is idempotent |
+| `push_delivery` | 20260923000001: the audit columns exist and `authenticated` holds nothing on them (Maria's own `select delivery_error` is refused) while the app's eight columns still read; the AFTER INSERT trigger exists and no client can execute its function; with no vault secrets (or only one) an insert succeeds and queues nothing, with both it queues exactly one request carrying the row id and the secret header |
 | `template_archive` | Only Tara archives or restores; the stamp survives a repeat; archived rows show to her and to nobody else; a clinic can still be built from an archived template |
 | `payments_foundation` | Nobody charges anyone while payments are off; a player cannot write the ledger or forge a card; a double tap is one fee; the ledger, not a checkbox, marks a registration paid |
 | `payments_ledger` | The gate on the owner-run view: Tara sees the row with names on it, Maria sees nothing, nobody writes through it |
@@ -507,13 +510,22 @@ SetupIntent, signed and unsigned webhooks, charge → processing → succeeded �
 paid, refund → unpaid, decline → failed with a reason, and the switch off
 proving nothing charges.
 
+**Push pipeline**: `tests/push/run.sh` against `tests/push/mock-apns.ts`
+(env from `tests/push/make-env.sh`, a throwaway P-256 key per run): the
+secret header, unknown and malformed rows, no device, one good device (topic,
+push type, collapse id, the row body verbatim, the unread count as badge, and
+an ES256 provider token the mock verifies against the public key), `gone` and
+`bad` tokens pruned, idempotency, Maria refused the audit columns through
+PostgREST, and the trigger delivering through pg_net with nobody calling the
+function by hand. The function is `supabase/functions/push/index.ts`.
+
 **GitHub Actions** on every push and PR (`probes.yml`): `sql-probes`
 (pinned CLI, `db reset`, the suite), `web-browser-tests` (the same pinned
 stack, then Playwright), `stripe-pipeline` (the stack plus stripe-mock on its
-network, then `tests/stripe/run.sh`), `ios-changes` (did any Swift or
+network, then `tests/stripe/run.sh`), `push-pipeline` (the stack, Deno on the runner running the mock APNs, the functions served with the push env, then `tests/push/run.sh`), `ios-changes` (did any Swift or
 `project.yml` change? gates the next job so a docs PR does not wait on Xcode),
 `ios-build-and-test` (XcodeGen, Debug and Release builds, unit tests, app-icon
-gate, simulator chosen at run time), `copy-gate`, `secret-scan`, `hosted-smoke` (read-only: 48 hosted targets must answer a signed-out caller with 401/403/404; `scripts/hosted-smoke.sh`),
+gate, simulator chosen at run time), `copy-gate`, `secret-scan`, `hosted-smoke` (read-only: 49 hosted targets must answer a signed-out caller with 401/403/404; `scripts/hosted-smoke.sh`),
 `migration-immutability`, `ios-ui-tests` (the 13 XCUITests against a
 throwaway CI Supabase project, reset to the seed first; green with a notice
 until that project's secrets exist, see `docs/launch-checklist.md` §F, added

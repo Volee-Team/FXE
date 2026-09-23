@@ -64,3 +64,32 @@
 2. On enrollment: create the APNs key, add it to Supabase secrets, deploy the
    `push` edge function, configure the webhook, add the audit columns.
 3. First real push goes to Alex's phone, not Tara's.
+
+**Built 2026-09-23 (everything but the key).** Step 2 of the sequence above,
+minus the one thing only Apple can supply:
+
+- Migration `20260923000001_push_delivery.sql`: the audit columns
+  `delivered_at` and `delivery_error` (item 5), withheld from clients by
+  turning the table-level SELECT of 20260901000001 into a column list; and
+  the "webhook" of item 1, written as a trigger (`push_on_notification`,
+  AFTER INSERT, via pg_net) rather than a dashboard setting, so it exists in
+  every environment and the probe can see it. Its URL and shared secret live
+  in Supabase Vault (`push_function_url`, `push_webhook_secret`); with either
+  missing it does nothing, and it never fails the insert.
+- Edge function `push`: shared-secret auth, ES256 provider token signed with
+  WebCrypto and cached 50 minutes, one request per device with the row's body
+  verbatim and the unread count as the badge, `delivered_at` on any success,
+  Apple's reason in `delivery_error` otherwise, tokens pruned on 410 or
+  `BadDeviceToken` ("Old tokens are pruned by APNs feedback", above),
+  idempotent on retry.
+- Proven against a mock APNs that verifies the token signature
+  (`tests/push/run.sh`, CI job "Push pipeline (mocked)") and by the probe
+  `push_delivery`.
+
+What still waits on the key: creating it, the five `APNS_*` /
+`PUSH_WEBHOOK_SECRET` function secrets, deploying `push`, the two
+`vault.create_secret` calls on hosted, and step 3, the first real push to
+Alex's phone. The steps are in `supabase/functions/README.md` ("What Alex does
+when the key arrives"). Not proven until then: that Apple accepts the key,
+team and topic, and that production versus sandbox is right for the build
+(TestFlight tokens are production, the default).
