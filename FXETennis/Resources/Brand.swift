@@ -99,6 +99,14 @@ public enum Brand {
 
     /// Page background. Warm cream — the country-club ground from option B.
     public static let surface = Color(hex: 0xF7F4EC)
+    /// The bottom of the page gradient: the same cream, a shade warmer. Tara
+    /// asked (2026-09-22, via Alex) for "a bit of separation of colors, not
+    /// just pure white", the way Volee's screens run from one cream to a
+    /// warmer one. Pages use `surfaceGradient`; cards stay `surfaceRaised`.
+    public static let surfaceWarm = Color(hex: 0xEFE8DA)
+    public static var surfaceGradient: LinearGradient {
+        LinearGradient(colors: [surface, surfaceWarm], startPoint: .top, endPoint: .bottom)
+    }
 
     /// Cards and sheets lifted off the page.
     public static let surfaceRaised = Color(hex: 0xFFFFFF)

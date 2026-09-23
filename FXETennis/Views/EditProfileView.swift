@@ -34,7 +34,7 @@ struct EditProfileView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Brand.surface.ignoresSafeArea()
+                Brand.surfaceGradient.ignoresSafeArea()
                 ScrollView {
                     VStack(alignment: .leading, spacing: Brand.Spacing.lg) {
                         field("First Name", text: $firstName, content: .givenName, id: "edit.firstName")

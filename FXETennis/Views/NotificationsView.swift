@@ -29,7 +29,7 @@ struct NotificationsView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Brand.surface.ignoresSafeArea()
+                Brand.surfaceGradient.ignoresSafeArea()
 
                 if loading && items.isEmpty {
                     ProgressView().tint(Brand.navy)

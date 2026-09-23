@@ -61,7 +61,7 @@ struct ClinicExplainerSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Brand.surface.ignoresSafeArea()
+                Brand.surfaceGradient.ignoresSafeArea()
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: Brand.Spacing.lg) {

@@ -170,7 +170,7 @@ test.describe("payments switch", () => {
 test.describe("review links", () => {
   test("Tara makes a review link and gets a URL carrying a long token", async ({ page }) => {
     await signIn(page, TARA);
-    await page.getByRole("tab", { name: "Players" }).click();
+    await page.getByRole("tab", { name: "Testing" }).click();
     await page.getByLabel("Link label").fill(`Playwright ${Date.now()}`);
     await page.getByRole("button", { name: "Make link" }).click();
     const url = page.locator("#rl-url");

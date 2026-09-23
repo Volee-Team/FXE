@@ -63,7 +63,8 @@ Every hex below is transcribed from `Brand.swift`. All are opaque (`opacity: 1.0
 
 | Token | Hex | Role |
 |---|---|---|
-| `Brand.surface` | `#F7F4EC` | Page background. Warm cream, the country-club ground from option B. |
+| `Brand.surface` | `#F7F4EC` | Page background, and the top of `Brand.surfaceGradient`. Warm cream, the country-club ground from option B. |
+| `Brand.surfaceWarm` | `#EFE8DA` | The bottom of the page gradient (2026-09-22). Tara asked for "a bit of separation of colors, not just pure white", the way Volee runs from one cream to a warmer one; every page background is `surfaceGradient` (top `surface`, bottom `surfaceWarm`), cards stay `surfaceRaised` white. Text contrast is measured against `surfaceWarm`, the darker end: navy 12.6:1, court green 3.7:1 (fill only, unchanged). |
 | `Brand.surfaceRaised` | `#FFFFFF` | Cards and sheets lifted off the page. |
 | `Brand.surfaceInverted` | `#16264C` | Navy panels, the tab bar, hero headers. (Same value as `navy`.) |
 

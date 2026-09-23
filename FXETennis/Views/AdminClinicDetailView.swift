@@ -107,7 +107,7 @@ struct AdminClinicDetailView: View {
 
     var body: some View {
         ZStack {
-            Brand.surface.ignoresSafeArea()
+            Brand.surfaceGradient.ignoresSafeArea()
 
             ScrollView {
                 VStack(alignment: .leading, spacing: Brand.Spacing.lg) {
@@ -606,7 +606,7 @@ private struct MessageClinicSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Brand.surface.ignoresSafeArea()
+                Brand.surfaceGradient.ignoresSafeArea()
 
                 VStack(alignment: .leading, spacing: Brand.Spacing.md) {
                     Text("To")

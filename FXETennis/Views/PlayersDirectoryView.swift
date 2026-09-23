@@ -22,7 +22,7 @@ struct PlayersDirectoryView: View {
 
     var body: some View {
         ZStack {
-            Brand.surface.ignoresSafeArea()
+            Brand.surfaceGradient.ignoresSafeArea()
 
             ScrollView {
                 VStack(alignment: .leading, spacing: Brand.Spacing.md) {
@@ -150,7 +150,7 @@ private struct PlayerAdminDetailView: View {
 
     var body: some View {
         ZStack {
-            Brand.surface.ignoresSafeArea()
+            Brand.surfaceGradient.ignoresSafeArea()
 
             ScrollView {
                 VStack(alignment: .leading, spacing: Brand.Spacing.lg) {

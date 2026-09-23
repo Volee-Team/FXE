@@ -111,6 +111,7 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
       <button role="tab" data-tab="week" aria-selected="true">This week</button>
       <button role="tab" data-tab="players" aria-selected="false">Players</button>
       <button role="tab" data-tab="money" aria-selected="false">Money</button>
+      <button role="tab" data-tab="testing" aria-selected="false" class="muted" title="Only for testing the app with Tara and Kat">Testing</button>
     </nav>
     <div id="msg"></div>
 
@@ -148,6 +149,20 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
       <div id="players-msg"></div>
     </div>
 
+    </div>
+
+    <div id="tab-money" role="tabpanel" class="hide">
+    <h2>Money</h2>
+    <div id="money" class="card muted">Loading…</div>
+    <!-- v1 (Kat, 2026-09-22): card management lives in Stripe's own dashboard.
+         Refunds, expired cards and disputes are handled there until the ledger
+         grows those controls. -->
+    <p class="muted"><a href="https://dashboard.stripe.com" target="_blank" rel="noopener" id="stripe-link">Manage payments in Stripe</a></p>
+    </div>
+
+    <div id="tab-testing" role="tabpanel" class="hide">
+    <h2>Testing</h2>
+    <p class="muted">For testing with Tara and Kat. Nothing here is part of running the clinics.</p>
     <!-- Review links (20260921000010). A link is a random token; the review
          page (review.html?t=...) saves Tara's answers to the server through
          the review-submit edge function, and they show here. -->
@@ -165,11 +180,6 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
       <div id="rl-responses"></div>
     </div>
 
-    </div>
-
-    <div id="tab-money" role="tabpanel" class="hide">
-    <h2>Money</h2>
-    <div id="money" class="card muted">Loading…</div>
     </div>
   </section>
 </main>
@@ -596,7 +606,7 @@ async function loadClinics() {
 // she was. Everything still loads on sign-in, so switching is instant.
 const showTab = (name) => {
   for (const b of document.querySelectorAll(".tabs [role=tab]")) b.setAttribute("aria-selected", String(b.dataset.tab === name));
-  for (const n of ["week", "players", "money"]) $("tab-" + n).classList.toggle("hide", n !== name);
+  for (const n of ["week", "players", "money", "testing"]) $("tab-" + n).classList.toggle("hide", n !== name);
   try { localStorage.setItem("fxe.tab", name); } catch {}
 };
 for (const b of document.querySelectorAll(".tabs [role=tab]")) b.addEventListener("click", () => showTab(b.dataset.tab));

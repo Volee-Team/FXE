@@ -127,7 +127,7 @@ struct ClinicDetailView: View {
             }
             .padding(Brand.Spacing.pageMargin)
         }
-        .background(Brand.surface)
+        .background(Brand.surfaceGradient)
         .navigationTitle(clinic.name)
         .navigationBarTitleDisplayMode(.inline)
         .task { if !model.loaded { await model.load(clinicId: clinic.id) } }
@@ -469,7 +469,7 @@ private struct LateCancelSheet: View {
                 Spacer()
             }
             .padding(Brand.Spacing.pageMargin)
-            .background(Brand.surface)
+            .background(Brand.surfaceGradient)
             .navigationTitle("Cancel Registration")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
