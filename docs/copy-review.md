@@ -315,6 +315,21 @@ The one most worth her eye, because it is the longest and most "her":
 
 ---
 
+## G. The privacy policy page (42 lines, 2026-09-23) — awaiting Alex and Tara
+
+`web/privacy.html`, generated from `docs/legal/privacy-policy.md`. Volee's
+policy (decision 16: reuse it) with FXE's facts substituted; the eight deltas
+are listed at the end of the markdown so the approval is of the changes, not
+a re-read. Delta 3 (naming Stripe, Apple and the host as service providers,
+where Volee's said "no third parties") is the one with legal weight. Not
+deployed, not linked from the app, marked "Draft. Not yet in effect." on the
+page until ticked. Contact line and date are placeholders for Alex.
+
+- [ ] Alex reads the eight deltas
+- [ ] Tara agrees (she said reuse Volee's; the deltas are the ask)
+- [ ] Contact email and date filled in
+- [ ] URL chosen: the admin site (https://fxe-tennis-admin.vercel.app/privacy.html) now, fersc.com later (decision 0012 §13)
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148
