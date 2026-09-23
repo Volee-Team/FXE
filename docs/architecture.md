@@ -476,7 +476,7 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `clinic_messaging` | Decision 0005: a targeted message is readable only by the group it went to; the whole list each player sees is asserted; the recipients table is hidden; each recipient notified once |
 | `schema_decisions` | Tara's decisions with a DB consequence stay true |
 | `push_devices` | `register_device` / `unregister_device`, attacked: nobody but the owner sees a token, the account is never a parameter, re-registering is idempotent |
-| `push_delivery` | 20260923000001: the audit columns exist and `authenticated` holds nothing on them (Maria's own `select delivery_error` is refused) while the app's eight columns still read; the AFTER INSERT trigger exists and no client can execute its function; with no vault secrets (or only one) an insert succeeds and queues nothing, with both it queues exactly one request carrying the row id and the secret header |
+| `push_delivery` | 20260923000001: the audit columns exist and `authenticated` holds nothing on them (Maria's own `select delivery_error` is refused) while the app's eight columns still read; the AFTER INSERT trigger exists and no client can execute its function; with no vault secrets (or only one) an insert succeeds and queues nothing, with both (and an unreachable URL) it queues exactly one request carrying the row id and the secret header; and when the vault read itself raises (the trigger function handed to `anon` inside the rolled-back transaction) the insert still succeeds |
 | `template_archive` | Only Tara archives or restores; the stamp survives a repeat; archived rows show to her and to nobody else; a clinic can still be built from an archived template |
 | `payments_foundation` | Nobody charges anyone while payments are off; a player cannot write the ledger or forge a card; a double tap is one fee; the ledger, not a checkbox, marks a registration paid |
 | `payments_ledger` | The gate on the owner-run view: Tara sees the row with names on it, Maria sees nothing, nobody writes through it |
@@ -525,7 +525,7 @@ stack, then Playwright), `stripe-pipeline` (the stack plus stripe-mock on its
 network, then `tests/stripe/run.sh`), `push-pipeline` (the stack, Deno on the runner running the mock APNs, the functions served with the push env, then `tests/push/run.sh`), `ios-changes` (did any Swift or
 `project.yml` change? gates the next job so a docs PR does not wait on Xcode),
 `ios-build-and-test` (XcodeGen, Debug and Release builds, unit tests, app-icon
-gate, simulator chosen at run time), `copy-gate`, `secret-scan`, `hosted-smoke` (read-only: 49 hosted targets must answer a signed-out caller with 401/403/404; `scripts/hosted-smoke.sh`),
+gate, simulator chosen at run time), `copy-gate`, `secret-scan`, `hosted-smoke` (read-only: 51 hosted targets must answer a signed-out caller with 401/403/404; `scripts/hosted-smoke.sh`),
 `migration-immutability`, `ios-ui-tests` (the 13 XCUITests against a
 throwaway CI Supabase project, reset to the seed first; green with a notice
 until that project's secrets exist, see `docs/launch-checklist.md` §F, added

@@ -155,6 +155,11 @@ check "Maria signed in" "yes" "$([ -n "$MARIA_JWT" ] && echo yes)"
 check "Maria: select=delivered_at refused" "42501" "$(rest 'select=delivered_at' | field "['code']")"
 check "Maria: select=delivery_error refused" "42501" "$(rest 'select=delivery_error' | field "['code']")"
 check "Maria: select=* refused (it names them)" "42501" "$(rest 'select=*' | field "['code']")"
+# pg_net's queue carries X-Push-Secret in plain text until sent and grants
+# PUBLIC everything; no migration can revoke it (supabase_admin owns it). The
+# API must not expose the net schema at all. PGRST106 = schema not exposed.
+check "Maria: net.http_request_queue not reachable" "PGRST106" "$(curl -s "$API/rest/v1/http_request_queue?select=*" -H "apikey: $ANON" -H "Authorization: Bearer $MARIA_JWT" -H "Accept-Profile: net" | field "['code']")"
+check "Maria: net.http_post not callable" "PGRST106" "$(curl -s -X POST "$API/rest/v1/rpc/http_post" -H "apikey: $ANON" -H "Authorization: Bearer $MARIA_JWT" -H "Content-Profile: net" -H "Content-Type: application/json" -d '{"url":"http://example.invalid"}' | field "['code']")"
 check "Maria: the app's own column list still reads" "list" "$(rest 'select=id,type,entity_type,entity_id,body,created_at,read_at' | python3 -c "import sys,json;print(type(json.load(sys.stdin)).__name__)")"
 
 # ---- (i) No vault secrets: a notification is written, and nothing is queued

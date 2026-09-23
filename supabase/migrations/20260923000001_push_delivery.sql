@@ -31,13 +31,34 @@
 -- THE INSERT MUST NEVER FAIL BECAUSE OF PUSH. The trigger runs inside the RPC
 -- that wrote the notification (invite, cancel, message). If pg_net misbehaves,
 -- Tara's invitation must still be written; a missed push is recoverable, a
--- missed invitation is not. Hence the exception block around http_post.
+-- missed invitation is not. Hence one exception block around EVERYTHING the
+-- trigger does, the vault reads included: the first draft protected only
+-- http_post, and the sql-auditor showed that a vault read that raises (a
+-- permission change, a vault upgrade) would have rolled back the RPC that
+-- wrote the row. push_delivery.sql now makes the vault read fail on purpose
+-- and asserts the insert still succeeds; the first draft failed that check.
 --
 -- WHAT ALEX RUNS ONCE, in the hosted SQL editor, after deploying the function
 -- and setting its PUSH_WEBHOOK_SECRET (same value in both places):
 --
 --   select vault.create_secret('https://<project-ref>.supabase.co/functions/v1/push', 'push_function_url');
 --   select vault.create_secret('<the same value as PUSH_WEBHOOK_SECRET>', 'push_webhook_secret');
+--
+-- WHAT THIS MIGRATION CANNOT LOCK DOWN: pg_net's own objects. pg_net writes
+-- each request, headers included (so X-Push-Secret), into
+-- net.http_request_queue until its worker sends it (milliseconds), and that
+-- table grants PUBLIC everything; anon and authenticated may also EXECUTE
+-- net.http_post. Those objects belong to supabase_admin, and postgres (the
+-- role migrations run as, locally and on hosted) holds no grant option on
+-- them, so `revoke ... from public` here is a no-op: tried 2026-09-23, Postgres
+-- answered "WARNING: no privileges could be revoked" and the ACLs were
+-- unchanged. Writing it anyway would be a control that exists only on paper.
+-- What actually keeps them out of reach is that the API exposes only the
+-- `public` and `graphql_public` schemas (supabase/config.toml, and the same
+-- default on hosted); no client can send SQL, only PostgREST requests. That
+-- is pinned from outside: scripts/hosted-smoke.sh asks hosted for
+-- net.http_request_queue with the publishable key, and tests/push/run.sh asks
+-- the local API the same as Maria; both must be refused.
 --
 -- THE AUDIT COLUMNS ARE NOT PLAYER-READABLE. `delivery_error` can carry an
 -- APNs reason (BadDeviceToken, Unregistered), which is about the device, not
@@ -82,18 +103,20 @@ declare
   v_url    text;
   v_secret text;
 begin
-  select decrypted_secret into v_url
-    from vault.decrypted_secrets where name = 'push_function_url' limit 1;
-  select decrypted_secret into v_secret
-    from vault.decrypted_secrets where name = 'push_webhook_secret' limit 1;
-
-  -- Not configured yet (every environment until Alex runs the two
-  -- vault.create_secret lines above). Do nothing, loudly nowhere.
-  if v_url is null or v_url = '' or v_secret is null or v_secret = '' then
-    return new;
-  end if;
-
+  -- Everything, the vault reads included, sits inside this block: a push is
+  -- never worth failing the RPC that wrote the notification.
   begin
+    select decrypted_secret into v_url
+      from vault.decrypted_secrets where name = 'push_function_url' limit 1;
+    select decrypted_secret into v_secret
+      from vault.decrypted_secrets where name = 'push_webhook_secret' limit 1;
+
+    -- Not configured yet (every environment until Alex runs the two
+    -- vault.create_secret lines above). Do nothing.
+    if v_url is null or v_url = '' or v_secret is null or v_secret = '' then
+      return new;
+    end if;
+
     perform net.http_post(
       url                  := v_url,
       headers              := jsonb_build_object('Content-Type', 'application/json',
@@ -102,7 +125,6 @@ begin
       timeout_milliseconds := 5000
     );
   exception when others then
-    -- A push is never worth failing the RPC that wrote the notification.
     null;
   end;
   return new;

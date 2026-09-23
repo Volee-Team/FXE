@@ -119,10 +119,18 @@ begin
   select count(*) into q1 from net.http_request_queue;
   insert into _probe_result values ('url_without_secret_queues_nothing', '0', (q1 - q0)::text);
 
-  -- 4c. Both secrets: exactly one queued request, for this row, with the header.
+  -- 4c. Both secrets, and a URL nothing answers (.invalid is reserved and
+  -- never resolves): the insert succeeds, and exactly one request is queued,
+  -- for this row, with the header. pg_net sends after commit, so the
+  -- unreachable host can only ever fail in the worker, never in the RPC.
   perform vault.create_secret('probe-secret-not-real', 'push_webhook_secret');
-  insert into public.notifications (account_id, type, body)
-  values (MARIA, 'probe_push', 'probe: both secrets') returning id into nid;
+  begin
+    insert into public.notifications (account_id, type, body)
+    values (MARIA, 'probe_push', 'probe: both secrets') returning id into nid;
+    insert into _probe_result values ('insert_succeeds_with_unreachable_url', 'ok', 'ok');
+  exception when others then
+    insert into _probe_result values ('insert_succeeds_with_unreachable_url', 'ok', sqlerrm);
+  end;
   select count(*) into q1 from net.http_request_queue;
   insert into _probe_result values ('both_secrets_queue_one_request', '1', (q1 - q0)::text);
 
@@ -131,6 +139,24 @@ begin
     from net.http_request_queue q order by q.id desc limit 1;
   insert into _probe_result values ('queued_request_is_for_this_row',
     'http://probe.invalid/functions/v1/push probe-secret-not-real ' || nid::text, coalesce(v, ''));
+
+  -- 4d. The vault read itself raises. Found by the sql-auditor on 2026-09-23:
+  -- the first draft read the vault outside the exception block, so a vault
+  -- that refused the read would have failed every invite, cancel and message.
+  -- Made to happen for real: the trigger function runs as its owner, so hand
+  -- it to anon (which has no access to the vault schema) for the rest of this
+  -- rolled-back transaction. Verified red against the first draft ("permission
+  -- denied for schema vault" aborted the insert).
+  grant create on schema public to anon;          -- ALTER OWNER requires it
+  alter function public.push_on_notification() owner to anon;
+  begin
+    perform public.notify_account(MARIA, 'probe_push', null, null, 'probe: vault read raises');
+    insert into _probe_result values ('insert_succeeds_when_vault_read_raises', 'ok', 'ok');
+  exception when others then
+    insert into _probe_result values ('insert_succeeds_when_vault_read_raises', 'ok', sqlerrm);
+  end;
+  alter function public.push_on_notification() owner to postgres;
+  revoke create on schema public from anon;
 end $$;
 
 do $$ begin

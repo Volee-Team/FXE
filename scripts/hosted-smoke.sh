@@ -41,5 +41,13 @@ for e in $EDGE; do
   code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$URL/functions/v1/$e" -H "apikey: $KEY" -H "Content-Type: application/json" -d '{}')
   check edge "$e" "$code"
 done
+# pg_net's schema (20260923000001). Its queue holds each push request's
+# X-Push-Secret header until sent and grants PUBLIC everything; a migration
+# cannot revoke that (supabase_admin owns it), so what keeps it closed is the
+# API exposing only public and graphql_public. PostgREST answers 406 PGRST106.
+code=$(curl -s -o /dev/null -w '%{http_code}' "$URL/rest/v1/http_request_queue?select=*&limit=1" -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Accept-Profile: net")
+check net-schema http_request_queue "$code"
+code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$URL/rest/v1/rpc/http_post" -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Profile: net" -H "Content-Type: application/json" -d '{"url":"https://example.invalid"}')
+check net-schema http_post "$code"
 echo "checked $n targets, $bad open to a signed-out caller"
 [ "$bad" = "0" ]
