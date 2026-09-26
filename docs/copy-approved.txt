@@ -122,6 +122,7 @@ Only a You're In! player can be a no-show.
 Only a paid charge can be refunded.
 Only for testing the app with Tara and Kat
 Only you can see this.
+Open for Registration
 Our hosting provider stores the Services' data on servers in the United States.
 Payment method
 Payments are switched off.
@@ -134,6 +135,7 @@ Private note
 Profile
 Put in clinic
 Put them in
+Rating
 Rating Guide
 Rating \(bucket.label)
 Really cancel? Everyone is told.
@@ -164,6 +166,7 @@ Sign out
 Signs you out, you can finish later if needed
 Someone already handled that one.
 Start from a template
+Stripe
 Stripe isn't connected yet.
 Stripe, Inc. processes card payments. Your card details go to Stripe directly and are governed by Stripe's privacy policy.
 Tara has your message.
@@ -199,7 +202,6 @@ Turn on notifications
 Type at least two letters of a name.
 Type it again
 USTA \(level.label)
-View All Clinics
 View Open Clinics
 Waiver
 We collect only the information necessary to provide and improve our Services. This includes your name, email address, phone number, your self-reported club membership status, your tennis rating, an optional note to your coach, and the record of the clinics you register for, attend, cancel, or miss. If you add a payment card, the card is collected and stored by our payment processor, Stripe; we store only the card's brand and last four digits. If you allow notifications, we store the device token that lets us send them. We do not collect your location.

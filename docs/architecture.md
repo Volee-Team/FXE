@@ -487,7 +487,7 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `review_responses` | Only Tara mints a review link and the token is long and URL-safe; anon and authenticated hold no verb on either table; the edge function's role does; a repeat save on one (link, page version) is one row with a later `updated_at`; Tara reads every response back with its label, newest first; revoking a link keeps its responses |
 | `capacity_race.sh` | Two racing registrations; invite-vs-accept |
 
-**Swift**: 23 unit tests (`FXETennisTests`: price formatting, per-viewer
+**Swift**: 30 unit tests (`FXETennisTests`: price formatting, per-viewer
 pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013) and 13
 XCUITests: 8 player flows
 (`PlayerFlowUITests`: sign in / browse / register, undo, sign-up end to end,

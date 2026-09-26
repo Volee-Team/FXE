@@ -363,20 +363,24 @@ final class PlayerFlowUITests: XCTestCase {
 
     // MARK: - my clinics
 
-    /// "View All Clinics" under My Clinics opens MY clinics, not the browse
-    /// list. Either the empty state or a card is acceptable: which one depends
-    /// on whether an earlier test left Maria registered, and both are correct.
-    func testViewAllClinicsOpensMyClinics() {
+    /// My Clinics (with Past) opens from Profile since 2026-09-26, when the
+    /// Final Updates removed Home's "View All Clinics" button. It opens MY
+    /// clinics, not the browse list. Either the empty state or a card is
+    /// acceptable: which one depends on whether an earlier test left Maria
+    /// registered, and both are correct.
+    func testProfileOpensMyClinics() {
         app.launch()
         signIn(as: memberEmail)
         dismissSavePasswordSheetIfPresent()
 
-        let link = app.buttons["home.viewMyClinics"]
-        XCTAssertTrue(link.waitForExistence(timeout: 20), "No View All Clinics link on Home")
+        XCTAssertFalse(app.buttons["home.viewMyClinics"].exists, "Home still carries the removed View All Clinics button")
+        openProfileTab()
+        let link = app.buttons["profile.myClinics"]
+        XCTAssertTrue(link.waitForExistence(timeout: 20), "No My Clinics link on Profile")
         link.tap()
 
         XCTAssertTrue(app.navigationBars["My Clinics"].waitForExistence(timeout: 10),
-                      "View All Clinics did not open My Clinics")
+                      "Profile's My Clinics did not open My Clinics")
         // Either state is a pass; which one depends on earlier tests. Query
         // by identifier across every element type: SwiftUI reports a VStack
         // with an identifier as a group, not an "other element", and a

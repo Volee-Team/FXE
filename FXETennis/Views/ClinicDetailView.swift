@@ -23,7 +23,6 @@ import SwiftUI
 final class ClinicDetailModel {
     var registration: MyRegistration?
     var messages: [ClinicMessage] = []
-    var paymentLine: String?
     var working = false
     var notice: String?      // friendly "someone got there first" / error text
     var loaded = false
@@ -49,7 +48,6 @@ final class ClinicDetailModel {
             let regs = try await RegistrationRepository.mine()
             registration = regs.first { $0.clinicId == clinicId && $0.status != .canceled }
             messages = try await ClinicRepository.messages(clinicId: clinicId)
-            if paymentLine == nil { paymentLine = try? await ProfileRepository.paymentInstructions() }
         } catch {
             notice = "Couldn't load this clinic."
         }
@@ -120,14 +118,13 @@ struct ClinicDetailView: View {
                 header
                 if clinic.isCanceled { canceledBanner }
                 detailCard
-                if let line = model.paymentLine, !line.isEmpty { paymentCard(line) }
                 messageBoard
                 if let notice = model.notice { noticeText(notice) }
                 confirmDialog(actionArea)
             }
             .padding(Brand.Spacing.pageMargin)
         }
-        .background(Brand.surfaceGradient)
+        .background(CourtBackdrop())
         .navigationTitle(clinic.name)
         .navigationBarTitleDisplayMode(.inline)
         .task { if !model.loaded { await model.load(clinicId: clinic.id) } }
@@ -193,17 +190,6 @@ struct ClinicDetailView: View {
         Label(text, systemImage: symbol)
             .font(Brand.Typography.subheadline)
             .foregroundStyle(Brand.textSecondary)
-    }
-
-    private func paymentCard(_ line: String) -> some View {
-        VStack(alignment: .leading, spacing: Brand.Spacing.xxs) {
-            Text("PAYMENT").font(Brand.Typography.caption).foregroundStyle(Brand.textSecondary)
-            Text(line).font(Brand.Typography.subheadline).foregroundStyle(Brand.textPrimary)
-        }
-        .padding(Brand.Spacing.cardPadding)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.lg))
-        .overlay(RoundedRectangle(cornerRadius: Brand.Radius.lg).stroke(Brand.hairline))
     }
 
     // MARK: message board

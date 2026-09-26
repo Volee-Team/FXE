@@ -2,18 +2,28 @@
 //  HomeView.swift
 //  FXETennis
 //
-//  Built to match Tara's mockup, not to SwiftUI defaults. The specific things
-//  her design does that stock SwiftUI does not:
+//  The front page, as specified by Kat and Tara on 2026-09-26 ("FXE Final
+//  Updates", p.1), which replaces the two-section, two-button layout:
 //
-//    * The greeting lives INSIDE a navy bar at the top, small and left-aligned
-//      with a bell on the right. There is no oversized page title.
-//    * Clinic rows are compact list rows — name and time on the left, status on
-//      the right — not big stacked cards.
-//    * Almost all text is navy. Grey is used sparingly, for the time line only.
-//    * Two button weights: outlined for a secondary jump ("View All Clinics"),
-//      navy-filled for the primary one ("View Open Clinics").
+//    1. Make the logo smaller.
+//    2. Clinics already enrolled should be first, under My Clinics.
+//    3. If no clinics enrolled, list open clinics.
+//    4. Remove all other CTAs.
+//    5. If the user has 2 or more enrolled clinics, show the blue CTA.
+//    6. The court photo behind it, with the overlay.
 //
-//  Order is from the Developer Guide: My Clinics first, then what's available.
+//  Kat, same day: "Pick one button or the other or just list available
+//  clinics. It's all the same info. If they are registered or waitlisted that
+//  would be top of page." Tara: the word "clinic" appeared six times.
+//
+//  Reading of 3 and 5 together (written down in docs/decisions/0015 and asked
+//  back as question 59): with none or one enrolled there is room, so the open
+//  clinics are listed; with two or more, the page would become a long list of
+//  both, so the open list gives way to the one blue button that leads to it.
+//  "Open" means open for registration for THIS player right now (members from
+//  the Thursday, everyone from the Friday, until the 3-hour close), which is
+//  the sense of Tara's own empty line, "No clinics currently open for
+//  registration". My Clinics, with Past, moved to Profile.
 //
 
 import SwiftUI
@@ -26,12 +36,20 @@ struct HomeView: View {
 
     private var isMember: Bool { session.activePlayer?.isMember ?? false }
 
+    /// Upcoming clinics this player holds a live registration in (You're In!,
+    /// Player Pool, Response Needed), soonest first.
     private var myClinics: [ClinicPublic] {
         model.clinics.filter { model.myRegistrationsByClinic[$0.id] != nil && !$0.isCanceled }
     }
-    private var available: [ClinicPublic] {
-        model.clinics.filter { model.myRegistrationsByClinic[$0.id] == nil && !$0.isCanceled }
+    /// Open for registration to this player right now, and not already theirs.
+    private var openNow: [ClinicPublic] {
+        model.clinics.filter {
+            model.myRegistrationsByClinic[$0.id] == nil && $0.isOpenForRegistration(isMember: isMember)
+        }
     }
+    /// Final Updates p.1 items 3 and 5: the list while there is room, the
+    /// blue button once two or more of the player's own clinics fill the top.
+    private var showsOpenList: Bool { myClinics.count < 2 }
 
     private func refreshUnread() async {
         unread = (try? await NotificationRepository.unreadCount()) ?? unread
@@ -39,75 +57,71 @@ struct HomeView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack(alignment: .top) {
-                Brand.surfaceGradient.ignoresSafeArea()
+            GeometryReader { geo in
+                ZStack(alignment: .top) {
+                    CourtBackdrop(strength: .front)
 
-                VStack(spacing: 0) {
-                    ArchedHeader(height: 150, depth: 22) {
-                        HStack {
-                            Wordmark(compact: true)
-                            Spacer()
-                            BellButton(unread: unread) { showNotifications = true }
+                    VStack(spacing: 0) {
+                        BrandHeader(height: geo.safeAreaInsets.top + 58) {
+                            HStack(alignment: .center) {
+                                Wordmark(compact: true)
+                                Spacer()
+                                BellButton(unread: unread) { showNotifications = true }
+                            }
+                            .padding(.horizontal, Brand.Spacing.pageMargin)
+                            .padding(.top, geo.safeAreaInsets.top + 4)
                         }
-                        .padding(.horizontal, Brand.Spacing.pageMargin)
-                        .padding(.top, Brand.Spacing.xxl + Brand.Spacing.xs)
-                    }
 
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: Brand.Spacing.lg) {
-                            // The greeting block from the guide: centered under
-                            // the header, serif greeting in navy, then the accent
-                            // line in italic gator-green.
-                            VStack(spacing: Brand.Spacing.xxs) {
-                                Text(greetingText)
-                                    .font(Brand.Typography.greeting)
-                                    .foregroundStyle(Brand.navy)
-                                    .multilineTextAlignment(.center)
-                                    .accessibilityIdentifier("home.greeting")
-                                Text("Let's Play.")
-                                    .font(Brand.Typography.greetingAccent)
-                                    .foregroundStyle(Brand.court)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(.top, Brand.Spacing.xs)
-                            NotificationsOffLine()
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: Brand.Spacing.lg) {
+                                // The greeting block from the guide: centered under
+                                // the header, serif greeting in navy, then the accent
+                                // line in italic gator-green.
+                                VStack(spacing: Brand.Spacing.xxs) {
+                                    Text(greetingText)
+                                        .font(Brand.Typography.greeting)
+                                        .foregroundStyle(Brand.navy)
+                                        .multilineTextAlignment(.center)
+                                        .accessibilityIdentifier("home.greeting")
+                                    Text("Let's Play.")
+                                        .font(Brand.Typography.greetingAccent)
+                                        .foregroundStyle(Brand.court)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.top, Brand.Spacing.xs)
+                                NotificationsOffLine()
 
-                            SectionBlock(title: "My Clinics") {
-                                if myClinics.isEmpty {
-                                    EmptyLine("You're not registered for any clinics this week")
-                                } else {
-                                    ForEach(Array(myClinics.prefix(3))) { clinic in
-                                        row(clinic)
+                                if !myClinics.isEmpty {
+                                    SectionBlock(title: "My Clinics") {
+                                        ForEach(myClinics) { clinic in row(clinic) }
                                     }
+                                    .accessibilityIdentifier("home.myClinics")
                                 }
-                                NavigationLink { MyClinicsView() } label: {
-                                    OutlinedButtonLabel("View All Clinics", icon: "calendar")
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityIdentifier("home.viewMyClinics")
-                            }
 
-                            SectionBlock(title: "Available Clinics") {
-                                if available.isEmpty {
-                                    EmptyLine("No clinics currently open for registration")
-                                } else {
-                                    ForEach(Array(available.prefix(3))) { clinic in
-                                        row(clinic)
+                                if showsOpenList {
+                                    SectionBlock(title: "Open for Registration") {
+                                        if openNow.isEmpty {
+                                            EmptyLine("No clinics currently open for registration")
+                                        } else {
+                                            ForEach(openNow) { clinic in row(clinic) }
+                                        }
                                     }
+                                    .accessibilityIdentifier("home.openList")
+                                } else {
+                                    NavigationLink { ClinicsView() } label: {
+                                        FilledButtonLabel("View Open Clinics", icon: "figure.tennis")
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityIdentifier("home.viewOpenClinics")
                                 }
-                                NavigationLink { ClinicsView() } label: {
-                                    // "(7)" so three rows never read as the whole list.
-                                    FilledButtonLabel(available.count > 3 ? "View Open Clinics (\(available.count))" : "View Open Clinics", icon: "figure.tennis")
-                                }
-                                .buttonStyle(.plain)
                             }
+                            .padding(Brand.Spacing.pageMargin)
                         }
-                        .padding(Brand.Spacing.pageMargin)
+                        // Room for the floating tab bar, so the last row is never under it.
+                        .contentMargins(.bottom, Brand.Spacing.xxl + Brand.Spacing.xl, for: .scrollContent)
                     }
-                    // Room for the floating tab bar, so the last row is never under it.
-                    .contentMargins(.bottom, Brand.Spacing.xxl + Brand.Spacing.xl, for: .scrollContent)
+                    .ignoresSafeArea(edges: .top)
                 }
-                .ignoresSafeArea(edges: .top)
             }
             .navigationBarHidden(true)
             .task { await model.load(); await refreshUnread() }
