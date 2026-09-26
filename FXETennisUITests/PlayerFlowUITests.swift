@@ -78,7 +78,8 @@ final class PlayerFlowUITests: XCTestCase {
         XCTAssertTrue(greeting.label.contains("Maria"),
                       "Greeting was '\(greeting.label)'. 'Hi, there' means the profile did not load.")
 
-        // Open the first available clinic.
+        // Open the first clinic on the browse list.
+        openClinicsTab()
         let card = app.buttons.matching(identifier: "clinic.card").firstMatch
         XCTAssertTrue(card.waitForExistence(timeout: 20), "No clinic cards rendered")
         XCTAssertTrue(tapWhenReady(card), "Clinic card never became tappable")
@@ -127,6 +128,7 @@ final class PlayerFlowUITests: XCTestCase {
     func testPlayerCanUndoTheirRegistration() {
         app.launch()
         signIn(as: memberEmail)
+        openClinicsTab()
 
         let card = app.buttons.matching(identifier: "clinic.card").firstMatch
         XCTAssertTrue(card.waitForExistence(timeout: 20))
@@ -374,6 +376,13 @@ final class PlayerFlowUITests: XCTestCase {
         dismissSavePasswordSheetIfPresent()
 
         XCTAssertFalse(app.buttons["home.viewMyClinics"].exists, "Home still carries the removed View All Clinics button")
+        // Final Updates p.1 items 3 to 5, true in any state: Home shows the
+        // open list or the blue button, never both and never neither.
+        let openList = app.descendants(matching: .any).matching(identifier: "home.openList").firstMatch
+        let blue = app.buttons["home.viewOpenClinics"]
+        let one = NSPredicate { _, _ in openList.exists != blue.exists }
+        expectation(for: one, evaluatedWith: nil)
+        waitForExpectations(timeout: 20)
         openProfileTab()
         let link = app.buttons["profile.myClinics"]
         XCTAssertTrue(link.waitForExistence(timeout: 20), "No My Clinics link on Profile")
@@ -423,6 +432,7 @@ final class PlayerFlowUITests: XCTestCase {
     func testPlayerNeverSeesHiddenInformation() {
         app.launch()
         signIn(as: memberEmail)
+        openClinicsTab()
 
         let card = app.buttons.matching(identifier: "clinic.card").firstMatch
         XCTAssertTrue(card.waitForExistence(timeout: 20))
@@ -536,6 +546,20 @@ final class PlayerFlowUITests: XCTestCase {
     /// drops the first tap now and then (2026-09-12: two of three runs, and
     /// a hand-driven session needed two taps too), so wait briefly and tap
     /// once more before calling it a failure. Backlog has the note.
+    /// Open the Clinics tab, the browse list, which lists every upcoming
+    /// clinic whatever the player holds. Tests that need "a clinic" start here
+    /// since 2026-09-26: Home now shows only the player's own clinics and what
+    /// is open to them (Final Updates), so what it lists depends on state an
+    /// earlier test left behind. Same second-tap retry as the Profile tab.
+    private func openClinicsTab() {
+        app.buttons["Clinics"].tap()
+        let card = app.buttons.matching(identifier: "clinic.card").firstMatch
+        if !card.waitForExistence(timeout: 5) {
+            app.buttons["Clinics"].tap()
+        }
+        XCTAssertTrue(card.waitForExistence(timeout: 20), "Clinics tab never listed a clinic")
+    }
+
     private func openProfileTab() {
         app.buttons["Profile"].tap()
         if !app.buttons["profile.signOut"].waitForExistence(timeout: 5) {
