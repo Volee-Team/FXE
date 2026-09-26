@@ -67,6 +67,14 @@ if [ -z "$PROMPT" ]; then
   exit 0
 fi
 
+# Background-task notices arrive through the same hook as Alex's prompts but
+# are written by the harness, not by him. 154 of them had piled into the
+# September log by 2026-09-26 and pushed his real messages out of the
+# post-compaction replay. They carry no decision; skip them.
+case "$PROMPT" in
+  "<task-notification>"*|*"[SYSTEM NOTIFICATION - NOT USER INPUT]"*) exit 0 ;;
+esac
+
 # Header, written once per file.
 if [ ! -s "$LOG_FILE" ]; then
   {

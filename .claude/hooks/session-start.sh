@@ -63,6 +63,17 @@ if [ -f docs/.last-doc-audit ]; then
   fi
 fi
 
+# The prompt log is only a record once it is committed. It sat uncommitted
+# from 2026-09-21 to 2026-09-26 (1,676 lines) because every branch switch
+# stashed it around the work instead of committing it. Say so at session
+# start, so it rides in the next PR.
+LOGLINES=$(git diff --numstat -- docs/prompt-log/ 2>/dev/null | awk '{s+=$1} END {print s+0}')
+if [ "${LOGLINES:-0}" -gt 200 ]; then
+  echo ""
+  echo "PROMPT LOG: $LOGLINES uncommitted lines in docs/prompt-log/. Scan them for"
+  echo "personal data (see log-prompt.sh) and commit them in the next PR."
+fi
+
 # After a compaction (and on resume), put Alex's last prompts back in front
 # of Claude VERBATIM. The compaction summary is written by the model, so it
 # is a claim (hard rule 12), and a paraphrase of "tiny rounding of the
@@ -78,8 +89,8 @@ files = sorted(glob.glob("docs/prompt-log/*.md"))
 if files:
     text = open(files[-1], encoding="utf-8", errors="replace").read()
     # A prompt entry starts "## <stamp> · `branch`" and holds one ~~~~text block.
-    entries = re.findall(r"^## (.+?)\n\n~~~~text\n(.*?)\n~~~~", text, re.S | re.M)
-    replies = re.findall(r"^### Claude replied · (.+?)\n\n~~~~text\n(.*?)\n~~~~", text, re.S | re.M)
+    entries = [e for e in re.findall(r"^## ([^\n]+)\n\n~~~~text\n(.*?)\n~~~~", text, re.S | re.M) if not e[1].lstrip().startswith("<task-notification>")]
+    replies = re.findall(r"^### Claude replied · ([^\n]+)\n\n~~~~text\n(.*?)\n~~~~", text, re.S | re.M)
     last = entries[-3:]
     if last:
         print()
