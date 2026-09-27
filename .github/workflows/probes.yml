@@ -115,6 +115,15 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
 
+      # The pages import supabase-js from web/vendor/, never from a CDN
+      # (MVP audit 2026-09-27, item 17). The file must be the exact bundle of
+      # the version pinned in web/package.json, which npm ci has just checked
+      # against the lockfile's sha512. A Dependabot bump fails here until
+      # scripts/vendor-supabase-js.sh is re-run and web/vendor committed, so
+      # the tests below always run against the bytes that will be served.
+      - name: Vendored supabase-js matches the pinned package
+        run: bash scripts/vendor-supabase-js.sh --check
+
       - name: Run the browser tests
         working-directory: web
         env:
@@ -478,11 +487,14 @@ jobs:
           # Supabase secret keys and service-role JWTs. The `sb_publishable_`
           # keys in SupabaseClient.swift are SAFE and expected: they are the
           # anon keys, designed to sit in a client binary. It is the secret and
-          # service_role variants that must never appear.
-          if git grep -nE 'sb_secret_|service_role.{0,40}eyJ|SUPABASE_SERVICE_ROLE_KEY *= *["'"'"'][^"'"'"']' -- \
+          # service_role variants that must never appear. A key is the prefix
+          # plus at least ten key characters, the same shape as the Stripe
+          # check below: supabase-js itself (web/vendor, 2026-09-27) tests
+          # whether a string starts with the bare prefix, which is not a key.
+          if git grep -nE 'sb_secret_[A-Za-z0-9_-]{10,}|service_role.{0,40}eyJ|SUPABASE_SERVICE_ROLE_KEY *= *["'"'"'][^"'"'"']' -- \
                ':!*.md' ':!.github/workflows/*' | grep -q .; then
             echo "::error::Possible service-role key committed:"
-            git grep -nE 'sb_secret_|service_role.{0,40}eyJ' -- ':!*.md' ':!.github/workflows/*'
+            git grep -nE 'sb_secret_[A-Za-z0-9_-]{10,}|service_role.{0,40}eyJ' -- ':!*.md' ':!.github/workflows/*'
             FAIL=1
           fi
 

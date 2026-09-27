@@ -37,7 +37,7 @@
 // admin and the iOS app point their reset links at this page). supabase-js reads
 // the recovery token out of the URL on load and gives us a session that may do
 // exactly one thing: set a new password.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "./vendor/supabase-js.js";
 import { CONFIG } from "./config.js";
 // implicit flow: a reset started on one device (the phone) must finish on
 // another (this page). PKCE ties the emailed code to the device that asked.
