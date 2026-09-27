@@ -396,6 +396,28 @@ back in front of her on round four of the review page:
 | ☐ | Tara, only what's new / Your changes from September 22 are in the app. … | The review page's heading and lede, round four | Only Tara reads it |
 | ☐ | Testing | Now a small grey link at the foot of the web admin, not a tab (Alex, 2026-09-27) | Only Alex uses it |
 
+## L. Waiting for a saved card, and the card section's switch (2026-09-27, MVP audit items 3 and 4) — awaiting Alex
+
+| ✓ | String | Where | Why |
+|---|---|---|---|
+| ☐ | Refresh | Profile's card section and the onboarding card step, under "Saved. It may take a moment to show here.", only once the app has waited about 30 seconds for the card to show | Stripe's sheet says a card is saved before the webhook has written its last four digits. The app now asks every 2 seconds for about 30 and closes the card step the moment the card is there; if it is still not there, this asks once more. Chrome, one word |
+
+No other new words. "Saved. It may take a moment to show here." and "Saved."
+are unchanged; the first now shows, with a spinner, for the whole wait
+rather than after a single 2-second pause. The card section on Profile
+("Payment method", Tara's sentence, the permission box) is now hidden while
+`payments_enabled` is false, per her "Let's only do if stripe is connected"
+(decision 0016); nothing in it changed.
+
+Machine codes Tara can now read on the web Money tab's card list, shown raw
+the way `no_card_on_file` already is (the page maps only Stripe's decline
+codes to words): `account_deleted` (a fee queued for someone who has since
+deleted their account; it is not charged), `retry_window_passed` and
+`idempotency_error` (a charge held for Alex to check in Stripe before
+anything else happens). Test-mode rows cancelled at the switch to live read
+`live_cutover`, but those rows are hidden from the list from that moment.
+Whether these get words is Alex's call; they are admin-only.
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148

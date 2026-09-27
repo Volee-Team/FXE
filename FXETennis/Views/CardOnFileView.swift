@@ -12,6 +12,13 @@
 //  the server first; the server refuses to start a card setup without one,
 //  so the box is enforced by the database, not by this view.
 //
+//  After Stripe's sheet reports the card saved, the summary still has to
+//  arrive by webhook. This used to wait 2 seconds once; a slower webhook left
+//  a new member on the card step reading "No card on file" with only Add a
+//  card and Sign out (MVP audit 2026-09-27, item 4). Now it asks again every
+//  2 seconds for about 30 (CardSavePoll), and the card step closes itself the
+//  moment the card is there. After that a Refresh button asks once more.
+//
 
 import SwiftUI
 import StripePaymentSheet
@@ -23,6 +30,10 @@ struct CardOnFileView: View {
     @State private var busy = false
     @State private var note: String?
     @State private var permission = false
+    /// Stripe said the card was saved; the webhook's summary is being waited for.
+    @State private var polling = false
+    /// The wait ran out before the summary arrived: offer Refresh.
+    @State private var waitingForCard = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
@@ -68,7 +79,7 @@ struct CardOnFileView: View {
                         .frame(minHeight: Brand.Layout.minTapTarget)
                 }
                 .buttonStyle(.plain)
-                .disabled(busy || !permission)
+                .disabled(busy || polling || !permission)
                 .opacity(permission ? 1 : 0.4)
                 .accessibilityIdentifier("profile.addCard")
             }
@@ -77,10 +88,25 @@ struct CardOnFileView: View {
             .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
 
             if let note {
-                Text(note)
-                    .font(Brand.Typography.caption)
-                    .foregroundStyle(Brand.textSecondary)
-                    .accessibilityIdentifier("profile.cardNote")
+                HStack(spacing: Brand.Spacing.xs) {
+                    if polling { ProgressView() }
+                    Text(note)
+                        .font(Brand.Typography.caption)
+                        .foregroundStyle(Brand.textSecondary)
+                        .accessibilityIdentifier("profile.cardNote")
+                }
+            }
+            if waitingForCard && !polling {
+                Button {
+                    Task { await refreshOnce() }
+                } label: {
+                    Text("Refresh")
+                        .font(Brand.Typography.chip)
+                        .foregroundStyle(Brand.navy)
+                        .frame(minHeight: Brand.Layout.minTapTarget)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("profile.cardRefresh")
             }
         }
         .onAppear { if session.cardConsent == true { permission = true } }
@@ -119,14 +145,62 @@ struct CardOnFileView: View {
     private func finished(_ result: PaymentSheetResult) async {
         switch result {
         case .completed:
-            // The webhook writes the summary; give it a moment, then reload.
-            try? await Task.sleep(for: .seconds(2))
-            await session.loadProfile()
-            note = session.account?.hasCard == true ? "Saved." : "Saved. It may take a moment to show here."
+            // The webhook writes the summary; ask until it is there.
+            polling = true
+            waitingForCard = false
+            note = "Saved. It may take a moment to show here."
+            let arrived = await CardSavePoll.waitForCard { try await refreshAccount() }
+            polling = false
+            waitingForCard = !arrived
+            note = arrived ? "Saved." : "Saved. It may take a moment to show here."
         case .canceled:
             break
         case .failed(let error):
             note = "That didn't work. \(error.localizedDescription)"
         }
+    }
+
+    private func refreshOnce() async {
+        polling = true
+        let arrived = (try? await refreshAccount()) == true
+        polling = false
+        if arrived {
+            waitingForCard = false
+            note = "Saved."
+        }
+    }
+
+    /// Re-reads the account row alone and swaps it in only on success.
+    /// loadProfile() blanks the whole session on any failed read, and one
+    /// bar of signal at the courts is exactly when this runs.
+    private func refreshAccount() async throws -> Bool {
+        guard let fresh = try await ProfileRepository.myAccount() else { return false }
+        session.account = fresh
+        return fresh.hasCard
+    }
+}
+
+/// How long the app waits for a saved card to show (MVP audit 2026-09-27,
+/// item 4). Stripe's sheet knows the card is saved before we do: the summary
+/// (last four digits) reaches the account only through the webhook, usually
+/// within seconds and with no promise. So: ask every 2 seconds, about 30
+/// seconds in all, and stop the moment it is there. A read that fails (bad
+/// signal) is one missed tick, not the end of the wait.
+enum CardSavePoll {
+    static let interval: Duration = .seconds(2)
+    static let attempts = 15   // 15 x 2 s = 30 s
+
+    /// True as soon as `hasCard` says so; false once every attempt is spent
+    /// or the wait is cancelled.
+    static func waitForCard(
+        attempts: Int = attempts,
+        sleep: (Duration) async throws -> Void = { try await Task.sleep(for: $0) },
+        hasCard: () async throws -> Bool
+    ) async -> Bool {
+        for _ in 0..<attempts {
+            do { try await sleep(interval) } catch { return false }
+            if (try? await hasCard()) == true { return true }
+        }
+        return false
     }
 }
