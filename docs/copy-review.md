@@ -371,6 +371,16 @@ page until ticked. Contact line and date are placeholders for Alex.
 | ☐ | Tick the box to continue. | under the card row if the server refuses a setup without consent | Chrome; the button is greyed until the box is ticked, so this shows only if the two disagree |
 | ☐ | Sign out | the card step's only exit | Chrome, same as elsewhere |
 
+## J. iOS permission sentences (2026-09-27) — awaiting Alex
+
+Shown by iOS itself when the app first asks for the permission. Set in
+`project.yml`, so the copy extractor does not see them.
+
+| ☐ | String | When iOS shows it | Why |
+|---|---|---|---|
+| ☐ | Scan your card instead of typing the number. | A player taps "Scan card" in Stripe's card sheet | Apple requires the sentence (build 1 was rejected without it, ITMS-90683); the camera is really used there, so it says what for. John's first draft said the app does not use the camera |
+| ☐ | FXE Tennis does not use your photo library. | Never expected: added by John as a precaution for the same dependency | Accurate as far as we know; if Stripe ever asks for photos, this needs real words |
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148
