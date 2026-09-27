@@ -24,6 +24,7 @@ The history of what we believed is part of the record.
 | [0013](0013-tara-review-2026-09-21.md) | Tara's first full review: no courtesy, 3 hours, card only, the waiver signed in the app, deletion keeps history, her words on every screen | 2026-09-21 | Active |
 | [0014](0014-testflight-through-johns-account.md) | Internal TestFlight builds from John's Apple account until the LLC is enrolled; `main` is the only source of a build | 2026-09-21 | Active until the LLC enrollment |
 | [0015](0015-final-updates-2026-09-26.md) | Kat and Tara's Final Updates: straight header, court photo, Home by enrolment, card with permission at onboarding, no Zelle words, back-to-back 105 rule for non-members, board report, decline reasons | 2026-09-26 | Active |
+| [0016](0016-tara-review-round-two-2026-09-22.md) | Tara's second review, read five days late: three sentences reworded, Rating Guide and Only Tara can change this, no "still owed", a super admin above the pros, guests billed to the member; a watcher so answers are never missed again | 2026-09-22 | Active |
 | [0011](0011-no-email-verification-v1.md) | No email verification in v1; hosted "Confirm email" is OFF by hand, and every new project needs the same flip | 2026-08-16 | Active |
 
 Tara's own numbered decisions (1–23, calls of 2026-08-02 and 2026-08-12) are

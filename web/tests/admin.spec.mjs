@@ -136,7 +136,7 @@ test.describe("money", () => {
     await expect(money).toContainText("Members, 60 min");
     await expect(money).toContainText("Non-members, 90 min");
     await expect(money).toContainText("Expected");
-    await expect(money).toContainText("Still owed");
+    await expect(money).toContainText("Not charged yet");
   });
 
   test("the Money tab lists card payments, and says so when there are none", async ({ page }) => {
@@ -209,7 +209,9 @@ test.describe("payments switch", () => {
 test.describe("review links", () => {
   test("Tara makes a review link and gets a URL carrying a long token", async ({ page }) => {
     await signIn(page, TARA);
-    await page.getByRole("tab", { name: "Testing" }).click();
+    // Testing is not a tab (Alex, 2026-09-27): three tabs, and a small link at the foot.
+    await expect(page.getByRole("tab")).toHaveText(["This week", "Players", "Money"]);
+    await page.getByRole("button", { name: "Testing" }).click();
     await page.getByLabel("Link label").fill(`Playwright ${Date.now()}`);
     await page.getByRole("button", { name: "Make link" }).click();
     const url = page.locator("#rl-url");
@@ -228,8 +230,15 @@ test.describe("review links", () => {
     await page.goto("/review.html");
     await expect(page).toHaveTitle("FXE Tennis, Tara's Review");
     await expect(page.locator("#sync")).toContainText("This link has no code");
+    // Every item in the page's own data renders. Round four carries only what
+    // is new since her last answers (decision 0016), so the number is small
+    // and changes each round; the rule is "all of them", not a size.
+    const data = JSON.parse(await page.locator("#review-data").textContent());
+    const expected = data.sections.reduce((n, s) => n + s.items.length, 0);
+    expect(expected).toBeGreaterThan(0);
     const items = page.locator("#panel-words .item");
-    expect(await items.count()).toBeGreaterThan(100);
+    await expect(items).toHaveCount(expected);
+    await expect(page.locator("#panel-questions textarea")).toHaveCount(data.questions.length);
     await items.first().getByRole("button", { name: "Keep" }).click();
     await expect(page.locator("#progress-words")).toContainText(/^1 of \d+ decided/);
     await expect(page.locator("#summary")).toContainText("keep: ");

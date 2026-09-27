@@ -64,6 +64,20 @@ check_count "unit tests"  '\b[0-9]+ (swift )?unit tests?\b'                 "$UN
 check_count "XCUITests"   '\b[0-9]+ (xcuitests?|ui tests?)\b'               "$UITESTS"
 check_count "Playwright"  '\b[0-9]+ (playwright|browser) tests?\b'          "$PLAYWRIGHT"
 check_count "migrations"  '\b[0-9]+ migrations?\b'                          "$MIGRATIONS"
+# A count in a table cell has no noun after it ("| Swift unit tests | every PR
+# | 31 |"), so the patterns above cannot see it. The launch checklist's testing
+# table held a stale 31 for a day while the prose said 33 (2026-09-27). Rows
+# are matched by their first cell; the count is the first cell that is only a
+# number.
+check_table() { # file row-regex expected label
+  grep -E "^\\| *$2" "$1" | while IFS= read -r row; do
+    n=$(echo "$row" | awk -F'|' '{for (i=3;i<=NF;i++) { c=$i; gsub(/^ +| +$/,"",c); if (c ~ /^[0-9]+$/) { print c; exit } }}')
+    [ -z "$n" ] || [ "$n" = "$3" ] || echo "  FAIL  $4: table says $n, repo has $3 :: $1 ($(echo "$row" | cut -c1-50))"
+  done
+}
+check_table docs/launch-checklist.md 'Swift unit tests'            "$UNIT"       "unit tests"
+check_table docs/launch-checklist.md 'Web admin browser tests'     "$PLAYWRIGHT" "Playwright"
+check_table docs/launch-checklist.md 'XCUITests'                   "$UITESTS"    "XCUITests"
 } | tee "$TMP.counts"
 grep -q FAIL "$TMP.counts" && FAIL=1
 rm -f "$TMP.counts"
@@ -80,7 +94,7 @@ done
 # ------------------------------------------ 3. every question has a status ----
 awk '
   /^\*\*[0-9]+\./ { if (q != "" && !seen) print "  FAIL  " q " has no status or default line"; q=$1 " " $2; seen=0; next }
-  /^\*(ANSWERED|DEFERRED|OVERRULED|SUPERSEDED|HALF ANSWERED|Default|Re-asked|\(Not built|\(Moot)/ { seen=1 }
+  /^\*(ANSWERED|DEFERRED|OVERRULED|SUPERSEDED|HALF ANSWERED|WITHDRAWN|MERGED|MOVED|Default|Re-asked|\(Not built|\(Moot)/ { seen=1 }
   END { if (q != "" && !seen) print "  FAIL  " q " has no status or default line" }
 ' docs/questions-for-tara.md | tee "$TMP.q"
 grep -q FAIL "$TMP.q" && FAIL=1; rm -f "$TMP.q"

@@ -204,8 +204,10 @@ struct CompleteProfileView: View {
                     .font(Brand.Typography.bodyEmphasis)
                     .foregroundStyle(Brand.textPrimary)
                 Spacer()
-                // Tara's exact label, from Screen 4.
-                Button("Need Help?") { showNTRP = true }
+                // Was Tara's "Need Help?" from Screen 4; on 2026-09-22 she marked it
+                // Change with no replacement (decision 0016). "Rating Guide" names
+                // what it opens, the sheet title she kept; question 69 asks her.
+                Button("Rating Guide") { showNTRP = true }
                     .font(Brand.Typography.subheadline)
                     .foregroundStyle(Brand.navy)
                     .frame(minHeight: Brand.Layout.minTapTarget)

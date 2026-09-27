@@ -87,7 +87,9 @@ struct EditProfileView: View {
                                 .font(Brand.Typography.body)
                                 .foregroundStyle(Brand.textPrimary)
                             Spacer()
-                            Text("Set by Tara")
+                            // Was "Set by Tara"; she wrote "I'm confused by this. Let's talk"
+                            // (2026-09-22, decision 0016). Plainer default until they talk (question 70).
+                            Text("Only Tara can change this.")
                                 .font(Brand.Typography.caption)
                                 .foregroundStyle(Brand.textSecondary)
                         }
