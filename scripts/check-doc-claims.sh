@@ -38,7 +38,10 @@ fail() { echo "  FAIL  $*"; FAIL=1; }
 PROBES=$(ls tests/sql/*.sql | wc -l | tr -d ' ')
 UNIT=$(cat FXETennisTests/*.swift | grep -c 'func test')
 UITESTS=$(cat FXETennisUITests/*.swift | grep -c 'func test')
-PLAYWRIGHT=$(grep -cE '^\s*test\(' web/tests/admin.spec.mjs)
+# Every spec file: the browser suite has been more than admin.spec.mjs since
+# 2026-09-27 (pages.spec.mjs, week.spec.mjs), and a count of one file would
+# keep a stale total looking consistent.
+PLAYWRIGHT=$(cat web/tests/*.spec.mjs | grep -cE '^\s*test\(')
 MIGRATIONS=$(ls supabase/migrations/*.sql | wc -l | tr -d ' ')
 echo "Derived now: probes=$PROBES unit=$UNIT xcuitests=$UITESTS playwright=$PLAYWRIGHT migrations=$MIGRATIONS"
 

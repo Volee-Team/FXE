@@ -49,7 +49,7 @@ notes, the Stripe link).
 Missing on the phone by design: creating or editing a clinic (web only),
 News (deferred, decision 0006).
 
-Testing today: 15 Playwright tests, 13 XCUITests (5 on Tara's side), 33 unit
+Testing today: 22 Playwright tests, 13 XCUITests (5 on Tara's side), 33 unit
 tests, 28 SQL probes, a 34-check Stripe pipeline and a 48-check push pipeline
 against mocks in CI.
 
