@@ -47,6 +47,7 @@ Court \(n)
 Data retention
 Date &amp; time
 Decline
+Declined
 Delete my account
 Description (players see this under the “?”)
 Disclosure of your information
@@ -86,6 +87,7 @@ Keep my spot
 Keep the clinic
 Label
 Last updated: [DATE, when approved]
+Late cancel
 Leave Player Pool
 Length (minutes)
 Length must be more than 0 minutes.

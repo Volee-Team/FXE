@@ -420,6 +420,19 @@ five of them; the rest are listed here by hand.
 | ☐ | That just changed. Here's the latest. | Web, when the row changed before Late cancel landed | CLAUDE.md's own example sentence for hard rule 3 |
 | ☐ | {Name}'s card was declined: {reason}. / 1 is still processing. / N are still processing. | The summary after Charge clinic, web and phone | Extends decision 0016's sentences. "Charged N cards." now counts what Stripe accepted, not what was queued: the audit found "Charged 6" printed when all six declined |
 
+**The phone** (Manage tab) uses the same words, plus:
+
+| ✓ | String | Where | Why |
+|---|---|---|---|
+| ☐ | Late cancel | the row menu on a You're In! player, above Remove from clinic, only inside the cutoff or later | Same as the web |
+| ☐ | Late cancel {Name}? / The fee applies. / Note (optional) / Late cancel / Keep | the alert it opens (an alert, because it carries the note box) | Same as the web |
+| ☐ | Late · Fee applies / Late · Courtesy | a late cancel on the Canceled list, with its note quoted under the name | The web roster's existing words ("Courtesy · Fee applies"); the phone showed nothing there |
+| ☐ | Declined | a You're In! row whose charge failed | Same word as the web's Money tab |
+| ☐ | {Clinic} ended, not charged yet / {Name}'s card was declined | Action Needed on the clinic list, each opening its clinic; the date, and for a decline the clinic and reason, under it | Same as the web |
+| ☐ | Already charged: refund it first. / Not late yet. / That clinic is canceled. / That just changed. Here's the latest. | a roster action the server refused, instead of "That didn't go through. Check your connection and try again." | Same as the web |
+| — | ~~N unpaid~~ | Action Needed on the clinic list | Hidden while `zelle_allowed` is false, the same gate as the Unpaid audience: the Paid flag cannot turn true before a clinic ends, so it always equalled everyone booked |
+| — | Insufficient funds (NSF), Card expired, … | the reason after a decline | The web's eleven labels, copied into `DeclineReason` so the phone says the same thing |
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148

@@ -143,7 +143,8 @@ FXETennis/
 │   ├── SupabaseClient.swift     the one client (URL + publishable key, implicit flow)
 │   ├── Repositories.swift       player reads/writes: Clinic, Registration, News, Profile
 │   ├── PaymentsRepository.swift asks stripe-setup-intent for what PaymentSheet needs; that is all
-│   └── AdminRepository.swift    every admin RPC + the roster/late-request/notice models
+│   └── AdminRepository.swift    every admin RPC + the roster/late-request/notice models, the money
+│                                models (MoneyClinic, MoneyDecline) and Stripe's decline codes in words
 ├── Models/
 │   ├── CoreModels.swift         Codable mirrors of the views (no hidden columns exist here)
 │   ├── CancelPolicy.swift       decision 0010: is this cancel inside cancel_cutoff_hours? (pure, unit-tested)
@@ -175,9 +176,13 @@ FXETennis/
     ├── Components/BrandHeader.swift the straight navy header with the green line, the Wordmark, NavRowLabel
     ├── Components/CourtBackdrop.swift Tara's court photo under a porcelain wash, behind the main screens
     ├── WaiverView.swift         Tara's waiver, her checkbox sentence, the typed legal name; gates the app until signed
-    ├── AdminClinicsView.swift   Manage: Action Needed, Today, Upcoming, Past; toolbar → Players
-    ├── AdminClinicDetailView.swift roster: courts, Came/No-show, invite, cancel invite, late requests,
-    │                            Message Players, Charge clinic (Paid and Remind unpaid only while zelle_allowed)
+    ├── AdminClinicsView.swift   Manage: Action Needed (a clinic ended and not charged yet, a declined
+    │                            card, each opening its clinic; "N unpaid" only while zelle_allowed),
+    │                            Today, Upcoming, Past; toolbar → Players
+    ├── AdminClinicDetailView.swift roster: courts, Came/No-show, Late cancel (inside the cutoff), invite,
+    │                            cancel invite, late requests, Message Players, Charge clinic and its summary
+    │                            from Stripe's answer (ChargeSummary, ChargeOutcome); late cancels on the
+    │                            Canceled list with their note (Paid and Remind unpaid only while zelle_allowed)
     └── PlayersDirectoryView.swift search, member / active switches, private note
 ```
 
@@ -518,7 +523,7 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `back_to_back_105_race.sh` | Two concurrent registrations by one non-member for two same-day 105s: exactly one survives (the per-player lock in `register_for_clinic`; red without it, 2026-09-26) |
 
 **Swift**: 33 unit tests (`FXETennisTests`: price formatting, per-viewer
-pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016) and 13
+pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016, counted from Stripe's answers since 2026-09-27) and 13
 XCUITests: 8 player flows
 (`PlayerFlowUITests`: sign in / browse / register, undo, sign-up end to end,
 the bell, profile edit, My Clinics, prices, hidden information) and 5 admin
