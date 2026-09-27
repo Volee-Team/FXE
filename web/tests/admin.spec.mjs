@@ -150,6 +150,45 @@ test.describe("money", () => {
   });
 });
 
+test.describe("board report", () => {
+  test("the Money tab runs the board report and offers the CSV", async ({ page }) => {
+    // Tara, 2026-09-26: a report for the board's 10%. The seed's clinics are
+    // all in the coming week and none has ended, so over a range that covers
+    // them the honest answer is zero attendances and $0.00: numbers, not
+    // blanks. The arithmetic itself is money_reports.sql's job.
+    await signIn(page, TARA);
+    await page.getByRole("tab", { name: "Money" }).click();
+    const board = page.locator("#board");
+    await expect(board).toContainText("Board report");
+    // The default is last month, New York; it must be a real date range.
+    // Scoped and exact: "From" alone also matches "Start from a template",
+    // and the message dialog has its own "To".
+    const from = board.getByLabel("From", { exact: true });
+    const to = board.getByLabel("To", { exact: true });
+    await expect(from).toHaveValue(/^\d{4}-\d{2}-01$/);
+    await expect(to).toHaveValue(/^\d{4}-\d{2}-\d{2}$/);
+    const ymd = (d) => d.toISOString().slice(0, 10);
+    const now = Date.now();
+    await from.fill(ymd(new Date(now - 7 * 86_400_000)));
+    await to.fill(ymd(new Date(now + 21 * 86_400_000)));
+    await board.getByRole("button", { name: "Run" }).click();
+    const report = page.locator("#br-report");
+    await expect(report).toBeVisible();
+    await expect(report.locator("tr", { hasText: "Members attended" }).first()).toContainText(/\d+ \(\d+\)/);
+    await expect(report.locator("tr", { hasText: "Collected by card" }).first()).toContainText(/\$\d[\d,]*\.\d{2}/);
+    await expect(report.locator("tr", { hasText: "10% of fees" })).toContainText(/\$\d[\d,]*\.\d{2}/);
+    await expect(report.locator("tr.total")).toContainText("Total");
+    await expect(board.getByRole("button", { name: "Download CSV" })).toBeVisible();
+    await expect(board.getByRole("button", { name: "Print" })).toBeVisible();
+    // The CSV is a real download with the name the board will see.
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      board.getByRole("button", { name: "Download CSV" }).click(),
+    ]);
+    expect(download.suggestedFilename()).toMatch(/^fxe-board-report-\d{4}-\d{2}-\d{2}-to-\d{4}-\d{2}-\d{2}\.csv$/);
+  });
+});
+
 test.describe("payments switch", () => {
   test("with payments off there is nothing to charge or refund anywhere", async ({ page }) => {
     // Decision 0009: payments_enabled is 'false' until Tara answers. The

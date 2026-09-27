@@ -72,6 +72,23 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
 .tabs { display: flex; gap: 6px; margin: 0 0 14px 0; border-bottom: 1px solid var(--border, #d8d3c7); }
 .tabs [role=tab] { background: none; border: none; border-bottom: 2px solid transparent; border-radius: 0; padding: 8px 12px; font: inherit; font-weight: 600; color: #6E6552; cursor: pointer; min-height: 40px; }
 .tabs [role=tab][aria-selected=true] { color: #16264C; border-bottom-color: #16264C; }
+/* Board report tables. Numbers right-aligned so a column of money reads down. */
+#br-report { margin-top: 12px; overflow-x: auto; }
+#br-report .print-only { display: none; }
+#br-report table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
+#br-report th, #br-report td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--fxe-hairline); }
+#br-report th { color: var(--fxe-text-secondary); font-weight: 600; }
+#br-report td.num, #br-report th.num { text-align: right; white-space: nowrap; }
+#br-report tr.total td { font-weight: 600; }
+/* Print shows the report and nothing else: the board gets numbers, not tabs,
+   buttons or the week's rosters. */
+@media print {
+  body * { visibility: hidden; }
+  #br-report, #br-report * { visibility: visible; }
+  #br-report { position: absolute; left: 0; top: 0; width: 100%; margin-top: 0; }
+  #br-report .print-only { display: block; }
+  body { background: #fff; }
+}
 </style>
 </head>
 <body>
@@ -155,6 +172,26 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
 
     <div id="tab-money" role="tabpanel" class="hide">
     <h2>Money</h2>
+    <!-- Board report (Tara, 2026-09-26: "a report ... I can upload and send
+         to the board for their 10% back of the program"). The numbers come
+         from admin_board_report / admin_board_report_clinics
+         (20260926000010); this card only formats them. -->
+    <div id="board" class="card">
+      <div class="name">Board report</div>
+      <div class="grid br-controls">
+        <div><label for="br-from">From</label><input id="br-from" type="date"></div>
+        <div><label for="br-to">To</label><input id="br-to" type="date"></div>
+      </div>
+      <div class="row br-controls" style="margin-top:10px">
+        <button class="small primary" id="br-run">Run</button>
+      </div>
+      <div id="br-msg"></div>
+      <div id="br-report" class="hide"></div>
+      <div class="row br-controls hide" id="br-actions" style="margin-top:10px">
+        <button class="small" id="br-csv">Download CSV</button>
+        <button class="small" id="br-print">Print</button>
+      </div>
+    </div>
     <div id="money" class="card muted">Loading…</div>
     <!-- v1 (Kat, 2026-09-22): card management lives in Stripe's own dashboard.
          Refunds, expired cards and disputes are handled there until the ledger
@@ -480,6 +517,23 @@ async function loadMoney() {
 // are the Paid checkbox on the roster.
 const KIND = { clinic_fee: "Clinic fee", late_cancel: "Late cancel", no_show: "No-show", refund: "Refund" };
 const PAY_STATUS = { pending: "Pending", processing: "Processing", succeeded: "Paid", failed: "Failed", canceled: "Canceled" };
+// Stripe's decline codes (payments.failure_code, 20260926000010) in words.
+// Tara, 2026-09-26: "reason codes ... (i.e. NSF, Card Expired, Etc)". The
+// database keeps Stripe's code; a code not listed here shows as itself.
+const DECLINE = {
+  insufficient_funds: "Insufficient funds (NSF)",
+  expired_card: "Card expired",
+  card_declined: "Card declined",
+  generic_decline: "Card declined",
+  do_not_honor: "Card declined by bank",
+  incorrect_cvc: "Wrong security code",
+  incorrect_number: "Wrong card number",
+  lost_card: "Card reported lost",
+  stolen_card: "Card reported stolen",
+  authentication_required: "Needs the cardholder to approve",
+  processing_error: "Processing error, try again",
+};
+const declineLabel = (code) => DECLINE[code] || code;
 // Every pending ledger row becomes one Stripe call (decision 0009). The
 // function needs the admin JWT the client already holds.
 async function settleLedger() {
@@ -500,15 +554,116 @@ async function loadLedger() {
     const who = `${r.first_name} ${r.last_name}`;
     const clinic = r.clinic_name ? { name: r.clinic_name, starts_at: r.clinic_starts_at } : null;
     const status = PAY_STATUS[r.status] || r.status;
-    const bad = r.status === "failed" ? ` style="color:#992E22"` : "";
+    const failed = r.status === "failed";
+    const bad = failed ? ` style="color:#992E22"` : "";
+    // Decline reason (20260926000010): Stripe's code in words when there is
+    // one, else Stripe's own sentence as before.
+    const why = failed && r.failure_code ? "Declined: " + declineLabel(r.failure_code) : r.failure_reason;
+    // The account holder's name, bold on a failed row: that is the
+    // "cardholder name" Tara asked for (PaymentSheet does not collect the
+    // name printed on the card, so the account name is what we have).
     return `<div class="row">
-      <span class="grow"><span class="name">${esc(who)}</span> <span class="muted">${KIND[r.kind] || esc(r.kind)}</span><br>
-        <span class="muted">${clinic ? esc(clinic.name) + " · " + fmtDate(clinic.starts_at) : ""}${r.failure_reason ? " · " + esc(r.failure_reason) : ""}</span></span>
+      <span class="grow"><span class="name"${failed ? ` style="font-weight:700"` : ""}>${esc(who)}</span> <span class="muted">${KIND[r.kind] || esc(r.kind)}</span><br>
+        <span class="muted">${clinic ? esc(clinic.name) + " · " + fmtDate(clinic.starts_at) : ""}</span>${why ? `<span class="muted"${bad}> · ${esc(why)}</span>` : ""}</span>
       <span><span class="name">${r.kind === "refund" ? "−" : ""}${money(r.amount_cents)}</span><br><span class="muted"${bad}>${status}</span></span>
       ${paymentsOn && r.kind !== "refund" && r.status === "succeeded" ? `<button class="small" data-refund="${r.id}">Refund</button>` : ""}
     </div>`;
   }).join("");
 }
+
+// ---------------------------------------------------------- board report
+// Tara, 2026-09-26: "# of members and nonmembers that attended and total
+// income. In addition to what 10% of that income is." Every number is the
+// database's (admin_board_report, 20260926000010); this only formats and
+// exports it. Dates are New York calendar dates, the same as the report's.
+const NY = "America/New_York";
+const usd = (c) => (Number(c || 0) / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
+const nyParts = (d) => Object.fromEntries(new Intl.DateTimeFormat("en-CA", {
+  timeZone: NY, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+}).formatToParts(d).map(p => [p.type, p.value]));
+const nyDateTime = (iso) => { const p = nyParts(new Date(iso)); return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`; };
+// Default range: the previous calendar month, in New York.
+function previousMonth() {
+  const p = nyParts(new Date());
+  let y = Number(p.year), m = Number(p.month) - 1;   // m: previous month, 1-based
+  if (m === 0) { y -= 1; m = 12; }
+  const last = new Date(Date.UTC(y, m, 0)).getUTCDate();   // day 0 of the next month
+  const mm = String(m).padStart(2, "0");
+  return { from: `${y}-${mm}-01`, to: `${y}-${mm}-${String(last).padStart(2, "0")}` };
+}
+{ const d = previousMonth(); $("br-from").value = d.from; $("br-to").value = d.to; }
+
+let boardRun = null;   // { from, to, sum, rows } of the last successful run
+async function runBoardReport() {
+  const from = $("br-from").value, to = $("br-to").value;
+  note($("br-msg"), "");
+  $("br-run").disabled = true;
+  try {
+    const args = { p_from: from || null, p_to: to || null };
+    const [{ data: sum, error: e1 }, { data: rows, error: e2 }] = await Promise.all([
+      sb.rpc("admin_board_report", args), sb.rpc("admin_board_report_clinics", args)]);
+    if (e1 || e2) throw (e1 || e2);
+    const t = sum[0];
+    boardRun = { from, to, sum: t, rows: rows || [] };
+    const line = (label, value) => `<tr><td>${label}</td><td class="num">${value}</td></tr>`;
+    $("br-report").innerHTML = `
+      <div class="name print-only">Board report</div>
+      <div class="muted">${esc(t.period_from)} to ${esc(t.period_to)}</div>
+      <table>
+        ${line("Members attended", `${t.member_attendances} (${t.member_players})`)}
+        ${line("Non-members attended", `${t.nonmember_attendances} (${t.nonmember_players})`)}
+        ${line("Clinics", t.clinics)}
+        ${line("Fees at clinic prices", usd(t.fees_due_cents))}
+        ${line("Collected by card", usd(t.collected_cents))}
+        ${line("10% of collected", usd(t.board_share_cents))}
+        ${line("10% of fees", usd(t.board_share_of_due_cents))}
+      </table>
+      <table>
+        <tr><th>Clinic</th><th>Date</th><th class="num">Members attended</th><th class="num">Non-members attended</th>
+            <th class="num">Fees at clinic prices</th><th class="num">Collected by card</th></tr>
+        ${boardRun.rows.map(r => `<tr><td>${esc(r.clinic_name)}</td><td>${esc(nyDateTime(r.starts_at))}</td>
+            <td class="num">${r.member_attendances}</td><td class="num">${r.nonmember_attendances}</td>
+            <td class="num">${usd(r.fees_due_cents)}</td><td class="num">${usd(r.collected_cents)}</td></tr>`).join("")}
+        <tr class="total"><td>Total</td><td></td><td class="num">${t.member_attendances}</td><td class="num">${t.nonmember_attendances}</td>
+            <td class="num">${usd(t.fees_due_cents)}</td><td class="num">${usd(t.collected_cents)}</td></tr>
+      </table>`;
+    $("br-report").classList.remove("hide");
+    $("br-actions").classList.remove("hide");
+  } catch (err) {
+    const m = (err?.message || "").toLowerCase();
+    note($("br-msg"), m.includes("invalid_period") ? "Pick a From date on or before the To date." : friendly(err));
+  } finally {
+    $("br-run").disabled = false;
+  }
+}
+
+// One CSV cell. Quoted always; a leading = + - @ is defused so a spreadsheet
+// never runs a clinic name as a formula (CSV injection).
+const csvCell = (v) => {
+  let s = String(v ?? "");
+  if (/^[=+\-@]/.test(s)) s = "'" + s;
+  return `"${s.replace(/"/g, '""')}"`;
+};
+const dollars = (c) => (Number(c || 0) / 100).toFixed(2);
+function downloadBoardCsv() {
+  if (!boardRun) return;
+  const { from, to, sum: t, rows } = boardRun;
+  const lines = [
+    ["Clinic", "Date", "Members attended", "Non-members attended", "Fees at clinic prices", "Collected by card"],
+    ...rows.map(r => [r.clinic_name, nyDateTime(r.starts_at), r.member_attendances, r.nonmember_attendances,
+                      dollars(r.fees_due_cents), dollars(r.collected_cents)]),
+    ["Total", "", t.member_attendances, t.nonmember_attendances, dollars(t.fees_due_cents), dollars(t.collected_cents)],
+  ];
+  const csv = lines.map(l => l.map(csvCell).join(",")).join("\r\n") + "\r\n";
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  const a = document.createElement("a");
+  a.href = url; a.download = `fxe-board-report-${from}-to-${to}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+$("br-run").addEventListener("click", runBoardReport);
+$("br-csv").addEventListener("click", downloadBoardCsv);
+$("br-print").addEventListener("click", () => window.print());
 
 // Decision 0009/0010: nothing charges while payments_enabled is 'false'.
 // Read on every load so flipping the setting in the dashboard shows up on
