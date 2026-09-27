@@ -13,7 +13,7 @@ where things stand. Updated 2026-09-27; launch target 2026-10-16.
 - **Hosted:** 45 of 45 migrations paired (`supabase migration list --linked`,
   2026-09-27); every edge function deployed; Stripe's sandbox keys and
   webhook secret in place (checklist A1); **payments switched off** until
-  Alex says go (A9); a signed-out caller reaches nothing (63 targets closed, with the web admin's functions answering the browser's preflight).
+  Alex says go (A9); a signed-out caller reaches nothing (122 targets closed, with the web admin's functions answering the browser's preflight).
 - **Admin site:** https://fxe-tennis-admin.vercel.app, verified byte for byte
   against `main` on 2026-09-27; the privacy draft is kept off it until
   approved.

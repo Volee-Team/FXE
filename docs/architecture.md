@@ -647,7 +647,7 @@ that finishes it, `web/reset.html`, is the browser suite's "reset page" test.
 (the push harness against a mock APNs), `ios-changes` (a Swift or
 `project.yml` change? gates the next job so a docs PR does not wait on Xcode),
 `ios-build-and-test` (XcodeGen, Debug and Release builds, unit tests, app-icon
-gate, simulator chosen at run time), `copy-gate`, `secret-scan`, `hosted-smoke` (read-only: 63 hosted targets; every table, view, RPC and function must refuse a signed-out caller with 401/403, and the three functions the web admin calls from a browser must answer a preflight from the admin site with a 2xx and its origin; `scripts/hosted-smoke.sh`),
+gate, simulator chosen at run time), `copy-gate`, `secret-scan`, `hosted-smoke` (read-only: 122 hosted targets, every function taken from `scripts/hosted-smoke-functions.txt`, which `scripts/gen-smoke-functions.sh` writes from the schema and `check-doc-inventory.sh` keeps honest; every table, view, RPC and function must refuse a signed-out caller with 401/403, and the three functions the web admin calls from a browser must answer a preflight from the admin site with a 2xx and its origin; `scripts/hosted-smoke.sh`),
 `migration-immutability`, `ios-ui-tests` (the 13 XCUITests against a
 throwaway CI Supabase project, reset to the seed first; green with a notice
 until that project's secrets exist, see `docs/launch-checklist.md` §F, added

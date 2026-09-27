@@ -37,4 +37,19 @@ for p in tests/sql/*.sql tests/sql/*.sh; do b=$(basename "$p"); need probe "${b%
 for job in $(grep -E '^  [a-z-]+:$' .github/workflows/probes.yml | tr -d ' :'); do need "CI job" "$job"; done
 for s in FXETennis/Views/*.swift FXETennis/Data/*.swift FXETennis/Models/*.swift FXETennis/App/*.swift; do need "Swift file" "$(basename "$s")"; done
 
+# scripts/hosted-smoke-functions.txt must equal what the schema says now, and
+# every edge function must be in hosted-smoke.sh's EDGE or EDGE_EXEMPT, or
+# production never gets asked whether a signed-out caller can reach it (the
+# hand-kept list had drifted to 46 of 81 functions by 2026-09-27).
+SMOKE=scripts/hosted-smoke.sh
+if ! diff -q <(FXE_DB_CONTAINER="$DB" bash scripts/gen-smoke-functions.sh --stdout) scripts/hosted-smoke-functions.txt >/dev/null; then
+  echo "  FAIL  scripts/hosted-smoke-functions.txt is stale: run bash scripts/gen-smoke-functions.sh after supabase db reset"
+  diff <(FXE_DB_CONTAINER="$DB" bash scripts/gen-smoke-functions.sh --stdout) scripts/hosted-smoke-functions.txt | head -10
+  FAIL=1
+fi
+LISTED=$(grep -E '^(EDGE|EDGE_EXEMPT)=' "$SMOKE" | cut -d'"' -f2 | tr ' ' '\n')
+for d in supabase/functions/*/; do n=$(basename "$d"); [ "$n" = "_shared" ] && continue
+  echo "$LISTED" | grep -qx "$n" || { echo "  FAIL  edge function '$n' is in neither EDGE nor EDGE_EXEMPT in $SMOKE"; FAIL=1; }
+done
+
 if [ $FAIL -eq 0 ]; then echo "Inventory documented: every table, view, enum, client RPC, edge function, probe, CI job and Swift file is named in $DOC."; else echo "Inventory drifted."; exit 1; fi

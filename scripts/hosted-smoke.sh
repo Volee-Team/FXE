@@ -26,8 +26,13 @@ KEY="${SUPABASE_ANON_KEY:-$(grep -o 'sb_publishable_[A-Za-z0-9_-]*' "$(dirname "
 [ -n "$KEY" ] || { echo "no publishable key found"; exit 2; }
 
 RELATIONS="clinics registrations players accounts player_notes clinic_templates payments devices notifications app_settings waivers waiver_acceptances card_consents review_links review_responses reset_links_issued late_requests clinic_messages clinic_message_recipients news_posts news_reads clinics_public my_registrations my_clinic_messages my_news my_past_clinics clinics_admin templates_admin registrations_admin payments_ledger revenue_by_clinic"
-FUNCTIONS="register_for_clinic cancel_registration leave_pool delete_my_account accept_waiver current_waiver my_waiver_accepted admin_charge_clinic admin_set_no_show place_player cancel_clinic search_players revenue_summary admin_create_review_link admin_review_responses create_my_account record_card_consent my_card_consent card_consent_text purge_expired_card_consents admin_board_report admin_board_report_clinics"
 EDGE="delete-account stripe-charge stripe-setup-intent push admin-reset-link"
+# Edge functions that take no JWT on purpose, each with its own credential and
+# a refusal that is not 401: review-submit (the link token; 400/404 without
+# one) and stripe-webhook (Stripe's signature; 400 bad_signature). Their
+# closedness is checked by their own harnesses. check-doc-inventory.sh
+# requires every function directory to be in EDGE or here.
+EDGE_EXEMPT="review-submit stripe-webhook"
 # Called from the web admin in a browser, so they need CORS (_shared/cors.ts).
 BROWSER_EDGE="review-submit stripe-charge admin-reset-link"
 
@@ -47,32 +52,16 @@ for r in $RELATIONS; do
   code=$(curl -s -o /dev/null -w '%{http_code}' "$URL/rest/v1/$r?select=*&limit=1" -H "apikey: $KEY" -H "Authorization: Bearer $KEY")
   check relation "$r" "$code"
 done
-# Real argument names, placeholder values (generated from the local schema on
-# 2026-09-27; a new function or a renamed parameter needs a line here, and a
-# stale line shows up as MISSING rather than passing quietly).
-args_for() {
-  local Z=00000000-0000-0000-0000-000000000000
-  case "$1" in
-    accept_waiver) echo '{"p_version":"x","p_legal_name":"x y","p_app_version":"x"}' ;;
-    admin_charge_clinic|cancel_clinic) echo "{\"p_clinic\":\"$Z\"}" ;;
-    admin_create_review_link) echo '{"p_label":"x"}' ;;
-    admin_set_no_show) echo "{\"p_registration\":\"$Z\",\"p_no_show\":false}" ;;
-    cancel_registration) echo "{\"p_registration\":\"$Z\",\"p_note\":\"x\"}" ;;
-    create_my_account) echo '{"p_first_name":"x","p_last_name":"x","p_phone":"x","p_is_member":false,"p_adult_rating":3.5,"p_level_note":"x"}' ;;
-    leave_pool) echo "{\"p_registration\":\"$Z\"}" ;;
-    place_player) echo "{\"p_clinic\":\"$Z\",\"p_player\":\"$Z\",\"p_status\":\"pool\"}" ;;
-    record_card_consent) echo '{"p_app_version":"x"}' ;;
-    register_for_clinic) echo "{\"p_clinic\":\"$Z\",\"p_player\":\"$Z\"}" ;;
-    revenue_summary) echo '{"p_from":"2026-01-01T00:00:00Z","p_to":"2026-01-02T00:00:00Z"}' ;;
-    search_players) echo '{"p_query":"x","p_include_inactive":false}' ;;
-    admin_board_report|admin_board_report_clinics) echo '{"p_from":"2026-01-01","p_to":"2026-01-31"}' ;;
-    *) echo '{}' ;;   # no parameters
-  esac
-}
-for f in $FUNCTIONS; do
-  code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$URL/rest/v1/rpc/$f" -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" -d "$(args_for "$f")")
+# Every callable function in public, with its real argument names and
+# placeholder values, generated from the local schema by
+# scripts/gen-smoke-functions.sh into scripts/hosted-smoke-functions.txt
+# (2026-09-27; until then this was a hand-kept list that missed 35 of 81).
+# check-doc-inventory.sh fails when the file and the schema disagree.
+while IFS=$'\t' read -r f args; do
+  [ -n "$f" ] || continue
+  code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$URL/rest/v1/rpc/$f" -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" -d "$args")
   check rpc "$f" "$code"
-done
+done < "$(dirname "$0")/hosted-smoke-functions.txt"
 for e in $EDGE; do
   code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$URL/functions/v1/$e" -H "apikey: $KEY" -H "Content-Type: application/json" -d '{}')
   check edge "$e" "$code"
