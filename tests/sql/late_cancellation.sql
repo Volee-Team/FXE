@@ -7,6 +7,12 @@
 -- The rule lives in cancel_registration, so this probe drives it from the
 -- roles the app uses and reads back what Tara's roster will see.
 --
+-- 2026-09-27 (20260927100002): Tara can record a late cancellation for
+-- someone who texted her (admin_mark_late_cancel: You're In! to Canceled,
+-- late, by her, inside the cutoff or later, not once charged, tells nobody),
+-- while her plain Remove stays free and silent; and her removal no longer
+-- reaches the admins as if the player had canceled. Checks 13 to 15.
+--
 -- Expected: every row reads PASS.
 
 begin;
@@ -18,11 +24,16 @@ declare
   TARA    constant uuid := '11111111-1111-1111-1111-111111111111';
   MARIA   constant uuid := '22222222-2222-2222-2222-222222222222';
   KEN     constant uuid := '33333333-3333-3333-3333-333333333333';
+  ROB     constant uuid := '44444444-4444-4444-4444-444444444444';
+  DANA    constant uuid := '66666666-6666-6666-6666-666666666666';
   MARIA_P constant uuid := 'a0000000-0000-0000-0000-000000000001';
   KEN_P   constant uuid := 'a0000000-0000-0000-0000-000000000002';
   ROB_P   constant uuid := 'a0000000-0000-0000-0000-000000000003';
+  DANA_P  constant uuid := 'a0000000-0000-0000-0000-000000000004';
+  PRIYA_P constant uuid := 'a0000000-0000-0000-0000-000000000005';
   FAR     constant uuid := 'd0000000-0000-0000-0000-000000000002';
   soon uuid; soon2 uuid; reg_soon uuid; reg_soon2 uuid; reg_pool uuid; reg_far uuid; reg_admin uuid; pay uuid;
+  reg_text uuid; reg_early uuid; reg_waiting uuid; j jsonb;
   n int; v text; r public.registrations;
 begin
   -- ------------------------------------------------------------ fixtures
@@ -45,6 +56,14 @@ begin
   values (FAR, MARIA_P, 'in', 'self', 2200, true, 90) returning id into reg_far;
   insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
   values (soon, ROB_P, 'in', 'admin', 2300, false, 60) returning id into reg_admin;
+  -- For Tara's late cancel (checks 13 to 15): Dana in the soon clinic (she
+  -- texts Tara), Ken days out in the far one, Priya waiting in the Pool.
+  insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
+  values (soon, DANA_P, 'in', 'self', 1800, true, 60) returning id into reg_text;
+  insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
+  values (FAR, KEN_P, 'in', 'self', 2200, true, 90) returning id into reg_early;
+  insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
+  values (soon, PRIYA_P, 'pool', 'self', 2300, false, 60) returning id into reg_waiting;
 
   -- 1. The setting is Tara's number, and the helper reads it.
   select value into v from public.app_settings where key = 'cancel_cutoff_hours';
@@ -162,11 +181,105 @@ begin
   insert into _probe_result values ('roster_shows_charge_status', 'pending', v);
   perform set_config('role', 'postgres', true);
 
-  -- 13. Grants: anon cannot cancel anything; PUBLIC holds nothing.
+  -- 13. Tara records a late cancellation for Dana, who texted her two hours
+  --     before (inside the 3-hour cutoff): canceled, late, by Tara, no
+  --     courtesy (switched off), her note kept trimmed.
+  perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
+  perform set_config('role', 'authenticated', true);
+  r := public.admin_mark_late_cancel(reg_text, '  Texted at 2pm, sick.  ');
+  insert into _probe_result values ('tara_records_late_cancel', 'canceled true false tara Texted at 2pm, sick.',
+    r.status::text || ' ' || r.late_cancel::text || ' ' || r.courtesy_used::text || ' '
+    || case when r.canceled_by = TARA then 'tara' else coalesce(r.canceled_by::text, 'nobody') end
+    || ' ' || coalesce(r.cancel_note, 'NO NOTE'));
+  -- Her roster reads it the way it reads a player's own late cancel.
+  select status::text || ' ' || late_cancel::text || ' ' || coalesce(cancel_note, 'NO NOTE') into v
+    from public.registrations_admin where id = reg_text;
+  insert into _probe_result values ('roster_shows_taras_late_cancel', 'canceled true Texted at 2pm, sick.', v);
+  -- Twice is refused: the row is no longer You're In!.
+  begin
+    perform public.admin_mark_late_cancel(reg_text);
+    insert into _probe_result values ('late_cancel_twice_refused', 'registration_not_in', 'CALL SUCCEEDED');
+  exception when others then
+    insert into _probe_result values ('late_cancel_twice_refused', 'registration_not_in', sqlerrm);
+  end;
+  -- Days out is not late: refused (Remove is the tool before the cutoff).
+  begin
+    perform public.admin_mark_late_cancel(reg_early);
+    insert into _probe_result values ('late_cancel_before_cutoff_refused', 'not_late_yet', 'CALL SUCCEEDED');
+  exception when others then
+    insert into _probe_result values ('late_cancel_before_cutoff_refused', 'not_late_yet', sqlerrm);
+  end;
+  -- A Player Pool entry holds no spot, so it cannot be a late cancel.
+  begin
+    perform public.admin_mark_late_cancel(reg_waiting);
+    insert into _probe_result values ('late_cancel_on_pool_refused', 'registration_not_in', 'CALL SUCCEEDED');
+  exception when others then
+    insert into _probe_result values ('late_cancel_on_pool_refused', 'registration_not_in', sqlerrm);
+  end;
+  -- A member cannot record one for anyone.
+  perform set_config('request.jwt.claims', json_build_object('sub', MARIA)::text, true);
+  begin
+    perform public.admin_mark_late_cancel(reg_early);
+    insert into _probe_result values ('member_cannot_mark_late_cancel', 'not_authorized', 'CALL SUCCEEDED');
+  exception when others then
+    insert into _probe_result values ('member_cannot_mark_late_cancel', 'not_authorized', sqlerrm);
+  end;
+  perform set_config('role', 'postgres', true);
+  -- The refusals changed nothing (asserted as state, not as an error).
+  select (select status::text from public.registrations where id = reg_early) || ' '
+      || (select status::text from public.registrations where id = reg_waiting) into v;
+  insert into _probe_result values ('refused_late_cancels_change_nothing', 'in pool', v);
+
+  -- 14. After the clinic, one tap charges Tara's late cancel as a late cancel
+  --     at Dana's price, and her plain Remove of Rob (check 9) as nothing.
+  --     In the soon clinic: Maria's own late cancel and Dana's are owed
+  --     (both have a card now); Ken's pool drop-out, Rob's removal and
+  --     Priya's Pool entry owe nothing.
+  update public.accounts set stripe_customer_id = 'cus_probe_dana', card_brand = 'visa', card_last4 = '4242' where id = DANA;
+  update public.clinics set starts_at = now() - interval '1 hour', ends_at = now() - interval '1 minute' where id = soon;
+  perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
+  perform set_config('role', 'authenticated', true);
+  j := public.admin_charge_clinic(soon);
+  insert into _probe_result values ('soon_clinic_tap_summary', '{"already": 0, "charged": 2, "no_card": 0, "not_owed": 3}', j::text);
+  perform set_config('role', 'postgres', true);
+  select string_agg(kind::text || ' ' || amount_cents, ',') into v from public.payments where registration_id = reg_text;
+  insert into _probe_result values ('taras_late_cancel_is_charged_as_late', 'late_cancel 1800', coalesce(v, 'NOT CHARGED'));
+  select count(*) into n from public.payments where registration_id = reg_admin;
+  insert into _probe_result values ('plain_remove_records_no_fee', '0', n::text);
+
+  -- 15. Who was told, per registration, as account:type (hard rule 9: the
+  --     rows themselves, not the absence of an error). A player's own cancel
+  --     reaches every admin. Tara's Remove and her late cancel reach nobody:
+  --     not Tara, as if the player had done it (the echo, 20260927100002),
+  --     and not the player, whose words for it are Tara's to write.
+  select coalesce(string_agg(case x.account_id when TARA then 'tara' when MARIA then 'maria' when ROB then 'rob'
+                                               when DANA then 'dana' else 'other' end || ':' || x.type, ','
+                             order by x.account_id, x.type), '')
+    into v from public.notifications x where x.entity_id = reg_soon;
+  insert into _probe_result values ('told_of_marias_own_late_cancel', 'tara:player_canceled', v);
+  select coalesce(string_agg(case x.account_id when TARA then 'tara' when MARIA then 'maria' when ROB then 'rob'
+                                               when DANA then 'dana' else 'other' end || ':' || x.type, ','
+                             order by x.account_id, x.type), '')
+    into v from public.notifications x where x.entity_id = reg_soon2;
+  insert into _probe_result values ('told_of_marias_second_cancel', 'tara:player_canceled', v);
+  select coalesce(string_agg(case x.account_id when TARA then 'tara' when MARIA then 'maria' when ROB then 'rob'
+                                               when DANA then 'dana' else 'other' end || ':' || x.type, ','
+                             order by x.account_id, x.type), '')
+    into v from public.notifications x where x.entity_id = reg_admin;
+  insert into _probe_result values ('told_of_taras_removal_of_rob', '', v);
+  select coalesce(string_agg(case x.account_id when TARA then 'tara' when MARIA then 'maria' when ROB then 'rob'
+                                               when DANA then 'dana' else 'other' end || ':' || x.type, ','
+                             order by x.account_id, x.type), '')
+    into v from public.notifications x where x.entity_id = reg_text;
+  insert into _probe_result values ('told_of_taras_late_cancel_of_dana', '', v);
+
+  -- 16. Grants: anon cannot cancel anything; PUBLIC holds nothing.
   insert into _probe_result values ('anon_cannot_execute_cancel', 'false',
     has_function_privilege('anon', 'public.cancel_registration(uuid, text)', 'EXECUTE')::text);
   insert into _probe_result values ('anon_cannot_execute_cutoff', 'false',
     has_function_privilege('anon', 'public.cancel_cutoff_hours()', 'EXECUTE')::text);
+  insert into _probe_result values ('anon_cannot_mark_late_cancel', 'false',
+    has_function_privilege('anon', 'public.admin_mark_late_cancel(uuid, text)', 'EXECUTE')::text);
 end $$;
 
 select check_name, expected, actual,

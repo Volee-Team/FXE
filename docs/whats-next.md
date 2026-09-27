@@ -10,7 +10,7 @@ where things stand. Updated 2026-09-27; launch target 2026-10-16.
 - **On testers' phones:** TestFlight build 2, from John's account (decision
   0014). **Ready on `main`:** build 3, verified by a Release build on
   2026-09-27; John uploads it (checklist C8).
-- **Hosted:** 36 of 37 migrations paired (`supabase migration list --linked`,
+- **Hosted:** 36 of 38 migrations paired (`supabase migration list --linked`,
   2026-09-27); every edge function deployed; Stripe's sandbox keys and
   webhook secret in place (checklist A1); **payments switched off** until
   Alex says go (A9); a signed-out caller reaches nothing (58 targets closed).
