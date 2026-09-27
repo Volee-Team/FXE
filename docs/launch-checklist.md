@@ -27,16 +27,17 @@ Owners: **[me]** built by the model, **[Alex]** needs his hands or his accounts,
 
 ## B. Stripe, exact steps for Alex
 
-Test mode needs no bank details; live mode does and is Tara's.
+One copy only: `docs/for-alex.md` §1, click by click, rewritten 2026-09-27
+against Stripe's current dashboard (sandboxes instead of test mode, webhooks
+under Workbench as event destinations). It used to be duplicated here, and
+two copies of the same steps drift.
 
-1. **Create the account.** stripe.com → Sign up with your email. Business name "FXE Tennis" is fine for now; it can change. Skip "activate your account" (that is live mode).
-2. **Stay in test mode.** The toggle top-right of the dashboard. Everything below is test mode; test keys start with `sk_test_` and `pk_test_`.
-3. **Copy the two API keys.** Developers → API keys: *Publishable key* and *Secret key* (click Reveal). Do not paste either into chat, the repo, or a text message.
-4. **Set them as Edge Function secrets.** Supabase dashboard → project `fxe-tennis` → Edge Functions → Secrets → Add: `STRIPE_SECRET_KEY` = the secret key, `STRIPE_PUBLISHABLE_KEY` = the publishable key. (Alternative from your terminal, which never shows the value in the repo: `supabase secrets set STRIPE_SECRET_KEY=... STRIPE_PUBLISHABLE_KEY=...` from the repo root.)
-5. **Create the webhook.** Stripe → Developers → Webhooks → Add endpoint. URL: `https://amnaxvznkadkgzdxzegw.supabase.co/functions/v1/stripe-webhook`. Events: `setup_intent.succeeded`, `payment_intent.succeeded`, `payment_intent.payment_failed`, `refund.updated`, `charge.refunded`. Save, then Reveal the *Signing secret* (`whsec_...`).
-6. **Set it too.** Same Secrets page: `STRIPE_WEBHOOK_SECRET` = the signing secret.
-7. **Tell me it is done.** I do not need the values. I will hit the hosted function with a test card (`4242 4242 4242 4242`, any future date, any CVC) and read the ledger.
-8. **Optional, for local end-to-end:** `brew install stripe/stripe-cli/stripe`, `stripe login`, then `stripe listen --forward-to http://127.0.0.1:54321/functions/v1/stripe-webhook`. It prints a local `whsec_` which goes in a local env file only.
+In short: a Stripe account in its sandbox; the publishable and secret keys
+into Supabase's Edge Function secrets as `STRIPE_PUBLISHABLE_KEY` and
+`STRIPE_SECRET_KEY`; a webhook destination for five events at
+`https://amnaxvznkadkgzdxzegw.supabase.co/functions/v1/stripe-webhook`; its
+signing secret as `STRIPE_WEBHOOK_SECRET`. Then payments are switched on only
+when Alex says go.
 
 What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision 0009). Payouts to Tara's bank need live mode (row A7).
 
