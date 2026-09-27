@@ -78,12 +78,14 @@ from unnest(array['role', 'email', 'id']) as c;
 -- Enumerated, not listed. anon is the publishable key shipped inside the iOS
 -- binary; before sign-in it should be able to touch nothing in this schema.
 -- TRUNCATE/REFERENCES/TRIGGER are included deliberately: TRUNCATE is a delete
--- with a different name.
+-- with a different name. (REFERENCES and TRIGGER were claimed here and missing
+-- from the lists until 2026-09-27; the sql-auditor noticed the comment and the
+-- code disagreed.)
 insert into _probe_result
 select 'anon_has_no_' || lower(p) || '_anywhere',
        '',
        coalesce(string_agg(c.relname, ', ' order by c.relname), '')
-from unnest(array['SELECT','INSERT','UPDATE','DELETE','TRUNCATE']) as p
+from unnest(array['SELECT','INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER']) as p
 cross join pg_class c
 join pg_namespace n on n.oid = c.relnamespace and n.nspname = 'public'
 where c.relkind in ('r','v')
@@ -96,12 +98,29 @@ group by p;
 -- reappearing inside a probe. Emit the passing rows explicitly.
 insert into _probe_result
 select 'anon_has_no_' || lower(p) || '_anywhere', '', ''
-from unnest(array['SELECT','INSERT','UPDATE','DELETE','TRUNCATE']) as p
+from unnest(array['SELECT','INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER']) as p
 where not exists (
   select 1 from pg_class c
   join pg_namespace n on n.oid = c.relnamespace and n.nspname = 'public'
   where c.relkind in ('r','v') and has_table_privilege('anon', c.oid, p)
 );
+
+-- ------------------------------------- which base tables a member can read
+-- Enumerated against an allowlist. Every other table is reached through a
+-- narrow view or an RPC (hard rule 1), so a new table-level SELECT for
+-- authenticated is either deliberate, and this list changes in the same PR,
+-- or a leak. Added 2026-09-27 (sql-auditor): granting SELECT on
+-- reset_links_issued to authenticated passed the whole suite before this row.
+-- notifications is not here because its SELECT is column-level (eight named
+-- columns, 20260923000001), which has_table_privilege does not count.
+insert into _probe_result
+select 'authenticated_selects_only_these_base_tables',
+       'accounts, app_settings, late_requests, payments, players',
+       coalesce(string_agg(c.relname, ', ' order by c.relname), '')
+from pg_class c
+join pg_namespace n on n.oid = c.relnamespace and n.nspname = 'public'
+where c.relkind = 'r'
+  and has_table_privilege('authenticated', c.oid, 'SELECT');
 
 -- --------------------------------------------- authenticated writes nothing
 -- Every legitimate write goes through a SECURITY DEFINER RPC, which runs as its
@@ -114,7 +133,7 @@ insert into _probe_result
 select 'authenticated_cannot_' || lower(p) || '_base_tables',
        '',
        coalesce(string_agg(c.relname, ', ' order by c.relname), '')
-from unnest(array['INSERT','UPDATE','DELETE','TRUNCATE']) as p
+from unnest(array['INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER']) as p
 cross join pg_class c
 join pg_namespace n on n.oid = c.relnamespace and n.nspname = 'public'
 where c.relkind = 'r'
@@ -124,7 +143,7 @@ group by p;
 
 insert into _probe_result
 select 'authenticated_cannot_' || lower(p) || '_base_tables', '', ''
-from unnest(array['INSERT','UPDATE','DELETE','TRUNCATE']) as p
+from unnest(array['INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER']) as p
 where not exists (
   select 1 from pg_class c
   join pg_namespace n on n.oid = c.relnamespace and n.nspname = 'public'

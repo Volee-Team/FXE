@@ -119,6 +119,8 @@ t = re.sub(r"\b(sk|rk)_(test|live)_[A-Za-z0-9]{8,}", r"[redacted Stripe \2 key]"
 t = re.sub(r"\bwhsec_[A-Za-z0-9]{8,}", "[redacted webhook secret]", t)
 t = re.sub(r"\bsb_secre[t]_[A-Za-z0-9_-]{8,}", "[redacted Supabase secret]", t)
 t = re.sub(r"\beyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}", "[redacted token]", t)
+# A reset link is a one-hour sign-in as the member (decision 0017).
+t = re.sub(r"token_hash=[0-9A-Fa-f]{20,}", "token_hash=[redacted]", t)
 sys.stdout.write(t)
 '
 }

@@ -5,6 +5,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;0,700;1,500&display=swap">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- The page can carry a reset token; send no Referer anywhere (decision 0017). -->
+<meta name="referrer" content="no-referrer">
 <title>FXE Tennis · Reset password</title>
 <link rel="stylesheet" href="./tokens.css">
 <style>
@@ -33,25 +35,54 @@
   <div id="msg"></div>
 </div>
 <script type="module">
-// Lands here from the email Supabase sends for "Forgot password?" (both the web
-// admin and the iOS app point their reset links at this page). supabase-js reads
-// the recovery token out of the URL on load and gives us a session that may do
-// exactly one thing: set a new password.
+// Finishes a password reset. A link lands here in one of two shapes:
+//
+//   #token_hash=...&type=recovery   Tara's reset link (admin-reset-link,
+//        decision 0017), and the reset email once its template uses the
+//        token hash. Nothing happens until this page calls verifyOtp, so a
+//        mail scanner or a link preview that fetches the URL cannot use up
+//        the one-time token before the member taps it (Volee's lesson). It
+//        rides in the fragment, which no browser sends in any request, so it
+//        never reaches a server log either.
+//   #access_token=...&type=recovery  the email's default link: GoTrue has
+//        already verified the token on its own server and redirects here;
+//        supabase-js reads the session out of the hash on load.
+//
+// The member's session lives in memory only (persistSession false, its own
+// storage key): the admin site shares this origin, and a stored session
+// would outlive the page, or replace Tara's own if she opened a link herself
+// (sql-auditor, 2026-09-27). implicit flow, never PKCE: a reset started on
+// the phone must finish here, and PKCE ties the code to the device that asked.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { CONFIG } from "./config.js";
-// implicit flow: a reset started on one device (the phone) must finish on
-// another (this page). PKCE ties the emailed code to the device that asked.
-const sb = createClient(CONFIG.url, CONFIG.key, { auth: { flowType: "implicit" } });
+const sb = createClient(CONFIG.url, CONFIG.key, {
+  auth: { flowType: "implicit", persistSession: false, autoRefreshToken: false, storageKey: "fxe-reset" },
+});
 const $ = id => document.getElementById(id);
 
-sb.auth.onAuthStateChange((event, session) => {
-  if (event === "PASSWORD_RECOVERY" || session) {
-    $("intro").textContent = "Pick something you'll remember. At least 8 characters.";
-    $("f").hidden = false;
-  }
-});
-setTimeout(() => { if ($("f").hidden) $("intro").textContent =
-  "This link has expired or was already used. Go back and request a new one."; }, 4000);
+const ready = () => {
+  $("intro").textContent = "Pick something you'll remember. At least 8 characters.";
+  $("f").hidden = false;
+};
+const expired = () => {
+  $("f").hidden = true;
+  $("intro").textContent = "This link has expired or was already used. Go back and request a new one.";
+};
+
+const hash = new URLSearchParams(location.hash.slice(1));
+if (hash.get("token_hash")) {
+  const { error } = await sb.auth.verifyOtp({ token_hash: hash.get("token_hash"), type: "recovery" });
+  // The token is spent now; take it out of the address bar.
+  history.replaceState(null, "", location.pathname);
+  if (error) expired(); else ready();
+} else if (hash.get("error_code")) {
+  expired();
+} else {
+  sb.auth.onAuthStateChange((event, session) => {
+    if (event === "PASSWORD_RECOVERY" || session) ready();
+  });
+  setTimeout(() => { if ($("f").hidden) expired(); }, 4000);
+}
 
 $("f").onsubmit = async (e) => {
   e.preventDefault();
@@ -62,7 +93,12 @@ $("f").onsubmit = async (e) => {
   $("msg").innerHTML = error
     ? '<div class="err">That didn’t save. Try again.</div>'
     : '<div class="ok">Saved. You can sign in with it now, on your phone or here.</div>';
-  if (!error) $("f").hidden = true;
+  if (error) return;
+  $("f").hidden = true;
+  // Sign the account out everywhere, this page included: a session opened
+  // from a link, by whoever held it, ends when the member chooses a password.
+  // Their phone asks for the new password once (decision 0017).
+  await sb.auth.signOut({ scope: "global" });
 };
 </script>
 </body>

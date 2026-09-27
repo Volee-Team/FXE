@@ -5,6 +5,7 @@
 // What is NOT here: anything a player sees. The player surface is the iOS
 // app, covered by XCUITests. This file is Tara's side only.
 import { test, expect } from "@playwright/test";
+import { execSync } from "node:child_process";
 
 const TARA = { email: "tara@fxe.test", password: "password" };
 const MARIA = { email: "maria@fxe.test", password: "password" };
@@ -258,5 +259,72 @@ test.describe("cancel clinic", () => {
     await page.getByLabel("Show canceled").check();
     await expect(page.locator("#clinics .card", { hasText: "Sunday Social" }).getByText("Canceled")).toBeVisible();
     await expect(card.getByRole("button", { name: "Cancel clinic" })).toHaveCount(0);
+  });
+});
+
+// The reset page with a token-hash link: the shape Tara's "Reset link" makes
+// (admin-reset-link, decision 0017) and the reset email will use. The link is
+// minted here through GoTrue's admin API, the same call the edge function
+// makes, because CI's browser job runs no edge runtime; tests/reset/run.sh
+// covers the function itself. Ken, because no other test signs in as him.
+test.describe("reset page", () => {
+  test("a token-hash link lets the member choose a new password, once", async ({ page, request }) => {
+    const env = Object.fromEntries(execSync("supabase status -o env", { cwd: "..", stdio: ["ignore", "pipe", "ignore"] })
+      .toString().split("\n").filter(l => l.includes("="))
+      .map(l => { const i = l.indexOf("="); return [l.slice(0, i), l.slice(i + 1).replace(/^"|"$/g, "")]; }));
+    const admin = { apikey: env.SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SERVICE_ROLE_KEY}` };
+    // Ken's password goes back to the seed's whatever happens below, through
+    // the admin API (never SQL on auth), so a failure cannot poison later runs.
+    const restoreKen = async () => {
+      const users = await (await request.get(`${env.API_URL}/auth/v1/admin/users?per_page=50`, { headers: admin })).json();
+      const ken = users.users.find(u => u.email === "ken@fxe.test");
+      expect((await request.put(`${env.API_URL}/auth/v1/admin/users/${ken.id}`, { headers: admin, data: { password: "password" } })).ok()).toBeTruthy();
+    };
+    await restoreKen();
+    try {
+      const gen = await request.post(`${env.API_URL}/auth/v1/admin/generate_link`, { headers: admin, data: { type: "recovery", email: "ken@fxe.test" } });
+      expect(gen.ok()).toBeTruthy();
+      // The token rides in the fragment, the shape admin-reset-link returns.
+      const link = `/reset.html#token_hash=${encodeURIComponent((await gen.json()).hashed_token)}&type=recovery`;
+
+      // Ken is also signed in on his phone: a session the reset must end.
+      const phone = await (await request.post(`${env.API_URL}/auth/v1/token?grant_type=password`,
+        { headers: { apikey: env.ANON_KEY }, data: { email: "ken@fxe.test", password: "password" } })).json();
+      expect(phone.refresh_token).toBeTruthy();
+
+      await page.goto(link);
+      await expect(page.locator("#intro")).toHaveText("Pick something you'll remember. At least 8 characters.");
+      // The spent token leaves the address bar.
+      expect(page.url()).not.toContain("token_hash");
+      // Ken's session lives in the page's memory only: nothing a later visitor
+      // to this browser, or Tara's own admin tab on the same site, could pick up.
+      const stored = await page.evaluate(() => Object.keys(localStorage).filter(k => /auth-token|fxe-reset/.test(k)));
+      expect(stored).toEqual([]);
+      const pw = `Reset-${Date.now()}`;
+      await page.getByLabel("New password").fill(pw);
+      await page.getByLabel("Type it again").fill(pw);
+      await page.getByRole("button", { name: "Save password" }).click();
+      await expect(page.locator("#msg")).toContainText("Saved. You can sign in with it now");
+
+      // Saving signed Ken out everywhere: the phone's session no longer refreshes.
+      await expect.poll(async () => (await request.post(`${env.API_URL}/auth/v1/token?grant_type=refresh_token`,
+        { headers: { apikey: env.ANON_KEY }, data: { refresh_token: phone.refresh_token } })).status()).not.toBe(200);
+
+      // The new password is the one that works.
+      const signin = await request.post(`${env.API_URL}/auth/v1/token?grant_type=password`,
+        { headers: { apikey: env.ANON_KEY }, data: { email: "ken@fxe.test", password: pw } });
+      expect(signin.status()).toBe(200);
+
+      // The same link a second time is spent. about:blank first: a URL that
+      // differs only in its fragment is not a new page load, and a member who
+      // taps the link again gets a fresh page.
+      await page.goto("about:blank");
+      await page.goto(link);
+      await expect(page.locator("#intro")).toHaveText("This link has expired or was already used. Go back and request a new one.");
+      await expect(page.locator("#f")).toBeHidden();
+
+    } finally {
+      await restoreKen();
+    }
   });
 });
