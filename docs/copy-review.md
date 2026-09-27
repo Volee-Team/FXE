@@ -35,6 +35,22 @@ plus every "New since" block.
 
 ---
 
+## New since the last review — 2026-09-27 (bad signal, the waiver's exits, rate limits), awaiting Alex
+
+MVP audit items 7, 9 and 15 (branch `ios-resilience`). Two new strings, both
+chrome, mine; everything else below is words already in the app, now shown
+in more places, listed so the new places are seen. The extractor sees only
+"Try again"; the rest are returns and dialog titles (the known gap below).
+
+| ✓ | String | Where | Why |
+|---|--------|-------|-----|
+| ☐ | Try again | The screen shown when the app is signed in but could not load who you are (launch with no signal; it used to be the sign-up form), and the waiver sheet when its text did not load | New. Both screens have no pull-to-refresh, and the waiver sheet cannot be swiped away, so a button is the only way to retry |
+| ☐ | Too many requests. Try again in a minute. | Sign-in, create account, password reset and the clinic page, when the server answers 429 | New. GoTrue allows 30 sign-ins and sign-ups per 5 minutes per address, and everyone on the party Wi-Fi shares one; this read "Something went wrong." with no reason to wait. The same line shows for the email-sending limit on password resets, where the wait can be longer than a minute. Alternative if Alex prefers plainer: "The server is busy. Try again in a minute." |
+| — | Couldn't reach the server. Check your connection. | Now also on Home (above the lists), My Clinics, the clinic page after a failed action or load, the waiver sheet, the can't-load screen, and the profile form when the save could not be read back | Not new: §B and the web admin. Chosen by the error's code now, not by the word "network" in iOS's text, which the offline error does not contain |
+| — | Something went wrong. Please try again. | The can't-load screen when the failure is not the connection | Not new (§B) |
+| — | Sign out · Delete my account · Keep my account · Delete your account? Your name, phone, email and card are removed and you are signed out. This can't be undone. · Couldn't delete your account. · Signs you out, you can finish later if needed (VoiceOver hint) | The foot of the waiver sheet and of the profile form (Delete is new on both), and the can't-load screen (Sign out only) | Not new: Profile's delete dialog word for word, and the profile form's existing Sign out and hint. The card step should use the same footer (another branch owns CardStepView) |
+| — | ~~No clinics currently open for registration~~ / ~~You're not registered for any clinics this week~~ / ~~Sorry, someone beat you to the punch. Here's the latest!~~ | Home, My Clinics, the clinic page | Not removed: no longer shown when the load or the tap FAILED, where each was a false claim (a member holding a spot was told nothing was open; a timed-out Register was told someone beat her) |
+
 ## New since the last review — 2026-09-22 (style guide), awaiting Alex
 
 | ✓ | String | Where |

@@ -233,14 +233,35 @@ public extension Brand {
 
 // MARK: - Typography
 
-/// Type scale. Every entry is built from a system text style, so all of it
-/// responds to Dynamic Type including the accessibility sizes. No fixed point
-/// sizes appear anywhere in this file.
+/// Type scale: Kat's style guide, in her two families at her sizes, and every
+/// text style grows and shrinks with the iPhone's Larger Text setting.
 ///
-/// `display` and `title` use the serif design on purpose: New York gives the
-/// country club register Tara asked for, while the body stays in SF for
-/// legibility outdoors. Flip `displayDesign` to `.default` to undo that in one
-/// place if she dislikes it.
+/// CORRECTED 2026-09-27 (MVP audit item 16). From the style guide's arrival
+/// (3750248) until then this comment said every entry was "built from a
+/// system text style, so all of it responds to Dynamic Type" and that "no
+/// fixed point sizes appear anywhere in this file". Both were false: every
+/// font was a fixed UIFont (body 15, subheadline 13, caption 12), so a member
+/// with Larger Text on read the waiver, the card sentence and every error at
+/// 12 to 15 points, outdoors. A claim in a comment is not a mechanism
+/// (CLAUDE.md hard rule 12); `BrandTypeScaleTests` is the mechanism now.
+///
+/// How: each style names the system text style whose Larger Text curve it
+/// follows (`Role.textStyle`). Its point size is Kat's size scaled by
+/// `UIFontMetrics(forTextStyle:)` for the current setting, so at the default
+/// setting every size is exactly hers, and at the largest accessibility size
+/// her 15-point body is drawn at about 42 points (UIFontMetrics' curve, which
+/// takes a 17-point body to 48; measured on iOS 26.2). Scaled with
+/// `scaledValue(for:)` and then built, rather than `scaledFont(for:)`, so that
+/// Inter's optical-size axis is set to the size the text is actually drawn at.
+///
+/// The logo is the exception, on purpose: the "TENNIS" lockup and the
+/// wordmark initial are part of the mark and keep their size (`textStyle`
+/// nil), which is also what keeps the fixed-height navy header intact.
+///
+/// Known limit: a font is computed when a view draws. A size changed in
+/// Settings while the app is open reaches each screen the next time it
+/// redraws (returning to the app reloads the main screens, which redraws
+/// them), and every screen at the next launch.
 public extension Brand {
     /// The two families from Kat's style guide, bundled as variable fonts
     /// (SIL Open Font License; the licences sit beside the files). Registered
@@ -258,24 +279,44 @@ public extension Brand {
                 CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
             }
         }
-        private static let wghtAxis = 0x77676874   // 'wght'
-        private static let opszAxis = 0x6F70737A   // 'opsz'
+        static let wghtAxis = 0x77676874   // 'wght'
+        static let opszAxis = 0x6F70737A   // 'opsz'
 
-        static func playfair(_ size: CGFloat, weight: CGFloat, italic: Bool = false) -> Font {
-            custom(italic ? "PlayfairDisplay-Italic" : "PlayfairDisplay-Regular", size: size, weight: weight, opticalSize: nil)
+        enum Face {
+            case inter, playfair, playfairItalic
+
+            var postScriptName: String {
+                switch self {
+                case .inter: return "Inter-Regular"
+                case .playfair: return "PlayfairDisplay-Regular"
+                case .playfairItalic: return "PlayfairDisplay-Italic"
+                }
+            }
+            /// Inter has an optical-size axis; Playfair does not.
+            var hasOpticalSize: Bool { self == .inter }
         }
-        static func inter(_ size: CGFloat, weight: CGFloat) -> Font {
-            custom("Inter-Regular", size: size, weight: weight, opticalSize: size)
+
+        /// `size` at the default setting, scaled along `textStyle`'s Larger
+        /// Text curve for `traits` (nil: the app's current setting). A nil
+        /// `textStyle` keeps `size`.
+        static func pointSize(_ size: CGFloat, textStyle: UIFont.TextStyle?, traits: UITraitCollection? = nil) -> CGFloat {
+            guard let textStyle else { return size }
+            let metrics = UIFontMetrics(forTextStyle: textStyle)
+            if let traits { return metrics.scaledValue(for: size, compatibleWith: traits) }
+            return metrics.scaledValue(for: size)
         }
-        private static func custom(_ name: String, size: CGFloat, weight: CGFloat, opticalSize: CGFloat?) -> Font {
+
+        static func uiFont(_ face: Face, size: CGFloat, weight: CGFloat,
+                           textStyle: UIFont.TextStyle?, traits: UITraitCollection? = nil) -> UIFont {
             register()
+            let points = pointSize(size, textStyle: textStyle, traits: traits)
             var axes: [Int: CGFloat] = [wghtAxis: weight]
-            if let opticalSize { axes[opszAxis] = opticalSize }
+            if face.hasOpticalSize { axes[opszAxis] = points }
             let descriptor = UIFontDescriptor(fontAttributes: [
-                .name: name,
+                .name: face.postScriptName,
                 UIFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String): axes,
             ])
-            return Font(UIFont(descriptor: descriptor, size: size))
+            return UIFont(descriptor: descriptor, size: points)
         }
     }
 
@@ -288,23 +329,97 @@ public extension Brand {
         public static let displayDesign: Font.Design = .serif
         public static let bodyDesign: Font.Design = .default
 
-        // Guide styles (size / line; tracking applied at the call site).
-        public static var greeting: Font        { Fonts.playfair(34, weight: 700) }
-        public static var greetingAccent: Font  { Fonts.playfair(23, weight: 500, italic: true) }
-        public static var wordmarkInitial: Font { Fonts.playfair(56, weight: 700) }
-        public static var wordmarkLockup: Font  { Fonts.playfair(22, weight: 600) }
-        public static var navRowLabel: Font     { Fonts.inter(19, weight: 600) }
-        public static var tabBarLabel: Font     { Fonts.inter(12, weight: 500) }
-        public static var body: Font            { Fonts.inter(15, weight: 400) }
+        /// Every style in the scale: Kat's face, size and weight, and the
+        /// system text style it grows with.
+        enum Role: CaseIterable {
+            // Guide styles (size / line; tracking applied at the call site).
+            case greeting, greetingAccent, wordmarkInitial, wordmarkLockup, navRowLabel, tabBarLabel, body
+            // Roles the screens already use.
+            case title, headline, bodyEmphasis, subheadline, caption, chip
+            /// The "TENNIS" under the small gator in Home's header: part of
+            /// the mark. It was `caption` until 2026-09-27, which would now
+            /// grow and burst the 58-point header.
+            case wordmarkCompact
+
+            var face: Fonts.Face {
+                switch self {
+                case .greeting, .wordmarkInitial, .wordmarkLockup, .title: return .playfair
+                case .greetingAccent: return .playfairItalic
+                case .navRowLabel, .tabBarLabel, .body, .headline, .bodyEmphasis,
+                     .subheadline, .caption, .chip, .wordmarkCompact: return .inter
+                }
+            }
+
+            /// Kat's size: the size at the default Larger Text setting.
+            var size: CGFloat {
+                switch self {
+                case .greeting: return 34
+                case .greetingAccent: return 23
+                case .wordmarkInitial: return 56
+                case .wordmarkLockup: return 22
+                case .navRowLabel: return 19
+                case .tabBarLabel: return 12
+                case .body: return 15
+                case .title: return 22
+                case .headline: return 17
+                case .bodyEmphasis: return 15
+                case .subheadline: return 13
+                case .caption: return 12
+                case .chip: return 12
+                case .wordmarkCompact: return 12
+                }
+            }
+
+            var weight: CGFloat {
+                switch self {
+                case .greeting, .wordmarkInitial: return 700
+                case .greetingAccent, .tabBarLabel, .chip: return 500
+                case .wordmarkLockup, .navRowLabel, .title, .headline, .bodyEmphasis: return 600
+                case .body, .subheadline, .caption, .wordmarkCompact: return 400
+                }
+            }
+
+            /// The system style whose curve this one follows, matched by role
+            /// (a button label reads as a headline, a chip as a caption). Nil
+            /// for the logo, which keeps its size.
+            var textStyle: UIFont.TextStyle? {
+                switch self {
+                case .greeting: return .largeTitle
+                case .greetingAccent, .title: return .title2
+                case .navRowLabel, .headline: return .headline
+                case .body, .bodyEmphasis: return .body
+                case .subheadline: return .subheadline
+                case .tabBarLabel, .caption, .chip: return .caption1
+                case .wordmarkInitial, .wordmarkLockup, .wordmarkCompact: return nil
+                }
+            }
+
+            /// The font for `traits`; nil means the app's current setting.
+            func uiFont(traits: UITraitCollection? = nil) -> UIFont {
+                Fonts.uiFont(face, size: size, weight: weight, textStyle: textStyle, traits: traits)
+            }
+
+            var font: Font { Font(uiFont()) }
+        }
+
+        // Guide styles.
+        public static var greeting: Font        { Role.greeting.font }
+        public static var greetingAccent: Font  { Role.greetingAccent.font }
+        public static var wordmarkInitial: Font { Role.wordmarkInitial.font }
+        public static var wordmarkLockup: Font  { Role.wordmarkLockup.font }
+        public static var wordmarkCompact: Font { Role.wordmarkCompact.font }
+        public static var navRowLabel: Font     { Role.navRowLabel.font }
+        public static var tabBarLabel: Font     { Role.tabBarLabel.font }
+        public static var body: Font            { Role.body.font }
 
         // Roles the screens already use.
         public static var display: Font       { greeting }
-        public static var title: Font         { Fonts.playfair(22, weight: 600) }
-        public static var headline: Font      { Fonts.inter(17, weight: 600) }
-        public static var bodyEmphasis: Font  { Fonts.inter(15, weight: 600) }
-        public static var subheadline: Font   { Fonts.inter(13, weight: 400) }
-        public static var caption: Font       { Fonts.inter(12, weight: 400) }
-        public static var chip: Font          { Fonts.inter(12, weight: 500) }
+        public static var title: Font         { Role.title.font }
+        public static var headline: Font      { Role.headline.font }
+        public static var bodyEmphasis: Font  { Role.bodyEmphasis.font }
+        public static var subheadline: Font   { Role.subheadline.font }
+        public static var caption: Font       { Role.caption.font }
+        public static var chip: Font          { Role.chip.font }
         public static var button: Font        { navRowLabel }
     }
 }

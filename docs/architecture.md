@@ -133,9 +133,12 @@ a broken `project.yml` fails there first.
 ```
 FXETennis/
 ├── App/
-│   ├── FXETennisApp.swift       @main; RootView switches on session.phase; forces .light
+│   ├── FXETennisApp.swift       @main; RootView switches on session.phase; forces .light;
+│   │                            returning to the app refreshes the session (scenePhase)
 │   ├── Session.swift            SessionStore: auth, account, activePlayer, isAdmin,
-│   │                            signUp → create_my_account, password reset
+│   │                            signUp → create_my_account, password reset; a failed load keeps
+│   │                            who you are (no answer is not "no profile"), `.loadFailed` at launch;
+│   │                            reopen(.waiver / .card) when register_for_clinic refuses
 │   ├── PushRegistrar.swift      client half of decision 0008: permission (once, Tara's line),
 │   │                            APNs registration, token → register_device; sends nothing.
 │   │                            PushAppDelegate is also the notification center's delegate:
@@ -150,16 +153,21 @@ FXETennis/
 │   ├── SupabaseClient.swift     the one client (URL + publishable key, implicit flow)
 │   ├── Repositories.swift       player reads/writes: Clinic, Registration, News, Profile
 │   ├── PaymentsRepository.swift asks stripe-setup-intent for what PaymentSheet needs; that is all
-│   └── AdminRepository.swift    every admin RPC + the roster/late-request/notice models, the money
-│                                models (MoneyClinic, MoneyDecline) and Stripe's decline codes in words
+│   ├── AdminRepository.swift    every admin RPC + the roster/late-request/notice models, the money
+│   │                            models (MoneyClinic, MoneyDecline) and Stripe's decline codes in words
+│   └── RequestFailure.swift     what a request met, by URLError code, HTTP status or Postgres code:
+│                                unreachable / rate limited / cancelled / an answer (unit-tested)
 ├── Models/
 │   ├── CoreModels.swift         Codable mirrors of the views (no hidden columns exist here)
 │   ├── CancelPolicy.swift       decision 0010: is this cancel inside cancel_cutoff_hours? (pure, unit-tested)
 │   ├── NTRPRating.swift         the USTA scale for the "?" explainer
 │   ├── NotificationCopy.swift   Tara's notification catalogue, verbatim
+│   ├── RegistrationMoments.swift when a clinic's registration changes on its own (opening, close,
+│   │                            start), for TimelineView redraws (pure, unit-tested)
 │   └── ServiceWeek.swift        Sunday-in-New-York week math for grouping (pure, unit-tested)
 ├── Resources/
-│   └── Brand.swift              tokens: navy / cream / court / brass, type, spacing, the gator mark
+│   └── Brand.swift              tokens: navy / cream / court / brass, type, spacing, the gator mark;
+│                                type scales with Larger Text through UIFontMetrics (unit-tested)
 └── Views/
     ├── AuthView.swift           sign in, create account, forgot password
     ├── CompleteProfileView.swift name, phone, membership question, rating (after sign-up)
@@ -184,7 +192,13 @@ FXETennis/
     ├── CardStepView.swift       onboarding after the waiver while cards are required: the card screen as a step, Sign out as the exit
     ├── Components/BrandHeader.swift the straight navy header with the green line, the Wordmark, NavRowLabel
     ├── Components/CourtBackdrop.swift Tara's court photo under a porcelain wash, behind the main screens
-    ├── WaiverView.swift         Tara's waiver, her checkbox sentence, the typed legal name; gates the app until signed
+    ├── Components/AccountExitFooter.swift Sign out and Delete my account (Profile's dialog) at the foot of
+    │                            every onboarding step: the profile form, the waiver, the can't-load screen
+    ├── Components/ReloadOnForeground.swift ReloadThrottle and .reloadOnForeground: screens reload when
+    │                            the app returns, at most once per 30 seconds (unit-tested)
+    ├── LoadFailedView.swift     signed in but the profile could not load: the connection line, Try again, Sign out
+    ├── WaiverView.swift         Tara's waiver, her checkbox sentence, the typed legal name; gates the app until signed;
+    │                            Try again when it fails to load, Sign out / Delete at the foot
     ├── AdminClinicsView.swift   Manage: Action Needed (a clinic ended and not charged yet, a declined
     │                            card, each opening its clinic; "N unpaid" only while zelle_allowed),
     │                            Today, Upcoming, Past; toolbar → Players
@@ -562,8 +576,8 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `back_to_back_105_race.sh` | Two concurrent registrations by one non-member for two same-day 105s: exactly one survives (the per-player lock in `register_for_clinic`; red without it, 2026-09-26) |
 | `one_fee_race.sh` | Two concurrent charges of different kinds for one player in one clinic (the unique index cannot see them): exactly one live fee survives (the per player-and-clinic lock in `admin_charge_registration`, 20260927100001; red without it, 2026-09-27: both went through) |
 
-**Swift**: 45 unit tests (`FXETennisTests`: price formatting, per-viewer
-pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016, and 12 on where a tapped notification goes: the push payload as `index.ts` builds it, and which reads each recipient's resolution makes) and 13
+**Swift**: 84 unit tests (`FXETennisTests`: price formatting, per-viewer
+pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016; since 2026-09-27 the request-failure classifier, a failed load keeping who you are, the waiver and card refusals reopening their steps, the 30-second reload throttle, the redraw moments, and the type scale under Larger Text) and 13
 XCUITests: 8 player flows
 (`PlayerFlowUITests`: sign in / browse / register, undo, sign-up end to end,
 the bell, profile edit, My Clinics, prices, hidden information) and 5 admin
