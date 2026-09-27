@@ -415,6 +415,11 @@ verify_jwt = true
 [functions.stripe-charge]
 verify_jwt = true
 
+# Tara makes a reset link for a member (decision 0017). The JWT is required
+# and the function also asks is_admin() as the caller.
+[functions.admin-reset-link]
+verify_jwt = true
+
 # Tara opens the review page from a text message and has no account, so the
 # request carries no JWT. The token in the body is the credential; the function
 # checks it against review_links.

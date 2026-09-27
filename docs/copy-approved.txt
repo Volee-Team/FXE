@@ -177,6 +177,7 @@ Stripe isn't connected yet.
 Stripe, Inc. processes card payments. Your card details go to Stripe directly and are governed by Stripe's privacy policy.
 Tara has your message.
 Tara, only what's new
+Text this to them. It works once, within an hour.
 That account is not an administrator.
 That clinic is already canceled.
 That clinic is full now.
@@ -231,6 +232,6 @@ You're not registered for any clinics this week
 Your answer
 Your answers as text
 Your card will only be charged after a clinic you attended, a late cancellation or no-show. Cancel at least 3 hours before clinic and you will not be charged.
-Your changes from September 22 are in the app. This is only what is new or changed since then, and the four questions still open. Tap Keep, or Change and write it your way. Your answers save as you go.
+Your changes from September 22 are in the app. This is only what is new or changed since then, and the questions still open. Tap Keep, or Change and write it your way. Your answers save as you go.
 Your tennis rating
 asking to get in

@@ -385,6 +385,21 @@ new and changed words and these questions, nothing else.
 **74. Back-to-back 105s (was 60 to 63). As built: a non-member who holds any spot in a 105 that day (Player Pool included) cannot take a second 105 that day until 48 hours before the first one starts, clock time; only 105s count; they see "Non-members can take one 105 a day until 48 hours before." Right, and are those the words?**
 *Default: as built. Status: open, asked 2026-09-27.*
 
+**75. How do members find out about the app, and from which week do you stop taking sign-ups by text?**
+*Default: your weekly email announces it in your words, we make a one-page card with a QR code and three steps for the party, the first full week after the party is app-only, and your weekly email keeps saying registration opens Thursday 8 AM for members (the app sends no "registration is open" message yet). Blocks launch. Status: open, asked 2026-09-27 (MVP audit).*
+
+**76. When a member is stuck or has a question about a charge, how should the app tell them to reach you?**
+*Default: a small "Contact Tara" link on Profile and under sign-in that opens an email to fersctennispro@gmail.com; the same address becomes the App Store support contact and the privacy policy contact. Status: open, asked 2026-09-27 (MVP audit).*
+
+**77. When someone deletes their account, we keep their signed waiver (typed name, email and date) as the club's record in case of an injury claim, and the privacy policy will say so. OK?**
+*Default: yes. Status: open, asked 2026-09-27, with the privacy policy she is reviewing.*
+
+**78. If a player's card is declined after a clinic, should the app tell them to update their card, and can they keep signing up meanwhile?**
+*Default: until you answer, only you see declines, with the player's name and the reason, on Money; nothing is sent to the player and they can keep signing up. Status: open, asked 2026-09-27 (MVP audit).*
+
+**79. When you take someone out of a clinic, take back an invitation, or put someone in yourself, should the app tell them?**
+*Default: until you answer, nothing is sent (today's behaviour). If yes, your own lines from your notification drafts would be used. Status: open, asked 2026-09-27 (MVP audit).*
+
 ### How 52 to 57 are being sent
 
 Round two of the review page (2026-09-21, later): the Words tab now shows her

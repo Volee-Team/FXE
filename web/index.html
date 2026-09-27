@@ -888,6 +888,25 @@ document.addEventListener("click", async (e) => {
     finally { b.disabled = false; }
     return;
   }
+  // A one-time reset link for a member, made by admin-reset-link (decision
+  // 0017). Shown as text, not a link: opening it here would spend it.
+  if (b.dataset.resetlink) {
+    b.disabled = true;
+    try {
+      const { data, error } = await sb.functions.invoke("admin-reset-link", { body: { player_id: b.dataset.resetlink } });
+      if (error) throw error;
+      document.querySelector(`[data-resetvalue="${b.dataset.resetlink}"]`).textContent = data.link;
+      $("reset-" + b.dataset.resetlink).classList.remove("hide");
+    } catch (err) { note($("players-msg"), "Couldn't make a reset link."); }
+    finally { b.disabled = false; }
+    return;
+  }
+  if (b.dataset.copyreset) {
+    const text = document.querySelector(`[data-resetvalue="${b.dataset.copyreset}"]`).textContent;
+    try { await navigator.clipboard.writeText(text); b.textContent = "Copied"; }
+    catch { getSelection().selectAllChildren(document.querySelector(`[data-resetvalue="${b.dataset.copyreset}"]`)); }
+    return;
+  }
   if (b.dataset.edit)     return openEdit(b.dataset.edit);
 });
 
@@ -951,6 +970,11 @@ const playerRow = (pl) => `<div class="row" data-player-row="${pl.id}">
   <button class="small" data-member="${pl.id}" data-now="${pl.is_member}">${pl.is_member ? "Make non-member" : "Make member"}</button>
   <button class="small" data-active="${pl.id}" data-now="${pl.is_active}">${pl.is_active ? "Deactivate" : "Reactivate"}</button>
   <button class="small" data-notes="${pl.id}">Note</button>
+  <button class="small" data-resetlink="${pl.id}">Reset link</button>
+</div>
+<div class="hide" id="reset-${pl.id}" style="margin:0 0 10px 0">
+  <div class="row"><code class="grow" style="word-break:break-all" data-resetvalue="${pl.id}"></code><button class="small" data-copyreset="${pl.id}">Copy</button></div>
+  <span class="muted">Text this to them. It works once, within an hour.</span>
 </div>
 <div class="hide" id="note-${pl.id}" style="margin:0 0 10px 0">
   <textarea rows="3" aria-label="Private note" data-notebody="${pl.id}" style="width:100%"></textarea>

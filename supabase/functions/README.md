@@ -6,7 +6,9 @@ Tara's review-page answers; `delete-account` (2026-09-21, decision 0013 §5)
 removes the sign-in after `delete_my_account()` has scrubbed the personal
 data; `push` (2026-09-23, decision 0008) delivers each notification row to
 the recipient's phones through APNs, and is built and tested against a mock
-while Apple's signing key does not exist yet.
+while Apple's signing key does not exist yet; `admin-reset-link`
+(2026-09-27, decision 0017) makes a one-time password-reset link Tara texts to
+a member, with no email involved.
 
 ## Secrets (never in the repo, the app, or a log)
 
@@ -38,14 +40,27 @@ injected by the platform.
 |---|---|---|---|
 | `stripe-setup-intent` | the iOS app, once per card | caller's JWT | refuses with 409 `card_consent_required` unless `card_consents` holds the caller's permission to the current words (decision 0015 §7); then creates or reuses the Stripe customer and returns a SetupIntent client secret + ephemeral key for PaymentSheet |
 | `stripe-webhook` | Stripe | Stripe signature (`verify_jwt = false`) | records the card summary on `setup_intent.succeeded`, and ledger outcomes on payment / refund events; on `payment_intent.payment_failed` it writes Stripe's sentence to `failure_reason` and its code to `failure_code` (`decline_code`, else `code`, 20260926000010) |
-| `stripe-charge` | the admin surfaces after `admin_charge_registration` / `admin_refund_payment` | admin JWT | turns up to 25 `pending` ledger rows per call (`.limit(25)`) into one PaymentIntent (off-session, naming the saved card explicitly: the customer's default payment method, else their first card, because a PaymentIntent does not fall back to `invoice_settings`) or Refund each, with an idempotency key per row; safe to call again for the rest |
+| `stripe-charge` | the admin surfaces after `admin_charge_registration` / `admin_refund_payment` | admin JWT; CORS for the admin site (`_shared/cors.ts`: hosted answered its preflight with 405 until 2026-09-27, so the web's Charge clinic could not reach it) | turns up to 25 `pending` ledger rows per call (`.limit(25)`) into one PaymentIntent (off-session, naming the saved card explicitly: the customer's default payment method, else their first card, because a PaymentIntent does not fall back to `invoice_settings`) or Refund each, with an idempotency key per row; safe to call again for the rest |
 | `review-submit` | `web/review.html?t=<token>`, Tara's review page | the token in the body or query, checked against `review_links` (`verify_jwt = false`: she has no account) | `POST {token, page_version, answers}` upserts one jsonb blob per (link, page version) into `review_responses` and returns `{saved_at}`; `GET ?token=&page_version=` returns `{answers, saved_at}` so she can continue on another device; unknown or revoked token is 404, answers over 200 KB or not an object is 400. Uses `_shared/supabase.ts`, not the Stripe module. No rate limiting |
 | `push` | the database: trigger `push_on_notification` posts `{notification_id}` through pg_net on every insert into `notifications` (migration 20260923000001) | `X-Push-Secret` header equal to `PUSH_WEBHOOK_SECRET` (`verify_jwt = false`: the database has no JWT) | loads the row and the account's `devices`, signs an ES256 provider token (cached 50 minutes), `POST /3/device/<token>` per device with the row's `body` verbatim and the unread count as the badge. Writes `delivered_at` on any 200, else `delivery_error` (`no_device`, `apns_not_configured`, or Apple's reason). Deletes a token Apple answers 410 or `BadDeviceToken` for. A delivered row is skipped, so a retry never double-sends |
+| `admin-reset-link` | the web admin, Players → Reset link | caller's JWT, and `is_admin()` asked as the caller; CORS for the admin site (`_shared/cors.ts`) | `POST {player_id}`: 409 for a deleted account, 403 `admin_target` for an admin account (a leaked link would be an admin session); `auth.admin.generateLink({type: "recovery"})` (sends no email), checks the token's sign-in is that account (`identity_mismatch`), records a row in `reset_links_issued`, then returns `RESET_PAGE_URL#token_hash=…&type=recovery` (the fragment reaches no server log). The page exchanges it with `verifyOtp`; it works once, within `mailer_otp_exp`. Harness: `tests/reset/run.sh` |
 | `delete-account` | the iOS app, Delete my account | caller's JWT | calls `delete_my_account()` (blanks name, phone, email, level note and card summary; keeps registrations, payments and Tara's notes), then soft-deletes the auth user through Supabase's admin API. Admins are refused by the RPC. Never writes the auth schema in SQL |
 
 The database never talks to Stripe; the app never holds a key that can move
 money; the only writer of ledger status is the webhook (plus `stripe-charge`
 moving pending → processing and recording a synchronous decline).
+
+## Called from a browser: CORS
+
+The web admin (`fxe-tennis-admin.vercel.app`) calls `review-submit`,
+`stripe-charge` and `admin-reset-link` from the browser, a different origin
+from `<project>.supabase.co`, so the browser sends a preflight first. Hosted's
+gateway does not answer it for a function: the function must, or the browser
+refuses the call. The local gateway does answer it, so a function without CORS
+passes every local test and fails in production. `_shared/cors.ts` is the one
+place for it; `scripts/hosted-smoke.sh` sends the preflight to each of the
+three on every PR. Functions called only by the iOS app, Stripe or the
+database need none.
 
 ## Run locally
 
@@ -68,6 +83,7 @@ supabase functions deploy stripe-charge
 supabase functions deploy review-submit --no-verify-jwt
 supabase functions deploy delete-account
 supabase functions deploy push --no-verify-jwt
+supabase functions deploy admin-reset-link
 ```
 
 ## Testing without a Stripe account

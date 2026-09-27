@@ -52,7 +52,7 @@ most important thing to understand here, and it is section 5.
 
 | Area | State |
 |---|---|
-| Postgres schema, RLS, narrow views, RPCs | **Built**, 36 migrations; the first 35 applied to hosted (verified 2026-09-26, `supabase migration list --linked`: 35 paired); `20260926000010_money_reports.sql` not pushed yet |
+| Postgres schema, RLS, narrow views, RPCs | **Built**, 37 migrations; the first 36 on hosted (verified 2026-09-27, `supabase migration list --linked`: 36 paired); `20260927000001_reset_link_audit.sql` goes with the reset-link PR |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | **Built**, enumerated by probes |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | **Built** |
 | SQL probe suite (28 probes; the suite prints its own total) + concurrency probe, in CI | **Built** |
@@ -99,7 +99,7 @@ flowchart TD
         auth -.->|"auth.uid() read by is_admin() / owns_player()"| pg
     end
 
-    edge["Edge functions (Deno, service_role)<br/>stripe-setup-intent, stripe-webhook, stripe-charge, delete-account, review-submit, push"]
+    edge["Edge functions (Deno, service_role)<br/>stripe-setup-intent, stripe-webhook, stripe-charge, delete-account, review-submit, push, admin-reset-link"]
     edge --> pg
     gha["GitHub Actions<br/>probes, browser tests, Stripe pipeline (mocked), push pipeline (mocked), iOS build + tests,<br/>copy gate, secret scan, migration immutability, doc paths, nightly backup"] -.-> supa
 ```
@@ -313,6 +313,7 @@ the attack and asserts it fails.
 | `payments` | The money ledger (decision 0009): one row per clinic fee, late cancel, no show or refund, with Stripe ids and a status only the edge functions or admin RPCs change. On a decline, `failure_reason` is Stripe's sentence and `failure_code` its machine code (`decline_code`, else `code`: `insufficient_funds`, `expired_card`, ..., 20260926000010), both written only by the Stripe edge functions. Players read their own rows. |
 | `app_settings` | Small admin-editable strings, e.g. Tara's payment line, and the payment policy keys (`payments_enabled`, `cancel_cutoff_hours`, …). Never anything hidden. |
 | `review_links` | One row per link to Tara's review page (`web/review.html?t=<token>`, 20260921000010). The token is the credential: 24 random bytes, URL-safe, minted by `admin_create_review_link`; `revoked_at` retires a link without deleting what it collected. No client role holds anything on it. |
+| `reset_links_issued` | One row per password-reset link Tara makes for a member (decision 0017): whose account, who made it, when. Written by the `admin-reset-link` edge function as `service_role` before the link exists; no client privilege. Audit only: a reset link signs whoever opens it in as the member |
 | `review_responses` | Her answers, one jsonb blob per (link, page version), replaced on every save; `updated_at` stamped by trigger with `clock_timestamp()`. Written only by the `review-submit` edge function as `service_role`, read back by `admin_review_responses`. |
 
 Enums: `account_type`, `account_role`, `player_kind`, `clinic_audience`
@@ -512,7 +513,7 @@ local stack and are order-dependent on a fresh seed. **They do not run in
 CI**: the macOS runner has no Docker for the stack; a `fxe-ci` Supabase
 project is the ask (`docs/launch-checklist.md` §F).
 
-**Web admin**: 15 Playwright tests (`web/tests/admin.spec.mjs`) walk Tara's
+**Web admin**: 16 Playwright tests (`web/tests/admin.spec.mjs`) walk Tara's
 side against a fresh seed: sign-in and the non-admin door, prices, walk-up,
 courts, unpaid reminder, a note round-trip, cancel clinic, template archive
 and restore, Money counts, the card-payments ledger, payments off. One worker,
@@ -533,13 +534,20 @@ an ES256 provider token the mock verifies against the public key), `gone` and
 PostgREST, and the trigger delivering through pg_net with nobody calling the
 function by hand. The function is `supabase/functions/push/index.ts`.
 
+**Reset link**: `tests/reset/run.sh` against the served `admin-reset-link`
+function: signed out 401, a member 403, bad input 400, unknown player 404, a
+deleted account 409 with no audit row; the link is the reset page with a token
+hash and nothing else; one audit row naming the member and Tara; the token
+works once; the password it sets is the one that signs in afterwards. The page
+that finishes it, `web/reset.html`, is the browser suite's "reset page" test.
+
 **GitHub Actions** on every push and PR (`probes.yml`): `sql-probes`
 (pinned CLI, `db reset`, the suite), `web-browser-tests` (the same pinned
 stack, then Playwright), `stripe-pipeline` (the stack plus stripe-mock on its
-network, then `tests/stripe/run.sh`), `push-pipeline` (the stack, Deno on the runner running the mock APNs, the functions served with the push env, then `tests/push/run.sh`), `ios-changes` (did any Swift or
+network, then `tests/stripe/run.sh`), `push-pipeline` (the stack, Deno on the runner running the mock APNs, the functions served with the push env, then `tests/push/run.sh`), `reset-link` (the stack, the functions served, then `tests/reset/run.sh`), `ios-changes` (did any Swift or
 `project.yml` change? gates the next job so a docs PR does not wait on Xcode),
 `ios-build-and-test` (XcodeGen, Debug and Release builds, unit tests, app-icon
-gate, simulator chosen at run time), `copy-gate`, `secret-scan`, `hosted-smoke` (read-only: 51 hosted targets must answer a signed-out caller with 401/403/404; `scripts/hosted-smoke.sh`),
+gate, simulator chosen at run time), `copy-gate`, `secret-scan`, `hosted-smoke` (read-only: 63 hosted targets; every table, view, RPC and function must refuse a signed-out caller with 401/403, and the three functions the web admin calls from a browser must answer a preflight from the admin site with a 2xx and its origin; `scripts/hosted-smoke.sh`),
 `migration-immutability`, `ios-ui-tests` (the 13 XCUITests against a
 throwaway CI Supabase project, reset to the seed first; green with a notice
 until that project's secrets exist, see `docs/launch-checklist.md` §F, added

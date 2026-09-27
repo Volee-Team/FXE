@@ -396,6 +396,17 @@ back in front of her on round four of the review page:
 | ☐ | Tara, only what's new / Your changes from September 22 are in the app. … | The review page's heading and lede, round four | Only Tara reads it |
 | ☐ | Testing | Now a small grey link at the foot of the web admin, not a tab (Alex, 2026-09-27) | Only Alex uses it |
 
+## L. The reset link (2026-09-27, decision 0017) — awaiting Alex
+
+Only Tara sees these, on the web admin's Players tab.
+
+| ✓ | String | Where | Why |
+|---|---|---|---|
+| ☐ | Reset link | Button on each player's row | Names what it makes |
+| ☐ | Text this to them. It works once, within an hour. | Under the link | What she does with it, and the two facts that make it fail |
+| ☐ | Couldn't make a reset link. | If the function refuses or is unreachable | One sentence, says what happened |
+| ☐ | Copy / Copied | Beside the link | Chrome |
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148

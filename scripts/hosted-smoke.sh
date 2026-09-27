@@ -25,9 +25,11 @@ URL="${SUPABASE_URL:-https://amnaxvznkadkgzdxzegw.supabase.co}"
 KEY="${SUPABASE_ANON_KEY:-$(grep -o 'sb_publishable_[A-Za-z0-9_-]*' "$(dirname "$0")/../web/config.js" | head -1)}"
 [ -n "$KEY" ] || { echo "no publishable key found"; exit 2; }
 
-RELATIONS="clinics registrations players accounts player_notes clinic_templates payments devices notifications app_settings waivers waiver_acceptances card_consents review_links review_responses late_requests clinic_messages clinic_message_recipients news_posts news_reads clinics_public my_registrations my_clinic_messages my_news my_past_clinics clinics_admin templates_admin registrations_admin payments_ledger revenue_by_clinic"
+RELATIONS="clinics registrations players accounts player_notes clinic_templates payments devices notifications app_settings waivers waiver_acceptances card_consents review_links review_responses reset_links_issued late_requests clinic_messages clinic_message_recipients news_posts news_reads clinics_public my_registrations my_clinic_messages my_news my_past_clinics clinics_admin templates_admin registrations_admin payments_ledger revenue_by_clinic"
 FUNCTIONS="register_for_clinic cancel_registration leave_pool delete_my_account accept_waiver current_waiver my_waiver_accepted admin_charge_clinic admin_set_no_show place_player cancel_clinic search_players revenue_summary admin_create_review_link admin_review_responses create_my_account record_card_consent my_card_consent card_consent_text purge_expired_card_consents admin_board_report admin_board_report_clinics"
-EDGE="delete-account stripe-charge stripe-setup-intent push"
+EDGE="delete-account stripe-charge stripe-setup-intent push admin-reset-link"
+# Called from the web admin in a browser, so they need CORS (_shared/cors.ts).
+BROWSER_EDGE="review-submit stripe-charge admin-reset-link"
 
 bad=0; n=0
 check() {  # kind name code
@@ -83,5 +85,26 @@ code=$(curl -s -o /dev/null -w '%{http_code}' "$URL/rest/v1/http_request_queue?s
 check net-schema http_request_queue "$code"
 code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$URL/rest/v1/rpc/http_post" -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Profile: net" -H "Content-Type: application/json" -d '{"url":"https://example.invalid"}')
 check net-schema http_post "$code"
+# The functions the web admin calls from the browser must answer the
+# preflight with the admin site's origin, or the browser never sends the call.
+# Locally the gateway answers preflights itself, so only hosted can go red here
+# (2026-09-27: stripe-charge answered 405 with no header, so Charge clinic on
+# the web would have queued fees that never reached Stripe).
+ADMIN_ORIGIN=https://fxe-tennis-admin.vercel.app
+for e in $BROWSER_EDGE; do
+  n=$((n+1))
+  # The status matters as much as the header: hosted's gateway answers a
+  # function that does not exist with 404 AND "allow-origin: *", so a check on
+  # the header alone passes for a function that was never deployed.
+  head=$(curl -s -o /dev/null -D - -X OPTIONS "$URL/functions/v1/$e" -H "Origin: $ADMIN_ORIGIN" \
+          -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: authorization,apikey,content-type,x-client-info" | tr -d '\r')
+  status=$(echo "$head" | awk 'NR==1{print $2}')
+  allow=$(echo "$head" | awk -F': ' 'tolower($1)=="access-control-allow-origin"{print $2}')
+  if { [ "$status" = "200" ] || [ "$status" = "204" ]; } && { [ "$allow" = "$ADMIN_ORIGIN" ] || [ "$allow" = "*" ]; }; then
+    printf 'cors   %-12s %-28s allows the admin site\n' edge "$e"
+  else
+    printf 'NOCORS %-12s %-28s preflight from the admin site: http %s, allow-origin "%s" (the browser will refuse every call)\n' edge "$e" "$status" "$allow"; bad=$((bad+1))
+  fi
+done
 echo "checked $n targets, $bad open, missing or odd to a signed-out caller"
 [ "$bad" = "0" ]

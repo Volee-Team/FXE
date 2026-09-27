@@ -11,8 +11,10 @@
 // only ever looks at pending rows). Requires an admin JWT.
 
 import { getStripe, admin, callerId, json } from "../_shared/stripe.ts";
+import { withCors } from "../_shared/cors.ts";
 
-Deno.serve(async (req) => { try { return await handle(req); } catch (e) { const m = String((e as Error).message ?? e); return json({ error: m }, m === "stripe_not_configured" ? 503 : 500); } });
+// withCors: the web admin calls this from the browser (_shared/cors.ts).
+Deno.serve(withCors(async (req) => { try { return await handle(req); } catch (e) { const m = String((e as Error).message ?? e); return json({ error: m }, m === "stripe_not_configured" ? 503 : 500); } }));
 
 async function handle(req: Request): Promise<Response> {
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);

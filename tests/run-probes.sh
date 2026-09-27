@@ -31,7 +31,8 @@ STRAY=$(docker exec "$DB" psql -U postgres -d postgres -Atc "
        + (select count(*) from public.registrations, seed where registered_at > seed.t)
        + (select count(*) from public.payments, seed where created_at > seed.t)
        + (select count(*) from public.devices, seed where updated_at > seed.t)
-       + (select count(*) from public.card_consents, seed where accepted_at > seed.t)" 2>/dev/null)
+       + (select count(*) from public.card_consents, seed where accepted_at > seed.t)
+       + (select count(*) from public.reset_links_issued, seed where issued_at > seed.t)" 2>/dev/null)
 if [ -n "$STRAY" ] && [ "$STRAY" != "0" ]; then
   echo "DIRTY DATABASE: $STRAY rows were added after the seed. Failures below may be"
   echo "false. Reset first and rerun:  supabase db reset --yes"

@@ -177,65 +177,79 @@ card step with the permission box, the back-to-back 105 rule, the board
 report on Tara's web admin, and every fix since build 2. Payments stay off
 until you say go (checklist A9).
 
-## 5. Tara's review page, round three (checklist G2), about 5 minutes
+## 5. Tara's review page, round four (checklist G2), about 5 minutes
 
-The page now has 17 questions (the six still open from round two and eleven
-new ones about the board report, the 105 rule, the card box and the photo)
-plus one thing to try: running the board report.
+**Do not send the round-three link.** Tara answered round two on 2026-09-22
+and nobody had read it (decision 0016); round three would have asked her the
+same things again. Round four is only what is new since then: 15 words to
+Keep or Change, nine questions (who the pros are and what they may do, guests
+without the app, the board's 10%, the 105 rule, how members hear about the
+app, how they reach her, the waiver after deletion, a declined card, telling
+a player when she moves them), and three things to try.
 
-1. On a laptop, open https://fxe-tennis-admin.vercel.app and sign in with the
+1. Wait for the model to say round four is live (it deploys it and checks the
+   live page says version 4).
+2. On a laptop, open https://fxe-tennis-admin.vercel.app and sign in with the
    admin login.
-2. Click the grey **Testing** tab at the far right.
-3. Under **Review links**, type a label such as `Tara round 3`, click **Make
+3. Click the small grey **Testing** link at the very bottom right of the page.
+4. Under **Review links**, type a label such as `Tara round 4`, click **Make
    link**, then **Copy**.
-4. Text her the link, with something like: *"Round 3 of the app review.
-   Short questions, one line each is plenty, and your answers save as you
-   type. There's also one thing to try on your laptop: the board report."*
-5. When she says she is done: the same tab, **Responses**, **Show**. Paste
-   her answers into the chat with the model; it turns them into a decision
-   record and the changes.
+5. Text her the link, with something like: *"Your changes from last week are
+   in the app. This is only what's new: 15 words and 9 short questions. One
+   line each is plenty, and it saves as you type."*
+6. Nothing else to do: when she saves answers, GitHub opens an issue labelled
+   `tara-answers` and the next session with the model starts with it.
 
-## 6. Email that reaches members (checklist D1, D11), about 45 minutes plus DNS time
+## 6. Email that reaches members (checklist D1), about 10 minutes, free
 
-Today a member who taps Forgot password gets nothing. Verified 2026-09-27:
-hosted has no email sender of its own, and Supabase's built-in one refuses to
-deliver to anyone outside the Supabase project's team, at most 2 an hour.
-Resend is a sending service with a free plan that covers a club.
+Today a member who taps Forgot password gets nothing: Supabase's built-in
+sender delivers only to the Supabase project's own team, 2 an hour (verified
+2026-09-27 through the management API). Two things are already done so this
+is the only step left:
 
-**First decide the sending domain.** It needs DNS records added, so it must
-be a domain you or Tara can edit: fersc.com (whoever hosts it can add the
-records), or a new domain for the app (about $12 a year). A subdomain such as
-`mail.fersc.com` keeps the club's own email untouched.
+- **Tara can already reset anyone by hand**: Players tab → the member →
+  **Reset link** → Copy → text it to them. It works once, within an hour, and
+  needs no email at all (decision 0017).
+- **The reset page and the Site URL are handled** by the model (D11).
 
-1. Sign up at https://resend.com.
-2. **Domains → Add Domain**, enter the domain or subdomain. Resend shows three
-   or four DNS records.
-3. Add those records at the domain's DNS provider exactly as shown, then back
-   in Resend click **Verify**. It can take from minutes to a few hours.
-4. **API Keys → Create API Key** with sending access. Copy it. It is a
-   password: it goes only into step 5.
-5. Supabase: https://supabase.com/dashboard/project/amnaxvznkadkgzdxzegw,
-   **Authentication**, **Emails**, **SMTP Settings**. Turn on custom SMTP:
-   - Sender email: `noreply@` your domain (for example `noreply@mail.fersc.com`)
+The simplest free sender is a Gmail account made for the app. Gmail allows
+about 500 emails a day, far more than a club needs. Use a NEW account, not
+Tara's: its app password goes into Supabase, so it should be an account whose
+only job is sending the app's email.
+
+1. Make a new Gmail account for the app, for example `fxetennis.app@gmail.com`
+   (any free name). Use your phone number for its recovery. Save the password
+   in LastPass.
+2. Signed in to that account, open https://myaccount.google.com/security and
+   turn on **2-Step Verification** (Google requires it for app passwords).
+3. Open https://myaccount.google.com/apppasswords, type the name
+   `FXE Supabase`, click **Create**. Google shows a 16-letter password once.
+   Copy it. It is a password: it goes only into step 4, never into a chat.
+4. Supabase: https://supabase.com/dashboard/project/amnaxvznkadkgzdxzegw →
+   **Authentication** → **Emails** → **SMTP Settings** → turn on
+   **Enable custom SMTP**:
+   - Sender email: the new Gmail address
    - Sender name: `FXE Tennis`
-   - Host: `smtp.resend.com`
+   - Host: `smtp.gmail.com`
    - Port: `465`
-   - Username: `resend`
-   - Password: the Resend API key
+   - Username: the new Gmail address
+   - Password: the 16-letter app password (paste it without the spaces)
    Save.
-6. **Authentication → Rate Limits**: raise "emails sent per hour" from 2 to
-   about 30.
-7. **Site URL (checklist D11)**: **Authentication → URL Configuration**. Set
-   Site URL to `https://fxe-tennis-admin.vercel.app` (today it is
-   `http://localhost:3000`). Leave the redirect URL for `reset.html` in
-   place. Save.
-8. Tell the model **"email is set up"**. It re-reads the settings through the
-   management API, then asks you for one real test: Forgot password with your
-   own email, the email arrives from FXE Tennis, the link opens the reset
-   page, the new password signs in.
+5. Same dashboard → **Authentication** → **Rate Limits** → "Rate limit for
+   sending emails": change 2 to `30`. Save.
+6. Tell the model **"email is set up"**. It re-reads the settings through the
+   management API (it never sees the password), switches the reset email to
+   the scanner-proof link, and asks you for one real test: Forgot password
+   with your own email, the email arrives from FXE Tennis, the link opens the
+   reset page, the new password signs you in.
 
-The reset email's wording is Supabase's default today. Tara may want her own
-words later; that is a question for her, not a blocker.
+Later, if the club wants email from its own domain (`noreply@fersc.com`
+rather than a Gmail address): Resend's free plan, host `smtp.resend.com`,
+port 465, username `resend`, password a Resend API key, after adding the DNS
+records Resend shows to the domain. Not needed for launch.
+
+The reset email's wording is Supabase's default. Tara may want her own words
+later; that is a question for her, not a blocker.
 
 ## 7. Kat's three style calls (checklist G3), one message
 
@@ -279,6 +293,8 @@ Dependabot alerts are already on (checked 2026-09-27), so nothing to do there.
 
 ## 9. From Tara (checklist G5, D5), a text is enough
 
+- **How many courts the club has** (checklist D15): one number; the app
+  allows 1 to 5 today.
 - **The logo file** she mentioned ("not that one"), any format, the largest
   she has.
 - **The original court photo** from her phone (the one in the message is a
@@ -290,11 +306,16 @@ Dependabot alerts are already on (checked 2026-09-27), so nothing to do there.
 
 | Checklist | Decision | When | The model's recommendation |
 |---|---|---|---|
-| A9 | Switch payments on | After build 3 is on testers' phones | Go as soon as build 3 is out, then run the payment test the same day |
+| A9 | Switch payments on | After the next build is on testers' phones | Go for testers as soon as the build is out, then run the payment test the same day; not for everyone until live keys (A11) |
 | G1 | Payments and push in the MVP or not (with Kat and Tara) | This week | Payments in; push in only if Apple approves the LLC in time, otherwise launch with in-app notifications |
-| C11 | Fallback if the LLC is not approved in time: external TestFlight on John's account with a public link | By 2026-10-09 | Yes: prepare it (needs the privacy URL), use it only if needed |
+| C11 | Fallback if the LLC is not approved in time: external TestFlight on John's account with a public link | This week (was 10-09; see below) | Yes: prepare it (needs the privacy URL), use it only if needed |
 | C12 | The LLC app's bundle id (the current one is locked to John's account) | Before the first LLC build | Accept a new id such as `com.fxetennis.club`; testers reinstall once |
 | D3 | Supabase Pro ($25 a month): no pause after a quiet week, point-in-time recovery | Before real members | Yes, from launch week |
+| A11 | Cut-off for real money at the party: if Tara's Stripe live activation (A7) is not done by 2026-10-14, payments stay off on 10-16 | With G1 | Yes, 10-14. And never switch "card required" on for everyone while the keys are sandbox: a real card is declined in test mode |
+| C3 | Push with **John's** APNs key now: every tester build is signed by his team, so the LLC's key could never reach those phones | With G1 | Yes if push is in: ask John for a key (developer account, Keys, +, Apple Push Notifications service) |
+| C11 (again) | Upload one build to external beta review **this week**, no testers invited, so Apple's review is done before it matters | This week | Yes |
+| C13 | Apple's reviewer account: one real account called App Review, made through the app's sign-up with an address you control | Before the first external or App Store submission | Yes; the review notes give Stripe's 4242 test card while keys are sandbox |
+| D14 | Raise the sign-in rate limit from 30 to about 300 per 5 minutes per IP: the party shares one Wi-Fi address | Before the party | Say go and the model sets it through the management API |
 
 ## 11. Business
 
