@@ -338,6 +338,12 @@ say it's an emergency to cancel."* These are the gaps that remain.
 **66. A player who added a card before the permission box existed (nobody today; cards could not be added until Stripe is connected) has no permission on record. Charge them anyway, or ask them to tick the box first?**
 *Default: ask first; nobody is in this position yet. Status: open, asked 2026-09-26.*
 
+**67. Someone is refunded in September for an August clinic, after August's report went to the board. Should the refund come off August (the report you already sent changes) or off September?**
+*Default today: it comes off August, the month of the clinic, and the report prints the time it was run so a re-run can be explained. Status: open, asked 2026-09-26.*
+
+**68. Do late-cancel and no-show fees count toward the board's 10%?**
+*Default: yes, they are program income; the report shows them under "Collected by card" but not under "Fees at clinic prices". Status: open, asked 2026-09-26.*
+
 ### How 52 to 57 are being sent
 
 Round two of the review page (2026-09-21, later): the Words tab now shows her
