@@ -9,6 +9,12 @@ Priority: 🔴 blocks a person · 🟡 should fix · 🟢 whenever
 
 | | Item | Found | Note |
 |---|---|---|---|
+| 🟡 | **The phone's Manage list is not bounded to this week** (MVP audit item 14, iOS half) | 2026-09-27 | The web admin got the service-week bound and Show earlier; `AdminRepository.allClinics` still reads every clinic. Same rule, plus an Earlier escape |
+| 🟢 | **No two-session race probe for Tara's Remove against Charge clinic** | 2026-09-27 | `cancel_registration` now locks the row (fix-sql, after the sql-auditor), but only a reading shows it; model a script on `back_to_back_105_race.sh` |
+| 🟢 | **`admin_charge_registration` checks neither `payments_enabled_at` nor paid-by-hand** | 2026-09-27 | No client calls it today (Charge clinic does both); gate it before any per-row charge button returns |
+| 🟢 | **In the sandbox, a fully refunded test fee can be charged again for the same kind** | 2026-09-27 | Live mode refuses it through the unique index; only matters for the sandbox run (A2) behaving like live |
+| 🟢 | **Brand fonts change size only at the next launch after Larger Text changes** | 2026-09-27 | Seen on the simulator: system text fields resize live, the Brand styles on relaunch. Most people set it once; observe `UIContentSizeCategory.didChangeNotification` if anyone notices |
+| 🟢 | **A push tapped with the app in the background was not observed on the simulator** | 2026-09-27 | Injected touches do not reach Notification Center there. The foreground banner tap (same handler) opened the clinic; check on a phone with build 4 (checklist H8) |
 | 🟢 | **Chargebacks recorded in the ledger (charge.dispute.* events)** (MVP audit, after launch) | 2026-09-27 | Disputes are rare at one club. Stripe emails them and shows them in the dashboard. The only effect is that the board report overstates by the disputed amount until it is fixed. |
 | 🟢 | **Store the charge terms text on each card-consent row** (MVP audit, after launch) | 2026-09-27 | Each consent row already stores app_version, so the exact terms a member saw can be recovered from git for that version if a dispute ever needs them. |
 | 🟢 | **Change email in the app, and a 'correct email' action for Tara** (MVP audit, after launch) | 2026-09-27 | Decision 0011 accepted the mistyped-email risk, and the operator can fix a rare case in the dashboard. The resetSent bug is fixed in the reset item now. |

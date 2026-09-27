@@ -66,7 +66,7 @@ row below; this list adds nothing of its own.
 | A6 | Payment history for players: the Past section of My Clinics; Stripe email receipts not decided | [me] | **LATER**: Past shipped 2026-09-21; receipts after launch |
 | A7 | Stripe live mode: activate with Tara's business and bank details, typed into Stripe's own form only; move the account's ownership to Tara (Settings, Team, Transfer ownership) | [Alex]+[Tara] | **OPEN**: after A2 passes |
 | A8 | Webhook destination for hosted, five events | [Alex] | **DONE 2026-09-27**, with A1 |
-| A9 | Switch payments on (`payments_enabled` true, by migration). From that moment nobody registers without a saved card | [me] | **DECIDE** [Alex]: say go once the next build is on the testers' phones. **Not for everyone while the keys are sandbox**: a real card is declined in test mode, so a member at the party could not register (MVP audit 2026-09-27) |
+| A9 | Switch payments on (`payments_enabled` true **and `payments_enabled_at` = now(), in the same migration**, decision 0018: nothing ends-before that moment is ever owed or charged). From that moment nobody registers without a saved card | [me] | **DECIDE** [Alex]: say go once build 4 is on the testers' phones. **Not for everyone while the keys are sandbox**: a real card is declined in test mode (MVP audit 2026-09-27) |
 | A10 | Live keys: a restricted key with only the permissions our code uses, a live webhook, the three secrets swapped, and at the same moment the cutover that forgets every sandbox card so everyone adds a real one (built on branch `stripe-robustness`, MVP audit 2026-09-27) | [me]+[Alex] | **OPEN if payments are in at the party**, after A7; otherwise LATER |
 | A11 | **Cut-off for real money at the party**: if A7 is not done by **2026-10-14**, payments stay switched off on 2026-10-16 and Tara charges the way she does today | [Alex] | **DECIDE** [Alex] with G1 |
 
@@ -87,9 +87,9 @@ What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision
 | C5 | Delete my account in the app, history kept (guideline 5.1.1(v)) | [me] | **DONE 2026-09-21**; `delete-account` deployed the same day |
 | C6 | Privacy policy at a public URL | [Alex] | **OPEN**: the draft is Volee's with eight listed changes to approve and a contact email to fill (`docs/for-alex.md` §2); the model then publishes it and links it from Profile |
 | C7 | App Store listing: name, subtitle, description in Tara's words, screenshots, age rating, support URL, review notes with a test account | [Alex]+[me] | **BLOCKED** on C1, or on C11's path |
-| C8 | TestFlight build 3 from `main` | [John] | **OPEN**: `main` verified 2026-09-27 by a Release build (build number 3, the camera sentence, the encryption flag, the hosted backend and no local address in the binary); John archives per `docs/testflight.md` (`docs/for-alex.md` §4) |
+| C8 | TestFlight **build 4** from `main` (build 3 superseded: the MVP-audit round is in 4) | [John] | **OPEN**: after the `mvp-fixes` PR merges; `project.yml` says build 4; John archives per `docs/testflight.md` (`docs/for-alex.md` §4) |
 | C9 | Real-device pass: the two simulator flakes checked on an iPhone | [Alex]/[me] | **BLOCKED** on C8 |
-| C10 | An annotated git tag at every TestFlight upload | [me]/[John] | **OPEN**: `v0.1.0-tf2` exists; tag `v0.1.0-tf3` when build 3 uploads |
+| C10 | An annotated git tag at every TestFlight upload | [me]/[John] | **OPEN**: `v0.1.0-tf2` exists; tag `v0.1.0-tf4` when build 4 uploads |
 | C11 | If C1 is late for 2026-10-16: external TestFlight on John's account with a public link (needs C6 and Apple's beta review, about a day) | [Alex] | **DECIDE** [Alex] **this week**, not 10-09: upload one build to external beta review early with no testers invited, so Apple's review is not on the critical path (MVP audit 2026-09-27) |
 | C12 | Bundle id for the LLC's app. `com.fxetennis.app` is tied to John's account now: Apple transfers only apps with at least one App Store release, and a TestFlight upload locks the id to that account. The LLC's app will need a new id, and testers install it fresh (their accounts carry over; they live on our server) | [Alex] | **DECIDE** [Alex] before the first LLC build |
 | C13 | How Apple's reviewer signs in: one real account called App Review, made through the app's own sign-up with an address Alex controls, left out of the board report; while keys are sandbox the review notes give Stripe's 4242 test card | [Alex] | **DECIDE** [Alex] before the first external or App Store submission |
@@ -109,9 +109,9 @@ What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision
 | D8 | Drop the dead `clinics.price_cents` column | [me] | **LATER** |
 | D9 | Data export for Tara | [me] | **LATER** (v1.1) |
 | D10 | Encrypted nightly backups | [Alex] then [me] | **DONE 2026-09-22** (age key; first encrypted run decrypted and checked) |
-| D11 | Hosted "Site URL" was `http://localhost:3000` and the reset email used the one-time link that email scanners spend; both move to the reset page's token-hash link (decision 0017) | [me] | **OPEN**: set through the management API once the new reset page is live on Vercel; the email template once D1 is done |
+| D11 | Hosted "Site URL" was `http://localhost:3000`, and the reset email used the one-time link that email scanners spend (decision 0017) | [me] | **OPEN**: Site URL set 2026-09-27 through the management API and read back (`https://fxe-tennis-admin.vercel.app`); the template change is refused on the free tier until custom SMTP exists ("Email template modification is not available for free tier projects using the default email provider"), so it follows D1 |
 | D12 | Nightly purge of card consents 90 days after an account is deleted | [me] | **DONE 2026-09-27**: the `retention` job ran on hosted, "Card consents purged ...: 0" |
-| D13 | **Tara can reset any member by hand**: Players tab → Reset link → Copy → text it. One-time, within an hour, no email, every link audited (`admin-reset-link`, decision 0017) | [me] | **OPEN**: built, 19-check harness and a browser test green locally 2026-09-27; live once the PR merges, the migration is pushed and the function deployed |
+| D13 | **Tara can reset any member by hand**: Players tab → Reset link → Copy → text it. One-time, within an hour, no email, every link audited (`admin-reset-link`, decision 0017) | [me] | **DONE 2026-09-27**: PR #73 merged; `supabase db push` applied 20260927000001; `admin-reset-link` deployed; `hosted-smoke.sh` 63 targets, 0 open; live page checked from outside |
 | D14 | Sign-in rate limit on hosted: 30 per 5 minutes per IP, and the whole party shares the club Wi-Fi's one address. Raise to about 300 | [Alex] | **DECIDE** [Alex]: dashboard, Authentication, Rate Limits, or say go and the model sets it through the management API and reads it back |
 | D15 | Courts are capped at 1 to 5 in the database, the web and the phone. How many courts does the club have? | [Alex] | **OPEN**: one line from Alex; more than 5 is one migration |
 
@@ -123,11 +123,11 @@ observer.
 
 | Layer | Runs where | Count 2026-09-27 | Gap |
 |---|---|---|---|
-| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 649 checks, 28 probes | none known |
-| Stripe pipeline against stripe-mock | every PR | 34 checks | real Stripe behaviour waits on A2 |
+| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 785 checks, 32 probes, plus three race probes | none known |
+| Stripe pipeline against stripe-mock | every PR | 73 checks | real Stripe behaviour waits on A2 |
 | Push pipeline against a mock APNs | every PR | 48 checks | real APNs waits on C3 |
-| Web admin browser tests (Playwright, real sign-in) | every PR | 16 | a cold-start flake after a local reset (backlog) |
-| Swift unit tests (pure logic) | every PR | 33 | fine |
+| Web admin browser tests (Playwright, real sign-in) | every PR | 27 | a cold-start flake after a local reset (backlog) |
+| Swift unit tests (pure logic) | every PR | 120 | fine |
 | Hosted signed-out smoke (`scripts/hosted-smoke.sh`) | every PR, read-only against production | 63 targets, including a browser preflight to each function the web admin calls | only the signed-out side |
 | XCUITests, player and admin flows | **local only** (section F) | 13 | run on a laptop before every TestFlight build |
 | Copy gate, secret scan (now Stripe keys too), migration immutability, icon gate, doc checks | every PR | – | none |
@@ -169,12 +169,14 @@ launch" items are in `docs/backlog.md`.
 
 | ID | Item | Owner | Status |
 |---|---|---|---|
-| H1 | Money integrity: one fee per player per clinic; Tara records a late cancellation; Money shows what was charged, declined and not charged yet; her own removal no longer shows as the player canceling (branch `money-integrity`) | [me] | **OPEN**: building |
-| H2 | Stripe robustness: livemode on every payment and sandbox money kept out of the reports; the cutover for A10; a late or lost webhook no longer strands a charge or a new member; deleting an account deletes the Stripe customer; the waiver survives a hard delete (branch `stripe-robustness`) | [me] | **OPEN**: building |
-| H3 | The app when things go wrong: a way out of the waiver sheet; reload on return from the background and Register at 8:00 without a pull; bad signal shown as bad signal; the rate-limit line; Larger Text honoured (branch `ios-resilience`) | [me] | **OPEN**: building |
-| H4 | Web admin: This week bounded to this week (plus ended, uncharged clinics), no silent loss past 1000 rows, supabase-js vendored at an exact version (branch `web-admin-bounds`) | [me] | **OPEN**: building |
-| H5 | Push, the app's half: banner while open, a tap opens the clinic, the badge clears (branch `push-client`) | [me] | **OPEN**: building; useful only once C3 is decided |
-| H6 | Password reset without email (D13) and the scanner-proof reset page (branch `admin-reset-link`) | [me] | **OPEN**: built and green locally; push to hosted, then merge |
+| H1 | Money integrity: one fee per player per clinic; Tara records a late cancellation; Money shows what was charged, declined and not charged yet; her own removal no longer shows as the player canceling (branch `money-integrity`) | [me] | **OPEN**: built, adversarially verified, findings fixed on `fix-sql` / `fix-ios`, merged into `mvp-fixes`; merges to `main` with the PR |
+| H2 | Stripe robustness: livemode on every payment and sandbox money kept out of the reports; the cutover for A10; a late or lost webhook no longer strands a charge or a new member; deleting an account deletes the Stripe customer; the waiver survives a hard delete (branch `stripe-robustness`) | [me] | **OPEN**: built, adversarially verified, findings fixed on `fix-sql` / `fix-ios`, merged into `mvp-fixes`; merges to `main` with the PR |
+| H3 | The app when things go wrong: a way out of the waiver sheet; reload on return from the background and Register at 8:00 without a pull; bad signal shown as bad signal; the rate-limit line; Larger Text honoured (branch `ios-resilience`) | [me] | **OPEN**: built, adversarially verified, findings fixed on `fix-sql` / `fix-ios`, merged into `mvp-fixes`; merges to `main` with the PR |
+| H4 | Web admin: This week bounded to this week (plus ended, uncharged clinics), no silent loss past 1000 rows, supabase-js vendored at an exact version (branch `web-admin-bounds`) | [me] | **OPEN**: built, adversarially verified, findings fixed on `fix-sql` / `fix-ios`, merged into `mvp-fixes`; merges to `main` with the PR |
+| H5 | Push, the app's half: banner while open, a tap opens the clinic, the badge clears (branch `push-client`) | [me] | **OPEN**: built, adversarially verified, findings fixed on `fix-sql` / `fix-ios`, merged into `mvp-fixes`; merges to `main` with the PR |
+| H6 | Password reset without email (D13) and the scanner-proof reset page (branch `admin-reset-link`) | [me] | **DONE 2026-09-27** (PR #73) |
+| H7 | **Payouts on the Money tab** (the balance, the next deposit and its date; Tara's "when will $ be in my account") and dispute alerts in Action Needed, so Tara never needs the Stripe dashboard day to day | [me] | **OPEN**: proposed to Alex 2026-09-27; about half a day |
+| H8 | Walk on a real phone what the simulator could not: a push tapped with the app in the background, the Home spinner on a slow connection | [Alex]/[me] | **OPEN**: with build 4 |
 
 ## F. The CI Supabase project (Alex asked 2026-09-12; corrected 2026-09-13; decided 2026-09-18)
 
