@@ -11,7 +11,14 @@
 //  The text is hers, served by current_waiver(); nothing on this screen is
 //  ours except the field labels and the button. Shown once after sign-up,
 //  and again whenever register_for_clinic answers waiver_required (a new
-//  version, or an account from before the waiver existed).
+//  version, or an account from before the waiver existed): ClinicDetailModel
+//  hands that refusal to SessionStore.reopen(.waiver), which is what opens
+//  this sheet. Until 2026-09-27 nothing did, and the promise in this comment
+//  was untrue.
+//
+//  The sheet cannot be swiped away, so it carries its own exits: Try again
+//  when the text fails to load, and Sign out and Delete my account at the
+//  foot (AccountExitFooter).
 //
 
 import SwiftUI
@@ -23,6 +30,10 @@ struct WaiverView: View {
     @State private var agreed = false
     @State private var legalName = ""
     @State private var sending = false
+    @State private var loading = false
+    /// The text could not be loaded; shown with Try again.
+    @State private var loadError: String?
+    /// The signature could not be saved; shown under the name field.
     @State private var error: String?
 
     private var trimmedName: String { legalName.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -49,13 +60,33 @@ struct WaiverView: View {
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                         signature(w)
-                    } else if let error {
-                        Text(error)
+                    } else if let loadError, !loading {
+                        // A failed load used to end here, with no button, on a
+                        // sheet that cannot be swiped away (MVP audit item 7).
+                        Text(loadError)
                             .font(Brand.Typography.body)
                             .foregroundStyle(Brand.Status.canceled.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityIdentifier("waiver.loadError")
+                        Button {
+                            Task { await load() }
+                        } label: {
+                            Text("Try again")
+                                .font(Brand.Typography.button)
+                                .frame(maxWidth: .infinity)
+                                .frame(minHeight: Brand.Layout.comfortableTapTarget)
+                                .foregroundStyle(Brand.textOnNavy)
+                                .background(Brand.navy, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("waiver.retry")
                     } else {
                         ProgressView().frame(maxWidth: .infinity)
                     }
+
+                    // The way off this sheet that is not signing: whatever
+                    // state the text is in, including a load that failed.
+                    AccountExitFooter(signOutID: "waiver.signOut", deleteID: "waiver.delete")
                 }
                 .padding(Brand.Spacing.pageMargin)
             }
@@ -128,9 +159,20 @@ struct WaiverView: View {
         .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
     }
 
+    /// No signal says so in the approved line; anything else, or no published
+    /// waiver at all (which used to spin forever), says the waiver did not load.
     private func load() async {
-        do { waiver = try await ProfileRepository.currentWaiver() }
-        catch { self.error = "Couldn't load the waiver." }
+        loading = true
+        defer { loading = false }
+        loadError = nil
+        do {
+            waiver = try await ProfileRepository.currentWaiver()
+            if waiver == nil { loadError = "Couldn't load the waiver." }
+        } catch {
+            let failure = RequestFailure(error)
+            guard failure != .cancelled else { return }
+            loadError = failure.line ?? "Couldn't load the waiver."
+        }
     }
 
     private func sign(_ w: Waiver) async {
@@ -143,7 +185,7 @@ struct WaiverView: View {
         } catch {
             self.error = String(describing: error).contains("legal_name_required")
                 ? "Type your first and last name."
-                : "Couldn't save your signature."
+                : RequestFailure(error).line ?? "Couldn't save your signature."
         }
     }
 }
