@@ -56,9 +56,15 @@ targets:
         ENABLE_USER_SCRIPT_SANDBOXING: YES
         INFOPLIST_KEY_CFBundleDisplayName: "FXE Tennis"
         # Apple rejected TestFlight build 1 (ITMS-90683, 2026-09-21): a dependency
-        # references the camera API, so the purpose string is required even though
-        # the app never opens the camera.
-        INFOPLIST_KEY_NSCameraUsageDescription: "FXE Tennis does not use the camera."
+        # references the camera API, so the purpose string is required. The
+        # dependency is Stripe's card sheet, which offers "Scan card" through
+        # the camera (PaymentSheet.Configuration.opensCardScannerAutomatically,
+        # 2026-09-27), so the camera IS used and the sentence iOS shows when a
+        # player taps Scan must say what for; "does not use the camera" would
+        # be shown at exactly that moment and is the kind of purpose string
+        # App Review rejects (guideline 5.1.1). Chrome, awaiting Alex's tick
+        # (docs/copy-review.md §J).
+        INFOPLIST_KEY_NSCameraUsageDescription: "Scan your card instead of typing the number."
         INFOPLIST_KEY_NSPhotoLibraryUsageDescription: "FXE Tennis does not use your photo library."
         # Only standard HTTPS: skips the export-compliance question on every upload.
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
