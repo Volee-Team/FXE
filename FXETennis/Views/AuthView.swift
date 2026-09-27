@@ -45,10 +45,15 @@ struct AuthView: View {
 
                 // The form sits on cream, lifted slightly into the banner so the
                 // two planes overlap rather than sitting in separate boxes.
+                // In a scroll view that only scrolls when the form does not fit:
+                // at the largest Larger Text sizes "Forgot password?" ran off the
+                // bottom of the screen (seen on the simulator, 2026-09-27).
+                ScrollView {
                 VStack(spacing: Brand.Spacing.lg) {
                     // Capped so the form sits just under the banner instead of
                     // floating in the middle of an empty field of cream.
-                    Spacer(minLength: 0).frame(maxHeight: Brand.Spacing.xl)
+                    // Fixed, not a Spacer: inside the ScrollView a Spacer collapses to 0.
+                    Color.clear.frame(height: Brand.Spacing.xl)
                     VStack(spacing: Brand.Spacing.sm) {
                         TextField("Email", text: $email)
                             .accessibilityIdentifier("auth.email")
@@ -147,6 +152,9 @@ struct AuthView: View {
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, Brand.Spacing.pageMargin)
+                }
+                .scrollBounceBehavior(.basedOnSize)
+                .scrollDismissesKeyboard(.interactively)
             }
             .ignoresSafeArea(edges: .top)
         }
