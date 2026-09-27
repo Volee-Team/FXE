@@ -3,6 +3,7 @@ ACTION NEEDED
 About this clinic
 Accept
 Action Needed
+Add a card
 Add a player
 Add your first and last name.
 Add your name, phone number, and tennis rating. Please answer the membership question to continue
