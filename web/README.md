@@ -45,7 +45,7 @@ get committed aimed at the wrong project. Sign in as `tara@fxe.test` /
 
 ## Test it
 
-22 Playwright tests (`cat web/tests/*.spec.mjs | grep -cE '^\s*test\('`,
+27 Playwright tests (`cat web/tests/*.spec.mjs | grep -cE '^\s*test\('`,
 2026-09-27) walk this page the way Tara does, against the LOCAL stack on a
 fresh seed. They are the only automated check on the web admin,
 so they run in CI on every push (`web-browser-tests` in `probes.yml`).

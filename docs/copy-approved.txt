@@ -29,6 +29,7 @@ Cancel the invitation to \(entry.displayName)
 Canceled inside ${cutoffHours} hours
 Card payments
 Charge clinic
+Check this charge in Stripe.
 Checking your reset link…
 Children's privacy
 Choose a new password
@@ -50,6 +51,7 @@ Decline
 Declined
 Delete my account
 Description (players see this under the “?”)
+Did not go through
 Disclosure of your information
 Done
 Download CSV
@@ -186,6 +188,8 @@ Tara has your message.
 Tara, only what's new
 Text this to them. It works once, within an hour.
 That account is not an administrator.
+That charge is no longer held.
+That clinic ended before card payments were on.
 That clinic is already canceled.
 That clinic is canceled.
 That clinic is full now.
@@ -214,7 +218,7 @@ To
 To contact you: by notification in the app, email, telephone, or other equivalent forms of electronic communication, about clinics and the Services.
 To manage your requests: to attend to and manage your requests to us. Messages sent through the Services are stored on our servers.
 To provide and maintain our Services, including to monitor the usage of our Services.
-Too many attempts: wait a minute and try again.
+Too many attempts. Try again in a minute.
 Try again
 Turn on notifications
 Type at least two letters of a name.
@@ -232,6 +236,7 @@ We respond to subpoenas, court orders, or legal processes, or to establish or ex
 We retain your personal information only as long as necessary to fulfill the purposes outlined in this Policy unless a longer retention period is required or permitted by law. You can delete your account from inside the app. When you do, your name, email address, phone number, note to your coach and card summary are removed; the record of clinics you attended and payments you made is kept, without your name, so that the club's records stay accurate. We will also retain and use personal information as necessary to comply with legal obligations, resolve disputes, and enforce our agreements.
 We transfer personal information about you if FXE Tennis or its assets are acquired by or merged with another company.
 We use your personal information to provide and improve the Services. By using the Services, you agree to the collection and use of information in accordance with this Privacy Policy. FXE Tennis is committed to safeguarding the privacy of our users. We do not sell your personal information. This Privacy Policy outlines how we collect, use, and protect the information you provide to us.
+Went through
 What do the ratings mean?
 What happened? Anything odd?
 What is 105?

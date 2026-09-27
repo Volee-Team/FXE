@@ -106,6 +106,11 @@ declare
   p1 uuid; p2 uuid; p5 uuid; p9 uuid;
   s record; v text; n int; n2 int; x text; per record; bad text;
 begin
+  -- Card payments were switched on before every clinic below (20260927300001:
+  -- only clinics ending at or after payments_enabled_at owe anything).
+  insert into public.app_settings (key, value)
+  values ('payments_enabled_at', (timestamp '2026-01-01 00:00' at time zone ny)::text)
+  on conflict (key) do update set value = excluded.value;
   -- ------------------------------------------------------------ clinics
   insert into public.clinics (name, audience, category, description, starts_at, ends_at,
       member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)

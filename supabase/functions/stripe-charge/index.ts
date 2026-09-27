@@ -47,7 +47,7 @@ async function handle(req: Request): Promise<Response> {
 
   const { data: rows, error } = await admin
     .from("payments")
-    .select("id, kind, amount_cents, currency, account_id, registration_id, refunds_payment_id, created_at")
+    .select("id, kind, amount_cents, currency, account_id, registration_id, refunds_payment_id, created_at, first_attempted_at")
     .eq("status", "pending")
     .order("created_at")
     .limit(25);
@@ -55,9 +55,25 @@ async function handle(req: Request): Promise<Response> {
 
   const results: Record<string, string> = {};
   for (const row of rows ?? []) {
-    // Claim it first. If another invocation claimed it, skip.
+    // A row that went back to pending after an attempt (a dropped connection)
+    // is only safe to repeat while Stripe still remembers its idempotency
+    // key. Past the window, before any Stripe call, it is held for a person
+    // (20260927300003, S1). A row never attempted has no key yet and stays
+    // sendable however old it is.
+    const firstAttempt = row.first_attempted_at ? Date.parse(row.first_attempted_at) : null;
+    if (firstAttempt !== null && (Date.now() - firstAttempt) / 3_600_000 >= RETRY_WINDOW_HOURS) {
+      const { data: held } = await admin.from("payments")
+        .update({ status: "processing", failure_reason: "retry_window_passed" })
+        .eq("id", row.id).eq("status", "pending").select("id");
+      if (held && held.length > 0) results[row.id] = "held";
+      continue;
+    }
+    // Claim it first. If another invocation claimed it, skip. The first
+    // claim stamps first_attempted_at; a later claim keeps the first stamp.
+    const attemptedAt = row.first_attempted_at ?? new Date().toISOString();
     const { data: claimed } = await admin.from("payments")
-      .update({ status: "processing" }).eq("id", row.id).eq("status", "pending").select("id");
+      .update({ status: "processing", first_attempted_at: attemptedAt })
+      .eq("id", row.id).eq("status", "pending").select("id");
     if (!claimed || claimed.length === 0) continue;
 
     try {
@@ -124,7 +140,8 @@ async function handle(req: Request): Promise<Response> {
         results[row.id] = intent.status;
       }
     } catch (e) {
-      const ageHours = (Date.now() - Date.parse(row.created_at)) / 3_600_000;
+      // Measured from the first attempt, when the key was first sent.
+      const ageHours = (Date.now() - Date.parse(attemptedAt)) / 3_600_000;
       const outcome = classifyChargeError(e, ageHours);
       // Every write below is conditional on 'processing': if the webhook
       // recorded an outcome meanwhile, that outcome stands (hard rule 3).
@@ -156,6 +173,8 @@ async function handle(req: Request): Promise<Response> {
 // answers a repeat with the first result). Past it, it is held for a person
 // with retry_window_passed, because a retry could then charge twice. A row
 // already held (failure_reason set) is left alone.
+// The window runs from first_attempted_at (20260927300003); a row claimed
+// before that column existed has none, and falls back to created_at.
 async function sweepStuck() {
   const stuckBefore = new Date(Date.now() - STUCK_AFTER_MS).toISOString();
   const windowStart = new Date(Date.now() - RETRY_WINDOW_HOURS * 3_600_000).toISOString();
@@ -164,11 +183,13 @@ async function sweepStuck() {
     await admin.from("payments").update({ status: "pending" })
       .eq("status", "processing").is(idColumn, null).is("failure_reason", null)
       .filter("kind", kindOp, "refund")
-      .lt("updated_at", stuckBefore).gt("created_at", windowStart);
+      .lt("updated_at", stuckBefore)
+      .or(`first_attempted_at.gt."${windowStart}",and(first_attempted_at.is.null,created_at.gt."${windowStart}")`);
     await admin.from("payments").update({ failure_reason: "retry_window_passed" })
       .eq("status", "processing").is(idColumn, null).is("failure_reason", null)
       .filter("kind", kindOp, "refund")
-      .lt("updated_at", stuckBefore).lte("created_at", windowStart);
+      .lt("updated_at", stuckBefore)
+      .or(`first_attempted_at.lte."${windowStart}",and(first_attempted_at.is.null,created_at.lte."${windowStart}")`);
   }
 }
 

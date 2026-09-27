@@ -136,6 +136,7 @@ check "a player cannot run stripe-charge" "not_authorized" "$(fn stripe-charge "
 out=$(fn stripe-charge "$TARA_JWT" '{}')
 check "stripe-charge processed the row" "1" "$(echo "$out" | field "['processed']" | grep -c "$PAY")"
 check "row is processing with a PaymentIntent id" "processing pi_" "$(sql "select status||' '||left(stripe_payment_intent_id,3) from public.payments where id='$PAY'")"
+check "the first claim stamps first_attempted_at" "t" "$(sql "select first_attempted_at is not null from public.payments where id='$PAY'")"
 # 20260927200001: Stripe's own livemode flag, which stripe-mock always answers false.
 check "stripe-charge stores Stripe's livemode flag" "false" "$(sql "select coalesce(livemode::text,'NULL') from public.payments where id='$PAY'")"
 check "a second stripe-charge finds nothing pending" "0" "$(fn stripe-charge "$TARA_JWT" '{}' | field "['processed']" | grep -c "$PAY")"
@@ -251,6 +252,20 @@ PAY_S4=$(sql "with i as (insert into public.payments (registration_id, account_i
 fn stripe-charge "$TARA_JWT" '{}' >/dev/null
 check "a stuck refund is retried as the same row" "processing re_" "$(sql "select status||' '||coalesce(left(stripe_refund_id,3),'NULL') from public.payments where id='$PAY_S4'")"
 check "a charge claimed moments ago is left to its call" "processing NULL NULL" "$(sql "select status||' '||coalesce(stripe_payment_intent_id,'NULL')||' '||coalesce(failure_reason,'NULL') from public.payments where id='$PAY_S3'")"
+
+# ---- 9b. A row that went back to pending after an attempt (section 10's
+#          dropped connection) is repeated under the same key only while
+#          Stripe remembers that key (20260927300003, S1). The main loop used
+#          to pick up any pending row with no age test at all, so a retry a
+#          day later went out under a key Stripe had forgotten. Past the
+#          window it is held before any Stripe call. A row never attempted
+#          has no key yet: sent however old it is.
+REG_R1=$(reg "$CLINIC2" "$PRIYA_P" 2300 false 60); REG_R2=$(reg "$CLINIC4" "$PRIYA_P" 2300 false 60); REGS="$REGS,'$REG_R1','$REG_R2'"
+PAY_R1=$(sql "with i as (insert into public.payments (registration_id, account_id, kind, amount_cents, status, created_at, updated_at, first_attempted_at) values ('$REG_R1','$PRIYA','clinic_fee',2300,'pending', now() - interval '25 hours', now() - interval '10 minutes', now() - interval '25 hours') returning id) select id from i")
+PAY_R2=$(sql "with i as (insert into public.payments (registration_id, account_id, kind, amount_cents, status, created_at, updated_at) values ('$REG_R2','$PRIYA','clinic_fee',2300,'pending', now() - interval '30 hours', now() - interval '30 hours') returning id) select id from i")
+fn stripe-charge "$TARA_JWT" '{}' >/dev/null
+check "a pending retry past the key's lifetime is held, never re-sent" "processing retry_window_passed NULL" "$(sql "select status||' '||coalesce(failure_reason,'NULL')||' '||coalesce(stripe_payment_intent_id,'NULL') from public.payments where id='$PAY_R1'")"
+check "an old row never attempted is still sent, and stamped" "processing pi_ true" "$(sql "select status||' '||coalesce(left(stripe_payment_intent_id,3),'NULL')||' '||(first_attempted_at > now() - interval '1 hour') from public.payments where id='$PAY_R2'")"
 
 # ---- 10. A dropped connection may have charged, so the row goes back to
 #          pending (it used to be marked failed, and Tara's second tap made a

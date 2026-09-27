@@ -69,13 +69,28 @@ test.describe("sign-in", () => {
     // Wi-Fi. The old line was whatever GoTrue said.
     await page.route("**/auth/v1/token?grant_type=password", refuse("over_request_rate_limit", "Request rate limit reached"));
     await signIn(page, TARA);
-    await expect(page.locator("#signin-msg")).toHaveText("Too many attempts: wait a minute and try again.");
+    await expect(page.locator("#signin-msg")).toHaveText("Too many attempts. Try again in a minute.");
   });
 
   test("a reset email refused by the hourly email limit does not promise a minute", async ({ page }) => {
     // Email sends are limited per hour, not per minute, so this 429 keeps
     // its own words.
     await page.route("**/auth/v1/recover**", refuse("over_email_send_rate_limit", "email rate limit exceeded"));
+    await page.goto("/index.html");
+    await page.getByLabel("Email").fill(TARA.email);
+    await page.getByRole("button", { name: "Forgot password?" }).click();
+    await expect(page.locator("#signin-msg")).toHaveText("email rate limit exceeded");
+  });
+
+  test("an email limit whose code cannot be read still keeps its own words", async ({ page }) => {
+    // The same 429 without the version header a cross-origin page may not be
+    // able to read: supabase-js then has no error code, and only the message
+    // tells an hourly send limit from the per-minute one (fix round 2026-09-27).
+    await page.route("**/auth/v1/recover**", (route) => route.fulfill({
+      status: 429,
+      headers: { "content-type": "application/json", "access-control-allow-origin": "*" },
+      body: JSON.stringify({ msg: "email rate limit exceeded" }),
+    }));
     await page.goto("/index.html");
     await page.getByLabel("Email").fill(TARA.email);
     await page.getByRole("button", { name: "Forgot password?" }).click();

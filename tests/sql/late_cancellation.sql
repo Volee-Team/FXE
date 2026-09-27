@@ -34,6 +34,7 @@ declare
   FAR     constant uuid := 'd0000000-0000-0000-0000-000000000002';
   soon uuid; soon2 uuid; reg_soon uuid; reg_soon2 uuid; reg_pool uuid; reg_far uuid; reg_admin uuid; pay uuid;
   reg_text uuid; reg_early uuid; reg_waiting uuid; j jsonb;
+  charged_c uuid; rained_c uuid; reg_charged uuid; reg_rained uuid;
   n int; v text; r public.registrations;
 begin
   -- ------------------------------------------------------------ fixtures
@@ -168,6 +169,10 @@ begin
   -- 12. Charging is her tap: with payments on and a card, the late-cancel
   --     row is created pending at the price snapshot, by her, not by the cancel.
   update public.app_settings set value = 'true' where key = 'payments_enabled';
+  -- Whoever switches payments on records when (20260927300001); the switch
+  -- happened yesterday, so the clinics below all end after it.
+  insert into public.app_settings (key, value) values ('payments_enabled_at', (now() - interval '1 day')::text)
+    on conflict (key) do update set value = excluded.value;
   update public.accounts set stripe_customer_id = 'cus_probe_maria', card_brand = 'visa', card_last4 = '4242' where id = MARIA;
   perform set_config('role', 'authenticated', true);
   select has_card::text into v from public.registrations_admin where id = reg_soon2;
@@ -272,6 +277,64 @@ begin
                              order by x.account_id, x.type), '')
     into v from public.notifications x where x.entity_id = reg_text;
   insert into _probe_result values ('told_of_taras_late_cancel_of_dana', '', v);
+
+  -- 17. A charged spot and a canceled clinic (20260927300002, MVP fix round).
+  --     Asserted as the resulting STATE, not the error (hard rule 9).
+  --     Ken is You're In! an hour out and his clinic fee already went through;
+  --     Rob is You're In! an hour out in a clinic Tara canceled (rain).
+  --       * Tara's late cancel on Ken: refused, row still 'in', not late, one live fee.
+  --       * Tara's late cancel on Rob: refused, row still 'in'.
+  --       * Tara's Remove on Ken (cancel_registration as an admin who does not
+  --         own him): refused charged_refund_first, row still 'in', one live fee.
+  insert into public.clinics (name, audience, category, description, starts_at, ends_at,
+      member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
+  values ('Probe Charged', 'coed', 'Clinic', 'probe', now() + interval '1 hour', now() + interval '2 hours',
+          now() - interval '3 days', now() - interval '2 days', 8, 'published', 60)
+  returning id into charged_c;
+  insert into public.clinics (name, audience, category, description, starts_at, ends_at,
+      member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
+  values ('Probe Rained', 'coed', 'Clinic', 'probe', now() + interval '1 hour', now() + interval '2 hours',
+          now() - interval '3 days', now() - interval '2 days', 8, 'canceled', 60)
+  returning id into rained_c;
+  insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
+  values (charged_c, KEN_P, 'in', 'self', 1800, true, 60) returning id into reg_charged;
+  insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
+  values (rained_c, ROB_P, 'in', 'self', 2300, false, 60) returning id into reg_rained;
+  insert into public.payments (registration_id, account_id, kind, amount_cents, status, livemode, stripe_payment_intent_id)
+  values (reg_charged, KEN, 'clinic_fee', 1800, 'succeeded', true, 'pi_probe_late_charged');
+
+  perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
+  perform set_config('role', 'authenticated', true);
+  begin
+    perform public.admin_mark_late_cancel(reg_charged, 'texted');
+  exception when others then null;
+  end;
+  begin
+    perform public.admin_mark_late_cancel(reg_rained, 'texted');
+  exception when others then null;
+  end;
+  perform set_config('role', 'postgres', true);
+  select r2.status::text || ' ' || r2.late_cancel::text || ' '
+         || (select count(*) from public.payments x where x.registration_id = reg_charged
+              and x.kind <> 'refund' and x.status in ('pending', 'processing', 'succeeded'))
+    into v from public.registrations r2 where r2.id = reg_charged;
+  insert into _probe_result values ('late_cancel_on_charged_row_changes_nothing', 'in false 1', v);
+  select status::text into v from public.registrations where id = reg_rained;
+  insert into _probe_result values ('late_cancel_on_canceled_clinic_changes_nothing', 'in', v);
+
+  perform set_config('role', 'authenticated', true);
+  begin
+    perform public.cancel_registration(reg_charged);
+    insert into _probe_result values ('admin_remove_of_charged_row_refused', 'charged_refund_first', 'CALL SUCCEEDED');
+  exception when others then
+    insert into _probe_result values ('admin_remove_of_charged_row_refused', 'charged_refund_first', sqlerrm);
+  end;
+  perform set_config('role', 'postgres', true);
+  select r2.status::text || ' ' || r2.late_cancel::text || ' '
+         || (select count(*) from public.payments x where x.registration_id = reg_charged
+              and x.kind <> 'refund' and x.status in ('pending', 'processing', 'succeeded'))
+    into v from public.registrations r2 where r2.id = reg_charged;
+  insert into _probe_result values ('admin_remove_of_charged_row_changes_nothing', 'in false 1', v);
 
   -- 16. Grants: anon cannot cancel anything; PUBLIC holds nothing.
   insert into _probe_result values ('anon_cannot_execute_cancel', 'false',

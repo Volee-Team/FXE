@@ -1,5 +1,5 @@
 // Which clinics the web admin's This week tab lists. Pure functions, no
-// network, so web/tests/admin.spec.mjs can hold them to hand-worked answers
+// network, so web/tests/week.spec.mjs can hold them to hand-worked answers
 // in a real browser (MVP audit 2026-09-27, item 14).
 //
 // The service week is the club's: Sunday 00:00 through Saturday 23:59 in

@@ -219,6 +219,7 @@ struct AdminClinicDetailView: View {
                         chargeNote = e.contains("payments_disabled") ? "Payments are switched off."
                             : e.contains("clinic_not_over") ? "The clinic hasn't ended yet."
                             : e.contains("clinic_canceled") ? "That clinic is canceled."
+                            : e.contains("clinic_before_payments") ? "That clinic ended before card payments were on."
                             : "That didn't go through. Try again."
                     }
                 }
@@ -573,7 +574,12 @@ struct AdminClinicDetailView: View {
             // in person. Same RPC the player's own Cancel uses; the row is
             // kept as canceled, never deleted (hard rule 4). Never late, and
             // since 20260927100002 not echoed back as the player canceling.
-            Button("Remove from clinic", role: .destructive) { removing = entry }
+            // Not on a charged spot: the server refuses it (charged_refund_first,
+            // 20260927300002), because the fee would stay taken with nothing
+            // on any screen saying a refund is owed. Refund first.
+            if !entry.registration.hasLiveCharge {
+                Button("Remove from clinic", role: .destructive) { removing = entry }
+            }
         } label: {
             Label(current.map { "Court \($0)" } ?? "Court", systemImage: "rectangle.split.2x1")
                 .font(Brand.Typography.chip)

@@ -521,6 +521,22 @@ Home while the first load is still out (a spinner does), "Registration open"
 no longer shows on a clinic card after the close, and Register no longer
 shows on a clinic page after the start.
 
+## MVP fix round (2026-09-27) — awaiting Alex
+
+Chrome only, from the adversarial review's fixes (branch `fix-sql`). No player sees any of these: every one is on Tara's side (web admin, or the iOS Manage tab).
+
+| ☐ | String | Where | Why |
+|---|---|---|---|
+| ☐ | Too many attempts. Try again in a minute. | Web admin sign-in, sign-up and Forgot password on HTTP 429 (replaces "Too many attempts: wait a minute and try again." above) | The lead's exact line, one sentence without the colon. An hourly email or SMS limit still keeps GoTrue's own words, now also when the error code is unreadable. The iOS app says "Too many requests. Try again in a minute." (`FXETennis/Data/RequestFailure.swift`), so the two still differ by one word: Alex's call which wins |
+| ☐ | That clinic ended before card payments were on. | Web admin and iOS Charge clinic, if tapped on a clinic that ended before `payments_enabled_at` (the web no longer offers the button there) | Server refusal `clinic_before_payments` (20260927300001) in words |
+| ☐ | That charge is no longer held. | Web Money tab, if Went through / Did not go through is tapped on a row someone already resolved | Server refusal `payment_not_held` (20260927300003) |
+| ☐ | Check this charge in Stripe. | Web Money tab, under a card payment held for a person (processing, too old to retry or card changed) | The one instruction the row needs: only Stripe's dashboard knows whether it went through |
+| ☐ | Went through | Web Money tab, button on a held charge | Records it as paid (marks the registration paid, as the webhook would) |
+| ☐ | Did not go through | Web Money tab, button on a held charge | Records it as canceled, so the player can be charged again |
+| ☐ | Too old to retry | Web Money tab, the reason on a row with `retry_window_passed` | Was the raw code |
+| ☐ | Card changed between attempts | Web Money tab, the reason on a row with `idempotency_error` | Was the raw code |
+| ☐ | Account deleted | Web Money tab, the reason on a row with `account_deleted` | Was the raw code |
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148
