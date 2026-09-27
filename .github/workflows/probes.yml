@@ -142,6 +142,14 @@ jobs:
         with:
           version: 2.115.0
 
+      # The error rule stripe-mock can never produce (a decline, a timeout, a
+      # 5xx, an idempotency error) is pinned with the Stripe SDK's own error
+      # objects in tests/stripe/errors.test.ts, which run.sh runs with deno
+      # (2026-09-27, MVP audit item 4).
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
       # Edge runtime stays ON here: the three Stripe functions are the thing
       # under test. Everything else optional is off, as in the other jobs.
       - name: Start local stack (auth, rest, edge runtime)
@@ -168,6 +176,8 @@ jobs:
             curl -s -o /dev/null -X POST http://127.0.0.1:54321/functions/v1/stripe-webhook && break || sleep 2
           done
 
+      # It stops and restarts the stripe-mock container once, to prove a
+      # dropped connection is retried rather than failed.
       - name: Run the pipeline harness
         run: bash tests/stripe/run.sh
 

@@ -151,6 +151,7 @@ Rating
 Rating Guide
 Rating \(bucket.label)
 Really cancel? Everyone is told.
+Refresh
 Register
 Registration has closed for this clinic.
 Registration open

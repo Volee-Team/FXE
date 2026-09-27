@@ -6,7 +6,7 @@ account and need to test a refund."* This is that test. It runs against
 hosted with **Stripe test mode**, so no real money moves, and with **Alex's
 own account**, never a made-up one (no fixtures in hosted, CLAUDE.md).
 
-What is already proven without Stripe: `tests/stripe/run.sh`, 34 checks
+What is already proven without Stripe: `tests/stripe/run.sh`, 70 checks
 against Stripe's own mock server on every PR. What only this run proves:
 Stripe's real answers (real ids, real declines, 3-D Secure, the webhook
 signature from Stripe's servers).
@@ -28,14 +28,20 @@ signature from Stripe's servers).
 | 1 | Alex, phone | Sign in with your own account. Profile → Payment method → tick the permission box → Add a card: `4242 4242 4242 4242`, any future date, any CVC, any ZIP | Profile shows `•••• 4242` |
 | 2 | Alex, stripe.com (Test mode) | Customers | Your email with a Visa ending 4242 |
 | 3 | Tara, admin site | Create a clinic that ends within the hour (or use "Test Clinic"), and add Alex with Add player if registration is not open | Alex under You're In! |
-| 4 | Tara, admin site, after the end time | Charge clinic on that clinic's card | Money tab: a row for Alex, Clinic fee, Succeeded within a few seconds |
+| 4 | Tara, admin site, after the end time | Charge clinic on that clinic's card | Money tab: a row for Alex, Clinic fee, Succeeded within a few seconds. The Money numbers and the board report do not move: a test-mode charge is not money (20260927200001) |
 | 5 | Alex, stripe.com | Payments | One succeeded payment for $18 (member, 60 min) or the matching price |
-| 6 | Tara, admin site | Money tab → Refund on that row | Row becomes a refund, Succeeded; the clinic row shows unpaid again |
+| 6 | Tara, admin site | Money tab → Refund on that row | Row becomes a refund, Succeeded. The clinic row never showed paid: in test mode no fee marks anyone paid, and no refund unmarks them (20260927200001) |
 | 7 | Alex, stripe.com | Payments → that payment | Refunded |
 | 8 | Alex, phone | Replace the card with `4000 0000 0000 0341` (Stripe's "attaches fine, every charge declines" card) and repeat 3 and 4 | Money tab: Failed, with the reason and Alex's name |
 
 Record the outcome of each row in the CLAUDE.md changelog entry for the day,
 with the Stripe payment id of row 5 (an id, not a card number).
+
+These rows stay in the Money tab's card list until the switch to live money.
+The switch (`stripe_cutover_to_live()`, procedure in
+`supabase/functions/README.md`) clears Alex's test card with everyone
+else's and hides the test rows from the list; the board report never counts
+them.
 
 ## When the money reaches Tara's bank (her question 1c)
 

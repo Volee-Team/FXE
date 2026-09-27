@@ -245,7 +245,7 @@ select 'internal_helpers_not_callable_by_clients', '',
        coalesce(string_agg(p.proname, ', ' order by p.proname), '')
 from pg_proc p
 join pg_namespace n on n.oid = p.pronamespace and n.nspname = 'public'
-where p.proname in ('admin_account_ids', 'notify_account', 'courtesy_available', 'courtesy_cancel_days', 'card_required', 'waiver_accepted', 'purge_expired_card_consents', 'is_105', 'back_to_back_105_opens_at', 'registration_has_live_fee', 'player_has_live_fee', 'money_rows')
+where p.proname in ('admin_account_ids', 'notify_account', 'courtesy_available', 'courtesy_cancel_days', 'card_required', 'waiver_accepted', 'purge_expired_card_consents', 'is_105', 'back_to_back_105_opens_at', 'registration_has_live_fee', 'player_has_live_fee', 'money_rows', 'stripe_cutover_to_live')
   and has_function_privilege('authenticated', p.oid, 'EXECUTE');
 
 -- 4. TOO NARROW, the other direction: every function a signed-in client may
@@ -257,7 +257,7 @@ from pg_proc p
 join pg_namespace n on n.oid = p.pronamespace and n.nspname = 'public'
 where p.prokind = 'f'
   and p.prorettype <> 'trigger'::regtype
-  and p.proname not in ('admin_account_ids', 'notify_account', 'courtesy_available', 'courtesy_cancel_days', 'card_required', 'waiver_accepted', 'purge_expired_card_consents', 'is_105', 'back_to_back_105_opens_at', 'registration_has_live_fee', 'player_has_live_fee', 'money_rows')
+  and p.proname not in ('admin_account_ids', 'notify_account', 'courtesy_available', 'courtesy_cancel_days', 'card_required', 'waiver_accepted', 'purge_expired_card_consents', 'is_105', 'back_to_back_105_opens_at', 'registration_has_live_fee', 'player_has_live_fee', 'money_rows', 'stripe_cutover_to_live')
   and not has_function_privilege('authenticated', p.oid, 'EXECUTE');
 
 select
