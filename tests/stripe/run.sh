@@ -94,7 +94,7 @@ echo "════ Stripe pipeline (stripe-mock) ════"
 # Nothing else of Maria's is touched: on 2026-09-12 a broader delete here wiped
 # a late cancel made by hand on the simulator while it was being looked at.
 CLINIC2=d0000000-0000-0000-0000-000000000001
-sql "delete from public.payments; update public.accounts set stripe_customer_id=null, card_brand=null, card_last4=null, card_added_at=null, deleted_at=null where id in ($HARNESS_PEOPLE); delete from public.registrations where player_id in ('$MARIA_P','$KEN_P','$ROB_P','$DANA_P','$PRIYA_P') and clinic_id in ('$CLINIC','$CLINIC2','$CLINIC3','$CLINIC4'); update public.app_settings set value='false' where key='payments_enabled';" >/dev/null
+sql "delete from public.payments; update public.accounts set stripe_customer_id=null, card_brand=null, card_last4=null, card_added_at=null, deleted_at=null where id in ($HARNESS_PEOPLE); delete from public.registrations where player_id in ('$MARIA_P','$KEN_P','$ROB_P','$DANA_P','$PRIYA_P') and clinic_id in ('$CLINIC','$CLINIC2','$CLINIC3','$CLINIC4'); update public.app_settings set value='false' where key='payments_enabled'; delete from public.app_settings where key='stripe_live_since';" >/dev/null
 
 MARIA_JWT=$(jwt maria@fxe.test); TARA_JWT=$(jwt tara@fxe.test)
 check "signed in as Maria and Tara" "2" "$([ -n "$MARIA_JWT" ] && [ -n "$TARA_JWT" ] && echo 2)"
@@ -319,13 +319,40 @@ check "a customer Stripe no longer has counts as removed" "$U2 already_gone NULL
 out=$(fn delete-account "$U3_JWT" '{}')
 check "no profile yet: nothing to scrub, the sign-in still goes" "$U3 none t" "$(echo "$out" | field "['deleted']") $(echo "$out" | field "['stripe']") $(sql "select deleted_at is not null from auth.users where id='$U3'")"
 
+# ---- 13. The key swap (stripe_cutover_to_live, 20260927200001), end to end
+#          through the API as the lead would run it (service_role; the SQL
+#          editor as postgres is the other way). It refuses while live money
+#          exists; once run, every card is gone, a charge queued before the swap
+#          is never sent with the live key, test rows leave Tara's Money list,
+#          and the next card setup makes a new customer. The client-role refusal
+#          is asserted by has_function_privilege in stripe_live_cutover.sql,
+#          not by calling it: the local image crashes a backend that calls a
+#          function it may not execute (CLAUDE.md, known local defect).
+SERVICE=$(supabase status -o env 2>/dev/null | grep '^SERVICE_ROLE_KEY' | cut -d= -f2 | tr -d '"')
+cutover() { curl -s -X POST "$API/rest/v1/rpc/stripe_cutover_to_live" -H "apikey: $SERVICE" -H "Authorization: Bearer $SERVICE" -H "Content-Type: application/json" -d '{}'; }
+check "the swap is refused while live money exists" "live_payments_exist" "$(cutover | field "['message']")"
+card "$MARIA" cus_before_swap
+REG_Q=$(reg "$CLINIC4" "$MARIA_P" 1800 true 60); REGS="$REGS,'$REG_Q'"
+PAY_Q=$(rpc admin_charge_registration "$TARA_JWT" "{\"p_registration\":\"$REG_Q\",\"p_kind\":\"clinic_fee\"}" | field "['id']")
+# "The swap happened before any live charge": this run's live rows go first.
+sql "delete from public.payments where livemode is true and kind = 'refund'; delete from public.payments where livemode is true" >/dev/null
+check "the swap runs through the API as service_role" "True" "$(cutover | python3 -c "import sys,json; r=json.load(sys.stdin); print(isinstance(r,list) and r[0]['accounts_cleared']>=1)")"
+check "every card is gone after the swap" "0" "$(sql "select count(*) from public.accounts where stripe_customer_id is not null or card_last4 is not null")"
+fn stripe-charge "$TARA_JWT" '{}' >/dev/null
+check "a charge queued before the swap is never sent" "canceled NULL" "$(sql "select status||' '||coalesce(stripe_payment_intent_id,'NULL') from public.payments where id='$PAY_Q'")"
+check "test rows leave Tara's Money list" "0" "$(curl -s "$API/rest/v1/payments_ledger?id=eq.$PAY_T&select=id" -H "apikey: $ANON" -H "Authorization: Bearer $TARA_JWT" | python3 -c "import sys,json; print(len(json.load(sys.stdin)))")"
+out=$(fn stripe-setup-intent "$MARIA_JWT" '{}')
+NEW=$(echo "$out" | field "['customerId']")
+check "the next card setup makes a new customer" "cus_ stored" "${NEW:0:4} $([ "$NEW" != 'cus_before_swap' ] && [ "$NEW" = "$(sql "select stripe_customer_id from public.accounts where id='$MARIA'")" ] && echo stored)"
+check "the swap runs once" "already_live" "$(cutover | field "['message']")"
+
 # ---- 6. Switched off again, nothing new can be charged
 sql "update public.app_settings set value='false' where key='payments_enabled'" >/dev/null
 BODY="{\"p_registration\":\"$REG\",\"p_kind\":\"no_show\"}"
 check "payments_disabled once the switch is off" "payments_disabled" "$(rpc admin_charge_registration "$TARA_JWT" "$BODY" | field "['message']")"
 
 # Restore the seed state this touched.
-sql "delete from public.card_consents where account_id='$MARIA'; delete from public.payments; delete from public.registrations where id in ('$REG','$REG2'$REGS); update public.accounts set stripe_customer_id=null, card_brand=null, card_last4=null, card_added_at=null, deleted_at=null where id in ($HARNESS_PEOPLE); delete from auth.users where id in (${SIGNED:-'00000000-0000-0000-0000-000000000000'});" >/dev/null
+sql "delete from public.card_consents where account_id='$MARIA'; delete from public.payments; delete from public.registrations where id in ('$REG','$REG2'$REGS); update public.accounts set stripe_customer_id=null, card_brand=null, card_last4=null, card_added_at=null, deleted_at=null where id in ($HARNESS_PEOPLE); delete from auth.users where id in (${SIGNED:-'00000000-0000-0000-0000-000000000000'}); delete from public.app_settings where key='stripe_live_since';" >/dev/null
 
 # ---- E. The error rule stripe-mock cannot exercise, with the Stripe SDK's
 #         own error objects (tests/stripe/errors.test.ts).
