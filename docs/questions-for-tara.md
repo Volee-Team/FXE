@@ -309,6 +309,41 @@ say it's an emergency to cancel."* These are the gaps that remain.
 **57. "Cards aren't set up yet." (before Stripe is connected): you wrote "Stripe needs to be connected". Was that a note to us, or the words a player should see?**
 *Default: a note to us; the line disappears once Stripe is live. Status: open, asked 2026-09-21.*
 
+## M. After the Final Updates (added 2026-09-26, decision 0015)
+
+**58. The board's 10%: of what was collected by card, or of full clinic prices? Before or after Stripe's fee?**
+*Default: 10% of what was collected, before Stripe's fee. The report shows both bases. Status: open, asked 2026-09-26.*
+
+**59. Home when a player has exactly one clinic of their own: that clinic on top and the open clinics listed under it (built), or only their clinic and the blue button?**
+*Default: as built. With two or more, only their clinics and the blue button. Status: open, asked 2026-09-26.*
+
+**60. Back-to-back 105s: the 48 hours count from the start of the earlier 105 that day, so in your example both unlock Friday 4:30 for the Sunday 4:30 and 6:00. Right?**
+*Default: yes, built that way, counted on the clock: two days earlier at the same time, so on the weekends the clocks change it is still Friday 4:30, not 3:30 or 5:30. Status: open, asked 2026-09-26.*
+
+**61. Does a Player Pool spot count as "signed up" for the 105 rule, or only You're In!?**
+*Default: any spot counts, Pool included, since non-members join the Pool. Status: open, asked 2026-09-26.*
+
+**62. Is it only 105s, or any two clinics on the same day?**
+*Default: only 105s (a clinic with 105 in its name or category). Status: open, asked 2026-09-26.*
+
+**63. The words a non-member sees when the rule stops them.**
+*Default until you write it: "Non-members can take one 105 a day until 48 hours before." Status: open, asked 2026-09-26.*
+
+**64. Could you send the court photo as the original file?** The one in the message is a screenshot and looks soft on a full screen.
+*Default: keep the screenshot until then. Status: open, asked 2026-09-26.*
+
+**65. The card box says "I give permission for my card to be charged", your exact words. Keep, or longer?**
+*Default: keep. Status: open, asked 2026-09-26.*
+
+**66. A player who added a card before the permission box existed (nobody today; cards could not be added until Stripe is connected) has no permission on record. Charge them anyway, or ask them to tick the box first?**
+*Default: ask first; nobody is in this position yet. Status: open, asked 2026-09-26.*
+
+**67. Someone is refunded in September for an August clinic, after August's report went to the board. Should the refund come off August (the report you already sent changes) or off September?**
+*Default today: it comes off August, the month of the clinic, and the report prints the time it was run so a re-run can be explained. Status: open, asked 2026-09-26.*
+
+**68. Do late-cancel and no-show fees count toward the board's 10%?**
+*Default: yes, they are program income; the report shows them under "Collected by card" but not under "Fees at clinic prices". Status: open, asked 2026-09-26.*
+
 ### How 52 to 57 are being sent
 
 Round two of the review page (2026-09-21, later): the Words tab now shows her

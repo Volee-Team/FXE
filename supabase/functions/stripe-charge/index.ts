@@ -52,10 +52,30 @@ async function handle(req: Request): Promise<Response> {
         const { data: acct } = await admin.from("accounts")
           .select("stripe_customer_id").eq("id", row.account_id).single();
         if (!acct?.stripe_customer_id) throw new Error("no_card_on_file");
+        // Name the card. A PaymentIntent does NOT fall back to the customer's
+        // invoice_settings.default_payment_method (that setting is for
+        // invoices); without payment_method, confirm uses only a legacy
+        // default_source, which a PaymentSheet card never is. The webhook sets
+        // the default when the card is saved; read it back here, else the
+        // customer's first card. Found 2026-09-26 by reading, not by the mock:
+        // stripe-mock accepts a PaymentIntent with no payment method.
+        const customer = await getStripe().customers.retrieve(acct.stripe_customer_id);
+        let paymentMethod: string | null = null;
+        if (customer && !("deleted" in customer && customer.deleted)) {
+          const d = (customer as { invoice_settings?: { default_payment_method?: string | { id: string } | null } })
+            .invoice_settings?.default_payment_method;
+          paymentMethod = typeof d === "string" ? d : d?.id ?? null;
+        }
+        if (!paymentMethod) {
+          const list = await getStripe().paymentMethods.list({ customer: acct.stripe_customer_id, type: "card", limit: 1 });
+          paymentMethod = list.data[0]?.id ?? null;
+        }
+        if (!paymentMethod) throw new Error("no_card_on_file");
         const intent = await getStripe().paymentIntents.create({
           amount: row.amount_cents,
           currency: row.currency,
           customer: acct.stripe_customer_id,
+          payment_method: paymentMethod,
           off_session: true,
           confirm: true,
           description: `FXE Tennis ${row.kind.replace("_", " ")}`,
@@ -65,9 +85,17 @@ async function handle(req: Request): Promise<Response> {
         results[row.id] = intent.status;
       }
     } catch (e) {
-      // A decline arrives here synchronously for off-session charges.
-      await admin.from("payments").update({ status: "failed", failure_reason: String((e as Error).message ?? e) })
-        .eq("id", row.id);
+      // A decline arrives here synchronously for off-session charges. Stripe's
+      // SDK errors carry decline_code (the bank's reason, e.g.
+      // insufficient_funds) and code (e.g. card_declined); record the first
+      // present as failure_code (20260926000010), the same rule as the
+      // webhook. Our own errors (no_card_on_file) carry neither: null.
+      const se = e as { message?: string; decline_code?: string; code?: string };
+      await admin.from("payments").update({
+        status: "failed",
+        failure_reason: String(se?.message ?? e),
+        failure_code: se?.decline_code ?? se?.code ?? null,
+      }).eq("id", row.id);
       results[row.id] = "failed";
     }
   }

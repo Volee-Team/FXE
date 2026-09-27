@@ -70,6 +70,15 @@ sql "delete from public.payments; update public.accounts set stripe_customer_id=
 MARIA_JWT=$(jwt maria@fxe.test); TARA_JWT=$(jwt tara@fxe.test)
 check "signed in as Maria and Tara" "2" "$([ -n "$MARIA_JWT" ] && [ -n "$TARA_JWT" ] && echo 2)"
 
+# ---- 0. The permission box (decision 0015 §7): no card setup without a
+#         recorded consent to the current words. The server, not the screen.
+sql "delete from public.card_consents where account_id='$MARIA'" >/dev/null
+check "setup-intent refused without the permission" "card_consent_required" "$(fn stripe-setup-intent "$MARIA_JWT" '{}' | field "['error']")"
+check "no customer created by the refused call" "" "$(sql "select coalesce(stripe_customer_id,'') from public.accounts where id='$MARIA'")"
+curl -s -X POST "$API/rest/v1/rpc/record_card_consent" -H "apikey: $ANON" -H "Authorization: Bearer $MARIA_JWT" \
+  -H "Content-Type: application/json" -d '{"p_app_version":"stripe harness"}' >/dev/null
+check "consent recorded through the RPC" "1" "$(sql "select count(*) from public.card_consents where account_id='$MARIA'")"
+
 # ---- 1. SetupIntent: customer created and stored, secret handed back, nothing charged
 out=$(fn stripe-setup-intent "$MARIA_JWT" '{}')
 check "setup-intent returns a client secret" "seti_" "$(echo "$out" | field "['setupIntentClientSecret'][:5]")"
@@ -125,10 +134,28 @@ BODY="{\"p_registration\":\"$REG2\",\"p_kind\":\"late_cancel\"}"
 PAY2=$(rpc admin_charge_registration "$TARA_JWT" "$BODY" | field "['id']")
 fn stripe-charge "$TARA_JWT" '{}' >/dev/null
 PI2=$(sql "select stripe_payment_intent_id from public.payments where id='$PAY2'")
-OBJ="{\"id\":\"$PI2\",\"object\":\"payment_intent\",\"status\":\"requires_payment_method\",\"last_payment_error\":{\"code\":\"card_declined\",\"message\":\"Your card was declined.\"}}"
+# Stripe's shape for an NSF decline: code card_declined, decline_code the bank's reason.
+OBJ="{\"id\":\"$PI2\",\"object\":\"payment_intent\",\"status\":\"requires_payment_method\",\"last_payment_error\":{\"code\":\"card_declined\",\"decline_code\":\"insufficient_funds\",\"message\":\"Your card was declined.\"}}"
 webhook "$(event payment_intent.payment_failed "$OBJ")" >/dev/null
 check "payment_failed -> failed with Stripe's reason" "failed Your card was declined." "$(sql "select status||' '||failure_reason from public.payments where id='$PAY2'")"
+# 20260926000010: decline_code wins over code, so Tara reads "Insufficient funds (NSF)", not "Card declined".
+check "payment_failed records the decline code" "insufficient_funds" "$(sql "select coalesce(failure_code,'NULL') from public.payments where id='$PAY2'")"
+# A PaymentIntent that failed and later went through (the cardholder fixed
+# the card) must stop reading "Declined" on the Money tab.
+OBJ="{\"id\":\"$PI2\",\"object\":\"payment_intent\",\"status\":\"succeeded\"}"
+webhook "$(event payment_intent.succeeded "$OBJ")" >/dev/null
+check "a later success clears the decline" "succeeded NULL" "$(sql "select status||' '||coalesce(failure_code,'NULL') from public.payments where id='$PAY2'")"
+# Put the fixture back to failed so the retry below has something to retry.
+sql "update public.payments set status='failed' where id='$PAY2'" >/dev/null
 check "a failed fee can be charged again" "pending" "$(rpc admin_charge_registration "$TARA_JWT" "$BODY" | field "['status']")"
+
+# ---- 5b. A refund made in Stripe's dashboard (where refunds happen in v1,
+#          Kat 2026-09-22) reaches the ledger, once, linked to its charge.
+OBJ="{\"id\":\"ch_dash_probe\",\"object\":\"charge\",\"payment_intent\":\"$PI\",\"refunds\":{\"object\":\"list\",\"data\":[{\"id\":\"re_dash_probe\",\"object\":\"refund\",\"status\":\"succeeded\",\"amount\":500,\"currency\":\"usd\",\"payment_intent\":\"$PI\",\"metadata\":{}}]}}"
+webhook "$(event charge.refunded "$OBJ")" >/dev/null
+check "dashboard refund recorded against its charge" "refund 500 succeeded $PAY" "$(sql "select kind||' '||amount_cents||' '||status||' '||refunds_payment_id from public.payments where stripe_refund_id='re_dash_probe'")"
+webhook "$(event charge.refunded "$OBJ")" >/dev/null
+check "a redelivered dashboard refund is recorded once" "1" "$(sql "select count(*) from public.payments where stripe_refund_id='re_dash_probe'")"
 
 # ---- 6. Switched off again, nothing new can be charged
 sql "update public.app_settings set value='false' where key='payments_enabled'" >/dev/null
@@ -136,7 +163,7 @@ BODY="{\"p_registration\":\"$REG\",\"p_kind\":\"no_show\"}"
 check "payments_disabled once the switch is off" "payments_disabled" "$(rpc admin_charge_registration "$TARA_JWT" "$BODY" | field "['message']")"
 
 # Restore the seed state this touched.
-sql "delete from public.payments; delete from public.registrations where id in ('$REG','$REG2'); update public.accounts set stripe_customer_id=null, card_brand=null, card_last4=null, card_added_at=null where id='$MARIA';" >/dev/null
+sql "delete from public.card_consents where account_id='$MARIA'; delete from public.payments; delete from public.registrations where id in ('$REG','$REG2'); update public.accounts set stripe_customer_id=null, card_brand=null, card_last4=null, card_added_at=null where id='$MARIA';" >/dev/null
 
 echo ""
 if [ $FAILED -eq 0 ]; then echo "PASS: Stripe pipeline"; else echo "FAIL: Stripe pipeline"; exit 1; fi

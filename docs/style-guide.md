@@ -87,7 +87,8 @@ control.
 | porcelain, surface-white | `Brand.surface`, `Brand.surfaceRaised`; `--fxe-surface`, `--fxe-surface-raised` |
 | Playfair Display, Inter | bundled as variable fonts in `FXETennis/Resources/Fonts/` (SIL OFL, licences beside them), registered at first use by `Brand.Fonts.register()`; weight set through the `wght` axis; the web loads the same two families from Google Fonts |
 | greeting, greeting-accent, wordmark-*, nav-row-label, tab-bar-label, body | `Brand.Typography.greeting` … `.body`, name for name; the older role names (`display`, `title`, `headline`, `caption`, `chip`, `button`) map onto them |
-| Header | `ArchedHeader` (`FXETennis/Views/Components/ArchedHeader.swift`): navy fill with an arched bottom, one 6pt gator-green hairline along the arch; used on the sign-in screen (full) and Home (compact) |
+| Header | `BrandHeader` (`FXETennis/Views/Components/BrandHeader.swift`): navy, **straight across** (Kat, 2026-09-26: *"I'm not wild about the swoopy thing. I think I just like the straight line across."*), one 4pt gator-green line along the bottom edge; sign-in (full wordmark) and Home (34pt mark, caption-size TENNIS: Final Updates *"Make the logo smaller"*) |
+| Page background | `CourtBackdrop` (`FXETennis/Views/Components/CourtBackdrop.swift`): Tara's court photo under a porcelain wash, from her front-page mockup (2026-09-26, *"more color"*, *"The screens just look really white"*). `.front` on Home, sign-in and onboarding; `.page`, an even stronger wash, on list and detail screens; sheets keep the plain gradient. Not in the guide; Tara's and Kat's later word wins |
 | Wordmark | `Wordmark`: the gator artwork over the "TENNIS" lockup at 6pt tracking, reversed to white. **The flanking F and E are part of the gator PNG itself**, so no separate initials are set; setting them doubled the letters |
 | Buttons / nav rows | `NavRowLabel` (28pt radius, 56pt tall, icon slot, label, chevron); `FilledButtonLabel` = navy row, `OutlinedButtonLabel` = white row, so every existing call site picked the shape up |
 | Greeting block | Home: the greeting in `greeting`, then "Let's Play." in `greetingAccent` gator-green, centered under the header; sign-in: "Let's Play." alone under the header |
@@ -114,6 +115,17 @@ control.
    page; if that was deliberate, one token change removes the gradient.
 4. **Line heights and 0.2px tracking** are not set explicitly on iOS; the
    fonts' own metrics apply.
+5. **The header's arch: settled 2026-09-26.** Built as an arch on
+   2026-09-22, rejected by Alex (*"legit ugly"*) and then by Kat (*"I'm not
+   wild about the swoopy thing. I think I just like the straight line
+   across."*). Now straight, with the guide's green line kept straight at
+   4pt. Open for Kat: keep the green line, or navy straight into the photo
+   the way Tara's mockup shows it (one number, `lineWidth` in
+   `BrandHeader.swift`).
+6. **The status bar over navy** reads in dark text on a phone in light mode
+   (the time and battery are black on navy). SwiftUI has no per-screen
+   status-bar style; fixing it means a small UIKit bridge. Noted in
+   `docs/backlog.md`.
 
 ## When the guide changes
 

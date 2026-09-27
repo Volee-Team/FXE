@@ -454,7 +454,7 @@ extension AdminRepository {
         struct U: Encodable { let read_at: Date }
         _ = try await supabase
             .from("notifications")
-            .update(U(read_at: Date()))
+            .update(U(read_at: Date()), returning: .minimal)  // see NotificationRepository
             .eq("id", value: notice)
             .execute()
     }

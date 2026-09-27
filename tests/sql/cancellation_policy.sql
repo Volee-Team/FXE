@@ -53,7 +53,7 @@ begin
     insert into _probe_result values ('no_card_refused_when_payments_on', 'card_required', sqlerrm);
   end;
   perform set_config('role', 'postgres', true);
-  update public.accounts set stripe_customer_id = 'cus_probe_maria' where id = MARIA;
+  update public.accounts set stripe_customer_id = 'cus_probe_maria', card_brand = 'visa', card_last4 = '4242' where id = MARIA;
   perform set_config('role', 'authenticated', true);
   r := public.register_for_clinic(FAR, MARIA_P);
   insert into _probe_result values ('card_on_file_registers', 'true', (r.status in ('in','pool'))::text);
@@ -85,8 +85,8 @@ begin
   insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes,
                                     late_cancel, courtesy_used, canceled_at)
   values (done_c, DANA_P, 'canceled', 'self', 1800, true, 60, true, false, now() - interval '4 hours') returning id into reg_d;
-  update public.accounts set stripe_customer_id = 'cus_probe_rob' where id = '44444444-4444-4444-4444-444444444444';
-  update public.accounts set stripe_customer_id = 'cus_probe_dana' where id = '66666666-6666-6666-6666-666666666666';
+  update public.accounts set stripe_customer_id = 'cus_probe_rob', card_brand = 'visa', card_last4 = '4242' where id = '44444444-4444-4444-4444-444444444444';
+  update public.accounts set stripe_customer_id = 'cus_probe_dana', card_brand = 'visa', card_last4 = '4242' where id = '66666666-6666-6666-6666-666666666666';
 
   -- Only Tara marks a no-show, and only on a You're In! row.
   perform set_config('request.jwt.claims', json_build_object('sub', MARIA)::text, true);

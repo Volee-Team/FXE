@@ -75,6 +75,19 @@ struct ClinicPublic: Codable, Identifiable, Sendable, Hashable {
     }
 
     var isCanceled: Bool { status == "canceled" }
+
+    /// Open for registration to this player at `now`: past their opening
+    /// moment (members Thursday 8:00, everyone Friday 8:00, per service week,
+    /// stored on the row) and before the close (3 hours before start by
+    /// default). Display only: `register_for_clinic` decides for real. Home
+    /// uses it to list what can be signed up for today (Final Updates p.1).
+    func isOpenForRegistration(isMember: Bool, now: Date = .now) -> Bool {
+        if isCanceled { return false }
+        let opens = isMember ? memberOpensAt : publicOpensAt
+        if let opens, now < opens { return false }
+        if let closesAt, now >= closesAt { return false }
+        return now < startsAt
+    }
 }
 
 // MARK: - Registration (from my_registrations)
@@ -205,11 +218,12 @@ struct Account: Codable, Identifiable, Sendable {
 
     var isAdmin: Bool { role == "admin" }
     var hasCard: Bool { cardLast4 != nil }
-    /// "Visa ···4242", or nil.
+    /// "•••• 4242", or nil. Final Updates p.2 item 2: "If a card is on file,
+    /// only show the last 4 digits of the card in the U/I." The brand is
+    /// still stored (the webhook writes it) and simply not shown.
     var cardLabel: String? {
         guard let last4 = cardLast4 else { return nil }
-        let brand = (cardBrand ?? "Card").prefix(1).uppercased() + (cardBrand ?? "card").dropFirst()
-        return "\(brand) ···\(last4)"
+        return "•••• \(last4)"
     }
 }
 

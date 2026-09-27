@@ -34,6 +34,7 @@ SWIFT = [
     r'Button\(\s*"([^"]{2,})"',
     r'\.navigationTitle\(\s*"([^"]{2,})"',
     r'EmptyLine\(\s*"([^"]{2,})"',
+    r'SectionBlock\(\s*title:\s*"([^"]{2,})"',
     r'OutlinedButtonLabel\(\s*"([^"]{2,})"',
     r'FilledButtonLabel\(\s*"([^"]{2,})"',
     r'\.accessibilityLabel\(\s*"([^"]{2,})"',

@@ -12,14 +12,20 @@ Ordered by what it unblocks, not by how hard it is to answer.
 
 | # | Question | Why it blocks | Our current assumption |
 |---|---|---|---|
+| 58–68 | **After the Final Updates** (`docs/questions-for-tara.md` §M, decision 0015): the board's 10% (of what, before or after Stripe's fee), Home with exactly one clinic, four edges of the back-to-back 105 rule (clock time, Pool counts, only 105s, the words a non-member sees), the court photo's original file, the card box wording, a card with no permission on record, and two about the board report (which month a later refund comes off, whether penalty fees count) | Nothing blocks: every default is built | As built |
 | 52–57 | **After her review of every word** (`docs/questions-for-tara.md` §L): the "Set by Tara" caption, the blank replacement for "Tara has your message.", "this week" under My Clinics, "Let's Play." vs "Let's play!", whether her policy block gets rewritten and shown, and whether "Stripe needs to be connected" was a note to us | Nothing blocks: every default is the current text | Keep as is |
 | 27–51 | **Answered.** §I/§J on 2026-09-12 and 2026-09-16 (decisions 0010, 0012), §K on 2026-09-21 (decision 0013: no courtesy, 3 hours, card only, waiver, keep history on deletion, Saturday and short weeks as built, her tap charges) | | |
 
-**Blocked on Alex (2026-09-12), two asks, both spelled out in `docs/launch-checklist.md`:**
+**Blocked on Alex. Step by step, click by click: `docs/for-alex.md` (kept current; he reads that, not chat). Summary as of 2026-09-26:**
 
-1. **Stripe test keys** (§B): a Stripe *test-mode* account, its secret key and webhook secret set as Supabase Edge Function secrets (dashboard only, never the repo). Everything else on the payments path is built and deployed: schema, ledger, RPCs, three edge functions, the card screen on Profile, the Money tab ledger. Until the key exists, Add a card answers "Cards aren't set up yet."
-2. ~~The public half of the backup key~~ **done 2026-09-22**: in `.github/backup-recipient.txt`, first encrypted backup decrypted and checked.
-3. **Share the review page, version 2** (`web/review.html` on the admin site, once deployed): mint a link on the Players tab, text her the `review.html?t=…` URL. Her answers save to `review_responses` through the `review-submit` edge function as she types and read back on the Players tab. Round one (the claude.ai artifact) is answered and closed: decision 0013; round two's six questions are on both pages.
+1. **Stripe test keys** (§B, about 15 minutes): a Stripe *test-mode* account, its secret key, publishable key and webhook signing secret set as Supabase Edge Function secrets (dashboard or `supabase secrets set`, never the repo or chat). `supabase secrets list` on 2026-09-23 showed zero `STRIPE_*` names, so every card and charge path is dark. Everything else on the payments path is built and deployed. Live mode later takes Tara's business details, typed into Stripe's own form and nowhere else. Alex, 2026-09-23: *"i need to get that hooked up ASAP"*.
+2. **Privacy policy at a URL** (§C6): reuse Volee's (decision 16), host on fersc.com as Tara said. External TestFlight testers cannot be added without it.
+3. **Apple LLC enrollment** (§C1): in Apple's queue with Tara's documents. Until it lands: no APNs key (the push sender is built and waits on five secrets, see `supabase/functions/README.md`), no bundle id, no listing. Nothing to do but chase.
+4. **Auth email delivery** (§D1): password reset goes through Supabase's built-in mailer, which lands in spam and rate-limits. A Resend free account plus two DNS records on the club domain. Not needed for internal testing; needed before members.
+5. ~~The public half of the backup key~~ **done 2026-09-22**.
+6. **Share the review page, version 2** (`web/review.html` on the admin site): mint a link on the Players tab, text her the `review.html?t=…` URL. Her six open answers (questions 52 to 57) read back on the Testing tab.
+
+**Blocked on Kat (2026-09-23):** three places the code could not follow her style guide, listed in `docs/style-guide.md`: the header (the arch as built; Alex dislikes it, 2026-09-23: *"revert it back to whatever u think she meant from the style guide then well see"*), the iOS 26 tab bar fill, and green text on porcelain at 4.42:1.
 
 Dropped 2026-09-18: the `fxe-ci` Supabase project (§F option 3 chosen, no money for now; UI tests run on a laptop before each TestFlight build).
 
@@ -81,8 +87,8 @@ Refund as Tara's tap, rendered only while
 / `admin_refund_payment`, the ledger-drives-Paid trigger, `service_role`
 grants), the three Stripe edge functions deployed, the card screen on Profile
 with PaymentSheet, `payments_ledger`, and `cancel_registration` recording a late
-You're In! cancel with an optional note ("Note for Tara (optional)", decision 0013). Testing: 14 Playwright tests, 13 XCUITests
-(5 on Tara's side), 23 unit tests, 24 SQL probes, and a 27-check Stripe
+You're In! cancel with an optional note ("Note for Tara (optional)", decision 0013). Testing: 15 Playwright tests, 13 XCUITests
+(5 on Tara's side), 31 unit tests, 28 SQL probes, and a 34-check Stripe
 pipeline against stripe-mock in CI. `docs/architecture.md` was regenerated
 2026-09-01 and refreshed by hand 2026-09-12 and 2026-09-21. Nothing charges anyone: the switch is off.
 

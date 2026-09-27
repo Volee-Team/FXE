@@ -110,9 +110,10 @@ final class AdminFlowUITests: XCTestCase {
         signOut()
 
         signIn(as: member)
+        openClinicsTab()
         let card = app.buttons.matching(identifier: "clinic.card")
             .matching(NSPredicate(format: "label CONTAINS[c] 'Tuesday Ladies'")).firstMatch
-        XCTAssertTrue(card.waitForExistence(timeout: 20))
+        XCTAssertTrue(card.waitForExistence(timeout: 20), "No Clinics-tab card for Tuesday Ladies after the invite")
         card.tap()
         // Accept and Decline share the primary-action identifier on this
         // screen, so pick by label as well.
@@ -240,6 +241,23 @@ final class AdminFlowUITests: XCTestCase {
     /// drops the first tap now and then (2026-09-12: two of three runs, and
     /// a hand-driven session needed two taps too), so wait briefly and tap
     /// once more before calling it a failure. Backlog has the note.
+    /// Open the Clinics tab, the browse list, which lists every upcoming
+    /// clinic whatever the player holds. Tests that need "a clinic" start here
+    /// since 2026-09-26: Home now shows only the player's own clinics and what
+    /// is open to them (Final Updates), so what it lists depends on state an
+    /// earlier test left behind. Same second-tap retry as the Profile tab.
+    private func openClinicsTab() {
+        // The tab bar's button, not any other element labelled "Clinics"
+        // (a second match made the plain query ambiguous in the player tests).
+        let tab = app.tabBars.buttons["Clinics"].exists ? app.tabBars.buttons["Clinics"] : app.buttons["Clinics"].firstMatch
+        tab.tap()
+        let card = app.buttons.matching(identifier: "clinic.card").firstMatch
+        if !card.waitForExistence(timeout: 5) {
+            tab.tap()
+        }
+        XCTAssertTrue(card.waitForExistence(timeout: 20), "Clinics tab never listed a clinic")
+    }
+
     private func openProfileTab() {
         app.buttons["Profile"].tap()
         if !app.buttons["profile.signOut"].waitForExistence(timeout: 5) {
@@ -265,13 +283,14 @@ final class AdminFlowUITests: XCTestCase {
         }
     }
 
-    /// Register for the first card on Home if not already in it. Idempotent
+    /// Register for the named clinic from the Clinics tab if not already in it. Idempotent
     /// across runs: a second run finds "Cancel" as the primary action and
     /// leaves it alone.
     private func ensureRegistered(forClinicContaining name: String) {
+        openClinicsTab()
         let card = app.buttons.matching(identifier: "clinic.card")
             .matching(NSPredicate(format: "label CONTAINS[c] %@", name)).firstMatch
-        XCTAssertTrue(card.waitForExistence(timeout: 20), "No Home card for \(name)")
+        XCTAssertTrue(card.waitForExistence(timeout: 20), "No Clinics-tab card for \(name)")
         card.tap()
         let action = app.buttons["clinic.primaryAction"]
         XCTAssertTrue(action.waitForExistence(timeout: 10))

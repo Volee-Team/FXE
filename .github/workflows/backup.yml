@@ -179,3 +179,32 @@ jobs:
           fi
           sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
           psql "$DB_URL" -c "select 1;" >/dev/null && echo "Project is awake."
+
+  # Decision 0015 §7, Kat and Tara (2026-09-26): card consent is "stored for
+  # as long as the account is active and if they cancel their account - stored
+  # for another 90 days." purge_expired_card_consents() deletes the rows whose
+  # account was deleted more than 90 days ago and returns the count. It is its
+  # own job, not a step of keep-warm, because keep-warm is deleted the day the
+  # org moves to Pro and this must not go with it. Pinned by
+  # tests/sql/card_consent.sql (day 89 purges nothing, day 91 purges).
+  retention:
+    name: Purge card consents 90 days after an account is deleted
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Run the purge
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$DB_URL" ]; then
+            echo "SUPABASE_DB_URL not set; skipping the purge."
+            exit 0
+          fi
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+          exists=$(psql "$DB_URL" -Atc "select count(*) from pg_proc where proname = 'purge_expired_card_consents'")
+          if [ "$exists" = "0" ]; then
+            echo "purge_expired_card_consents() is not on this database yet (migration 20260926000001 not pushed); nothing to do."
+            exit 0
+          fi
+          n=$(psql "$DB_URL" -Atc "select public.purge_expired_card_consents();")
+          echo "Card consents purged (account deleted more than 90 days ago): $n"

@@ -52,16 +52,16 @@ most important thing to understand here, and it is section 5.
 
 | Area | State |
 |---|---|
-| Postgres schema, RLS, narrow views, RPCs | **Built**, 33 migrations, all 33 applied to hosted (verified 2026-09-21, `supabase migration list --linked`: 33 paired) |
+| Postgres schema, RLS, narrow views, RPCs | **Built**, 36 migrations; the first 35 applied to hosted (verified 2026-09-26, `supabase migration list --linked`: 35 paired); `20260926000010_money_reports.sql` not pushed yet |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | **Built**, enumerated by probes |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | **Built** |
-| SQL probe suite (24 probes; the suite prints its own total) + concurrency probe, in CI | **Built** |
+| SQL probe suite (28 probes; the suite prints its own total) + concurrency probe, in CI | **Built** |
 | iOS: sign-in, sign-up with profile, password reset, three tabs | **Built** |
 | iOS: browse by week, per-viewer pricing, register / cancel (inside the 3-hour cutoff the full fee applies; the note is optional) / leave pool / respond, closed-clinic "Message Tara", the bell, My Clinics, profile edit, card on file | **Built** |
 | iOS admin tab: rosters, invite, courts, paid, unpaid reminder, message audiences, late requests, Action Needed, player directory | **Built** |
 | Web admin: clinic + template CRUD (archive, never delete), rosters, walk-up, courts, reminder, Action Needed, Money with the card ledger, directory, password reset | **Built**, live on Vercel |
 | Nightly `pg_dump` backup + keep-warm | **Built**, first artifact 2026-09-01 |
-| APNs push delivery | **Client half built** (permission sheet, registration, `register_device`; decision 0008). The sender waits on the APNs key, which only the Apple Developer account can issue. `notifications` rows are written; nothing delivers them |
+| APNs push delivery | **Built, waiting on the key** (decision 0008). Client half: permission sheet, registration, `register_device`. Sender (2026-09-23): trigger `push_on_notification` → pg_net → the `push` edge function → APNs, with `delivered_at` / `delivery_error` on each row, proven against a mock by `tests/push/run.sh`. Nothing is sent until Apple issues the key and the two vault secrets exist (`supabase/functions/README.md`, "What Alex does when the key arrives") |
 | Stripe card payments | **Built, switched off** (decision 0009): ledger, RPCs, three edge functions ACTIVE on hosted, card screen, `payments_ledger`. `app_settings.payments_enabled` is `false`; nothing charges until the Stripe keys are set (launch checklist A1); her policy answers landed 2026-09-16 and 2026-09-21 (decisions 0012, 0013) |
 | Juniors / parent accounts | **Deferred** to November or the spring session (decision 0007) |
 | App Store / TestFlight | **Blocked** on Apple Developer enrollment for FXE Tennis, LLC |
@@ -99,9 +99,9 @@ flowchart TD
         auth -.->|"auth.uid() read by is_admin() / owns_player()"| pg
     end
 
-    edge["Edge functions (Deno, service_role)<br/>stripe-setup-intent, stripe-webhook, stripe-charge, delete-account, review-submit"]
+    edge["Edge functions (Deno, service_role)<br/>stripe-setup-intent, stripe-webhook, stripe-charge, delete-account, review-submit, push"]
     edge --> pg
-    gha["GitHub Actions<br/>probes, browser tests, Stripe pipeline (mocked), iOS build + tests,<br/>copy gate, secret scan, migration immutability, doc paths, nightly backup"] -.-> supa
+    gha["GitHub Actions<br/>probes, browser tests, Stripe pipeline (mocked), push pipeline (mocked), iOS build + tests,<br/>copy gate, secret scan, migration immutability, doc paths, nightly backup"] -.-> supa
 ```
 
 The phone and the web page are two clients of one API. Postgres cannot tell
@@ -158,7 +158,8 @@ FXETennis/
     ├── NotificationPermissionView.swift shown once after the profile exists, before iOS's own dialog;
     │                            Tara's Screen-3 sentence, two equal buttons
     ├── MainTabView.swift        Home, Clinics, Profile, plus Manage when isAdmin
-    ├── HomeView.swift           My Clinics + Available Clinics glance, the bell with its badge
+    ├── HomeView.swift           the front page (decision 0015): My Clinics on top, then what is open for
+    │                            registration while fewer than two are yours, else the one blue button; the bell
     ├── NotificationsView.swift  what the bell opens: rows the RPCs wrote, newest first, mark read
     │   (NotificationPermissionView.swift also holds NotificationsOffLine: the standing line on Home while permission is denied)
     ├── MyClinicsView.swift      the clinics I hold a live registration in, grouped by week, with chips,
@@ -169,7 +170,10 @@ FXETennis/
     ├── ClinicExplainerSheet.swift the "?" sheet (Tara's descriptions + the 105 definition)
     ├── ProfileView.swift        the player's own details, Payment method, version, sign out, Delete my account
     ├── EditProfileView.swift    name, phone, rating; membership shown as Tara's to correct
-    ├── CardOnFileView.swift     the webhook's card summary, or Add a card → Stripe's PaymentSheet
+    ├── CardOnFileView.swift     the permission box (their words), the card as •••• 4242, or Add a card → Stripe's PaymentSheet
+    ├── CardStepView.swift       onboarding after the waiver while cards are required: the card screen as a step, Sign out as the exit
+    ├── Components/BrandHeader.swift the straight navy header with the green line, the Wordmark, NavRowLabel
+    ├── Components/CourtBackdrop.swift Tara's court photo under a porcelain wash, behind the main screens
     ├── WaiverView.swift         Tara's waiver, her checkbox sentence, the typed legal name; gates the app until signed
     ├── AdminClinicsView.swift   Manage: Action Needed, Today, Upcoming, Past; toolbar → Players
     ├── AdminClinicDetailView.swift roster: courts, Came/No-show, invite, cancel invite, late requests,
@@ -238,7 +242,9 @@ JSON. The hiding is done in the database by three mechanisms:
    granted exactly (`information_schema.table_privileges` and
    `column_privileges`, 2026-09-12): `SELECT` on `accounts`, `players`,
    `notifications`, `late_requests`, `payments` and `app_settings` (RLS scopes
-   the first five to the caller; settings are player-safe by rule), column
+   the first five to the caller; settings are player-safe by rule; on
+   `notifications` the SELECT is a column list since 20260923000001, so the
+   push audit columns `delivered_at` and `delivery_error` are withheld), column
    `UPDATE` on `accounts(first_name, last_name, phone)`,
    `players(first_name, last_name, adult_rating, date_of_birth)` and
    `notifications(read_at)`, `SELECT` on the narrow views, and `EXECUTE` on the
@@ -255,7 +261,7 @@ JSON. The hiding is done in the database by three mechanisms:
    | `my_news` | Published news for your audience with a per-account read flag | scoped to the caller |
    | `clinics_admin`, `registrations_admin`, `templates_admin` | Explicit column lists (never `select *`, which freezes at creation) `where is_admin()`. `registrations_admin` adds the computed `has_card` and `charge_status` so the roster can offer Charge | admin only, else zero rows |
    | `revenue_by_clinic`, `revenue_by_segment` | Reconciliation aggregates | admin only |
-   | `payments_ledger` | Card payments with player and clinic named (2026-09-12): `id, kind, amount_cents, currency, status, failure_reason, created_at, updated_at, registration_id, refunds_payment_id, account_id, first_name, last_name, clinic_id, clinic_name, clinic_starts_at`. Exists because `registrations` is unreadable to clients on purpose, so PostgREST cannot embed through it | admin only |
+   | `payments_ledger` | Card payments with player and clinic named (2026-09-12): `id, kind, amount_cents, currency, status, failure_reason, created_at, updated_at, registration_id, refunds_payment_id, account_id, first_name, last_name, clinic_id, clinic_name, clinic_starts_at, failure_code` (`failure_code` appended 2026-09-26, 20260926000010). Exists because `registrations` is unreadable to clients on purpose, so PostgREST cannot embed through it | admin only |
 
    Views run with owner rights (not `security_invoker`), which is why writes
    through them are revoked outright: an auto-updatable view would bypass RLS.
@@ -299,11 +305,12 @@ the attack and asserts it fails.
 | `late_requests` | "Can I still get in?" after the close; Tara approves or declines. |
 | `clinic_messages` + `clinic_message_recipients` | Broadcasts; targeted audiences are snapshotted at send time. |
 | `news_posts` + `news_reads` | Announcements; read state per account. |
-| `notifications` | In-app rows written by RPCs (players and Tara). Readable by the owner; only `read_at` is writable. |
+| `notifications` | In-app rows written by RPCs (players and Tara). Readable by the owner, eight named columns; only `read_at` is writable. `delivered_at` / `delivery_error` are written by the `push` edge function and readable by no client (20260923000001). Every insert fires `push_on_notification`, which posts the row id to `push` through pg_net once the vault secrets `push_function_url` and `push_webhook_secret` exist, and does nothing until then. |
 | `devices` | APNs tokens (groundwork; nothing delivers yet). |
 | `my_past_clinics` (view) | A player's own finished clinics with only their own outcome: name, time, status, no-show, late, price snapshot, paid. Own rows only, none of the nine hidden facts (feature review 09-02; decision 0012 §10). |
+| `card_consents` | One row per card permission (decision 0015 §7): the server's copy of the words, their version, the time, the app build. Written only by `record_card_consent`; read by `my_card_consent` and by `stripe-setup-intent`, which refuses a card setup without one; kept while the account exists and 90 days after `deleted_at`, then removed by `purge_expired_card_consents()` from the nightly `retention` job. No client privilege |
 | `waivers` + `waiver_acceptances` | Tara's Adult Tennis Participation Waiver, one row per version, and each electronic signature (typed legal name, account email, time, app build). Reached only through `current_waiver`, `my_waiver_accepted`, `accept_waiver` (decision 0013). |
-| `payments` | The money ledger (decision 0009): one row per clinic fee, late cancel, no show or refund, with Stripe ids and a status only the edge functions or admin RPCs change. Players read their own rows. |
+| `payments` | The money ledger (decision 0009): one row per clinic fee, late cancel, no show or refund, with Stripe ids and a status only the edge functions or admin RPCs change. On a decline, `failure_reason` is Stripe's sentence and `failure_code` its machine code (`decline_code`, else `code`: `insufficient_funds`, `expired_card`, ..., 20260926000010), both written only by the Stripe edge functions. Players read their own rows. |
 | `app_settings` | Small admin-editable strings, e.g. Tara's payment line, and the payment policy keys (`payments_enabled`, `cancel_cutoff_hours`, …). Never anything hidden. |
 | `review_links` | One row per link to Tara's review page (`web/review.html?t=<token>`, 20260921000010). The token is the credential: 24 random bytes, URL-safe, minted by `admin_create_review_link`; `revoked_at` retires a link without deleting what it collected. No client role holds anything on it. |
 | `review_responses` | Her answers, one jsonb blob per (link, page version), replaced on every save; `updated_at` stamped by trigger with `clock_timestamp()`. Written only by the `review-submit` edge function as `service_role`, read back by `admin_review_responses`. |
@@ -319,7 +326,7 @@ Enums: `account_type`, `account_role`, `player_kind`, `clinic_audience`
 ### The RPCs
 
 **Player-facing** (self-gated by `owns_player()` or `auth.uid()`):
-`create_my_account`, `register_for_clinic` (refuses `card_required` once payments are on and `waiver_required` until the current waiver is signed), `respond_to_invitation`,
+`create_my_account`, `register_for_clinic` (refuses `card_required` once payments are on unless a card is saved, meaning `card_last4` and not merely a Stripe customer; `waiver_required` until the current waiver is signed; `back_to_back_105` for a non-member taking a second 105 the same New York day earlier than 48 hours before the earlier start, decision 0015, using `is_105` and `back_to_back_105_opens_at`), `record_card_consent` / `my_card_consent` / `card_consent_text` (the permission box, decision 0015 §7), `respond_to_invitation`,
 `cancel_registration(p_registration, p_note)` (inside the 3-hour cutoff the cancel is late and the fee applies; the note is optional, decisions 0012/0013), `leave_pool` (archives the row as canceled since 2026-09-21), `request_late_spot`,
 `mark_news_read`, `register_device` / `unregister_device` (the account is
 always `auth.uid()`; `devices` stays client-unreadable), `current_waiver` / `waiver_version` / `my_waiver_accepted` / `accept_waiver` (the waiver, decision 0013 §4), `delete_my_account` (scrubs the person, keeps history; the `delete-account` edge function then removes the sign-in through Supabase's admin API, decision 0013 §5), `zelle_allowed` (false: the card is the only way to pay).
@@ -339,6 +346,7 @@ always `auth.uid()`; `devices` stays client-unreadable), `current_waiver` / `wai
 | `publish_news` | Publish a draft post. |
 | `admin_charge_registration`, `admin_refund_payment` | Insert `pending` ledger rows for the Stripe edge functions to execute; refuse while `payments_enabled` is false. |
 | `revenue_summary` | The four numbers and the money (section 7). |
+| `admin_board_report`, `admin_board_report_clinics` | The board report (Tara, 2026-09-26; 20260926000010): for New York dates `p_from..p_to` inclusive, attendances and distinct players by the `was_member` snapshot (You're In!, not a no-show, clinic ended and not canceled), clinics, fees due at the snapshot prices, card income net of refunds (clinic, late-cancel and no-show fees), and 10% of each, rounded half up; the second returns the same per clinic, adding up to the first. `invalid_period` for a null or backwards range. The 10% base is question 58. |
 | `admin_create_review_link`, `admin_review_responses` | Tara's review page (section 8): mint a link token with a label; list every saved response newest first, revoked links included (archive, never delete). |
 
 **Internal** (`notify_account`, `admin_account_ids`) is executable by no
@@ -434,7 +442,11 @@ behind a Show canceled toggle, and templates archived and restored through
 deleted. Added 2026-09-12: "Edited <date>" under every note, the card-payments
 list on the Money tab from `payments_ledger`, and Charge fee / Charge late
 cancel / Refund on the roster row, rendered only while `payments_enabled` is
-true (the late-cancel note shows always). Drag-and-drop courts are
+true (the late-cancel note shows always). Added 2026-09-26: a **Board report**
+card at the top of the Money tab (`admin_board_report` and
+`admin_board_report_clinics`, with Download CSV and Print) for Tara's board
+and its 10%, and "Declined: <reason>" on failed card payments from
+`payments.failure_code`. Drag-and-drop courts are
 deliberately not built until the dropdown has been used for real.
 
 Added 2026-09-21: **Tara's review page lives here too.** `web/review.html`
@@ -474,17 +486,22 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `clinic_messaging` | Decision 0005: a targeted message is readable only by the group it went to; the whole list each player sees is asserted; the recipients table is hidden; each recipient notified once |
 | `schema_decisions` | Tara's decisions with a DB consequence stay true |
 | `push_devices` | `register_device` / `unregister_device`, attacked: nobody but the owner sees a token, the account is never a parameter, re-registering is idempotent |
+| `push_delivery` | 20260923000001: the audit columns exist and `authenticated` holds nothing on them (Maria's own `select delivery_error` is refused) while the app's eight columns still read; the AFTER INSERT trigger exists and no client can execute its function; with no vault secrets (or only one) an insert succeeds and queues nothing, with both (and an unreachable URL) it queues exactly one request carrying the row id and the secret header; and when the vault read itself raises (the trigger function handed to `anon` inside the rolled-back transaction) the insert still succeeds |
 | `template_archive` | Only Tara archives or restores; the stamp survives a repeat; archived rows show to her and to nobody else; a clinic can still be built from an archived template |
 | `payments_foundation` | Nobody charges anyone while payments are off; a player cannot write the ledger or forge a card; a double tap is one fee; the ledger, not a checkbox, marks a registration paid |
 | `payments_ledger` | The gate on the owner-run view: Tara sees the row with names on it, Maria sees nothing, nobody writes through it |
+| `money_reports` | The board report from the rule, on a hand-computed fixture: every column of both functions, the snapshot beats a later membership correction, a refund is subtracted, late-cancel and no-show fees are income, the New York date decides the month at both edges, the clinic rows add up to the totals, `invalid_period`, a member gets `not_authorized`, anon and PUBLIC hold no EXECUTE, and the ledger shows `failure_code` to Tara and nothing to Maria. Red first under two mutants (membership from `players.is_member`, 7 checks; refunds not subtracted, 4) |
 | `cancellation_policy` | Decisions 0012/0013: card required to register, no-shows, the courtesy window switched off at 0 days (and proven reversible at 90), one tap per clinic after it ends, the note only Tara reads | 30 |
+| `back_to_back_105` | Decision 0015 §13, Tara's rule and her own Sunday example as literals (Friday 16:30): a non-member's second 105 the same day is refused until 48 hours before the earlier start, allowed inside 48 hours, on another day, for a non-105, after leaving the first; members and Tara unaffected; clock time across both daylight-saving weekends; the same New York day across UTC midnight; a canceled clinic frees the day; the earlier start decides in either order; the helpers are internal | 22 |
+| `card_consent` | Decision 0015 §5 and §7: a Stripe customer without a saved card cannot register, is not "has card" on the roster, cannot be charged (all three passed before 20260926000001); the permission is recorded with the server's words, version and build, asked again when the words change, unreadable and unwritable by clients, kept through account deletion, not removable by a hard delete (RESTRICT), purged 90 days after it and not before; ticking twice records once | 25 |
 | `waiver` | Decision 0013 §4: her text is served, an unsigned account cannot register, a signature needs a full legal name and the current version, the email comes from the account, signing twice keeps the first record, Tara can place an unsigned player and see who has not signed, no client touches the tables | 23 |
 | `account_deletion` | Decision 0013 §5: the person is scrubbed, registrations, ledger and Tara's note stay, a spot in a future clinic is given back, a played clinic keeps its row and its revenue, Tara cannot delete herself, a deleted row is never an admin | 18 |
 | `late_cancellation` | Decision 0010 driven from the roles the app uses: a late You're In! cancel needs a note, pool drop-outs and Tara's removals are never late, the note reaches her roster |
 | `review_responses` | Only Tara mints a review link and the token is long and URL-safe; anon and authenticated hold no verb on either table; the edge function's role does; a repeat save on one (link, page version) is one row with a later `updated_at`; Tara reads every response back with its label, newest first; revoking a link keeps its responses |
 | `capacity_race.sh` | Two racing registrations; invite-vs-accept |
+| `back_to_back_105_race.sh` | Two concurrent registrations by one non-member for two same-day 105s: exactly one survives (the per-player lock in `register_for_clinic`; red without it, 2026-09-26) |
 
-**Swift**: 23 unit tests (`FXETennisTests`: price formatting, per-viewer
+**Swift**: 31 unit tests (`FXETennisTests`: price formatting, per-viewer
 pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013) and 13
 XCUITests: 8 player flows
 (`PlayerFlowUITests`: sign in / browse / register, undo, sign-up end to end,
@@ -495,25 +512,34 @@ local stack and are order-dependent on a fresh seed. **They do not run in
 CI**: the macOS runner has no Docker for the stack; a `fxe-ci` Supabase
 project is the ask (`docs/launch-checklist.md` §F).
 
-**Web admin**: 14 Playwright tests (`web/tests/admin.spec.mjs`) walk Tara's
+**Web admin**: 15 Playwright tests (`web/tests/admin.spec.mjs`) walk Tara's
 side against a fresh seed: sign-in and the non-admin door, prices, walk-up,
 courts, unpaid reminder, a note round-trip, cancel clinic, template archive
 and restore, Money counts, the card-payments ledger, payments off. One worker,
 file order; the suite is not idempotent (cancel clinic is for keeps), so reset
 between runs.
 
-**Stripe pipeline**: `tests/stripe/run.sh`, 27 checks against stripe-mock:
+**Stripe pipeline**: `tests/stripe/run.sh`, 34 checks against stripe-mock (the permission refusal, decline codes, a success clearing a decline, dashboard refunds recorded once):
 SetupIntent, signed and unsigned webhooks, charge → processing → succeeded →
 paid, refund → unpaid, decline → failed with a reason, and the switch off
 proving nothing charges.
 
+**Push pipeline**: `tests/push/run.sh` against `tests/push/mock-apns.ts`
+(env from `tests/push/make-env.sh`, a throwaway P-256 key per run): the
+secret header, unknown and malformed rows, no device, one good device (topic,
+push type, collapse id, the row body verbatim, the unread count as badge, and
+an ES256 provider token the mock verifies against the public key), `gone` and
+`bad` tokens pruned, idempotency, Maria refused the audit columns through
+PostgREST, and the trigger delivering through pg_net with nobody calling the
+function by hand. The function is `supabase/functions/push/index.ts`.
+
 **GitHub Actions** on every push and PR (`probes.yml`): `sql-probes`
 (pinned CLI, `db reset`, the suite), `web-browser-tests` (the same pinned
 stack, then Playwright), `stripe-pipeline` (the stack plus stripe-mock on its
-network, then `tests/stripe/run.sh`), `ios-changes` (did any Swift or
+network, then `tests/stripe/run.sh`), `push-pipeline` (the stack, Deno on the runner running the mock APNs, the functions served with the push env, then `tests/push/run.sh`), `ios-changes` (did any Swift or
 `project.yml` change? gates the next job so a docs PR does not wait on Xcode),
 `ios-build-and-test` (XcodeGen, Debug and Release builds, unit tests, app-icon
-gate, simulator chosen at run time), `copy-gate`, `secret-scan`, `hosted-smoke` (read-only: 48 hosted targets must answer a signed-out caller with 401/403/404; `scripts/hosted-smoke.sh`),
+gate, simulator chosen at run time), `copy-gate`, `secret-scan`, `hosted-smoke` (read-only: 51 hosted targets must answer a signed-out caller with 401/403/404; `scripts/hosted-smoke.sh`),
 `migration-immutability`, `ios-ui-tests` (the 13 XCUITests against a
 throwaway CI Supabase project, reset to the seed first; green with a notice
 until that project's secrets exist, see `docs/launch-checklist.md` §F, added

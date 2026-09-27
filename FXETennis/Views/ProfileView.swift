@@ -19,11 +19,18 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Brand.surfaceGradient.ignoresSafeArea()
+                CourtBackdrop()
                 ScrollView {
                     VStack(alignment: .leading, spacing: Brand.Spacing.lg) {
                         header
                         detailsCard
+                        // My Clinics, with Past, used to hang off Home's "View All
+                        // Clinics" button; Final Updates p.1 removed that button.
+                        NavigationLink { MyClinicsView() } label: {
+                            OutlinedButtonLabel("My Clinics", icon: "calendar")
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("profile.myClinics")
                         CardOnFileView()
 
                         Button {
@@ -110,14 +117,6 @@ struct ProfileView: View {
                 }
             }
             .navigationTitle("Profile")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { showNTRP = true } label: {
-                        Image(systemName: "questionmark.circle")
-                    }
-                    .accessibilityLabel("What do the ratings mean?")
-                }
-            }
             .sheet(isPresented: $showNTRP) { NTRPExplainerSheet() }
             .sheet(isPresented: $editing) { EditProfileView() }
         }
@@ -153,7 +152,25 @@ struct ProfileView: View {
                 row("Phone", phone)
             }
             if let rating = session.activePlayer?.adultRating {
-                row("Rating", String(format: "%.1f", rating))
+                // Final Updates p.2 item 1: the "?" sits next to the rating,
+                // below the phone, and smaller (it was in the toolbar).
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Rating").font(Brand.Typography.caption).foregroundStyle(Brand.textSecondary)
+                    HStack(spacing: Brand.Spacing.xxs) {
+                        Text(String(format: "%.1f", rating))
+                            .font(Brand.Typography.body).foregroundStyle(Brand.textPrimary)
+                        Button { showNTRP = true } label: {
+                            Image(systemName: "questionmark.circle")
+                                .font(.system(size: 15, weight: .regular))
+                                .foregroundStyle(Brand.textSecondary)
+                                .frame(minWidth: 32, minHeight: 28)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("What do the ratings mean?")
+                        .accessibilityIdentifier("profile.ratingHelp")
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .padding(Brand.Spacing.cardPadding)

@@ -25,14 +25,14 @@ struct AuthView: View {
 
     var body: some View {
         ZStack {
-            Brand.surfaceGradient.ignoresSafeArea()
+            CourtBackdrop(strength: .front)
 
             VStack(spacing: 0) {
                 // Navy banner, straight from Tara's mockups: every important
                 // screen opens on navy rather than a field of white. It also
                 // anchors the layout, so nothing shifts when the keyboard or an
                 // error message appears.
-                ArchedHeader(height: 270) {
+                BrandHeader(height: 250) {
                     Wordmark()
                         .padding(.top, Brand.Spacing.xxl + Brand.Spacing.sm)
                 }

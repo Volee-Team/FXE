@@ -49,7 +49,7 @@ What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision 00
 | 3 | Push delivery: the `push` edge function on the notifications webhook, audit columns (decision 0008) | [me] | blocked on the APNs key |
 | 4 | **Privacy manifest** (`PrivacyInfo.xcprivacy`): Apple rejects builds that use required-reason APIs without it | [me] | **done 2026-09-12** (PR #37) |
 | 5 | **Account deletion in the app**: App Store guideline 5.1.1(v). Tara, 2026-09-21: "Keep their history." Built: `delete_my_account()` scrubs the person and keeps registrations, ledger and her notes; the `delete-account` edge function removes the sign-in through Supabase's admin API (soft delete). Profile → Delete my account, two taps. Probe `account_deletion` (18) | [me] | **built 2026-09-21**; edge function to deploy with the PR |
-| 6 | Privacy policy at a URL, terms (Tara said Volee's privacy policy can be reused, decision 16). **Waiver: done 2026-09-21**, her Adult Tennis Participation Waiver signed in the app before the first spot (decision 0013 §4) | [Alex]/[Tara] | privacy policy still needs a place to host it (fersc.com, she said) |
+| 6 | Privacy policy at a URL, terms (Tara said Volee's privacy policy can be reused, decision 16). **Waiver: done 2026-09-21**, her Adult Tennis Participation Waiver signed in the app before the first spot (decision 0013 §4) | [Alex]/[Tara] | **draft written 2026-09-23**: `docs/legal/privacy-policy.md` (Volee's with FXE's facts, eight deltas listed) and `web/privacy.html`, not deployed until approved (`docs/copy-review.md` §G); then host at the admin site URL or fersc.com |
 | 7 | App Store listing: name, subtitle, description (Tara's words), screenshots on the required sizes, age rating, support URL, review notes with a test account | [Alex]+[me] | not started |
 | 8 | TestFlight internal build to Tara's phone, then external testers (external needs the privacy URL) | [John] then [Alex] | **stopgap 2026-09-21 (decision 0014):** John uploads internal builds from his own account per `docs/testflight.md`; external testers and the listing wait on 1 |
 | 10 | **An annotated git tag and a changelog line at every TestFlight upload** (`git tag -a v0.1.0-tf1 -m ...`), so a build on a phone can always be matched to a commit. Alex asked for tags and patch notes on 2026-08-13; Volee once shipped a build no commit matched. No tags exist yet | [me] | at the first upload |
@@ -77,8 +77,8 @@ The rule (CLAUDE.md, verification asymmetry): the thing that builds a feature ca
 
 | Layer | Runs where | Count 2026-09-12 | Gap |
 |---|---|---|---|
-| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 513 checks, 24 probes | none known |
-| Stripe pipeline against stripe-mock | every PR | 27 checks | real Stripe behaviour (3DS, declines) waits on keys |
+| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 644 checks, 28 probes | none known |
+| Stripe pipeline against stripe-mock | every PR | 34 checks | real Stripe behaviour (3DS, declines) waits on keys |
 | Web admin browser tests (Playwright, real sign-in) | every PR | 14 | not idempotent (backlog); no test of the charge path with the switch on |
 | Swift unit tests (pure logic) | every PR | 23 | fine |
 | Hosted signed-out smoke (`scripts/hosted-smoke.sh`) | every PR, read-only against production | 48 targets | only the anon side; a signed-in run needs a real person's session |

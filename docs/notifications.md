@@ -53,8 +53,12 @@ or 11 (a player's own `cancel_registration` notifies only the admins).
 is not a `notify_account` call at all: it is a clinic message, see below.
 
 Push delivery is a separate question: these rows are readable in the app's
-notification center (2026-09-02) and nothing sends an APNs push yet (decision
-0008, waiting on the signing key).
+notification center (2026-09-02). Since 2026-09-23 every row inserted here is
+also handed to the `push` edge function, which sends the row's body verbatim
+to the recipient's phones and records `delivered_at` or `delivery_error` on
+it (decision 0008). That path is built and tested against a mock but sends
+nothing yet: it stays silent until Apple issues the signing key and the two
+vault secrets are set (`supabase/functions/README.md`).
 
 ---
 

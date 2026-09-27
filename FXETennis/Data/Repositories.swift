@@ -445,17 +445,20 @@ enum NotificationRepository {
     }
 
     private struct ReadStamp: Encodable { let read_at: Date }
+    // `.minimal`, not the SDK's default `.representation`: returning the row
+    // means RETURNING every column, and the push audit columns are not
+    // client-readable (20260923000001), so the whole UPDATE would be refused.
 
     static func markRead(_ id: UUID) async throws {
         _ = try await supabase.from("notifications")
-            .update(ReadStamp(read_at: Date()))
+            .update(ReadStamp(read_at: Date()), returning: .minimal)
             .eq("id", value: id)
             .execute()
     }
 
     static func markAllRead() async throws {
         _ = try await supabase.from("notifications")
-            .update(ReadStamp(read_at: Date()))
+            .update(ReadStamp(read_at: Date()), returning: .minimal)
             .is("read_at", value: nil)
             .execute()
     }
