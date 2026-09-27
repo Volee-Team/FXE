@@ -396,7 +396,7 @@ back in front of her on round four of the review page:
 | ☐ | Tara, only what's new / Your changes from September 22 are in the app. … | The review page's heading and lede, round four | Only Tara reads it |
 | ☐ | Testing | Now a small grey link at the foot of the web admin, not a tab (Alex, 2026-09-27) | Only Alex uses it |
 
-## L. Web admin: This week stops at the week (2026-09-27, MVP audit item 14) — awaiting Alex
+## L. Web admin: This week stops at the week, and a refused sign-in says to wait (2026-09-27, MVP audit items 14 and 15) — awaiting Alex
 
 Laptop only; no player sees any of it. This week lists clinics that end after
 this service week began (Sunday 00:00, New York), plus, while payments are on,
@@ -410,6 +410,7 @@ older waits behind a checkbox, the same shape as Show canceled.
 | ☐ | No earlier clinics. | Under Earlier when there are none | Chrome |
 | ☐ | No clinics this week or later. Use “New clinic” to add one. | This week, when nothing ends after the week began | Replaces "No clinics yet. Use “New clinic” to add your first one.", which stops being true once older clinics exist and are simply not listed |
 | ☐ | Couldn't load clinics. | This week, when the rosters or the players cannot be read; the list is cleared rather than drawn with empty rosters | The iOS app's line for the same failure. Not seen by the extractor (a second argument) |
+| ☐ | Too many attempts: wait a minute and try again. | Admin sign-in, sign-up and Forgot password, when Supabase Auth answers HTTP 429 (30 sign-ins and sign-ups per 5 minutes per IP, and the launch party is one Wi-Fi; MVP audit item 15) | Was GoTrue's own "Request rate limit reached". A try comes back every few seconds, so a minute is honest. The reset email's limit is hourly, so that 429 keeps GoTrue's "email rate limit exceeded" rather than a promise of a minute. The iOS half of item 15 should say the same words |
 
 ## The rule going forward
 

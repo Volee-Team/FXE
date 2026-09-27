@@ -382,6 +382,16 @@ function note(el, text, ok = false) {
 // human sentence, never the raw code.
 function friendly(e) {
   const m = (e?.message || String(e)).toLowerCase();
+  // Supabase Auth allows 30 sign-ins and sign-ups per 5 minutes per IP, and a
+  // room on one Wi-Fi is one IP (MVP audit 2026-09-27, item 15). A refusal is
+  // HTTP 429 with over_request_rate_limit; the code can arrive empty, since a
+  // cross-origin page may not read the header that carries its format. Email
+  // and SMS send limits are also 429 but last up to an hour, so they keep
+  // their own message rather than a promise that a minute is enough.
+  const code = String(e?.code || "");
+  if (code === "over_request_rate_limit" || m.includes("request rate limit")
+      || (e?.status === 429 && !/^over_(email|sms)_send_rate_limit$/.test(code)))
+    return "Too many attempts: wait a minute and try again.";
   if (m.includes("not_authorized") || m.includes("permission denied"))
     return "That account is not an administrator.";
   if (m.includes("invalid login")) return "That email or password didn't work.";
