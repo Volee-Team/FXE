@@ -19,6 +19,10 @@ final class ClinicsViewModel {
     var myRegistrationsByClinic: [UUID: MyRegistration] = [:]
     var loading = false
     var loadError: String?
+    /// A load has finished, with an answer or a failure. Until then an empty
+    /// list means "not asked yet", not "none" (review, 2026-09-27: Home said
+    /// "No clinics currently open for registration" while the first load ran).
+    var hasLoaded = false
 
     /// Both lists land together or not at all: a half-applied load showed new
     /// clinics beside old registrations. A failure keeps what was shown and
@@ -35,10 +39,12 @@ final class ClinicsViewModel {
             self.myRegistrationsByClinic = Dictionary(
                 live.map { ($0.clinicId, $0) }, uniquingKeysWith: { a, _ in a }
             )
+            hasLoaded = true
         } catch {
             let failure = RequestFailure(error)
             if failure != .cancelled {
                 loadError = failure.line ?? "Couldn't load clinics."
+                hasLoaded = true
             }
         }
         loading = false
@@ -159,12 +165,6 @@ struct ClinicCard: View {
     /// sharing one row, where the chip left the name a sliver of width.
     @Environment(\.dynamicTypeSize) private var typeSize
 
-    private var openMoment: Date? { isMember ? clinic.memberOpensAt : clinic.publicOpensAt }
-    private func isOpen(at now: Date) -> Bool {
-        guard let openMoment else { return true }
-        return openMoment <= now
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: Brand.Spacing.sm) {
             if typeSize.isAccessibilitySize {
@@ -221,15 +221,21 @@ struct ClinicCard: View {
         }
     }
 
+    /// The same decision as the clinic page (ClinicPublic.door): "open"
+    /// only while Register would work, so not after the close or the start
+    /// (review, 2026-09-27: the card said open all the way to the start).
     @ViewBuilder private func openLine(now: Date) -> some View {
-        if isOpen(at: now) {
+        switch clinic.door(isMember: isMember, now: now) {
+        case .register:
             Text("Registration open")
                 .font(Brand.Typography.caption)
                 .foregroundStyle(Brand.Status.youreIn.ink)
-        } else if let openMoment {
+        case .opens(let openMoment):
             Text("Registration opens \(openMoment.formatted(.dateTime.month(.abbreviated).day()))")
                 .font(Brand.Typography.caption)
                 .foregroundStyle(Brand.textSecondary)
+        case .askTara, .none:
+            EmptyView()
         }
     }
 

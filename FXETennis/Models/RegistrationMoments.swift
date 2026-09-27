@@ -40,3 +40,24 @@ enum RedrawSchedule {
         Array(Set(moments.flatMap { [$0, $0.addingTimeInterval(1)] })).sorted()
     }
 }
+
+/// What the clinic page offers a player who holds no registration in it, and
+/// what the clinic card's open line says. One decision for both, so the card
+/// never says "open" when the page would refuse (review, 2026-09-27).
+/// Display only, like the rest of this file: register_for_clinic decides.
+enum RegistrationDoor: Equatable, Sendable {
+    case none            // canceled, or already started: nothing to do
+    case opens(Date)     // not open to this player yet
+    case register        // open now
+    case askTara         // closed, not started: the late request (decision 0007 §5)
+}
+
+extension ClinicPublic {
+    func door(isMember: Bool, now: Date) -> RegistrationDoor {
+        if isCanceled || now >= startsAt { return .none }
+        if let closesAt, now >= closesAt { return .askTara }
+        let opens = isMember ? memberOpensAt : publicOpensAt
+        if let opens, now < opens { return .opens(opens) }
+        return .register
+    }
+}

@@ -10,7 +10,11 @@
 //    Player Pool             -> Leave Player Pool
 //    Response Needed         -> Accept / Decline
 //    not open yet            -> "Registration opens ..."
+//    closed, not started     -> Message Tara (the late request)
+//    started, not registered -> no action (review, 2026-09-27: Register
+//                               stayed, and a tap met registration_closed)
 //    canceled clinic         -> Canceled banner, no action
+//  The not-registered rows are ClinicPublic.door(isMember:now:), unit-tested.
 //
 //  Still hides everything players must not see: no capacity, no counts, no other
 //  players, no court, no location. Only this player's own status.
@@ -48,6 +52,10 @@ final class ClinicDetailModel {
             let regs = try await RegistrationRepository.mine()
             registration = regs.first { $0.clinicId == clinicId && $0.status != .canceled }
             messages = try await ClinicRepository.messages(clinicId: clinicId)
+            // A load that worked clears an old "Couldn't reach the server"
+            // (review, 2026-09-27: it stayed after a pull that succeeded).
+            // `act` sets its own notice after this, so a refusal still shows.
+            notice = nil
         } catch {
             let failure = RequestFailure(error)
             if failure != .cancelled {
@@ -148,12 +156,6 @@ struct ClinicDetailView: View {
     /// Accept and Decline stack at the accessibility text sizes.
     @Environment(\.dynamicTypeSize) private var typeSize
     @State private var model = ClinicDetailModel()
-
-    private var openMoment: Date? { isMember ? clinic.memberOpensAt : clinic.publicOpensAt }
-    private func isOpen(at now: Date) -> Bool {
-        guard let openMoment else { return true }
-        return openMoment <= now
-    }
 
     var body: some View {
         ScrollView {
@@ -338,7 +340,18 @@ struct ClinicDetailView: View {
             case .canceled:
                 EmptyView()
             }
-        } else if hasClosed(at: now) {
+        } else {
+            notRegisteredArea(clinic.door(isMember: isMember, now: now))
+        }
+    }
+
+    /// Someone with no registration here. Which door is ClinicPublic.door:
+    /// before the opening, when it opens; then Register; from the close, the
+    /// late request; from the start, nothing, because a clinic Tara is
+    /// already coaching has nothing left to sign up for.
+    @ViewBuilder private func notRegisteredArea(_ door: RegistrationDoor) -> some View {
+        switch door {
+        case .askTara:
             // Registration has closed. Before 2026-08-27 this branch did not
             // exist: `closesAt` was decoded on ClinicPublic and read by NO view,
             // so the Register button stayed fully enabled on a closed clinic and
@@ -350,28 +363,20 @@ struct ClinicDetailView: View {
             // to get into the clinic, assuming there is space and it isn't
             // full." So the closed state is not a dead end, it is a door.
             lateRequestArea
-        } else if isOpen(at: now) {
+        case .register:
             primaryButton("Register") {
                 guard let playerId = session.activePlayer?.id else { return }
                 _ = try await RegistrationRepository.register(clinicId: clinic.id, playerId: playerId)
             }
-        } else if let openMoment {
+        case .opens(let openMoment):
             Text("Registration opens \(openMoment.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day().hour().minute()))")
                 .font(Brand.Typography.subheadline)
                 .foregroundStyle(Brand.textSecondary)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(Brand.Spacing.md)
+        case .none:
+            EmptyView()
         }
-    }
-
-    /// True once registration has closed but the clinic has not started.
-    ///
-    /// Deliberately NOT `closesAt < now` alone: after the clinic has begun there
-    /// is nothing to ask for, and offering to message Tara about a session she
-    /// is already coaching would be worse than saying nothing.
-    private func hasClosed(at now: Date) -> Bool {
-        guard let closes = clinic.closesAt else { return false }
-        return closes <= now && now < clinic.startsAt
     }
 
     /// The closed-window state: explain why, then offer the way through.
