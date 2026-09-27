@@ -44,13 +44,16 @@ notes, the Stripe link).
 - **Card payments:** built and deployed; the switch is off (A9), and the real
   card sheet has only ever run against Stripe's mock, never Stripe itself (A2).
 - **Push on the lock screen:** built and deployed; waits on Apple's key (C3).
-  Notifications show inside the app meanwhile.
+  Notifications show inside the app meanwhile. The app's receiving end is in
+  the build since 2026-09-27: a banner while it is open, a tap opens the
+  clinic (an invitation lands on Accept and Decline), and the icon's number
+  is the bell's.
 
 Missing on the phone by design: creating or editing a clinic (web only),
 News (deferred, decision 0006).
 
-Testing today: 15 Playwright tests, 13 XCUITests (5 on Tara's side), 33 unit
-tests, 28 SQL probes, a 34-check Stripe pipeline and a 48-check push pipeline
+Testing today: 15 Playwright tests, 13 XCUITests (5 on Tara's side), 45 unit
+tests, 29 SQL probes, a 34-check Stripe pipeline and a 48-check push pipeline
 against mocks in CI.
 
 **Answered already, do not re-ask.** Six of the eight closed on 2026-08-27; see

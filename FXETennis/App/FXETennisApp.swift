@@ -58,6 +58,7 @@ struct RootView: View {
             CompleteProfileView()
         case .signedIn:
             MainTabView()
+                .pushTapRouting()
                 .pushPermissionPrompt()
                 .waiverGate()
                 .cardGate()

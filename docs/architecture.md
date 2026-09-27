@@ -55,13 +55,13 @@ most important thing to understand here, and it is section 5.
 | Postgres schema, RLS, narrow views, RPCs | **Built**, 36 migrations; the first 35 applied to hosted (verified 2026-09-26, `supabase migration list --linked`: 35 paired); `20260926000010_money_reports.sql` not pushed yet |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | **Built**, enumerated by probes |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | **Built** |
-| SQL probe suite (28 probes; the suite prints its own total) + concurrency probe, in CI | **Built** |
+| SQL probe suite (29 probes; the suite prints its own total) + concurrency probe, in CI | **Built** |
 | iOS: sign-in, sign-up with profile, password reset, three tabs | **Built** |
 | iOS: browse by week, per-viewer pricing, register / cancel (inside the 3-hour cutoff the full fee applies; the note is optional) / leave pool / respond, closed-clinic "Message Tara", the bell, My Clinics, profile edit, card on file | **Built** |
 | iOS admin tab: rosters, invite, courts, paid, unpaid reminder, message audiences, late requests, Action Needed, player directory | **Built** |
 | Web admin: clinic + template CRUD (archive, never delete), rosters, walk-up, courts, reminder, Action Needed, Money with the card ledger, directory, password reset | **Built**, live on Vercel |
 | Nightly `pg_dump` backup + keep-warm | **Built**, first artifact 2026-09-01 |
-| APNs push delivery | **Built, waiting on the key** (decision 0008). Client half: permission sheet, registration, `register_device`. Sender (2026-09-23): trigger `push_on_notification` → pg_net → the `push` edge function → APNs, with `delivered_at` / `delivery_error` on each row, proven against a mock by `tests/push/run.sh`. Nothing is sent until Apple issues the key and the two vault secrets exist (`supabase/functions/README.md`, "What Alex does when the key arrives") |
+| APNs push delivery | **Built, waiting on the key** (decision 0008). Client half: permission sheet, registration, `register_device`; since 2026-09-27 also receiving (MVP audit item 12): a push that lands while the app is open shows as a banner and reloads Home, a tap opens its clinic through the same resolver as the bell (`NotificationRouter.swift`), and the icon's number is the bell's count, cleared at sign-out. Checked on the simulator with `tests/push/simctl-push.sh`, which pushes the payload the sender builds. Sender (2026-09-23): trigger `push_on_notification` → pg_net → the `push` edge function → APNs, with `delivered_at` / `delivery_error` on each row, proven against a mock by `tests/push/run.sh`. Nothing is sent until Apple issues the key and the two vault secrets exist (`supabase/functions/README.md`, "What Alex does when the key arrives") |
 | Stripe card payments | **Built, switched off** (decision 0009): ledger, RPCs, three edge functions ACTIVE on hosted, card screen, `payments_ledger`. `app_settings.payments_enabled` is `false`; nothing charges until the Stripe keys are set (launch checklist A1); her policy answers landed 2026-09-16 and 2026-09-21 (decisions 0012, 0013) |
 | Juniors / parent accounts | **Deferred** to November or the spring session (decision 0007) |
 | App Store / TestFlight | **Blocked** on Apple Developer enrollment for FXE Tennis, LLC |
@@ -137,7 +137,14 @@ FXETennis/
 │   ├── Session.swift            SessionStore: auth, account, activePlayer, isAdmin,
 │   │                            signUp → create_my_account, password reset
 │   ├── PushRegistrar.swift      client half of decision 0008: permission (once, Tara's line),
-│   │                            APNs registration, token → register_device; sends nothing
+│   │                            APNs registration, token → register_device; sends nothing.
+│   │                            PushAppDelegate is also the notification center's delegate:
+│   │                            banner + Home reload in the foreground, taps to the router;
+│   │                            setBadge / syncBadge keep the icon at the bell's count
+│   ├── NotificationRouter.swift where a tapped notification goes, bell and push alike:
+│   │                            'clinic' or 'registration' → my_registrations or, for Tara,
+│   │                            registrations_admin → the player's clinic page or hers;
+│   │                            the push-tap sheet (pushTapRouting) and the shared state
 │   └── AppEnv.swift             DEBUG vs release: local stack vs hosted, reset URL
 ├── Data/
 │   ├── SupabaseClient.swift     the one client (URL + publishable key, implicit flow)
@@ -160,7 +167,9 @@ FXETennis/
     ├── MainTabView.swift        Home, Clinics, Profile, plus Manage when isAdmin
     ├── HomeView.swift           the front page (decision 0015): My Clinics on top, then what is open for
     │                            registration while fewer than two are yours, else the one blue button; the bell
-    ├── NotificationsView.swift  what the bell opens: rows the RPCs wrote, newest first, mark read
+    ├── NotificationsView.swift  what the bell opens: rows the RPCs wrote, newest first, mark read;
+    │                            a row opens its clinic through NotificationRouter, and while open
+    │                            the list takes tapped pushes and reloads when one lands
     │   (NotificationPermissionView.swift also holds NotificationsOffLine: the standing line on Home while permission is denied)
     ├── MyClinicsView.swift      the clinics I hold a live registration in, grouped by week, with chips,
     │                            then Past: what I played and what it cost me (my_past_clinics)
@@ -502,8 +511,8 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `capacity_race.sh` | Two racing registrations; invite-vs-accept |
 | `back_to_back_105_race.sh` | Two concurrent registrations by one non-member for two same-day 105s: exactly one survives (the per-player lock in `register_for_clinic`; red without it, 2026-09-26) |
 
-**Swift**: 33 unit tests (`FXETennisTests`: price formatting, per-viewer
-pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016) and 13
+**Swift**: 45 unit tests (`FXETennisTests`: price formatting, per-viewer
+pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016, and 12 on where a tapped notification goes: the push payload as `index.ts` builds it, and which reads each recipient's resolution makes) and 13
 XCUITests: 8 player flows
 (`PlayerFlowUITests`: sign in / browse / register, undo, sign-up end to end,
 the bell, profile edit, My Clinics, prices, hidden information) and 5 admin
@@ -532,7 +541,11 @@ push type, collapse id, the row body verbatim, the unread count as badge, and
 an ES256 provider token the mock verifies against the public key), `gone` and
 `bad` tokens pruned, idempotency, Maria refused the audit columns through
 PostgREST, and the trigger delivering through pg_net with nobody calling the
-function by hand. The function is `supabase/functions/push/index.ts`.
+function by hand. The function is `supabase/functions/push/index.ts`. The
+receiving end is checked by eye on the simulator: `tests/push/simctl-push.sh`
+pushes `tests/push/simctl-invitation.apns` (the seeded invitation, in the
+payload shape `index.ts` builds) or, with `--latest <email>`, a payload built
+from that account's newest row.
 
 **GitHub Actions** on every push and PR (`probes.yml`): `sql-probes`
 (pinned CLI, `db reset`, the suite), `web-browser-tests` (the same pinned
