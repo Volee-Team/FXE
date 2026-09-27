@@ -48,8 +48,10 @@ struct Wordmark: View {
             Image("gator-x")
                 .resizable().scaledToFit()
                 .frame(width: compact ? 34 : 104, height: compact ? 34 : 104)
+            // Logo styles, which keep their size under Larger Text: the
+            // header this sits in has a fixed height (Brand.swift, Typography).
             Text("TENNIS")
-                .font(compact ? Brand.Typography.caption : Brand.Typography.wordmarkLockup)
+                .font(compact ? Brand.Typography.wordmarkCompact : Brand.Typography.wordmarkLockup)
                 .tracking(compact ? 2.5 : 6)
         }
         .foregroundStyle(Brand.textOnNavy)
@@ -58,9 +60,14 @@ struct Wordmark: View {
     }
 }
 
-/// A tappable row from the guide: radius-lg, full width, fixed height,
+/// A tappable row from the guide: radius-lg, full width, 56 points tall,
 /// leading icon slot, label, trailing chevron. `navy` alternates with white
 /// row to row; it is not a primary/secondary hierarchy.
+///
+/// 56 is the height at the default text size, not a cap: with Larger Text
+/// the label grows (Brand.Typography) and wraps, and the row grows with it.
+/// Until 2026-09-27 the height was fixed and the label held to one line, so
+/// at the accessibility sizes "View Open Clinics" was cut off.
 struct NavRowLabel: View {
     let title: String
     var icon: String? = nil
@@ -78,15 +85,16 @@ struct NavRowLabel: View {
             .frame(width: 28, height: 28)
             Text(title)
                 .font(Brand.Typography.navRowLabel)
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: Brand.Spacing.xs)
             Image(systemName: "chevron.right").font(.system(size: 17, weight: .regular))
         }
         .foregroundStyle(navy ? Brand.textOnNavy : Brand.navy)
         .padding(.horizontal, Brand.Spacing.md)
+        .padding(.vertical, Brand.Spacing.xs)
         .frame(maxWidth: .infinity)
-        .frame(height: 56)
+        .frame(minHeight: 56)
         .background(navy ? Brand.navy : Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.lg))
         .overlay(RoundedRectangle(cornerRadius: Brand.Radius.lg).stroke(navy ? Color.clear : Brand.hairline))
     }
