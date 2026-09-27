@@ -332,7 +332,7 @@ struct ClinicDetailView: View {
                         .font(Brand.Typography.bodyEmphasis)
                         .foregroundStyle(Brand.textPrimary)
                 }
-                Text("She will let you know asap if there is room in this clinic")
+                Text("She will let you know as soon as possible if there is room in this clinic")
                     .font(Brand.Typography.subheadline)
                     .foregroundStyle(Brand.textSecondary)
                     .multilineTextAlignment(.center)
@@ -432,7 +432,8 @@ private struct LateCancelSheet: View {
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: Brand.Spacing.md) {
-                Text("This cancellation is within 3 hours of clinic and the full clinic fee will apply. If there are circumstances you'd like us to consider, please leave a note below.")
+                // Tara's words, 2026-09-22 round-two review (decision 0016).
+                Text("This cancellation is within 3 hours of clinic and the full clinic fee will apply. If an emergency, please leave a note below.")
                     .font(Brand.Typography.body)
                     .foregroundStyle(Brand.textPrimary)
                     .accessibilityIdentifier("lateCancel.sentence")

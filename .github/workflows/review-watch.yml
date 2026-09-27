@@ -1,0 +1,74 @@
+name: Tara's review answers
+
+# WHY THIS EXISTS
+# ---------------
+# Tara answered round two of her review page on 2026-09-22. The answers saved
+# to hosted exactly as designed, and nobody read them for five days: round
+# three was about to ask her the same things again (decision 0016). The page
+# saves silently, so a human has to remember to look, and nobody did.
+#
+# This looks instead. Every two hours it asks hosted for review answers saved
+# in the last six hours and opens one issue per link per day, labelled
+# tara-answers. The session-start hook prints every open tara-answers issue, so
+# the next session starts with it. Close the issue once her answers are
+# recorded in a decision.
+#
+# What it never does: copy her answers anywhere. The repository is public; an
+# issue carries the link's label and the time, and the answers stay in the
+# database (web admin: the small Testing link at the foot of the page).
+#
+# Needs the SUPABASE_DB_URL secret the nightly backup already uses. Read-only.
+
+on:
+  schedule:
+    - cron: "23 */2 * * *"
+  workflow_dispatch:
+    inputs:
+      hours:
+        description: "Look back this many hours (a wide window proves the job on an old answer)"
+        default: "6"
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Answers saved recently
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          HOURS: ${{ inputs.hours || '6' }}
+        run: |
+          case "$HOURS" in (*[!0-9]*|'') echo "::error::hours must be a whole number"; exit 1;; esac
+          if [ -z "$DB_URL" ]; then echo "::error::SUPABASE_DB_URL is not set"; exit 1; fi
+          command -v psql >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client; }
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -At -F '|' -c "
+            select l.label, r.page_version,
+                   to_char(r.updated_at at time zone 'America/New_York', 'YYYY-MM-DD HH24:MI')
+            from public.review_responses r
+            join public.review_links l using (token)
+            where r.updated_at > now() - make_interval(hours => $HOURS)
+            order by r.updated_at desc" > new.txt
+          echo "$(wc -l < new.txt) response(s) saved in the last $HOURS hours"
+
+      - name: One issue per link per day
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          [ -s new.txt ] || exit 0
+          gh label create tara-answers --color 1D7A46 --description "Tara saved answers on her review page" --force >/dev/null
+          while IFS='|' read -r label version at; do
+            title="Tara answered her review page: ${label} (${at%% *})"
+            if gh issue list --state all --label tara-answers --limit 200 --json title -q '.[].title' | grep -qxF "$title"; then
+              echo "already open: $title"; continue
+            fi
+            gh issue create --label tara-answers --title "$title" --body "Tara saved answers on the review link \"${label}\" (page version ${version}), last at ${at} New York time.
+
+          Read them on the web admin: the small **Testing** link at the foot of the page, then Responses. Her answers are not copied here because this repository is public.
+
+          Record them as a dated decision (the way 0013 and 0016 do), apply what she changed, and close this issue."
+            echo "opened: $title"
+          done < new.txt

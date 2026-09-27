@@ -29,8 +29,8 @@ struct CardOnFileView: View {
             Text("Payment method")
                 .font(Brand.Typography.bodyEmphasis)
                 .foregroundStyle(Brand.textPrimary)
-            // Tara's sentence, verbatim (2026-09-16, decision 0012), marked for her edit.
-            Text("Your card will only be charged after the clinic you attended, late cancellations, or no-shows. Cancel at least 3 hours before clinic and you will not be charged.")
+            // Tara's sentence, verbatim, as she edited it on 2026-09-22 (decision 0016).
+            Text("Your card will only be charged after a clinic you attended, a late cancellation or no-show. Cancel at least 3 hours before clinic and you will not be charged.")
                 .font(Brand.Typography.caption)
                 .foregroundStyle(Brand.textSecondary)
 

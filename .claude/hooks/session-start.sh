@@ -74,6 +74,21 @@ if [ "${LOGLINES:-0}" -gt 200 ]; then
   echo "personal data (see log-prompt.sh) and commit them in the next PR."
 fi
 
+# Tara's review answers. Her 2026-09-22 answers sat unread for five days
+# (decision 0016); review-watch.yml now opens a tara-answers issue when she
+# saves, and this puts every open one at the top of the session. Capped at
+# five seconds (perl's alarm; macOS has no timeout(1)) so a slow network
+# never holds up the session.
+if command -v gh >/dev/null 2>&1; then
+  TARA=$( (perl -e 'alarm 5; exec @ARGV' gh issue list --label tara-answers --state open --json title -q '.[].title' 2>/dev/null || true) | head -5)
+  if [ -n "$TARA" ]; then
+    echo ""
+    echo "TARA ANSWERED (open tara-answers issues). Read them before anything else:"
+    echo "$TARA" | sed 's/^/  - /'
+    echo "Her answers are on the web admin: the small Testing link at the foot of the page."
+  fi
+fi
+
 # After a compaction (and on resume), put Alex's last prompts back in front
 # of Claude VERBATIM. The compaction summary is written by the model, so it
 # is a claim (hard rule 12), and a paraphrase of "tiny rounding of the

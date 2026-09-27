@@ -273,6 +273,23 @@ below is hers and is the only waiver copy in the app besides the text.
 >
 > Required checkbox: **I have read and agree to the Adult Tennis Participation Waiver and Release.**
 
+## Her second review (2026-09-22, decision 0016)
+
+Saved on the review page on 2026-09-22 and read on 2026-09-27. Everything not
+listed she kept. Applied verbatim:
+
+| Where | Was | Now (hers) |
+|---|---|---|
+| Cancel sheet, inside the 3-hour cutoff | ...If there are circumstances you'd like us to consider, please leave a note below. | **This cancellation is within 3 hours of clinic and the full clinic fee will apply. If an emergency, please leave a note below.** |
+| After a late request | She will let you know asap if there is room in this clinic | **She will let you know as soon as possible if there is room in this clinic** |
+| Profile, card section | Your card will only be charged after the clinic you attended, late cancellations, or no-shows. ... | **Your card will only be charged after a clinic you attended, a late cancellation or no-show. Cancel at least 3 hours before clinic and you will not be charged.** |
+
+Marked Change without her own words, so ours until she says otherwise (round
+four of the review page, questions 69 and 70; `docs/copy-review.md` §K):
+"Need Help?" is now "Rating Guide"; "Set by Tara" is now "Only Tara can change
+this."; the charge summary is now sentences; "Still owed" is now "Not charged
+yet".
+
 ## Still open with Tara
 
 1. ~~The NTRP rating guide~~ **CLOSED 2026-08-27**: *"Rating guide is good

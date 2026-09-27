@@ -54,7 +54,6 @@ Download CSV
 Draft
 Draft. Not yet in effect.
 Edit details
-Every sentence a player or you will read, with where it shows up. Tap Keep, or Change and write it your way. Your answers save as you go.
 FROM TARA
 FXE Tennis
 FXE Tennis does not share your personal information with third parties for marketing or promotional purposes. Your personal information is kept confidential and is not disclosed to outside organizations, except to the service providers that operate the Services on our behalf and as described here:
@@ -105,7 +104,6 @@ Message Tara
 Message players
 More
 My Clinics
-Need Help?
 New password
 No card on file for that player.
 No card payments yet.
@@ -121,14 +119,15 @@ Nobody by that name yet. They may need to sign up in the app first.
 Non-members attended
 Non-members, 60 min
 Non-members, 90 min
+Not charged yet
 Not now
 Note for Tara (optional)
 Notifications
 On your laptop, with your real account. Whatever you set up here is real: it is your schedule.
+Only Tara can change this.
 Only Tara sees this.
 Only a You're In! player can be a no-show.
 Only a paid charge can be refunded.
-Only for testing the app with Tara and Kat
 Only you can see this.
 Open for Registration
 Our hosting provider stores the Services' data on servers in the United States.
@@ -167,8 +166,7 @@ Sections
 Security of data
 Selected. Press and hold to copy.
 Send reminder
-Set by Tara
-She will let you know asap if there is room in this clinic
+She will let you know as soon as possible if there is room in this clinic
 Sign Out
 Sign out
 Signs you out, you can finish later if needed
@@ -178,7 +176,7 @@ Stripe
 Stripe isn't connected yet.
 Stripe, Inc. processes card payments. Your card details go to Stripe directly and are governed by Stripe's privacy policy.
 Tara has your message.
-Tara, this is your app's words
+Tara, only what's new
 That account is not an administrator.
 That clinic is already canceled.
 That clinic is full now.
@@ -196,7 +194,7 @@ The information collected is used solely for providing the Services: clinic regi
 The player's note at level entry; only you see it
 Third parties
 This Privacy Policy describes the policies and procedures of FXE Tennis, LLC (&quot;FXE Tennis,&quot; &quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) on the collection, use and disclosure of your information when you use the FXE Tennis application (the &quot;Services&quot;) and tells you about your privacy rights and how the law protects you.
-This cancellation is within 3 hours of clinic and the full clinic fee will apply. If there are circumstances you'd like us to consider, please leave a note below.
+This cancellation is within 3 hours of clinic and the full clinic fee will apply. If an emergency, please leave a note below.
 This clinic has been canceled.
 This link has expired or was already used. Go back and request a new one.
 This link has no code, answers stay on this phone.
@@ -232,6 +230,7 @@ You can still ask Tara to fit you in.
 You're not registered for any clinics this week
 Your answer
 Your answers as text
-Your card will only be charged after the clinic you attended, late cancellations, or no-shows. Cancel at least 3 hours before clinic and you will not be charged.
+Your card will only be charged after a clinic you attended, a late cancellation or no-show. Cancel at least 3 hours before clinic and you will not be charged.
+Your changes from September 22 are in the app. This is only what is new or changed since then, and the four questions still open. Tap Keep, or Change and write it your way. Your answers save as you go.
 Your tennis rating
 asking to get in

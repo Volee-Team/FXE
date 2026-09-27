@@ -382,6 +382,20 @@ Shown by iOS itself when the app first asks for the permission. Set in
 | ☐ | Scan your card instead of typing the number. | A player taps "Scan card" in Stripe's card sheet | Apple requires the sentence (build 1 was rejected without it, ITMS-90683); the camera is really used there, so it says what for. John's first draft said the app does not use the camera |
 | ☐ | FXE Tennis does not use your photo library. | Never expected: added by John as a precaution for the same dependency | Accurate as far as we know; if Stripe ever asks for photos, this needs real words |
 
+## K. Her 2026-09-22 answers applied (decision 0016) — awaiting Alex
+
+Her three rewordings shipped verbatim and need no tick. These are ours, put
+back in front of her on round four of the review page:
+
+| ✓ | String | Where | Why |
+|---|---|---|---|
+| ☐ | Rating Guide | Sign-up, beside "Your tennis rating" | She marked "Need Help?" Change with no words; this names what it opens, the sheet title she kept (question 69) |
+| ☐ | Only Tara can change this. | Edit details, beside membership | Replaces "Set by Tara", which she found confusing (question 70) |
+| ☐ | Charged N cards. / 1 was already charged. / N players have no card on file. | After Charge clinic, phone and laptop; zero counts left out | Replaces "Charged 6. Already charged 0. No card 1.", marked Change. Built in a ternary, so the extractor cannot see it; `ChargeSummaryTests` pins it |
+| ☐ | Not charged yet | Web Money tab, third line | Replaces "Still owed"; she asked "Shouldn't really be still owed, correct?" and she is right |
+| ☐ | Tara, only what's new / Your changes from September 22 are in the app. … | The review page's heading and lede, round four | Only Tara reads it |
+| ☐ | Testing | Now a small grey link at the foot of the web admin, not a tab (Alex, 2026-09-27) | Only Alex uses it |
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148

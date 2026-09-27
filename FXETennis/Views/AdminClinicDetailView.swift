@@ -177,7 +177,7 @@ struct AdminClinicDetailView: View {
                 Task {
                     do {
                         let c = try await AdminRepository.chargeClinic(clinic.id)
-                        chargeNote = "Charged \(c["charged"] ?? 0). Already charged \(c["already"] ?? 0). No card \(c["no_card"] ?? 0)."
+                        chargeNote = ChargeSummary.text(charged: c["charged"] ?? 0, already: c["already"] ?? 0, noCard: c["no_card"] ?? 0)
                         await model.load()
                     } catch {
                         let e = String(describing: error)
@@ -677,5 +677,17 @@ private struct MessageClinicSheet: View {
             }
             sending = false
         }
+    }
+}
+
+/// What Tara reads after Charge clinic. Was "Charged 6. Already charged 0. No
+/// card 1.", which she marked Change on 2026-09-22 (decision 0016). Plain
+/// sentences, zero counts left out. Chrome, listed for Alex's tick.
+enum ChargeSummary {
+    static func text(charged: Int, already: Int, noCard: Int) -> String {
+        var parts = [charged == 1 ? "Charged 1 card." : "Charged \(charged) cards."]
+        if already > 0 { parts.append(already == 1 ? "1 was already charged." : "\(already) were already charged.") }
+        if noCard > 0 { parts.append(noCard == 1 ? "1 player has no card on file." : "\(noCard) players have no card on file.") }
+        return parts.joined(separator: " ")
     }
 }

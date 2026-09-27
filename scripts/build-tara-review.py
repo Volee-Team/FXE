@@ -28,687 +28,104 @@ Y = True  # Tara's own words, tagged on the page
 # Bump it when items are inserted, removed or reordered, so old answers stay
 # in their own row instead of landing on the wrong item. Rewording an item in
 # place keeps its position and needs no bump.
-PAGE_VERSION = "3"
+PAGE_VERSION = "4"
 
+# Round four (2026-09-27, decision 0016): ONLY what is new or changed since her
+# 2026-09-22 answers, and only the questions still open. Round three repeated
+# all 120 strings and 17 questions she had mostly answered already; Alex: "why
+# tf are we giving her so many if she did this like last week". The full word
+# list of every earlier round is in git (c34a370 for round two); every string
+# in the app is in docs/copy-approved.txt.
 SECTIONS = [
  [
-  "Sign in and sign up",
-  "The first screens a new player sees on the phone",
+  "Sign-up",
+  "New since your last review, on the phone",
   [
    [
-    "Let's Play.",
-    "Under the FXE logo on the sign-in screen",
-    Y
-   ],
-   [
-    "Create an account",
-    "Button on the sign-in screen",
-    False
-   ],
-   [
-    "Forgot password?",
-    "Link on the sign-in screen",
-    False
-   ],
-   [
-    "Almost there!",
-    "Heading of the profile screen after sign-up",
-    Y
-   ],
-   [
-    "Are you currently a Foxcroft East Racquet & Swim Club member?",
-    "The membership question at sign-up (your Screen 4 wording)",
-    Y
-   ],
-   [
-    "Members get 24-hour early access to all clinics",
-    "Under the membership question",
-    Y
-   ],
-   [
-    "Your tennis rating",
-    "Label above the rating pills (2.0 to 5.0+)",
-    False
-   ],
-   [
-    "Need Help?",
-    "Button that opens the rating guide (your wording)",
-    Y
-   ],
-   [
-    "Note for Tara (optional)",
-    "Label of the new note box at level entry",
-    False
-   ],
-   [
-    "Just coming back from a back injury - probably a low 3.5",
-    "The grey example text inside that box (your example)",
-    Y
-   ],
-   [
-    "Only Tara sees this.",
-    "Under the note box",
-    False
-   ],
-   [
-    "Add your name, phone number, and tennis rating. Please answer the membership question to continue",
-    "Shown under a greyed-out Continue button",
-    Y
-   ],
-   [
-    "Signs you out, you can finish later if needed",
-    "Under the Sign out link on the profile screen",
-    Y
-   ],
-   [
-    "Clinic updates come through the app. Keep notifications on so you don't miss them.",
-    "The notifications permission screen, before the iPhone asks",
-    False
-   ],
-   [
-    "Turn on notifications",
-    "Its button",
-    False
-   ],
-   [
-    "Not now",
-    "Its other button",
-    False
-   ],
-   [
-    "Waiver",
-    "Title of the waiver screen, shown once after the profile",
-    False
-   ],
-   [
-    "I have read and agree to the Adult Tennis Participation Waiver and Release.",
-    "The required checkbox (from your document)",
-    Y
-   ],
-   [
-    "Full legal name",
-    "Label of the signature box (your document: 'Participant enters full legal name')",
-    False
-   ],
-   [
-    "First and last name",
-    "The grey example text inside it",
-    False
-   ],
-   [
-    "Agree and sign",
-    "The button",
-    False
-   ],
-   [
-    "Type your first and last name.",
-    "If they type one word",
-    False
-   ]
-  ]
- ],
- [
-  "Home",
-  "What a signed-in player sees first",
-  [
-   [
-    "Good Morning, Maria!",
-    "Greeting (Morning / Afternoon / Evening by the hour)",
-    False
-   ],
-   [
-    "MY CLINICS",
-    "Section heading",
-    False
-   ],
-   [
-    "You're not registered for any clinics this week",
-    "When they hold no spot and are in no Player Pool (also under My Clinics, which lists every upcoming week; question 54)",
-    Y
-   ],
-   [
-    "View All Clinics",
-    "Button under My Clinics; opens their own clinics",
-    False
-   ],
-   [
-    "AVAILABLE CLINICS",
-    "Section heading for the open list",
-    False
-   ],
-   [
-    "No clinics currently open for registration",
-    "When no clinic is open for registration",
-    Y
-   ],
-   [
-    "View Open Clinics (4)",
-    "Button under the list; the number is how many are open",
-    False
-   ],
-   [
-    "Turn on notifications",
-    "Under the notifications sentence on Home, only while they have turned notifications off; opens their iPhone Settings",
-    False
-   ]
-  ]
- ],
- [
-  "Clinics and a clinic",
-  "The list, and a single clinic's page",
-  [
-   [
-    "Registration open",
-    "Chip on a clinic in the list",
-    False
-   ],
-   [
-    "Registration opens Sep 18",
-    "Chip when the window has not opened yet",
-    False
-   ],
-   [
-    "This week / Next week / Week of Sep 27",
-    "Group headings in the list",
-    False
-   ],
-   [
-    "Register",
-    "The one big button",
-    False
-   ],
-   [
-    "Cancel Registration",
-    "Same button once they are in",
-    False
-   ],
-   [
-    "Leave Player Pool",
-    "Same button once they are in the Pool",
-    False
-   ],
-   [
-    "Keep my spot",
-    "The safe choice on every confirmation",
-    False
-   ],
-   [
-    "Yes, cancel my spot",
-    "Confirmation before 4 hours",
-    False
-   ],
-   [
-    "Yes, leave the pool",
-    "Confirmation for leaving the Player Pool",
-    False
-   ],
-   [
-    "This cancellation is within 3 hours of clinic and the full clinic fee will apply. If there are circumstances you'd like us to consider, please leave a note below.",
-    "Inside 3 hours (your sentence, with the 3 you gave)",
-    Y
-   ],
-   [
-    "Note for Tara (optional)",
-    "The box under that sentence",
-    Y
-   ],
-   [
-    "Cancel my spot",
-    "The red button on that sheet",
-    False
-   ],
-   [
-    "Accept",
-    "For an invitation from the Player Pool",
-    False
-   ],
-   [
-    "Decline",
-    "Its partner",
-    False
-   ],
-   [
-    "Registration has closed for this clinic.",
-    "Inside the 3-hour close",
-    False
-   ],
-   [
-    "You can still ask Tara to fit you in.",
-    "Under it",
-    False
-   ],
-   [
-    "Message Tara",
-    "The button that sends you their note",
-    False
-   ],
-   [
-    "Tara has your message.",
-    "After they send it",
-    False
-   ],
-   [
-    "She will let you know asap if there is room in this clinic",
-    "Under that",
-    Y
-   ],
-   [
-    "This clinic has been canceled.",
-    "On a canceled clinic",
-    False
-   ],
-   [
-    "FROM TARA",
-    "Heading above your clinic messages",
-    False
-   ],
-   [
-    "Add a card on your Profile to register.",
-    "When a card is required and they have none",
-    False
-   ],
-   [
-    "Sorry, someone beat you to the punch. Here's the latest!",
-    "When someone else acted first (the spot filled, an invite was withdrawn)",
-    Y
-   ],
-   [
-    "Couldn't load clinics.",
-    "When the phone is offline",
-    False
-   ],
-   [
-    "About this clinic",
-    "Heading of the ? sheet",
-    False
-   ],
-   [
-    "What is 105?",
-    "Heading in that sheet (your 105 definition follows it)",
-    False
-   ],
-   [
-    "No description yet.",
-    "When a clinic has no description",
-    False
-   ],
-   [
-    "Sign the waiver first.",
-    "If someone reaches Register without having signed",
-    False
-   ],
-   [
-    "PAST",
-    "Heading at the bottom of My Clinics",
-    False
-   ],
-   [
-    "Played · $18 / No-show / Canceled / Canceled late",
-    "The outcome on each past clinic, their own only",
-    False
-   ]
-  ]
- ],
- [
-  "Profile",
-  "Their own details",
-  [
-   [
-    "FXE Member / Non-member",
-    "Under their name",
-    False
-   ],
-   [
-    "Payment method",
-    "Heading of the card section",
-    False
-   ],
-   [
-    "Your card will only be charged after the clinic you attended, late cancellations, or no-shows. Cancel at least 3 hours before clinic and you will not be charged.",
-    "Under that heading (your sentence)",
-    Y
-   ],
-   [
-    "No card on file",
-    "Before they add one",
+    "Rating Guide",
+    "Button beside \"Your tennis rating\" that opens the rating chart. Was \"Need Help?\", which you marked Change with no new words (question 69)",
     False
    ],
    [
     "Add a card",
-    "The link that opens the card form",
+    "Title of the new step after the waiver: players add a card before they see any clinics (from the update list)",
     False
    ],
    [
-    "Change card",
-    "Same link once a card exists",
-    False
-   ],
-   [
-    "Cards aren't set up yet.",
-    "Until Stripe is connected",
-    False
-   ],
-   [
-    "Saved.",
-    "After a card is added",
-    False
-   ],
-   [
-    "Edit details",
-    "Button",
-    False
-   ],
-   [
-    "Set by Tara",
-    "Beside their membership on Edit details",
-    False
-   ],
-   [
-    "What do the ratings mean?",
-    "The ? button, read aloud by VoiceOver",
-    False
-   ],
-   [
-    "Rating Guide",
-    "Title of the rating chart sheet (the chart itself is the Volee one you approved)",
-    False
-   ],
-   [
-    "Sign Out",
-    "Button",
-    False
-   ],
-   [
-    "Delete my account",
-    "Small red link at the bottom of Profile",
-    False
-   ],
-   [
-    "Delete your account? Your name, phone, email and card are removed and you are signed out. This can't be undone.",
-    "The confirmation before it",
-    False
-   ],
-   [
-    "Keep my account",
-    "Its safe choice",
-    False
-   ]
-  ]
- ],
- [
-  "Notifications",
-  "The bell on Home, and the messages the app sends",
-  [
-   [
-    "Notifications",
-    "Title of the bell screen",
-    False
-   ],
-   [
-    "No notifications yet",
-    "When there are none",
+    "I give permission for my card to be charged",
+    "The box they must tick before adding a card (your update list, word for word)",
     Y
    ],
    [
-    "Mark all read",
-    "Button",
-    False
-   ],
-   [
-    "A spot opened in Tuesday Ladies 3.0+. Accept or decline.",
-    "Sent when you invite someone from the Player Pool",
-    False
-   ],
-   [
-    "Tuesday Ladies 3.0+ has been canceled.",
-    "Sent to everyone when you cancel a clinic",
-    False
-   ],
-   [
-    "Maria Alvarez canceled. Late, fee applies. Note: \"Kid has a fever\"",
-    "What YOU see when the fee applies and they left a note",
+    "Tick the box to continue.",
+    "If they tap Add a card without ticking it",
     False
    ]
   ]
  ],
  [
-  "Your side of the phone",
-  "The Manage tab, only you see it",
+  "Home and Profile",
+  "New since your last review",
   [
    [
-    "Manage",
-    "Your fourth tab",
+    "Open for Registration",
+    "Heading above the clinics they can sign up for, when they hold fewer than two",
     False
    ],
    [
-    "ACTION NEEDED",
-    "Heading for late requests and unread replies",
+    "View Open Clinics",
+    "The one blue button once they hold two or more",
     False
    ],
    [
-    "asking to get in",
-    "Beside a player who messaged you inside the close",
+    "Rating",
+    "Label on Profile, with the small ? beside it (your update list: next to the rating, smaller)",
     False
    ],
    [
-    "Put them in / No room",
-    "Your two answers",
+    "•••• 4242",
+    "How a saved card shows: only the last four digits (your update list)",
     False
    ],
    [
-    "Invite / Cancel Invite",
-    "On Player Pool and Response Needed rows",
-    False
-   ],
-   [
-    "Came / No-show",
-    "The new toggle on each You're In! row",
-    False
-   ],
-   [
-    "No court / Court 3",
-    "The court menu",
-    False
-   ],
-   [
-    "Remove from clinic",
-    "In the row menu, with a confirmation",
-    False
-   ],
-   [
-    "Message Players",
-    "Button; then Everyone / You're In! / Player Pool / Response Needed / Unpaid",
-    False
-   ],
-   [
-    "Charge clinic",
-    "In the More menu once a clinic has ended",
-    False
-   ],
-   [
-    "Charge every card for Tuesday Ladies 3.0+? Attendees pay the clinic fee; no-shows and late cancellations pay the full fee.",
-    "Its confirmation",
-    False
-   ],
-   [
-    "Charged 6. Already charged 0. No card 1.",
-    "What you see after",
-    False
-   ],
-   [
-    "Cancel clinic",
-    "In the More menu",
-    False
-   ],
-   [
-    "Cancel Tuesday Ladies 3.0+? Everyone registered or waiting is told.",
-    "Its confirmation",
-    False
-   ],
-   [
-    "Players",
-    "Your directory; search by name",
-    False
-   ],
-   [
-    "Type at least two letters of a name.",
-    "Before searching",
-    False
-   ],
-   [
-    "Nobody by that name yet. They may need to sign up in the app first.",
-    "Empty search",
-    False
-   ],
-   [
-    "Private note",
-    "Your note on a player",
-    False
-   ],
-   [
-    "Only you can see this.",
-    "Under it",
-    False
-   ],
-   [
-    "Waiver signed / Waiver not signed",
-    "On each player's page and beside their name in Players",
+    "Only Tara can change this.",
+    "Beside a player's membership on Edit details. Was \"Set by Tara\"; you wrote \"I'm confused by this. Let's talk\" (question 70)",
     False
    ]
   ]
  ],
  [
-  "The web admin (laptop)",
-  "fxe-tennis-admin.vercel.app",
+  "Your side",
+  "The Manage tab on the phone and the laptop",
   [
    [
-    "Admin sign-in.",
-    "Under the FXE Tennis title",
+    "Charged 6 cards. 1 player has no card on file.",
+    "What you see after Charge clinic. Was \"Charged 6. Already charged 0. No card 1.\", which you marked Change",
     False
    ],
    [
-    "First time? Create your account",
-    "Button on sign-in",
+    "Not charged yet",
+    "The third money line on the laptop's Money tab. Was \"Still owed\"; you wrote \"Shouldn't really be still owed, correct?\" Right: nobody owes anything, it is fees you haven't charged yet",
     False
    ],
    [
-    "This week · Players · Money",
-    "The three tabs",
+    "Declined: Insufficient funds (NSF)",
+    "Beside a player's name when their card is declined (your update list). Also: Card expired, Card declined by bank, Wrong security code",
     False
    ],
    [
-    "New clinic",
-    "Button",
+    "Manage payments in Stripe",
+    "Link at the bottom of Money, opens your Stripe dashboard",
     False
    ],
    [
-    "Start from a template",
-    "In the clinic form",
+    "Board report",
+    "Top of the Money tab: pick the dates, Run, then Download CSV or Print",
     False
    ],
    [
-    "Description (players see this under the “?”)",
-    "A field label",
-    False
-   ],
-   [
-    "Date & time / Length (minutes) / Max players",
-    "Field labels",
-    False
-   ],
-   [
-    "Add a player",
-    "Heading of the walk-up box",
-    False
-   ],
-   [
-    "For someone who called or grabbed you at the club. They go straight to You're In!",
-    "Under it",
-    False
-   ],
-   [
-    "Ann finds Anna, Annette, Joann…",
-    "Hint under the player search",
-    False
-   ],
-   [
-    "Put in clinic",
-    "Its button",
-    False
-   ],
-   [
-    "Show canceled",
-    "Checkbox",
-    False
-   ],
-   [
-    "1 canceled clinic hidden.",
-    "The count under it",
-    False
-   ],
-   [
-    "Really cancel? Everyone is told.",
-    "Second click on Cancel clinic",
-    False
-   ],
-   [
-    "Late · Fee applies",
-    "On a canceled row, inside 3 hours",
-    False
-   ],
-   [
-    "Members, 60 min / Members, 90 min / Non-members, 60 min / Non-members, 90 min",
-    "The four counts on Money",
-    False
-   ],
-   [
-    "Expected / Collected / Still owed",
-    "The three money lines",
-    False
-   ],
-   [
-    "Card payments",
-    "Heading of the ledger",
-    False
-   ],
-   [
-    "No card payments yet.",
-    "Before any",
-    False
-   ],
-   [
-    "Pending / Processing / Paid / Failed / Refund",
-    "States beside a charge",
-    False
-   ],
-   [
-    "Edited Sep 12, 1:38 PM.",
-    "Under a private note",
-    False
-   ],
-   [
-    "Payments are switched off. / That player has no card on file. / The clinic hasn't ended yet. / That clinic is full now. / Someone already handled that one. / That clinic is already canceled. / That email or password didn't work. / Couldn't reach the server. Check your connection.",
-    "The error lines",
-    False
-   ],
-   [
-    "Choose a new password",
-    "The password reset page",
-    False
-   ],
-   [
-    "Pick something you'll remember. At least 8 characters.",
-    "Under the new-password box",
-    False
-   ],
-   [
-    "Saved. You can sign in with it now, on your phone or here.",
-    "After it saves",
-    False
-   ],
-   [
-    "This link has expired or was already used. Go back and request a new one.",
-    "An old reset link",
+    "Members attended / Non-members attended / Clinics / Fees at clinic prices / Collected by card / 10% of collected / 10% of fees",
+    "The board report's lines. Attended shows visits, with the number of different people in brackets",
     False
    ]
   ]
@@ -717,119 +134,39 @@ SECTIONS = [
 
 QUESTIONS = [
  [
-  "\"Set by Tara\"",
-  "Under a player's membership line on Edit details the app says \"Set by Tara\", so they know why they can't change it. You wrote \"Do we need anything?\" Keep it, or drop it?"
+  "You and the pros",
+  "You wrote that only you charge people and see the money, and the pros can see the clinic list and mark no-show and late cancellation. Two things: who are the pros who need a login (names and emails), and can they also set courts, message a clinic, invite from the Player Pool, add a walk-up, or see your private notes on players? If we don't hear otherwise: pros see every clinic's list, mark Came / No-show / late cancel and set courts; everything else stays yours alone."
  ],
  [
-  "After they message you",
-  "Inside the 3-hour close a player can message you. Afterwards the app says \"Tara has your message.\" You chose Change and left it blank. What should it say?"
- ],
- [
-  "\"This week\" under My Clinics",
-  "Your line \"You're not registered for any clinics this week\" also shows under My Clinics, which lists every upcoming clinic, not only this week's. Keep it, or \"You're not registered for any clinics\"?"
- ],
- [
-  "Let's Play",
-  "Under the logo: \"Let's Play.\" or \"Let's play!\"? You wrote both."
- ],
- [
-  "Your policy text",
-  "Your cancellation policy block still says 4 hours, the courtesy paragraph and the emergency email. The app shows only your two sentences today. Do you want a rewritten block (3 hours, no courtesy) shown somewhere? If so, where, and in what words?"
- ],
- [
-  "\"Stripe needs to be connected\"",
-  "Before cards are set up, the app says \"Cards aren't set up yet.\" You wrote \"Stripe needs to be connected\": a note to us, or the words a player should see?"
+  "Guests without the app",
+  "You wrote the member who brings a guest gets charged. Proposed: you (or a pro) add the guest to the clinic on the laptop and pick which member brought them; after the clinic that member's card is charged the guest's fee. Does the guest pay the member or the non-member price? Do they take a spot like anyone else? If we don't hear otherwise: non-member price, and yes."
  ],
  [
   "The board's 10%",
-  "The board report shows 10% of what players actually paid by card. Should it be 10% of that, or 10% of the full clinic prices? And before or after Stripe's fee (2.9% plus 30 cents a charge)? If we don't hear otherwise: 10% of what was paid, before Stripe's fee."
+  "The report shows 10% of what players actually paid by card that month, late-cancel and no-show fees included, before Stripe's fee; a refund comes off the month of the clinic. It also shows 10% of full clinic prices, in case the board counts it that way. Right?"
  ],
  [
-  "Late cancels and no-shows in the 10%",
-  "Do late-cancel and no-show charges count toward the board's 10%? If we don't hear otherwise: yes."
- ],
- [
-  "Refunds after the report is sent",
-  "If someone is refunded in September for an August clinic, after August's report went to the board, should it come off August's numbers or September's? Today it comes off August, and the report shows when it was run."
- ],
- [
-  "Home with one clinic",
-  "When a player is signed up for exactly one clinic, Home shows that clinic and, under it, the clinics they can still sign up for. With two or more, it shows only theirs and the blue View Open Clinics button. Is that right for one?"
- ],
- [
-  "Back-to-back 105s: the time",
-  "In your example, both Sunday 105s (4:30 and 6:00) open to a non-member at Friday 4:30, two days before the first one. On the weekends the clocks change it is still Friday 4:30. Right?"
- ],
- [
-  "Back-to-back 105s: the Player Pool",
-  "Non-members always land in the Player Pool. If a non-member is in the Pool for one 105, does that count as signed up, so they can't join a second 105 that day yet? If we don't hear otherwise: yes."
- ],
- [
-  "Back-to-back 105s: only 105s?",
-  "Does this rule apply only to 105s, or to any two clinics on the same day? If we don't hear otherwise: only 105s."
- ],
- [
-  "Back-to-back 105s: what they see",
-  "When the rule stops a non-member, what should the app say? For now it says: \"Non-members can take one 105 a day until 48 hours before.\""
- ],
- [
-  "The card box",
-  "Before adding a card, players tick a box that says \"I give permission for my card to be charged\" (from the update list). Keep those words, or say more?"
- ],
- [
-  "A card with no tick",
-  "If someone ever has a card on file but never ticked that box, should we still charge them, or ask them to tick it first? If we don't hear otherwise: ask first. Nobody is in this spot today."
- ],
- [
-  "The court photo",
-  "The court photo behind the app came from the picture you texted, which is small, so it looks a little soft on a full screen. Could you text Alex the original photo? And the logo file you mentioned."
+  "Back-to-back 105s",
+  "As built: a non-member who has any spot in a 105 that day (Player Pool included) can't take a second 105 that day until 48 hours before the first one starts. Only 105s count. They see: \"Non-members can take one 105 a day until 48 hours before.\" Right, and are those the words you want?"
  ]
 ]
 
 TASKS = [
  [
   "Sign in on your laptop",
-  "Go to fxe-tennis-admin.vercel.app and sign in with your admin email. Does it open to This week?"
+  "Go to fxe-tennis-admin.vercel.app and sign in with your admin email. Three tabs: This week, Players, Money."
  ],
  [
-  "Make a template",
-  "Templates card → New template. Use one of your real clinics (name, day, time, length, max players, your description). It saves the prices for you."
- ],
- [
-  "Publish this week's real clinics",
-  "New clinic → Start from a template → check the date and time → Save, then Publish. Do the member and public open dates look right on the card?"
- ],
- [
-  "Edit one",
-  "Change the time on a published clinic. Does the card update?"
- ],
- [
-  "Show canceled",
-  "Cancel a clinic you made by mistake (two clicks), then tick Show canceled to see it again. Nothing is deleted."
- ],
- [
-  "Money tab",
-  "Open Money. The numbers are zero until players register; does the layout make sense to you?"
- ],
- [
-  "Players tab",
-  "Search a name. Empty until members sign up; the app will list them here."
+  "Put in your real clinics",
+  "Templates card → New template for each clinic you run every week (name, day, time, length, max players, your description). Then New clinic → Start from a template → Save, then Publish. Whatever you set up here is real: it is your schedule."
  ],
  [
   "Board report",
-  "Money tab, Board report at the top: pick last month and click Run. Is this what the board needs? Download CSV and Print are there for sending it."
- ],
- [
-  "Forgot password",
-  "Sign out, click Forgot password, and finish the reset from the email. Tell me if the email never arrives or lands in spam."
- ],
- [
-  "The phone app",
-  "Not yet. It needs Apple's approval of the FXE Tennis, LLC account before it can go on your phone. Everything above is what you can try today."
+  "Money tab, Board report at the top: pick last month and click Run. Is this what the board needs?"
  ]
 ]
 
-TEMPLATE = "<title>FXE Tennis, Tara's Review</title>\n<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap\">\n<style>\n:root {\n  --navy:#0E1239; --ink:#1B1F3A; --muted:#5F6478; --line:#DDD9CE; --ground:#FAF7F1; --card:#FFFFFF;\n  --green:#3E7C55; --green-soft:#E7F0E7; --brass:#7A5E24; --brass-soft:#F5EBD8; --red:#992E22;\n  --chip:#F1EEE6; --chip-on:#0E1239; --chip-on-ink:#F6F3EA;\n}\n@media (prefers-color-scheme: dark) { :root:not([data-theme=\"light\"]) {\n  --navy:#C9CFF2; --ink:#EDEBE4; --muted:#A9ADBF; --line:#3A3D52; --ground:#15172A; --card:#1E2136;\n  --green:#8FCB9F; --green-soft:#24372B; --brass:#D9B86A; --brass-soft:#3A3120; --red:#F0907F;\n  --chip:#2A2D44; --chip-on:#E9E6DD; --chip-on-ink:#15172A;\n} }\n:root[data-theme=\"dark\"] {\n  --navy:#C9CFF2; --ink:#EDEBE4; --muted:#A9ADBF; --line:#3A3D52; --ground:#15172A; --card:#1E2136;\n  --green:#8FCB9F; --green-soft:#24372B; --brass:#D9B86A; --brass-soft:#3A3120; --red:#F0907F;\n  --chip:#2A2D44; --chip-on:#E9E6DD; --chip-on-ink:#15172A;\n}\nbody { background:var(--ground); color:var(--ink); font: 16px/1.5 -apple-system, \"SF Pro Text\", \"Helvetica Neue\", Arial, sans-serif; padding-block:0 48px; }\n.wrap { max-width:680px; margin:0 auto; padding:0 16px; }\nheader.top { padding:28px 0 12px; }\nh1 { font-family:\"Fraunces\", Georgia, \"Times New Roman\", serif; font-weight:700; font-size:34px; line-height:1.1; color:var(--navy); margin:0 0 8px; text-wrap:balance; }\n.lede { color:var(--muted); margin:0; max-width:60ch; }\nnav.tabs { position:sticky; top:env(safe-area-inset-top, 0px); background:var(--ground); display:flex; gap:6px; padding:12px 0 10px; border-bottom:1px solid var(--line); z-index:2; }\nnav.tabs button { flex:1; border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:999px; padding:10px 8px; font:inherit; font-weight:600; font-size:15px; cursor:pointer; }\nnav.tabs button[aria-selected=\"true\"] { background:var(--chip-on); color:var(--chip-on-ink); border-color:var(--chip-on); }\nnav.tabs button:focus-visible, .chip:focus-visible, textarea:focus-visible, .copy:focus-visible { outline:3px solid var(--green); outline-offset:2px; }\n.progress { font-size:14px; color:var(--muted); padding:12px 0 4px; font-variant-numeric:tabular-nums; }\nsection.screen { margin-top:22px; }\nh2 { font-family:\"Fraunces\", Georgia, serif; font-weight:600; font-size:24px; color:var(--navy); margin:0; text-wrap:balance; }\n.sub { margin:2px 0 12px; color:var(--muted); font-size:14px; }\n.item { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px 14px 12px; margin:0 0 10px; }\n.where { font-size:12.5px; letter-spacing:.02em; text-transform:uppercase; color:var(--muted); display:flex; gap:8px; align-items:center; flex-wrap:wrap; }\n.tag { text-transform:none; letter-spacing:0; font-size:12px; padding:2px 8px; border-radius:999px; background:var(--brass-soft); color:var(--brass); font-weight:600; }\nblockquote.blurb { margin:8px 0 10px; padding:0 0 0 12px; border-left:3px solid var(--navy); font-size:17px; line-height:1.45; }\n.choices { display:flex; gap:8px; }\n.chip { border:1px solid var(--line); background:var(--chip); color:var(--ink); border-radius:999px; padding:8px 16px; font:inherit; font-weight:600; font-size:15px; min-height:40px; cursor:pointer; }\n.chip[aria-pressed=\"true\"] { background:var(--chip-on); color:var(--chip-on-ink); border-color:var(--chip-on); }\n.chip[aria-pressed=\"true\"][data-choice=\"keep\"] { background:var(--green); border-color:var(--green); color:#fff; }\ntextarea { width:100%; box-sizing:border-box; margin-top:10px; border:1px solid var(--line); border-radius:10px; padding:10px 12px; font:inherit; font-size:16px; background:var(--card); color:var(--ink); min-height:64px; resize:vertical; }\nh3 { margin:6px 0 4px; font-size:18px; color:var(--navy); }\n.item p { margin:0; }\nlabel.task { display:flex; gap:12px; align-items:flex-start; cursor:pointer; }\nlabel.task input { width:22px; height:22px; margin:2px 0 0; accent-color:var(--green); flex:none; }\n.send { margin-top:28px; padding:16px; border:1px dashed var(--line); border-radius:14px; background:var(--card); }\n.send h2 { font-size:20px; }\n.copy { margin-top:10px; border:0; background:var(--chip-on); color:var(--chip-on-ink); border-radius:999px; padding:12px 18px; font:inherit; font-weight:700; font-size:16px; cursor:pointer; }\n.copied { margin-left:10px; color:var(--green); font-weight:600; }\npre.summary { white-space:pre-wrap; font: 13.5px/1.45 ui-monospace, Menlo, monospace; background:var(--chip); border-radius:10px; padding:12px; margin-top:12px; max-height:340px; overflow:auto; }\n.panel[hidden] { display:none; }\n@media (prefers-reduced-motion: no-preference) { .chip, nav.tabs button { transition: background .15s, color .15s; } }\n</style>\n\n<div class=\"wrap\">\n<header class=\"top\">\n  <h1>Tara, this is your app's words</h1>\n  <p class=\"lede\">Every sentence a player or you will read, with where it shows up. Tap Keep, or Change and write it your way. Your answers stay on this phone; when you're done, copy the summary at the bottom and text it to Alex.</p>\n</header>\n\n<nav class=\"tabs\" role=\"tablist\">\n  <button role=\"tab\" data-tab=\"words\" aria-selected=\"true\">Words</button>\n  <button role=\"tab\" data-tab=\"questions\" aria-selected=\"false\">Questions</button>\n  <button role=\"tab\" data-tab=\"try\" aria-selected=\"false\">Try it</button>\n</nav>\n\n<div class=\"panel\" id=\"panel-words\">\n  <div class=\"progress\" id=\"progress-words\">0 of @@TOTAL@@ decided</div>\n  @@WORDS@@\n</div>\n\n<div class=\"panel\" id=\"panel-questions\" hidden>\n  <div class=\"progress\">@@NQ@@ questions. One line each is plenty.</div>\n  @@QUESTIONS@@\n</div>\n\n<div class=\"panel\" id=\"panel-try\" hidden>\n  <div class=\"progress\">On your laptop, with your real account. Whatever you set up here is real: it is your schedule.</div>\n  @@TASKS@@\n</div>\n\n<div class=\"send\">\n  <h2>Send it to Alex</h2>\n  <p class=\"lede\">This gathers everything you've decided across all three tabs.</p>\n  <button class=\"copy\" id=\"copy\">Copy my answers</button><span class=\"copied\" id=\"copied\" hidden>Copied</span>\n  <pre class=\"summary\" id=\"summary\"></pre>\n</div>\n</div>\n\n<script>\nconst DATA = @@DATA@@;\nconst KEY = \"fxe-tara-review-v1\";\nlet state = {};\ntry { state = JSON.parse(localStorage.getItem(KEY) || \"{}\"); } catch (e) { state = {}; }\nconst save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} };\n\n// tabs\ndocument.querySelectorAll('nav.tabs [role=tab]').forEach(b => b.addEventListener('click', () => {\n  document.querySelectorAll('nav.tabs [role=tab]').forEach(x => x.setAttribute('aria-selected', String(x === b)));\n  for (const n of ['words','questions','try']) document.getElementById('panel-' + n).hidden = (n !== b.dataset.tab);\n  try { localStorage.setItem(KEY + ':tab', b.dataset.tab); } catch (e) {}\n}));\ntry { const t = localStorage.getItem(KEY + ':tab'); if (t) document.querySelector(`[data-tab=\"${t}\"]`)?.click(); } catch (e) {}\n\n// words\nfunction renderItem(el) {\n  const id = el.dataset.id, s = state[id] || {};\n  el.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', String(s.choice === c.dataset.choice)));\n  const alt = el.querySelector('.alt');\n  if (alt) { alt.hidden = s.choice !== 'change'; if (s.alt !== undefined && alt.value !== s.alt) alt.value = s.alt; }\n}\ndocument.querySelectorAll('#panel-words .item').forEach(el => {\n  renderItem(el);\n  el.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {\n    const id = el.dataset.id; state[id] = { ...(state[id] || {}), choice: c.dataset.choice }; save(); renderItem(el); progress(); summary();\n    if (c.dataset.choice === 'change') el.querySelector('.alt').focus();\n  }));\n  el.querySelector('.alt')?.addEventListener('input', e => { const id = el.dataset.id; state[id] = { ...(state[id] || {}), alt: e.target.value }; save(); summary(); });\n});\nfunction progress() {\n  const n = DATA.sections.flatMap(s => s.items).filter(i => state[i.id]?.choice).length;\n  document.getElementById('progress-words').textContent = `${n} of @@TOTAL@@ decided`;\n}\n// questions and tasks\ndocument.querySelectorAll('#panel-questions textarea, #panel-try textarea').forEach(t => {\n  const id = t.id; if (state[id] !== undefined) t.value = state[id];\n  t.addEventListener('input', e => { state[id] = e.target.value; save(); summary(); });\n});\ndocument.querySelectorAll('#panel-try input[type=checkbox]').forEach(c => {\n  if (state[c.id]) c.checked = true;\n  c.addEventListener('change', e => { state[c.id] = e.target.checked; save(); summary(); });\n});\nfunction summary() {\n  const lines = [\"FXE Tennis review, \" + new Date().toLocaleDateString(), \"\"];\n  lines.push(\"WORDS\");\n  for (const s of DATA.sections) for (const i of s.items) {\n    const st = state[i.id]; if (!st?.choice) continue;\n    if (st.choice === 'keep') lines.push(`keep: ${i.text}`);\n    else lines.push(`CHANGE: \"${i.text}\" -> \"${(st.alt || '').trim() || '(no replacement written yet)'}\"`);\n  }\n  lines.push(\"\", \"QUESTIONS\");\n  for (const q of DATA.questions) { const a = (state[q.id + '-ans'] || '').trim(); if (a) lines.push(`${q.title}: ${a}`); }\n  lines.push(\"\", \"TRIED\");\n  for (const t of DATA.tasks) { const done = state[t.id + '-done'], note = (state[t.id + '-note'] || '').trim(); if (done || note) lines.push(`${done ? '[x]' : '[ ]'} ${t.title}${note ? ': ' + note : ''}`); }\n  document.getElementById('summary').textContent = lines.join(\"\\n\");\n}\ndocument.getElementById('copy').addEventListener('click', async () => {\n  summary();\n  const text = document.getElementById('summary').textContent;\n  try { await navigator.clipboard.writeText(text); document.getElementById('copied').hidden = false; setTimeout(() => document.getElementById('copied').hidden = true, 2500); }\n  catch (e) { const r = document.createRange(); r.selectNodeContents(document.getElementById('summary')); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); const c = document.getElementById('copied'); c.textContent = 'Selected. Press and hold to copy.'; c.hidden = false; }\n});\nprogress(); summary();\n</script>\n"
+TEMPLATE = "<title>FXE Tennis, Tara's Review</title>\n<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">\n<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap\">\n<style>\n:root {\n  --navy:#0E1239; --ink:#1B1F3A; --muted:#5F6478; --line:#DDD9CE; --ground:#FAF7F1; --card:#FFFFFF;\n  --green:#3E7C55; --green-soft:#E7F0E7; --brass:#7A5E24; --brass-soft:#F5EBD8; --red:#992E22;\n  --chip:#F1EEE6; --chip-on:#0E1239; --chip-on-ink:#F6F3EA;\n}\n@media (prefers-color-scheme: dark) { :root:not([data-theme=\"light\"]) {\n  --navy:#C9CFF2; --ink:#EDEBE4; --muted:#A9ADBF; --line:#3A3D52; --ground:#15172A; --card:#1E2136;\n  --green:#8FCB9F; --green-soft:#24372B; --brass:#D9B86A; --brass-soft:#3A3120; --red:#F0907F;\n  --chip:#2A2D44; --chip-on:#E9E6DD; --chip-on-ink:#15172A;\n} }\n:root[data-theme=\"dark\"] {\n  --navy:#C9CFF2; --ink:#EDEBE4; --muted:#A9ADBF; --line:#3A3D52; --ground:#15172A; --card:#1E2136;\n  --green:#8FCB9F; --green-soft:#24372B; --brass:#D9B86A; --brass-soft:#3A3120; --red:#F0907F;\n  --chip:#2A2D44; --chip-on:#E9E6DD; --chip-on-ink:#15172A;\n}\nbody { background:var(--ground); color:var(--ink); font: 16px/1.5 -apple-system, \"SF Pro Text\", \"Helvetica Neue\", Arial, sans-serif; padding-block:0 48px; }\n.wrap { max-width:680px; margin:0 auto; padding:0 16px; }\nheader.top { padding:28px 0 12px; }\nh1 { font-family:\"Fraunces\", Georgia, \"Times New Roman\", serif; font-weight:700; font-size:34px; line-height:1.1; color:var(--navy); margin:0 0 8px; text-wrap:balance; }\n.lede { color:var(--muted); margin:0; max-width:60ch; }\nnav.tabs { position:sticky; top:env(safe-area-inset-top, 0px); background:var(--ground); display:flex; gap:6px; padding:12px 0 10px; border-bottom:1px solid var(--line); z-index:2; }\nnav.tabs button { flex:1; border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:999px; padding:10px 8px; font:inherit; font-weight:600; font-size:15px; cursor:pointer; }\nnav.tabs button[aria-selected=\"true\"] { background:var(--chip-on); color:var(--chip-on-ink); border-color:var(--chip-on); }\nnav.tabs button:focus-visible, .chip:focus-visible, textarea:focus-visible, .copy:focus-visible { outline:3px solid var(--green); outline-offset:2px; }\n.progress { font-size:14px; color:var(--muted); padding:12px 0 4px; font-variant-numeric:tabular-nums; }\nsection.screen { margin-top:22px; }\nh2 { font-family:\"Fraunces\", Georgia, serif; font-weight:600; font-size:24px; color:var(--navy); margin:0; text-wrap:balance; }\n.sub { margin:2px 0 12px; color:var(--muted); font-size:14px; }\n.item { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px 14px 12px; margin:0 0 10px; }\n.where { font-size:12.5px; letter-spacing:.02em; text-transform:uppercase; color:var(--muted); display:flex; gap:8px; align-items:center; flex-wrap:wrap; }\n.tag { text-transform:none; letter-spacing:0; font-size:12px; padding:2px 8px; border-radius:999px; background:var(--brass-soft); color:var(--brass); font-weight:600; }\nblockquote.blurb { margin:8px 0 10px; padding:0 0 0 12px; border-left:3px solid var(--navy); font-size:17px; line-height:1.45; }\n.choices { display:flex; gap:8px; }\n.chip { border:1px solid var(--line); background:var(--chip); color:var(--ink); border-radius:999px; padding:8px 16px; font:inherit; font-weight:600; font-size:15px; min-height:40px; cursor:pointer; }\n.chip[aria-pressed=\"true\"] { background:var(--chip-on); color:var(--chip-on-ink); border-color:var(--chip-on); }\n.chip[aria-pressed=\"true\"][data-choice=\"keep\"] { background:var(--green); border-color:var(--green); color:#fff; }\ntextarea { width:100%; box-sizing:border-box; margin-top:10px; border:1px solid var(--line); border-radius:10px; padding:10px 12px; font:inherit; font-size:16px; background:var(--card); color:var(--ink); min-height:64px; resize:vertical; }\nh3 { margin:6px 0 4px; font-size:18px; color:var(--navy); }\n.item p { margin:0; }\nlabel.task { display:flex; gap:12px; align-items:flex-start; cursor:pointer; }\nlabel.task input { width:22px; height:22px; margin:2px 0 0; accent-color:var(--green); flex:none; }\n.send { margin-top:28px; padding:16px; border:1px dashed var(--line); border-radius:14px; background:var(--card); }\n.send h2 { font-size:20px; }\n.copy { margin-top:10px; border:0; background:var(--chip-on); color:var(--chip-on-ink); border-radius:999px; padding:12px 18px; font:inherit; font-weight:700; font-size:16px; cursor:pointer; }\n.copied { margin-left:10px; color:var(--green); font-weight:600; }\npre.summary { white-space:pre-wrap; font: 13.5px/1.45 ui-monospace, Menlo, monospace; background:var(--chip); border-radius:10px; padding:12px; margin-top:12px; max-height:340px; overflow:auto; }\n.panel[hidden] { display:none; }\n@media (prefers-reduced-motion: no-preference) { .chip, nav.tabs button { transition: background .15s, color .15s; } }\n</style>\n\n<div class=\"wrap\">\n<header class=\"top\">\n  <h1>Tara, only what's new</h1>\n  <p class=\"lede\">Your changes from September 22 are in the app. This is only what is new or changed since then, and the four questions still open. Tap Keep, or Change and write it your way. Your answers stay on this phone; when you're done, copy the summary at the bottom and text it to Alex.</p>\n</header>\n\n<nav class=\"tabs\" role=\"tablist\">\n  <button role=\"tab\" data-tab=\"words\" aria-selected=\"true\">Words</button>\n  <button role=\"tab\" data-tab=\"questions\" aria-selected=\"false\">Questions</button>\n  <button role=\"tab\" data-tab=\"try\" aria-selected=\"false\">Try it</button>\n</nav>\n\n<div class=\"panel\" id=\"panel-words\">\n  <div class=\"progress\" id=\"progress-words\">0 of @@TOTAL@@ decided</div>\n  @@WORDS@@\n</div>\n\n<div class=\"panel\" id=\"panel-questions\" hidden>\n  <div class=\"progress\">@@NQ@@ questions. One line each is plenty.</div>\n  @@QUESTIONS@@\n</div>\n\n<div class=\"panel\" id=\"panel-try\" hidden>\n  <div class=\"progress\">On your laptop, with your real account. Whatever you set up here is real: it is your schedule.</div>\n  @@TASKS@@\n</div>\n\n<div class=\"send\">\n  <h2>Send it to Alex</h2>\n  <p class=\"lede\">This gathers everything you've decided across all three tabs.</p>\n  <button class=\"copy\" id=\"copy\">Copy my answers</button><span class=\"copied\" id=\"copied\" hidden>Copied</span>\n  <pre class=\"summary\" id=\"summary\"></pre>\n</div>\n</div>\n\n<script>\nconst DATA = @@DATA@@;\nconst KEY = \"fxe-tara-review-v1\";\nlet state = {};\ntry { state = JSON.parse(localStorage.getItem(KEY) || \"{}\"); } catch (e) { state = {}; }\nconst save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} };\n\n// tabs\ndocument.querySelectorAll('nav.tabs [role=tab]').forEach(b => b.addEventListener('click', () => {\n  document.querySelectorAll('nav.tabs [role=tab]').forEach(x => x.setAttribute('aria-selected', String(x === b)));\n  for (const n of ['words','questions','try']) document.getElementById('panel-' + n).hidden = (n !== b.dataset.tab);\n  try { localStorage.setItem(KEY + ':tab', b.dataset.tab); } catch (e) {}\n}));\ntry { const t = localStorage.getItem(KEY + ':tab'); if (t) document.querySelector(`[data-tab=\"${t}\"]`)?.click(); } catch (e) {}\n\n// words\nfunction renderItem(el) {\n  const id = el.dataset.id, s = state[id] || {};\n  el.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', String(s.choice === c.dataset.choice)));\n  const alt = el.querySelector('.alt');\n  if (alt) { alt.hidden = s.choice !== 'change'; if (s.alt !== undefined && alt.value !== s.alt) alt.value = s.alt; }\n}\ndocument.querySelectorAll('#panel-words .item').forEach(el => {\n  renderItem(el);\n  el.querySelectorAll('.chip').forEach(c => c.addEventListener('click', () => {\n    const id = el.dataset.id; state[id] = { ...(state[id] || {}), choice: c.dataset.choice }; save(); renderItem(el); progress(); summary();\n    if (c.dataset.choice === 'change') el.querySelector('.alt').focus();\n  }));\n  el.querySelector('.alt')?.addEventListener('input', e => { const id = el.dataset.id; state[id] = { ...(state[id] || {}), alt: e.target.value }; save(); summary(); });\n});\nfunction progress() {\n  const n = DATA.sections.flatMap(s => s.items).filter(i => state[i.id]?.choice).length;\n  document.getElementById('progress-words').textContent = `${n} of @@TOTAL@@ decided`;\n}\n// questions and tasks\ndocument.querySelectorAll('#panel-questions textarea, #panel-try textarea').forEach(t => {\n  const id = t.id; if (state[id] !== undefined) t.value = state[id];\n  t.addEventListener('input', e => { state[id] = e.target.value; save(); summary(); });\n});\ndocument.querySelectorAll('#panel-try input[type=checkbox]').forEach(c => {\n  if (state[c.id]) c.checked = true;\n  c.addEventListener('change', e => { state[c.id] = e.target.checked; save(); summary(); });\n});\nfunction summary() {\n  const lines = [\"FXE Tennis review, \" + new Date().toLocaleDateString(), \"\"];\n  lines.push(\"WORDS\");\n  for (const s of DATA.sections) for (const i of s.items) {\n    const st = state[i.id]; if (!st?.choice) continue;\n    if (st.choice === 'keep') lines.push(`keep: ${i.text}`);\n    else lines.push(`CHANGE: \"${i.text}\" -> \"${(st.alt || '').trim() || '(no replacement written yet)'}\"`);\n  }\n  lines.push(\"\", \"QUESTIONS\");\n  for (const q of DATA.questions) { const a = (state[q.id + '-ans'] || '').trim(); if (a) lines.push(`${q.title}: ${a}`); }\n  lines.push(\"\", \"TRIED\");\n  for (const t of DATA.tasks) { const done = state[t.id + '-done'], note = (state[t.id + '-note'] || '').trim(); if (done || note) lines.push(`${done ? '[x]' : '[ ]'} ${t.title}${note ? ': ' + note : ''}`); }\n  document.getElementById('summary').textContent = lines.join(\"\\n\");\n}\ndocument.getElementById('copy').addEventListener('click', async () => {\n  summary();\n  const text = document.getElementById('summary').textContent;\n  try { await navigator.clipboard.writeText(text); document.getElementById('copied').hidden = false; setTimeout(() => document.getElementById('copied').hidden = true, 2500); }\n  catch (e) { const r = document.createRange(); r.selectNodeContents(document.getElementById('summary')); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); const c = document.getElementById('copied'); c.textContent = 'Selected. Press and hold to copy.'; c.hidden = false; }\n});\nprogress(); summary();\n</script>\n"
 
 
 # The web target. Same look: the artifact's stylesheet is reused verbatim
@@ -858,8 +195,8 @@ body { margin:0; }
 <body>
 <div class="wrap">
 <header class="top">
-  <h1>Tara, this is your app's words</h1>
-  <p class="lede">Every sentence a player or you will read, with where it shows up. Tap Keep, or Change and write it your way. Your answers save as you go.</p>
+  <h1>Tara, only what's new</h1>
+  <p class="lede">Your changes from September 22 are in the app. This is only what is new or changed since then, and the four questions still open. Tap Keep, or Change and write it your way. Your answers save as you go.</p>
   <p class="sync" id="sync" aria-live="polite"></p>
 </header>
 

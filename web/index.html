@@ -72,6 +72,9 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
 .tabs { display: flex; gap: 6px; margin: 0 0 14px 0; border-bottom: 1px solid var(--border, #d8d3c7); }
 .tabs [role=tab] { background: none; border: none; border-bottom: 2px solid transparent; border-radius: 0; padding: 8px 12px; font: inherit; font-weight: 600; color: #6E6552; cursor: pointer; min-height: 40px; }
 .tabs [role=tab][aria-selected=true] { color: #16264C; border-bottom-color: #16264C; }
+.devlink { text-align: right; margin: 48px 0 8px; }
+.devlink button { background: none; border: none; padding: 4px 6px; min-height: 0; font: inherit; font-size: 12px; color: var(--fxe-text-secondary); opacity: .6; cursor: pointer; text-decoration: underline; }
+.devlink button:hover, .devlink button:focus-visible { opacity: 1; }
 /* Board report tables. Numbers right-aligned so a column of money reads down. */
 #br-report { margin-top: 12px; overflow-x: auto; }
 #br-report .print-only { display: none; }
@@ -130,7 +133,6 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
       <button role="tab" data-tab="week" aria-selected="true">This week</button>
       <button role="tab" data-tab="players" aria-selected="false">Players</button>
       <button role="tab" data-tab="money" aria-selected="false">Money</button>
-      <button role="tab" data-tab="testing" aria-selected="false" class="muted" title="Only for testing the app with Tara and Kat">Testing</button>
     </nav>
     <div id="msg"></div>
 
@@ -199,7 +201,10 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
     <p class="muted"><a href="https://dashboard.stripe.com" target="_blank" rel="noopener" id="stripe-link">Manage payments in Stripe</a></p>
     </div>
 
-    <div id="tab-testing" role="tabpanel" class="hide">
+    <!-- Not a tab (Alex, 2026-09-27: "very removed from the other tabs ... a
+         tiny testing thing"). Reached only from the small link at the foot of
+         the page, and never remembered as the page to reopen. -->
+    <div id="tab-testing" class="hide">
     <h2>Testing</h2>
     <p class="muted">For testing with Tara and Kat. Nothing here is part of running the clinics.</p>
     <!-- Review links (20260921000010). A link is a random token; the review
@@ -220,6 +225,7 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
     </div>
 
     </div>
+    <p class="devlink"><button id="open-testing" type="button">Testing</button></p>
   </section>
 </main>
 
@@ -501,7 +507,7 @@ async function loadMoney() {
     <div class="row" style="border-top:1px solid var(--fxe-hairline);padding-top:10px">
       <span class="grow"><span class="muted">Expected</span> <span class="name">${money(t.expected_cents)}</span></span>
       <span class="grow"><span class="muted">Collected</span> <span class="name">${money(t.collected_cents)}</span></span>
-      <span class="grow"><span class="muted">Still owed</span> <span class="name" style="color:#992E22">${money(t.outstanding_cents)}</span></span>
+      <span class="grow"><span class="muted">Not charged yet</span> <span class="name" style="color:#992E22">${money(t.outstanding_cents)}</span></span>
     </div>
     ${(rows || []).map(r => `<div class="row">
       <span class="grow"><span class="name">${esc(r.name)}</span><br><span class="muted">${fmtDate(r.starts_at)} · ${r.total_players} players</span></span>
@@ -763,13 +769,16 @@ async function loadClinics() {
 // the database disagrees with.
 // Tabs. The last one opened is remembered per browser; a reload lands where
 // she was. Everything still loads on sign-in, so switching is instant.
+const TABS = ["week", "players", "money"];
 const showTab = (name) => {
   for (const b of document.querySelectorAll(".tabs [role=tab]")) b.setAttribute("aria-selected", String(b.dataset.tab === name));
-  for (const n of ["week", "players", "money", "testing"]) $("tab-" + n).classList.toggle("hide", n !== name);
-  try { localStorage.setItem("fxe.tab", name); } catch {}
+  for (const n of [...TABS, "testing"]) $("tab-" + n).classList.toggle("hide", n !== name);
+  // Testing is never the page a reload lands on.
+  if (TABS.includes(name)) try { localStorage.setItem("fxe.tab", name); } catch {}
 };
 for (const b of document.querySelectorAll(".tabs [role=tab]")) b.addEventListener("click", () => showTab(b.dataset.tab));
-try { const t = localStorage.getItem("fxe.tab"); if (t) showTab(t); } catch {}
+$("open-testing").addEventListener("click", () => { showTab("testing"); window.scrollTo(0, 0); });
+try { const t = localStorage.getItem("fxe.tab"); if (TABS.includes(t)) showTab(t); } catch {}
 
 $("show-canceled").addEventListener("change", () => loadClinics());
 
@@ -808,7 +817,11 @@ document.addEventListener("click", async (e) => {
     const { data, error } = await sb.rpc("admin_charge_clinic", { p_clinic: b.dataset.chargeclinic }); if (error) throw error;
     await settleLedger();
     await loadMoney();
-    chargeSummary = `Charged ${data.charged}. Already charged ${data.already}. No card ${data.no_card}.`;
+    // Plain sentences, zero counts left out (Tara marked the old line Change, 2026-09-22).
+    const parts = [data.charged === 1 ? "Charged 1 card." : `Charged ${data.charged} cards.`];
+    if (data.already > 0) parts.push(data.already === 1 ? "1 was already charged." : `${data.already} were already charged.`);
+    if (data.no_card > 0) parts.push(data.no_card === 1 ? "1 player has no card on file." : `${data.no_card} players have no card on file.`);
+    chargeSummary = parts.join(" ");
   });
   if (b.dataset.refund)   return run(async () => {
     await call("admin_refund_payment", { p_payment: b.dataset.refund });
