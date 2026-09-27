@@ -165,12 +165,14 @@ struct NotificationsView: View {
     }
 
     /// A push tapped while this list is open: it opens here, on this stack,
-    /// rather than in a second sheet that iOS would refuse to present.
+    /// rather than in a second sheet that iOS would refuse to present. Its
+    /// row is marked read once the screen is set, not before.
     private func openTap(_ tap: PushTap) async {
-        let shown = await router.open(tap, isAdmin: isAdmin)
+        let shown = await router.resolve(tap, isAdmin: isAdmin)
+        if let shown { destination = shown }
+        await router.delivered(tap)
         await load()
         onChange()
-        if let shown { destination = shown }
     }
 
     private func markAllRead() async {

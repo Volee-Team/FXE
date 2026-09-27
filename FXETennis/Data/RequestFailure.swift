@@ -48,8 +48,9 @@ enum RequestFailure: Equatable, Sendable {
         switch self {
         // Already approved: in the web admin's friendly() and the snapshot.
         case .unreachable: return "Couldn't reach the server. Check your connection."
-        // New chrome, listed in docs/copy-review.md for Alex's tick.
-        case .rateLimited: return "Too many requests. Try again in a minute."
+        // New chrome, listed in docs/copy-review.md for Alex's tick. The
+        // same words as the web admin's sign-in (2026-09-27).
+        case .rateLimited: return "Too many attempts. Try again in a minute."
         case .cancelled, .other: return nil
         }
     }
@@ -82,10 +83,30 @@ enum RequestFailure: Equatable, Sendable {
         }
         // PostgREST decodes its JSON error body into this, which carries a
         // Postgres or PGRST code but not the HTTP status.
+        //
+        // supabase-swift decodes ANY JSON error body with a "message" into
+        // this type, including the API gateway's own 502 and 504 bodies,
+        // which have no "code". PostgREST always sends one, so code nil means
+        // the request never got an answer from the database: unreachable.
+        // (Review, 2026-09-27: a gateway timeout on Register read "Sorry,
+        // someone beat you to the punch".) The gateway's "Invalid API key"
+        // is code nil too and lands here; it cannot be told from a 504 by
+        // code, and "Couldn't reach the server" is the truer of the two lines.
         if let postgrest = error as? PostgrestError {
+            guard postgrest.code != nil else { return .unreachable }
             return classify(postgresCode: postgrest.code)
         }
         return .other
+    }
+
+    /// GoTrue's limit on emails sent (password resets), which is hourly, as
+    /// opposed to its per-address request limit, which clears in a minute.
+    /// Read by its code, or by GoTrue's own sentence when an older server
+    /// sends no code.
+    static func isEmailRateLimit(_ error: Error) -> Bool {
+        guard let auth = error as? AuthError, case let .api(message, code, _, _) = auth else { return false }
+        return code == .overEmailSendRateLimit
+            || message.localizedCaseInsensitiveContains("email rate limit exceeded")
     }
 
     /// URLSession codes that mean "no usable answer came back". The same

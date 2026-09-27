@@ -45,7 +45,7 @@ in more places, listed so the new places are seen. The extractor sees only
 | ✓ | String | Where | Why |
 |---|--------|-------|-----|
 | ☐ | Try again | The screen shown when the app is signed in but could not load who you are (launch with no signal; it used to be the sign-up form), and the waiver sheet when its text did not load | New. Both screens have no pull-to-refresh, and the waiver sheet cannot be swiped away, so a button is the only way to retry |
-| ☐ | Too many requests. Try again in a minute. | Sign-in, create account, password reset and the clinic page, when the server answers 429 | New. GoTrue allows 30 sign-ins and sign-ups per 5 minutes per address, and everyone on the party Wi-Fi shares one; this read "Something went wrong." with no reason to wait. The same line shows for the email-sending limit on password resets, where the wait can be longer than a minute. Alternative if Alex prefers plainer: "The server is busy. Try again in a minute." |
+| — | ~~Too many requests. Try again in a minute.~~ Replaced 2026-09-27 by "Too many attempts. Try again in a minute.", see "MVP fix round, the app" below | Sign-in, create account, password reset and the clinic page, when the server answers 429 | New. GoTrue allows 30 sign-ins and sign-ups per 5 minutes per address, and everyone on the party Wi-Fi shares one; this read "Something went wrong." with no reason to wait. The same line shows for the email-sending limit on password resets, where the wait can be longer than a minute. Alternative if Alex prefers plainer: "The server is busy. Try again in a minute." |
 | — | Couldn't reach the server. Check your connection. | Now also on Home (above the lists), My Clinics, the clinic page after a failed action or load, the waiver sheet, the can't-load screen, and the profile form when the save could not be read back | Not new: §B and the web admin. Chosen by the error's code now, not by the word "network" in iOS's text, which the offline error does not contain |
 | — | Something went wrong. Please try again. | The can't-load screen when the failure is not the connection | Not new (§B) |
 | — | Sign out · Delete my account · Keep my account · Delete your account? Your name, phone, email and card are removed and you are signed out. This can't be undone. · Couldn't delete your account. · Signs you out, you can finish later if needed (VoiceOver hint) | The foot of the waiver sheet and of the profile form (Delete is new on both), and the can't-load screen (Sign out only) | Not new: Profile's delete dialog word for word, and the profile form's existing Sign out and hint. The card step should use the same footer (another branch owns CardStepView) |
@@ -497,6 +497,29 @@ older waits behind a checkbox, the same shape as Show canceled.
 | ☐ | No clinics this week or later. Use “New clinic” to add one. | This week, when nothing ends after the week began | Replaces "No clinics yet. Use “New clinic” to add your first one.", which stops being true once older clinics exist and are simply not listed |
 | ☐ | Couldn't load clinics. | This week, when the rosters or the players cannot be read; the list is cleared rather than drawn with empty rosters | The iOS app's line for the same failure. Not seen by the extractor (a second argument) |
 | ☐ | Too many attempts: wait a minute and try again. | Admin sign-in, sign-up and Forgot password, when Supabase Auth answers HTTP 429 (30 sign-ins and sign-ups per 5 minutes per IP, and the launch party is one Wi-Fi; MVP audit item 15) | Was GoTrue's own "Request rate limit reached". A try comes back every few seconds, so a minute is honest. The reset email's limit is hourly, so that 429 keeps GoTrue's "email rate limit exceeded" rather than a promise of a minute. The iOS half of item 15 should say the same words |
+
+## MVP fix round, the app (2026-09-27) — awaiting Alex
+
+Chrome only, one sentence each, mine. Neither string is seen by the
+extractor (both are `return` values, the known gap below), so the snapshot
+did not change; they are listed here by hand.
+
+| ✓ | String | Where | Why |
+|---|---|---|---|
+| ☐ | Too many attempts. Try again in a minute. | Sign-in, create account, password reset, the profile form and the clinic page, when the server answers 429 | Replaces "Too many requests. Try again in a minute." so the phone and the web admin say the same words (the lead's call, 2026-09-27). "Attempts" is what the person did; "requests" is ours |
+| ☐ | Too many reset emails. Try again later. | Forgot password, when GoTrue refuses because its hourly email limit is reached (`over_email_send_rate_limit`, or "email rate limit exceeded" from an older server) | New. That limit is hourly, so the minute line above would have been a false promise. "Later" rather than a number, because the wait depends on when the earlier emails went |
+
+Words already in the app, now shown in one more place:
+
+| ✓ | String | Where | Why |
+|---|---|---|---|
+| — | Delete my account (with the same confirmation as Profile) | The onboarding card step, under Sign out | Not new: AccountExitFooter, as on the profile form and the waiver. The card step had only Sign out |
+| — | Couldn't reach the server. Check your connection. | Register and every other clinic action, when the API gateway itself answers 502 or 504 | Not new. Those used to read "Sorry, someone beat you to the punch. Here's the latest!" |
+
+Taken away: "No clinics currently open for registration" no longer shows on
+Home while the first load is still out (a spinner does), "Registration open"
+no longer shows on a clinic card after the close, and Register no longer
+shows on a clinic page after the start.
 
 ## The rule going forward
 

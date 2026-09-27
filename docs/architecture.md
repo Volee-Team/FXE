@@ -138,16 +138,20 @@ FXETennis/
 │   ├── Session.swift            SessionStore: auth, account, activePlayer, isAdmin,
 │   │                            signUp → create_my_account, password reset; a failed load keeps
 │   │                            who you are (no answer is not "no profile"), `.loadFailed` at launch;
-│   │                            reopen(.waiver / .card) when register_for_clinic refuses
+│   │                            reopen(.waiver / .card) when register_for_clinic refuses;
+│   │                            a generation counter drops a load that outlives a sign-out,
+│   │                            and a load with the stored session gone signs out (unit-tested)
 │   ├── PushRegistrar.swift      client half of decision 0008: permission (once, Tara's line),
 │   │                            APNs registration, token → register_device; sends nothing.
 │   │                            PushAppDelegate is also the notification center's delegate:
 │   │                            banner + Home reload in the foreground, taps to the router;
-│   │                            setBadge / syncBadge keep the icon at the bell's count
+│   │                            setBadge / syncBadge keep the icon at the bell's count;
+│   │                            no banner while signed out; the icon cleared after sign-out
 │   ├── NotificationRouter.swift where a tapped notification goes, bell and push alike:
 │   │                            'clinic' or 'registration' → my_registrations or, for Tara,
 │   │                            registrations_admin → the player's clinic page or hers;
-│   │                            the push-tap sheet (pushTapRouting) and the shared state
+│   │                            the push-tap sheet (pushTapRouting), which keeps a tap pending
+│   │                            while another sheet is up and marks it read once shown
 │   └── AppEnv.swift             DEBUG vs release: local stack vs hosted, reset URL
 ├── Data/
 │   ├── SupabaseClient.swift     the one client (URL + publishable key, implicit flow)
@@ -156,14 +160,16 @@ FXETennis/
 │   ├── AdminRepository.swift    every admin RPC + the roster/late-request/notice models, the money
 │   │                            models (MoneyClinic, MoneyDecline) and Stripe's decline codes in words
 │   └── RequestFailure.swift     what a request met, by URLError code, HTTP status or Postgres code:
-│                                unreachable / rate limited / cancelled / an answer (unit-tested)
+│                                unreachable / rate limited / cancelled / an answer; a PostgrestError
+│                                with no code is the gateway, so unreachable (unit-tested)
 ├── Models/
 │   ├── CoreModels.swift         Codable mirrors of the views (no hidden columns exist here)
 │   ├── CancelPolicy.swift       decision 0010: is this cancel inside cancel_cutoff_hours? (pure, unit-tested)
 │   ├── NTRPRating.swift         the USTA scale for the "?" explainer
 │   ├── NotificationCopy.swift   Tara's notification catalogue, verbatim
 │   ├── RegistrationMoments.swift when a clinic's registration changes on its own (opening, close,
-│   │                            start), for TimelineView redraws (pure, unit-tested)
+│   │                            start), for TimelineView redraws; `door`: what the clinic page
+│   │                            and card offer someone not registered (pure, unit-tested)
 │   └── ServiceWeek.swift        Sunday-in-New-York week math for grouping (pure, unit-tested)
 ├── Resources/
 │   └── Brand.swift              tokens: navy / cream / court / brass, type, spacing, the gator mark;

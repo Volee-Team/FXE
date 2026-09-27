@@ -57,9 +57,14 @@ struct HomeView: View {
     /// blue button once two or more of the player's own clinics fill the top.
     private var showsOpenList: Bool { myClinics.count < 2 }
 
+    /// The icon shows the bell's count, set only from a count that came
+    /// back, and only while still signed in: a failed fetch used to set the
+    /// icon from the old number, and one landing after sign-out put the
+    /// previous person's number back (review, 2026-09-27).
     private func refreshUnread() async {
-        unread = (try? await NotificationRepository.unreadCount()) ?? unread
-        PushRegistrar.shared.setBadge(unread)   // the icon shows the bell's count
+        guard let count = try? await NotificationRepository.unreadCount() else { return }
+        unread = count
+        if session.phase == .signedIn { PushRegistrar.shared.setBadge(count) }
     }
 
     var body: some View {
@@ -120,7 +125,15 @@ struct HomeView: View {
                                     .accessibilityIdentifier("home.myClinics")
                                 }
 
-                                if showsOpenList {
+                                if !model.hasLoaded {
+                                    // The first load is still out: nothing
+                                    // below would be true yet.
+                                    ProgressView()
+                                        .tint(Brand.navy)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, Brand.Spacing.lg)
+                                        .accessibilityIdentifier("home.loading")
+                                } else if showsOpenList {
                                     TimelineView(.explicit(openListRedraws)) { _ in
                                         openList(openNow(at: Date()))
                                     }

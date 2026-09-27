@@ -76,6 +76,57 @@ final class SessionResilienceTests: XCTestCase {
         XCTAssertEqual(session.waiverAccepted, false, "false is what presents WaiverGate")
     }
 
+    // MARK: a load that outlives a sign-out (review, 2026-09-27)
+
+    /// The rule: a profile load in flight when Sign out is tapped belongs to
+    /// the person who left. Its answer must not bring their data back or
+    /// route the app back into it.
+    func testALoadThatStartedBeforeSignOutIsDropped() async {
+        let session = SessionStore()
+        let started = session.generation
+        await session.signOut()
+        XCTAssertEqual(session.apply(.success((maria, [mariaPlayer])), from: started), .superseded)
+        XCTAssertNil(session.account, "the previous person's account is not put back")
+        XCTAssertNil(session.activePlayer)
+        session.route(after: .superseded)
+        XCTAssertEqual(session.phase, .signedOut)
+    }
+
+    func testALoadThatStartedAfterSignOutCounts() async {
+        let session = SessionStore()
+        await session.signOut()
+        XCTAssertEqual(session.apply(.success((maria, [mariaPlayer])), from: session.generation), .loaded)
+        XCTAssertEqual(session.account?.firstName, "Maria")
+    }
+
+    // MARK: where a load sends the app when the sign-in has gone (review, 2026-09-27)
+
+    /// The rule: once supabase-swift has dropped the stored session (the
+    /// server ended it, or the account was deleted), nothing about this
+    /// person can be loaded again, so the app signs out rather than showing
+    /// Try again forever or staying signed in with nobody in it.
+    func testAFailedLoadWithTheSessionGoneSignsOut() {
+        XCTAssertEqual(SessionStore.next(after: .failed(.other), knowsSomeone: true, hasAuthSession: false), .signOut)
+        XCTAssertEqual(SessionStore.next(after: .failed(.unreachable), knowsSomeone: false, hasAuthSession: false), .signOut)
+    }
+
+    func testNoProfileWithTheSessionGoneSignsOut() {
+        XCTAssertEqual(SessionStore.next(after: .noProfile, knowsSomeone: false, hasAuthSession: false), .signOut)
+    }
+
+    /// Signed in, then a reload finds no accounts row while the sign-in is
+    /// still there: finish sign-up, never "signed in with no account".
+    func testNoProfileWithASessionIsUnfinishedSignUp() {
+        XCTAssertEqual(SessionStore.next(after: .noProfile, knowsSomeone: false, hasAuthSession: true), .show(.needsProfile))
+    }
+
+    func testAFailedLoadWithTheSessionKeptIsUnchanged() {
+        XCTAssertEqual(SessionStore.next(after: .failed(.unreachable), knowsSomeone: true, hasAuthSession: true), .show(.signedIn))
+        XCTAssertEqual(SessionStore.next(after: .failed(.unreachable), knowsSomeone: false, hasAuthSession: true), .loadFailed(.unreachable))
+        XCTAssertEqual(SessionStore.next(after: .loaded, knowsSomeone: true, hasAuthSession: true), .show(.signedIn))
+        XCTAssertEqual(SessionStore.next(after: .superseded, knowsSomeone: false, hasAuthSession: false), .stay)
+    }
+
     // MARK: what a failed action says, and what it reopens
 
     private struct ServerRefusal: Error, CustomStringConvertible {

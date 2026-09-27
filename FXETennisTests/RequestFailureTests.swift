@@ -106,7 +106,39 @@ final class RequestFailureTests: XCTestCase {
         // register_for_clinic raises with SQLSTATE P0001.
         XCTAssertEqual(RequestFailure(PostgrestError(code: "P0001", message: "registration_closed")), .other)
         XCTAssertEqual(RequestFailure(PostgrestError(code: "42501", message: "not_authorized")), .other)
-        XCTAssertEqual(RequestFailure(PostgrestError(code: nil, message: "Invalid API key")), .other)
+    }
+
+    // MARK: the gateway, not PostgREST
+
+    /// Supabase's API gateway answers a 502 or a 504 itself, with a JSON body
+    /// that has a "message" and no "code". supabase-swift decodes any JSON
+    /// body with a "message" into PostgrestError, so it arrives with code
+    /// nil. PostgREST always sends a code, so code nil means the request
+    /// never reached the database: a Register tap that timed out at the
+    /// gateway must not read "someone beat you to the punch" (review, 2026-09-27).
+    private func gatewayError(_ body: String) throws -> PostgrestError {
+        try JSONDecoder().decode(PostgrestError.self, from: Data(body.utf8))
+    }
+
+    func testAGateway502IsUnreachable() throws {
+        let bad = try gatewayError(#"{"message":"An invalid response was received from the upstream server"}"#)
+        XCTAssertNil(bad.code, "the premise: a gateway body decodes with no code")
+        XCTAssertEqual(RequestFailure(bad), .unreachable)
+    }
+
+    func testAGateway504IsUnreachable() throws {
+        let timeout = try gatewayError(#"{"message":"The upstream server is timing out"}"#)
+        XCTAssertEqual(RequestFailure(timeout), .unreachable)
+        XCTAssertEqual(ClinicDetailModel.outcome(for: timeout).notice,
+                       "Couldn't reach the server. Check your connection.")
+    }
+
+    /// Changed deliberately on 2026-09-27: this is the gateway's own answer to
+    /// a wrong key, code nil like the 502 and 504 above, and cannot be told
+    /// apart from them by code. "Couldn't reach the server" is truer than
+    /// "someone beat you to the punch", which is what .other led to.
+    func testTheGatewaysBadKeyAnswerIsNotARace() {
+        XCTAssertEqual(RequestFailure(PostgrestError(code: nil, message: "Invalid API key")), .unreachable)
     }
 
     func testTheDatabaseBeingUnavailableIsUnreachable() {
@@ -123,7 +155,7 @@ final class RequestFailureTests: XCTestCase {
 
     func testTheLinesAreTheApprovedOnes() {
         XCTAssertEqual(RequestFailure.unreachable.line, "Couldn't reach the server. Check your connection.")
-        XCTAssertEqual(RequestFailure.rateLimited.line, "Too many requests. Try again in a minute.")
+        XCTAssertEqual(RequestFailure.rateLimited.line, "Too many attempts. Try again in a minute.")
         XCTAssertNil(RequestFailure.other.line)
     }
 
@@ -140,7 +172,24 @@ final class RequestFailureTests: XCTestCase {
         let limited = AuthError.api(message: "Request rate limit reached",
                                     errorCode: .overRequestRateLimit,
                                     underlyingData: Data(), underlyingResponse: response(429))
-        XCTAssertEqual(SessionStore.friendly(limited), "Too many requests. Try again in a minute.")
+        XCTAssertEqual(SessionStore.friendly(limited), "Too many attempts. Try again in a minute.")
+    }
+
+    /// GoTrue's reset-email limit is hourly, so the reset must not promise a
+    /// minute. Its request limit on the same endpoint still clears in one.
+    func testAResetEmailLimitDoesNotPromiseAMinute() {
+        let email = AuthError.api(message: "email rate limit exceeded",
+                                  errorCode: .overEmailSendRateLimit,
+                                  underlyingData: Data(), underlyingResponse: response(429))
+        XCTAssertEqual(SessionStore.resetFriendly(email), "Too many reset emails. Try again later.")
+        // An older GoTrue sends the sentence with no error code.
+        let bare = AuthError.api(message: "Email rate limit exceeded", errorCode: .unknown,
+                                 underlyingData: Data(), underlyingResponse: response(429))
+        XCTAssertEqual(SessionStore.resetFriendly(bare), "Too many reset emails. Try again later.")
+        let requests = AuthError.api(message: "Request rate limit reached",
+                                     errorCode: .overRequestRateLimit,
+                                     underlyingData: Data(), underlyingResponse: response(429))
+        XCTAssertEqual(SessionStore.resetFriendly(requests), "Too many attempts. Try again in a minute.")
     }
 
     func testSignInWrongPasswordStillSaysSo() {

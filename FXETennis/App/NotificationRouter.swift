@@ -26,6 +26,7 @@
 
 import SwiftUI
 import Supabase
+import UserNotifications
 
 // MARK: - What a notification is about
 
@@ -186,9 +187,13 @@ final class NotificationRouter {
     private init() {}
 
     /// A tapped push no screen has opened yet. Set by PushAppDelegate; taken
-    /// by the bell if its list is on screen, otherwise by the sheet at the
-    /// root (pushTapRouting). Waits there through launch and sign-in.
+    /// by the bell if its list is on screen, otherwise shown by the sheet at
+    /// the root (pushTapRouting), which leaves it here until its screen has
+    /// actually appeared. Waits through launch and sign-in.
     private(set) var pendingTap: PushTap?
+    /// Someone is signed in (SessionStore.phase). A push that lands while
+    /// nobody is shows no banner.
+    var signedIn = false
     /// Moves when a push lands while the app is open, when a tapped push
     /// changes what is unread, and when someone answers from a notification's
     /// screen. Home and the bell reload on it.
@@ -198,6 +203,34 @@ final class NotificationRouter {
     var bellIsOpen = false
 
     func tapped(_ tap: PushTap) { pendingTap = tap }
+
+    /// What the root does with a tapped push once its lookup has returned.
+    enum TapStep: Equatable, Sendable {
+        case present        // show it now
+        case wait           // another sheet or alert is up; iOS would refuse a second one
+        case leaveForBell   // the bell opened meanwhile; it takes the tap
+        case drop           // taken elsewhere, or cleared at sign-out
+        case markReadOnly   // nothing to open (a note, or a clinic that has ended)
+    }
+
+    /// Review, 2026-09-27: the root used to take the tap, mark it read, look
+    /// it up and then present, and iOS refuses a sheet while another is up
+    /// (the waiver, the card step, a confirmation), so the tap was lost and
+    /// already read. Now it waits, re-checks the bell after the lookup, and
+    /// is marked read only once its screen appears (`delivered`).
+    nonisolated static func step(tapStillPending: Bool, bellIsOpen: Bool,
+                                 somethingPresented: Bool, hasDestination: Bool) -> TapStep {
+        guard tapStillPending else { return .drop }
+        if bellIsOpen { return .leaveForBell }
+        guard hasDestination else { return .markReadOnly }
+        return somethingPresented ? .wait : .present
+    }
+
+    /// A push landing while the app is open: a banner only while someone is
+    /// signed in (PushAppDelegate.willPresent).
+    nonisolated static func presentationOptions(signedIn: Bool) -> UNNotificationPresentationOptions {
+        signedIn ? [.banner, .list, .sound] : []
+    }
 
     func take() -> PushTap? {
         let tap = pendingTap
@@ -210,14 +243,20 @@ final class NotificationRouter {
     /// Sign-out: a tap meant for this account must not open for the next one.
     func reset() { pendingTap = nil }
 
-    /// A tapped push: its row is read now, so the icon and Home follow, then
-    /// the screen it names.
-    func open(_ tap: PushTap, isAdmin: Bool) async -> NotificationDestination? {
+    /// The screen a tapped push names, looked up with the caller's grants.
+    /// Marks nothing read: that waits until the screen is shown.
+    func resolve(_ tap: PushTap, isAdmin: Bool) async -> NotificationDestination? {
+        guard let target = tap.target else { return nil }
+        return await NotificationResolver.live.destination(for: target, isAdmin: isAdmin)
+    }
+
+    /// The tap's screen is on screen, or it had none to open: it is no longer
+    /// pending, its row is read, and the icon and Home follow.
+    func delivered(_ tap: PushTap) async {
+        if pendingTap?.token == tap.token { pendingTap = nil }
         if let id = tap.notificationId { try? await NotificationRepository.markRead(id) }
         await PushRegistrar.shared.syncBadge()
         requestReload()
-        guard let target = tap.target else { return nil }
-        return await NotificationResolver.live.destination(for: target, isAdmin: isAdmin)
     }
 }
 
@@ -243,9 +282,17 @@ struct NotificationDestinationView: View {
 
 /// Opens a tapped push over whatever is showing, once signed in. Applied in
 /// RootView; the bell handles taps itself while its list is open.
+///
+/// The tap stays pending in the router until its screen has appeared
+/// (review, 2026-09-27). While another sheet or alert is up, iOS refuses a
+/// second presentation, so this waits and looks again every 0.7 seconds; if
+/// the bell opens meanwhile, the bell takes it. Nothing is marked read until
+/// the sheet's content appears.
 private struct PushTapRouting: ViewModifier {
     @Environment(SessionStore.self) private var session
     @State private var destination: NotificationDestination?
+    /// The tap whose screen `destination` holds, until that screen appears.
+    @State private var showing: PushTap?
     private let router = NotificationRouter.shared
 
     private struct Trigger: Equatable {
@@ -255,13 +302,37 @@ private struct PushTapRouting: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            // Initial: a tap that launched the app is waiting before this view
-            // exists. onChange rather than task(id:): take() changes the
-            // trigger, and a task keyed on it would cancel its own work.
-            .onChange(of: Trigger(tap: router.pendingTap?.token, bellIsOpen: router.bellIsOpen), initial: true) {
-                guard !router.bellIsOpen, let tap = router.take() else { return }
-                let isAdmin = session.account?.isAdmin == true
-                Task { destination = await router.open(tap, isAdmin: isAdmin) }
+            // Keyed on the pending tap: `delivered` clears it, which ends this
+            // task; the bell opening restarts it, and it steps aside.
+            .task(id: Trigger(tap: router.pendingTap?.token, bellIsOpen: router.bellIsOpen)) {
+                guard !router.bellIsOpen, let tap = router.pendingTap else { return }
+                let found = await router.resolve(tap, isAdmin: session.account?.isAdmin == true)
+                while !Task.isCancelled {
+                    let step = NotificationRouter.step(
+                        tapStillPending: router.pendingTap?.token == tap.token,
+                        bellIsOpen: router.bellIsOpen,
+                        somethingPresented: Self.somethingIsPresented,
+                        hasDestination: found != nil)
+                    switch step {
+                    case .drop, .leaveForBell:
+                        return
+                    case .markReadOnly:
+                        await router.delivered(tap)
+                        return
+                    case .present:
+                        if destination == nil {
+                            showing = tap
+                            destination = found
+                        } else {
+                            // An earlier attempt iOS refused: clear it, then
+                            // present again on the next look.
+                            destination = nil
+                        }
+                    case .wait:
+                        break
+                    }
+                    try? await Task.sleep(for: .milliseconds(700))
+                }
             }
             .sheet(item: $destination) { shown in
                 NavigationStack {
@@ -273,7 +344,21 @@ private struct PushTapRouting: ViewModifier {
                             }
                         }
                 }
+                .onAppear {
+                    guard let tap = showing else { return }
+                    showing = nil
+                    Task { await router.delivered(tap) }
+                }
             }
+    }
+
+    /// Whether the key window already presents something (a sheet, a
+    /// confirmation, Stripe's card sheet, this modifier's own sheet).
+    private static var somethingIsPresented: Bool {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .flatMap(\.windows)
+            .contains { $0.isKeyWindow && $0.rootViewController?.presentedViewController != nil }
     }
 }
 

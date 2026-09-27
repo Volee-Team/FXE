@@ -17,6 +17,15 @@
 //  identity, and at launch, with none known yet, shows "Couldn't reach the
 //  server" with Try again (`.loadFailed`) instead of guessing.
 //
+//  A LOAD BELONGS TO WHOEVER STARTED IT (review, 2026-09-27). A profile load
+//  in flight when Sign out is tapped used to land afterwards and route back
+//  to `.signedIn` with the previous person's data in memory. `generation`
+//  counts sign-outs; every load captures it when it starts, and an answer
+//  from an older generation is dropped (`.superseded`). And once
+//  supabase-swift has dropped the stored session (the server ended it, the
+//  account was deleted), a load that fails or finds no row signs out, rather
+//  than Try again forever or signed in with nobody (`next(after:...)`).
+//
 
 import Foundation
 import Supabase
@@ -39,13 +48,50 @@ final class SessionStore {
         case loaded                   // the accounts row came back
         case noProfile                // the request worked; there is no row
         case failed(RequestFailure)   // the request did not work; nothing was changed
+        case superseded               // signed out while it ran; its answer was dropped
+    }
+
+    /// Where the app goes after a profile load.
+    enum Next: Equatable {
+        case stay                       // a dropped answer changes nothing
+        case show(Phase)
+        case loadFailed(RequestFailure)
+        case signOut
+    }
+
+    /// Bumped by signOut, at its start and its end. A load captures it when
+    /// it starts; an answer from an older generation is dropped.
+    @ObservationIgnored private(set) var generation = 0
+
+    /// The rule, separate from the network so it is unit-tested
+    /// (SessionResilienceTests). `hasAuthSession` is whether supabase-swift
+    /// still holds a stored session once the load has returned: it keeps an
+    /// expired one it could not refresh for lack of signal, and drops one
+    /// the server refused, so its absence means nobody can be loaded again.
+    nonisolated static func next(after load: ProfileLoad, knowsSomeone: Bool, hasAuthSession: Bool) -> Next {
+        switch load {
+        case .superseded:
+            return .stay
+        case .loaded:
+            return .show(.signedIn)
+        case .noProfile:
+            // Unfinished sign-up, never "signed in with no account".
+            return hasAuthSession ? .show(.needsProfile) : .signOut
+        case .failed(let failure):
+            if !hasAuthSession { return .signOut }
+            return knowsSomeone ? .show(.signedIn) : .loadFailed(failure)
+        }
     }
 
     /// The two gates the server can refuse a registration for (decision 0013
     /// §4 and 0015 §5). The app reopens the matching step when it does.
     enum Gate: Equatable { case waiver, card }
 
-    var phase: Phase = .loading
+    var phase: Phase = .loading {
+        // A banner for a push that lands while nobody is signed in would show
+        // the previous account's words on a shared phone (PushAppDelegate).
+        didSet { NotificationRouter.shared.signedIn = phase == .signedIn }
+    }
     var account: Account?
     /// nil until known; false shows the waiver over the app (decision 0013).
     var waiverAccepted: Bool?
@@ -93,9 +139,11 @@ final class SessionStore {
 
     /// Restores the stored session and loads who it belongs to.
     private func restore() async {
+        let started = generation
         do {
             _ = try await supabase.auth.session
         } catch {
+            guard started == generation else { return }   // signed out meanwhile
             // No stored session, or one the server has ended: sign in. But an
             // expired session that could not be REFRESHED for lack of signal is
             // still on this phone, and the sign-in screen would be the wrong
@@ -108,28 +156,38 @@ final class SessionStore {
             }
             return
         }
-        route(after: await loadProfile())
+        guard started == generation else { return }
+        await settle(await loadProfile())
+    }
+
+    /// Routes after a load, reading whether supabase-swift still holds a
+    /// session once the load has returned, and signs out when it does not.
+    private func settle(_ load: ProfileLoad) async {
+        if route(after: load, hasAuthSession: supabase.auth.currentUser != nil) {
+            await signOut()
+        }
     }
 
     /// Where a launch, a sign-in or a retry goes once the profile load is in.
     /// An authenticated user with no profile row used to be sent back to
     /// signedOut with no explanation, which was a dead end: their auth user
     /// already existed, so signing up again failed too. `.noProfile` routes to
-    /// the screen that finishes the job. A failed load never does.
-    func route(after load: ProfileLoad) {
-        switch load {
-        case .loaded:
-            loadFailureLine = nil
-            phase = .signedIn
-        case .noProfile:
-            loadFailureLine = nil
-            phase = .needsProfile
-        case .failed(let failure):
-            if account != nil {
-                phase = .signedIn          // keep who we knew
-            } else {
-                fail(failure)
-            }
+    /// the screen that finishes the job. A failed load never does. Returns
+    /// true when the caller must sign out (`settle` does).
+    @discardableResult
+    func route(after load: ProfileLoad, hasAuthSession: Bool = true) -> Bool {
+        switch Self.next(after: load, knowsSomeone: account != nil, hasAuthSession: hasAuthSession) {
+        case .stay:
+            return false
+        case .show(let next):
+            if next != .loadFailed { loadFailureLine = nil }
+            phase = next                   // .signedIn after a failure keeps who we knew
+            return false
+        case .loadFailed(let failure):
+            fail(failure)
+            return false
+        case .signOut:
+            return true
         }
     }
 
@@ -142,6 +200,7 @@ final class SessionStore {
     /// nothing that was known before it (see the header).
     @discardableResult
     func loadProfile() async -> ProfileLoad {
+        let started = generation
         let fetched: Result<(account: Account?, players: [PlayerProfile]), Error>
         do {
             let account = try await ProfileRepository.myAccount()
@@ -150,15 +209,16 @@ final class SessionStore {
         } catch {
             fetched = .failure(error)
         }
-        let result = apply(fetched)
+        let result = apply(fetched, from: started)
         guard result == .loaded else { return result }
         // The gates. A check that fails keeps its last known answer rather
         // than switching the gate off; register_for_clinic enforces both
-        // anyway, and its refusal reopens the step (`reopen`).
-        if let accepted = try? await ProfileRepository.myWaiverAccepted() { waiverAccepted = accepted }
-        if let consent = try? await PaymentsRepository.myCardConsent() { cardConsent = consent }
-        if let required = try? await PaymentsRepository.cardStepRequired() { cardsRequired = required }
-        return result
+        // anyway, and its refusal reopens the step (`reopen`). Each answer is
+        // dropped if a sign-out happened while it was asked.
+        if let accepted = try? await ProfileRepository.myWaiverAccepted(), started == generation { waiverAccepted = accepted }
+        if let consent = try? await PaymentsRepository.myCardConsent(), started == generation { cardConsent = consent }
+        if let required = try? await PaymentsRepository.cardStepRequired(), started == generation { cardsRequired = required }
+        return started == generation ? result : .superseded
     }
 
     /// Applies one fetch of the account and its players. Separate from the
@@ -166,6 +226,13 @@ final class SessionStore {
     /// successful answer with no row clears it.
     @discardableResult
     func apply(_ fetched: Result<(account: Account?, players: [PlayerProfile]), Error>) -> ProfileLoad {
+        apply(fetched, from: generation)
+    }
+
+    @discardableResult
+    func apply(_ fetched: Result<(account: Account?, players: [PlayerProfile]), Error>, from started: Int) -> ProfileLoad {
+        // Started before a sign-out: the answer is the previous person's.
+        guard started == generation else { return .superseded }
         switch fetched {
         case .failure(let error):
             return .failed(RequestFailure(error))
@@ -192,7 +259,7 @@ final class SessionStore {
         case .card:
             // Fresh card summary and payments switches; the card step opens if
             // they say a card is due.
-            await loadProfile()
+            await settle(await loadProfile())
         }
     }
 
@@ -204,12 +271,11 @@ final class SessionStore {
         switch phase {
         case .signedIn:
             guard foregroundThrottle.shouldReload() else { return }
-            if await loadProfile() == .noProfile, supabase.auth.currentUser == nil {
-                // The server ended this session while the app slept (signed
-                // out elsewhere, or the account deleted), and supabase-swift
-                // dropped it: back to sign-in, not an app with nobody in it.
-                await signOut()
-            }
+            // The server may have ended this session while the app slept
+            // (signed out elsewhere, or the account deleted): settle signs
+            // out then, and a row gone with the sign-in still here finishes
+            // sign-up, rather than an app with nobody in it.
+            await settle(await loadProfile())
         case .loadFailed:
             await restore()
         case .loading, .signedOut, .needsProfile:
@@ -228,7 +294,7 @@ final class SessionStore {
         // Someone who signed up before the profile screen existed, or who quit
         // partway through it, still has no profile and is sent to finish it.
         // A load that failed is not that, and goes to Try again instead.
-        route(after: await loadProfile())
+        await settle(await loadProfile())
     }
 
     /// Creates the auth user only. The `accounts` and `players` rows are written
@@ -266,6 +332,7 @@ final class SessionStore {
                 levelNote: levelNote
             )
             let load = await loadProfile()
+            if load == .superseded { return false }   // signed out meanwhile
             if case .failed(let failure) = load {
                 // Saved, most likely, but not read back. Continue again is
                 // safe: create_my_account is idempotent.
@@ -303,14 +370,20 @@ final class SessionStore {
                 redirectTo: AppEnv.passwordResetURL)
             return true
         } catch {
-            authError = Self.friendly(error)
+            authError = Self.resetFriendly(error)
             return false
         }
     }
 
     func signOut() async {
+        // Anything in flight now belongs to the person leaving.
+        generation &+= 1
         await PushRegistrar.shared.unregisterForSignOut()
         try? await supabase.auth.signOut()
+        // After the session is gone, so a count fetched before it cannot
+        // put the number back on the icon.
+        PushRegistrar.shared.clearBadge()
+        generation &+= 1
         account = nil
         players = []
         activePlayer = nil
@@ -326,6 +399,13 @@ final class SessionStore {
     /// or a rate limit says so before any text is looked at, because an
     /// offline error's text has no word "network" in it and a certificate
     /// error's text says "invalid" (MVP audit items 9 and 15).
+    /// A failed password reset. GoTrue's reset-email limit is hourly, so it
+    /// must not say "a minute" the way the request limit does.
+    nonisolated static func resetFriendly(_ error: Error) -> String {
+        if RequestFailure.isEmailRateLimit(error) { return "Too many reset emails. Try again later." }
+        return friendly(error)
+    }
+
     nonisolated static func friendly(_ error: Error) -> String {
         if let line = RequestFailure(error).line { return line }
         let raw = error.localizedDescription

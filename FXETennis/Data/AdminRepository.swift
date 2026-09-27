@@ -541,17 +541,6 @@ extension AdminRepository {
             .execute()
             .value
     }
-
-    /// Mark one notice read. Column-scoped grant: read_at is the only field a
-    /// recipient may touch (20260901000001).
-    static func markRead(notice: UUID) async throws {
-        struct U: Encodable { let read_at: Date }
-        _ = try await supabase
-            .from("notifications")
-            .update(U(read_at: Date()), returning: .minimal)  // see NotificationRepository
-            .eq("id", value: notice)
-            .execute()
-    }
 }
 
 /// A row from `search_players`. Flatter than `PlayerProfile`: the RPC returns a
