@@ -94,6 +94,9 @@ begin
   t := public.record_card_consent('Version 0.1.0 (1)');
   insert into _probe_result values ('consent_recorded_returns_time', 'true', (t is not null)::text);
   insert into _probe_result values ('consent_now_on_file', 'true', public.my_card_consent()::text);
+  -- Ticking twice records once: a retry returns the first record's time.
+  insert into _probe_result values ('second_tick_returns_first_record', 'true',
+    (public.record_card_consent('Version 0.1.0 (2)') = t)::text);
   perform set_config('role', 'postgres', true);
   select k.consent_text || ' | ' || k.version || ' | ' || k.app_version into v
     from public.card_consents k where k.account_id = MARIA;
@@ -131,6 +134,13 @@ begin
   perform set_config('role', 'postgres', true);
   select count(*) into n from public.card_consents where account_id = KEN;
   insert into _probe_result values ('deleting_the_account_keeps_the_consent', '1', n::text);
+  -- A hard delete (the dashboard's Delete user cascades auth.users ->
+  -- accounts) must not take the consent early: RESTRICT refuses it.
+  begin
+    delete from public.accounts where id = KEN;
+  exception when others then null; end;
+  select count(*) into n from public.card_consents where account_id = KEN;
+  insert into _probe_result values ('hard_delete_cannot_take_the_consent', '1', n::text);
 
   update public.accounts set deleted_at = now() - interval '89 days' where id = KEN;
   n := public.purge_expired_card_consents();

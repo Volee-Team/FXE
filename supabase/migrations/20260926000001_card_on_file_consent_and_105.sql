@@ -28,6 +28,10 @@
 --    a migration on the hosted plan was not verifiable tonight, and the
 --    nightly job already reaches hosted.
 --
+-- Audited 2026-09-26 by the sql-auditor agent before any push: RESTRICT on the
+-- consent foreign key, a per-player lock on the 105 check, clock-time 48
+-- hours, idempotent consent, helpers internal, already_charged on a race.
+--
 -- 3. BACK-TO-BACK 105s, Tara: "members can sign up for back to back 105's
 --    (same day back to back) but nonmembers cannot until 48 [hours] priors to
 --    start time of clinic. For example: Sunday Sept 27 430-6pm 105 6-7pm 105
@@ -48,17 +52,20 @@ language sql immutable set search_path = public, pg_temp
 as $$
   select coalesce(p_name, '') ilike '%105%' or coalesce(p_category, '') ilike '%105%';
 $$;
-revoke all on function public.is_105(text, text) from public, anon;
-grant execute on function public.is_105(text, text) to authenticated;
+-- Internal: only register_for_clinic calls it, with owner rights (audit 2026-09-26).
+revoke all on function public.is_105(text, text) from public, anon, authenticated;
 
 create or replace function public.back_to_back_105_opens_at(p_a timestamptz, p_b timestamptz)
 returns timestamptz
 language sql immutable set search_path = public, pg_temp
 as $$
-  select least(p_a, p_b) - interval '48 hours';
+  -- Clock time, two days earlier at the same New York time: her example is
+  -- worded as a clock time ("until Friday Sept 25 4:30pm") and every other
+  -- window here is one. Elapsed hours would move it by one on the two
+  -- daylight-saving weekends (audit 2026-09-26). Question 60 asks her.
+  select ((least(p_a, p_b) at time zone 'America/New_York') - interval '2 days') at time zone 'America/New_York';
 $$;
-revoke all on function public.back_to_back_105_opens_at(timestamptz, timestamptz) from public, anon;
-grant execute on function public.back_to_back_105_opens_at(timestamptz, timestamptz) to authenticated;
+revoke all on function public.back_to_back_105_opens_at(timestamptz, timestamptz) from public, anon, authenticated;
 
 -- ------------------------------------------------------- card consent
 insert into public.app_settings (key, value)
@@ -68,7 +75,11 @@ on conflict (key) do nothing;
 
 create table if not exists public.card_consents (
   id           uuid primary key default gen_random_uuid(),
-  account_id   uuid not null references public.accounts(id) on delete cascade,
+  -- RESTRICT, not CASCADE: accounts cascade from auth.users, so a hard delete
+  -- (the dashboard's Delete user) would have taken the consent with it on
+  -- day 0. Now only purge_expired_card_consents() deletes a consent, and a
+  -- hard delete of someone holding one fails loudly (audit 2026-09-26).
+  account_id   uuid not null references public.accounts(id) on delete restrict,
   consent_text text not null,
   version      text not null,
   accepted_at  timestamptz not null default now(),
@@ -120,6 +131,13 @@ begin
   end if;
   if not exists (select 1 from public.accounts where id = v_id and deleted_at is null) then
     raise exception 'account_not_found' using errcode = 'P0002';
+  end if;
+  -- Once per account and wording: a retry returns the first record.
+  select accepted_at into v_at from public.card_consents
+   where account_id = v_id and consent_text = public.card_consent_text()
+   order by accepted_at limit 1;
+  if v_at is not null then
+    return v_at;
   end if;
   insert into public.card_consents (account_id, consent_text, version, app_version)
   values (v_id, public.card_consent_text(),
@@ -225,6 +243,11 @@ begin
   -- in a 105 on the same New York day may take a second one only from 48
   -- hours before the earlier of the two. Tara's own placements are exempt.
   if not v_member and not public.is_admin() and public.is_105(c.name, c.category) then
+    -- Two registrations by the same player for two different 105s at the same
+    -- instant share no row lock (each locks only its own clinic), so both
+    -- could pass this check. Serialise them per player; cannot deadlock,
+    -- since each holder already has its own clinic and waits for no other.
+    perform pg_advisory_xact_lock(hashtextextended('register_105:' || p_player::text, 0));
     select min(public.back_to_back_105_opens_at(c.starts_at, o.starts_at)) into v_b2b_opens
       from public.registrations r2
       join public.clinics o on o.id = r2.clinic_id
@@ -313,5 +336,11 @@ begin
   values (p_registration, a.id, p_kind, amt, auth.uid())
   returning * into v;
   return v;
+exception
+  -- Two taps at the same instant both pass the exists() check above; the
+  -- unique index payments_one_live_charge (money-reports migration) stops the
+  -- second, and this turns its error into the one Tara's screens understand.
+  when unique_violation then
+    raise exception 'already_charged' using errcode = 'P0001';
 end;
 $$;
