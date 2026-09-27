@@ -400,6 +400,32 @@ new and changed words and these questions, nothing else.
 **79. When you take someone out of a clinic, take back an invitation, or put someone in yourself, should the app tell them?**
 *Default: until you answer, nothing is sent (today's behaviour). If yes, your own lines from your notification drafts would be used. Status: open, asked 2026-09-27 (MVP audit).*
 
+## O. From the money fixes (added 2026-09-27, decisions 0018 and 0019)
+
+**80. Someone cancels late and you then put them back in the same clinic: do they pay once or twice?**
+*Default: once. One fee per player per clinic, whatever happened (decision 0018). Status: open, asked 2026-09-27 (review page).*
+
+**81. When a player texts you inside 3 hours that they can't come and you tap Late cancel, the full fee applies, the same as a late cancel in the app, and a plain Remove stays free. Right?**
+*Default: yes, as built (her own words, 2026-09-22: pros "can label them as no show, late cancellation"). Status: open, asked 2026-09-27 (not on the page: confirms her own words).*
+
+**82. If you cancel a clinic (say for rain), should anyone who had already canceled late for it still be charged?**
+*Default: no, a canceled clinic is never charged. Status: open, asked 2026-09-27 (review page).*
+
+**83. A card is declined and you decide not to chase it: how do you want to clear it from your list?**
+*Default until she answers: it stays in Action Needed until a later charge goes through; declines of deleted accounts are not shown there. Status: open, asked 2026-09-27 (review page).*
+
+**84. Someone plays a clinic, then deletes their account before you tap Charge: charge that clinic first, or let it go?**
+*Default: let it go; their card is removed from Stripe when they delete. Status: open, asked 2026-09-27 (review page).*
+
+**85. Clinics charged during the test weeks, before real money is switched on: charged again for real after the switch?**
+*Default: no, test charges stay as they are. Status: open, asked 2026-09-27 (not on the page: nobody is charged in the test weeks unless she chooses to).*
+
+**86. After you charge a clinic, should Stripe email each player a receipt?**
+*Default: no receipt until she says so (Stripe setting, one switch). Status: open, asked 2026-09-27 (review page).*
+
+**87. On the laptop, This week starts fresh every Sunday; last week's clinics move under Show earlier, except one you still need to charge. Right, or keep last week visible through Monday?**
+*Default: as built. Status: open, asked 2026-09-27 (not on the page).*
+
 ### How 52 to 57 are being sent
 
 Round two of the review page (2026-09-21, later): the Words tab now shows her

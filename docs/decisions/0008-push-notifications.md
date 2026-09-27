@@ -93,3 +93,28 @@ Alex's phone. The steps are in `supabase/functions/README.md` ("What Alex does
 when the key arrives"). Not proven until then: that Apple accepts the key,
 team and topic, and that production versus sandbox is right for the build
 (TestFlight tokens are production, the default).
+
+**Addendum 2026-09-27: the app's receiving half** (MVP audit item 12, branch
+`push-client`, fixed on `fix-ios`).
+
+- `PushAppDelegate` is the `UNUserNotificationCenter` delegate. While the app
+  is open a push shows a banner, list and sound and reloads Home, but only
+  while someone is signed in, so a shared phone never shows the previous
+  account's text. `.badge` is left out: the reload sets the icon number.
+- A tap is routed by `entity_type` and `entity_id` through one resolver
+  (`NotificationRouter`), the same one the bell uses. A `registration` goes to
+  the caller's own `my_registrations` first; only an admin falls back to
+  `registrations_admin`, which opens her roster page. A player never queries the
+  admin views. The tap stays pending until its screen is actually shown, and
+  the row is marked read then.
+- The icon number always equals the bell's unread count; it is set only from a
+  successful fetch and goes to 0 after sign-out completes.
+- **Enumerate, do not list:** every `notify_account` caller must name `clinic`
+  or `registration`; a producer with a third kind turns
+  `tests/sql/notification_targets.sql` red, which is the moment to teach the
+  router to open it.
+- The seed's invitation is written by `invite_from_pool` itself (Maria,
+  Response Needed, "Evening Coed", 40 days out), with fixed ids so
+  `tests/push/simctl-push.sh` can push it to the simulator.
+- Also: Tara's late-request rows now open her Manage page for that clinic,
+  not the player page, whose Register button did nothing for her.
