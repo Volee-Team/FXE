@@ -108,9 +108,10 @@ New password
 No card on file for that player.
 No card payments yet.
 No clinics currently open for registration
-No clinics yet. Use “New clinic” to add your first one.
+No clinics this week or later. Use “New clinic” to add one.
 No court
 No description yet.
+No earlier clinics.
 No notifications yet
 No responses yet.
 No room

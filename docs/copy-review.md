@@ -396,6 +396,21 @@ back in front of her on round four of the review page:
 | ☐ | Tara, only what's new / Your changes from September 22 are in the app. … | The review page's heading and lede, round four | Only Tara reads it |
 | ☐ | Testing | Now a small grey link at the foot of the web admin, not a tab (Alex, 2026-09-27) | Only Alex uses it |
 
+## L. Web admin: This week stops at the week (2026-09-27, MVP audit item 14) — awaiting Alex
+
+Laptop only; no player sees any of it. This week lists clinics that end after
+this service week began (Sunday 00:00, New York), plus, while payments are on,
+any older clinic Charge clinic would still charge someone for. Everything
+older waits behind a checkbox, the same shape as Show canceled.
+
+| ☐ | String | Where | Why |
+|---|---|---|---|
+| ☐ | Show earlier | This week, the checkbox beside Show canceled | Chrome. Not seen by the extractor (a short HTML label) |
+| ☐ | Earlier | Heading over the older clinics once Show earlier is ticked, newest first | A section heading, like Action Needed and Templates |
+| ☐ | No earlier clinics. | Under Earlier when there are none | Chrome |
+| ☐ | No clinics this week or later. Use “New clinic” to add one. | This week, when nothing ends after the week began | Replaces "No clinics yet. Use “New clinic” to add your first one.", which stops being true once older clinics exist and are simply not listed |
+| ☐ | Couldn't load clinics. | This week, when the rosters or the players cannot be read; the list is cleared rather than drawn with empty rosters | The iOS app's line for the same failure. Not seen by the extractor (a second argument) |
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148

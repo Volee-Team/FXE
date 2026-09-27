@@ -139,6 +139,7 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
     <div id="tab-week" role="tabpanel">
     <div class="row">
       <h2 style="margin:0" class="grow">This week</h2>
+      <label class="muted" style="white-space:nowrap;display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="show-earlier" style="width:auto;margin:0"> Show earlier</label>
       <label class="muted" style="white-space:nowrap;display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="show-canceled" style="width:auto;margin:0"> Show canceled</label>
       <button class="primary" id="new-clinic">New clinic</button>
     </div>
@@ -317,6 +318,8 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
 <script type="module">
 import { createClient } from "./vendor/supabase-js.js";
 import { CONFIG, ENV } from "./config.js";
+import { serviceWeekStart, splitThisWeek } from "./week.js";
+import { readAll, readByIds } from "./read.js";
 
 // implicit flow: a reset started on one device (the phone) must finish on
 // another (this page). PKCE ties the emailed code to the device that asked.
@@ -687,19 +690,71 @@ async function loadPaymentsSwitch() {
   cutoffHours = parseInt(byKey.cancel_cutoff_hours, 10) || 3;
 }
 
+// Earlier clinics that Charge clinic would still charge someone for, by
+// admin_charge_clinic's own rule: You're In! (came or no-show) or a late
+// cancel without the courtesy, a card on file, and no charge yet. Read only
+// while payments are on: with them off nothing is ever charged, so every past
+// clinic would qualify and the list would grow without end again.
+async function readOwedClinicIds() {
+  const r = await readAll(() => sb.from("registrations_admin").select("id,clinic_id")
+    .is("charge_status", null).eq("has_card", true)
+    .or("status.eq.in,and(status.eq.canceled,late_cancel.is.true,courtesy_used.is.false)")
+    .order("id"));
+  return r.error ? r : { data: [...new Set(r.data.map(x => x.clinic_id))] };
+}
+
+// This week (MVP audit 2026-09-27, item 14). It used to list every clinic
+// ever made, oldest first, and read every registration ever in one request
+// with no order and no error check, so once the table passed the 1000-row cap
+// (ten to twelve weeks of clinics) rosters silently lost players. Now it
+// lists what week.js decides: clinics ending after this service week began,
+// plus unfinished charging while payments are on; the rest wait behind Show
+// earlier. Rosters are read for what is on screen, a page at a time, and a
+// failed read says so instead of drawing empty rosters.
 async function loadClinics() {
   note($("msg"), "");
   await loadTemplates();
   await loadPaymentsSwitch();
-  const { data: clinics, error } = await sb.from("clinics_admin").select("*").order("starts_at");
-  if (error) return note($("msg"), friendly(error));
-  if (!clinics.length) {
-    $("clinics").innerHTML = `<div class="card muted">No clinics yet. Use “New clinic” to add your first one.</div>`;
-    return;
+  const weekStart = serviceWeekStart();
+  const since = weekStart.toISOString();
+  const showEarlier = $("show-earlier").checked;
+  const [cur, owed, past] = await Promise.all([
+    readAll(() => sb.from("clinics_admin").select("*").gt("ends_at", since).order("starts_at").order("id")),
+    paymentsOn ? readOwedClinicIds() : { data: [] },
+    showEarlier
+      ? readAll(() => sb.from("clinics_admin").select("*").lte("ends_at", since).order("starts_at", { ascending: false }).order("id"))
+      : { data: [] },
+  ]);
+  const failed = cur.error || owed.error || past.error;
+  if (failed) return note($("msg"), friendly(failed));
+  // An owed clinic from before this week, read by id unless Show earlier has it.
+  const have = new Set([...cur.data, ...past.data].map(c => c.id));
+  const owedOld = await readByIds(owed.data.filter(id => !have.has(id)),
+    (part) => sb.from("clinics_admin").select("*").in("id", part).neq("status", "canceled").order("id"));
+  if (owedOld.error) return note($("msg"), friendly(owedOld.error));
+  const clinics = [...cur.data, ...owedOld.data, ...past.data];
+  const { current, earlier } = splitThisWeek(clinics, { weekStart, paymentsOn, owed: new Set(owed.data) });
+
+  // Canceled clinics stay in the database (hard rule 4) and out of the way:
+  // hidden unless she asks, so the week reads as the week.
+  const showCanceled = $("show-canceled").checked;
+  const keep = (list) => showCanceled ? list : list.filter(c => c.status !== "canceled");
+  const visible = keep(current);
+  const visibleEarlier = showEarlier ? keep(earlier) : [];
+  const hiddenCount = current.length - visible.length + (showEarlier ? earlier.length - visibleEarlier.length : 0);
+
+  // Rosters for the clinics on screen and nothing else, in registration order
+  // (the Player Pool's numbers are Tara's priority order). Players are read
+  // whole because Action Needed names people who are not on a roster yet.
+  const onScreen = [...visible, ...visibleEarlier].map(c => c.id);
+  const [{ data: regs, error: regsError }, { data: players, error: playersError }] = await Promise.all([
+    readByIds(onScreen, (part) => sb.from("registrations_admin").select("*").in("clinic_id", part).order("registered_at").order("id")),
+    readAll(() => sb.from("players").select("id,first_name,last_name,is_member,adult_rating,level_note").order("id")),
+  ]);
+  if (regsError || playersError) {
+    $("clinics").innerHTML = "";
+    return note($("msg"), "Couldn't load clinics.");
   }
-  const ids = clinics.map(c => c.id);
-  const { data: regs } = await sb.from("registrations_admin").select("*").in("clinic_id", ids);
-  const { data: players } = await sb.from("players").select("id,first_name,last_name,is_member,adult_rating,level_note");
   const byPlayer = Object.fromEntries((players || []).map(p => [p.id, p]));
   clinicIndex = Object.fromEntries(clinics.map(c => [c.id, c]));
   regsByClinic = {};
@@ -707,12 +762,7 @@ async function loadClinics() {
   await loadActionNeeded(clinics, byPlayer);
   loadMoney();
 
-  // Canceled clinics stay in the database (hard rule 4) and out of the way:
-  // hidden unless she asks, so the week reads as the week.
-  const visible = $("show-canceled").checked ? clinics : clinics.filter(c => c.status !== "canceled");
-  const hiddenCount = clinics.length - visible.length;
-  $("clinics").innerHTML = (hiddenCount && !$("show-canceled").checked
-    ? `<p class="muted">${hiddenCount} canceled ${hiddenCount === 1 ? "clinic" : "clinics"} hidden.</p>` : "") + visible.map(c => {
+  const renderCard = (c) => {
     const mine = (regs || []).filter(r => r.clinic_id === c.id);
     // You're In! reads in court order, unassigned last, so the list on screen
     // is her court sheet. Other sections keep registration order.
@@ -760,7 +810,14 @@ async function loadClinics() {
         ? `<span class="chip canc" title="Canceled inside ${cutoffHours} hours">Late</span><span class="muted">${r.courtesy_used ? "Courtesy" : "Fee applies"}${r.cancel_note ? " · “" + esc(r.cancel_note) + "”" : ""}</span>${r.courtesy_used ? "" : chargeState(r)}`
         : "")}
     </div>`;
-  }).join("");
+  };
+
+  $("clinics").innerHTML = (hiddenCount && !showCanceled
+    ? `<p class="muted">${hiddenCount} canceled ${hiddenCount === 1 ? "clinic" : "clinics"} hidden.</p>` : "")
+    + (visible.length ? visible.map(renderCard).join("")
+      : `<div class="card muted">No clinics this week or later. Use “New clinic” to add one.</div>`)
+    + (showEarlier ? `<h2>Earlier</h2>` + (visibleEarlier.length ? visibleEarlier.map(renderCard).join("")
+      : `<p class="muted">No earlier clinics.</p>`) : "");
 }
 
 // One delegated listener. Every action reloads from the server rather than
@@ -781,6 +838,7 @@ $("open-testing").addEventListener("click", () => { showTab("testing"); window.s
 try { const t = localStorage.getItem("fxe.tab"); if (TABS.includes(t)) showTab(t); } catch {}
 
 $("show-canceled").addEventListener("change", () => loadClinics());
+$("show-earlier").addEventListener("change", () => loadClinics());
 
 document.addEventListener("change", async (e) => {
   const sel = e.target.closest("select[data-court]"); if (!sel) return;
