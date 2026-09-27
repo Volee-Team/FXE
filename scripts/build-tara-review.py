@@ -28,7 +28,7 @@ Y = True  # Tara's own words, tagged on the page
 # Bump it when items are inserted, removed or reordered, so old answers stay
 # in their own row instead of landing on the wrong item. Rewording an item in
 # place keeps its position and needs no bump.
-PAGE_VERSION = "2"
+PAGE_VERSION = "3"
 
 SECTIONS = [
  [
@@ -739,6 +739,50 @@ QUESTIONS = [
  [
   "\"Stripe needs to be connected\"",
   "Before cards are set up, the app says \"Cards aren't set up yet.\" You wrote \"Stripe needs to be connected\": a note to us, or the words a player should see?"
+ ],
+ [
+  "The board's 10%",
+  "The board report shows 10% of what players actually paid by card. Should it be 10% of that, or 10% of the full clinic prices? And before or after Stripe's fee (2.9% plus 30 cents a charge)? If we don't hear otherwise: 10% of what was paid, before Stripe's fee."
+ ],
+ [
+  "Late cancels and no-shows in the 10%",
+  "Do late-cancel and no-show charges count toward the board's 10%? If we don't hear otherwise: yes."
+ ],
+ [
+  "Refunds after the report is sent",
+  "If someone is refunded in September for an August clinic, after August's report went to the board, should it come off August's numbers or September's? Today it comes off August, and the report shows when it was run."
+ ],
+ [
+  "Home with one clinic",
+  "When a player is signed up for exactly one clinic, Home shows that clinic and, under it, the clinics they can still sign up for. With two or more, it shows only theirs and the blue View Open Clinics button. Is that right for one?"
+ ],
+ [
+  "Back-to-back 105s: the time",
+  "In your example, both Sunday 105s (4:30 and 6:00) open to a non-member at Friday 4:30, two days before the first one. On the weekends the clocks change it is still Friday 4:30. Right?"
+ ],
+ [
+  "Back-to-back 105s: the Player Pool",
+  "Non-members always land in the Player Pool. If a non-member is in the Pool for one 105, does that count as signed up, so they can't join a second 105 that day yet? If we don't hear otherwise: yes."
+ ],
+ [
+  "Back-to-back 105s: only 105s?",
+  "Does this rule apply only to 105s, or to any two clinics on the same day? If we don't hear otherwise: only 105s."
+ ],
+ [
+  "Back-to-back 105s: what they see",
+  "When the rule stops a non-member, what should the app say? For now it says: \"Non-members can take one 105 a day until 48 hours before.\""
+ ],
+ [
+  "The card box",
+  "Before adding a card, players tick a box that says \"I give permission for my card to be charged\" (from the update list). Keep those words, or say more?"
+ ],
+ [
+  "A card with no tick",
+  "If someone ever has a card on file but never ticked that box, should we still charge them, or ask them to tick it first? If we don't hear otherwise: ask first. Nobody is in this spot today."
+ ],
+ [
+  "The court photo",
+  "The court photo behind the app came from the picture you texted, which is small, so it looks a little soft on a full screen. Could you text Alex the original photo? And the logo file you mentioned."
  ]
 ]
 
@@ -770,6 +814,10 @@ TASKS = [
  [
   "Players tab",
   "Search a name. Empty until members sign up; the app will list them here."
+ ],
+ [
+  "Board report",
+  "Money tab, Board report at the top: pick last month and click Run. Is this what the board needs? Download CSV and Print are there for sending it."
  ],
  [
   "Forgot password",

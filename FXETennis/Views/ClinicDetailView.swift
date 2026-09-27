@@ -73,6 +73,11 @@ final class ClinicDetailModel {
                 ? "Add a card on your Profile to register."
                 : text.contains("waiver_required")
                 ? "Sign the waiver first."
+                // Decision 0015 §13. Placeholder words until Tara writes them
+                // (question 63); without this line a blocked non-member was
+                // told someone beat them to the punch, which is not what happened.
+                : text.contains("back_to_back_105")
+                ? "Non-members can take one 105 a day until 48 hours before."
                 : "Sorry, someone beat you to the punch. Here's the latest!"
         }
         working = false

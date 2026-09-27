@@ -370,6 +370,7 @@ page until ticked. Contact line and date are placeholders for Alex.
 | ☐ | Add a card | title of the onboarding card step | Same words as the existing button |
 | ☐ | Tick the box to continue. | under the card row if the server refuses a setup without consent | Chrome; the button is greyed until the box is ticked, so this shows only if the two disagree |
 | ☐ | Sign out | the card step's only exit | Chrome, same as elsewhere |
+| ☐ | Non-members can take one 105 a day until 48 hours before. | the clinic page, when the back-to-back 105 rule refuses a non-member | Placeholder until Tara writes it (question 63); a ternary, so the extractor cannot see it |
 
 ## J. iOS permission sentences (2026-09-27) — awaiting Alex
 
