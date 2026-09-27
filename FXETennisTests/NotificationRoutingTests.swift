@@ -16,6 +16,7 @@
 //
 
 import XCTest
+import UserNotifications
 @testable import FXETennis
 
 final class NotificationRoutingTests: XCTestCase {
@@ -181,5 +182,41 @@ final class NotificationRoutingTests: XCTestCase {
         XCTAssertEqual(NotificationDestination.playerClinic(clinicPublic()), .playerClinic(clinicPublic()))
         XCTAssertNotEqual(NotificationDestination.playerClinic(clinicPublic()), .adminClinic(clinicAdmin()))
         XCTAssertEqual(NotificationDestination.adminClinic(clinicAdmin()).id, clinicId)
+    }
+
+    // MARK: - a push while the app is open, and a tapped push (review, 2026-09-27)
+
+    /// The rule: a banner shows only while someone is signed in. On a shared
+    /// phone, a push that lands after sign-out must not show the previous
+    /// account's words.
+    func testNoBannerWhileSignedOut() {
+        XCTAssertEqual(NotificationRouter.presentationOptions(signedIn: false), [])
+        XCTAssertEqual(NotificationRouter.presentationOptions(signedIn: true), [.banner, .list, .sound])
+    }
+
+    /// The rule: a tapped push stays pending until its screen is on screen.
+    /// Only then is it marked read.
+    func testATapIsShownOnlyWhenNothingElseIsPresented() {
+        XCTAssertEqual(NotificationRouter.step(tapStillPending: true, bellIsOpen: false,
+                                               somethingPresented: false, hasDestination: true), .present)
+        XCTAssertEqual(NotificationRouter.step(tapStillPending: true, bellIsOpen: false,
+                                               somethingPresented: true, hasDestination: true), .wait,
+                       "another sheet is up: iOS would refuse the presentation and the tap would be lost")
+    }
+
+    func testTheBellOpeningDuringTheLookupTakesTheTap() {
+        XCTAssertEqual(NotificationRouter.step(tapStillPending: true, bellIsOpen: true,
+                                               somethingPresented: true, hasDestination: true), .leaveForBell)
+    }
+
+    func testATapTakenElsewhereIsNotShownTwice() {
+        // The bell took it, or sign-out cleared it.
+        XCTAssertEqual(NotificationRouter.step(tapStillPending: false, bellIsOpen: false,
+                                               somethingPresented: false, hasDestination: true), .drop)
+    }
+
+    func testATapWithNowhereToGoIsOnlyMarkedRead() {
+        XCTAssertEqual(NotificationRouter.step(tapStillPending: true, bellIsOpen: false,
+                                               somethingPresented: true, hasDestination: false), .markReadOnly)
     }
 }

@@ -53,11 +53,18 @@ final class PushAppDelegate: NSObject, UIApplicationDelegate, UNUserNotification
     /// A push while the app is open: show it as it would show on the lock
     /// screen, and reload Home so the bell and the clinic list move with it.
     /// No .badge here: Home's reload sets the icon from the fresh count.
+    /// Nothing at all while nobody is signed in: on a shared phone a push
+    /// still in flight at sign-out would otherwise show the previous
+    /// account's words to the next person (review, 2026-09-27).
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
                                             willPresent notification: UNNotification,
                                             withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-        Task { @MainActor in NotificationRouter.shared.requestReload() }
-        completionHandler([.banner, .list, .sound])
+        Task { @MainActor in
+            let router = NotificationRouter.shared
+            let options = NotificationRouter.presentationOptions(signedIn: router.signedIn)
+            if !options.isEmpty { router.requestReload() }
+            completionHandler(options)
+        }
     }
 
     /// A tap on a push, from the lock screen, a banner or Notification Center.
@@ -127,13 +134,21 @@ final class PushRegistrar {
     }
 
     /// Sign-out: the phone must stop receiving this account's pushes, and a
-    /// shared phone must never show the next person someone else's invitation,
-    /// nor their unread number on the icon.
+    /// shared phone must never show the next person someone else's invitation.
+    /// Runs while the session still exists (the RPC needs it); the icon's
+    /// number is cleared by `clearBadge` after the session is gone.
     func unregisterForSignOut() async {
-        setBadge(0)
         NotificationRouter.shared.reset()
         guard let token else { return }
         try? await ProfileRepository.unregisterDevice(token)
+    }
+
+    /// The last step of sign-out, after supabase.auth.signOut() has returned:
+    /// a count fetched before then can no longer be set after this (review,
+    /// 2026-09-27: the 0 used to be set first, and a refresh in flight put the
+    /// previous person's number back).
+    func clearBadge() {
+        setBadge(0)
     }
 
     // MARK: - The icon's number
