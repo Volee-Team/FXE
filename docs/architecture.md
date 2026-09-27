@@ -453,7 +453,16 @@ true (the late-cancel note shows always). Added 2026-09-26: a **Board report**
 card at the top of the Money tab (`admin_board_report` and
 `admin_board_report_clinics`, with Download CSV and Print) for Tara's board
 and its 10%, and "Declined: <reason>" on failed card payments from
-`payments.failure_code`. Drag-and-drop courts are
+`payments.failure_code`. Added 2026-09-27 (the MVP audit's money fixes):
+**Late cancel** on a You're In! row inside the cutoff or later
+(`admin_mark_late_cancel`, with an optional note); Action Needed rows for a
+clinic that ended and is not charged yet (with Charge clinic beside it, while
+payments are on) and for each declined card; the Money line from
+`admin_money_summary` (Charged, Declined, Not charged yet) with the declined
+list and per-clinic rows from `admin_money_declined` and `admin_money_clinics`
+(the four counts stay on `revenue_summary`); and the Charge clinic summary
+counting what Stripe accepted, from `stripe-charge`'s answer, not what was
+queued. Drag-and-drop courts are
 deliberately not built until the dropdown has been used for real.
 
 Added 2026-09-21: **Tara's review page lives here too.** `web/review.html`

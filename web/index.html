@@ -145,6 +145,7 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
     <div id="action" class="hide">
       <h2>Action Needed</h2>
       <div id="late" class="card hide"></div>
+      <div id="money-needs" class="card hide"></div>
       <div id="notes" class="card hide"></div>
     </div>
     <div id="clinics"></div>
@@ -300,6 +301,22 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
   </div>
 </dialog>
 
+<!-- Tara records a late cancellation for someone who told her (20260927100002).
+     Offered on a You're In! row only inside the cutoff or later, and only
+     while the row holds no live charge; the server refuses otherwise. -->
+<dialog id="latecancel">
+  <h3 style="margin-top:0" id="lc-title">Late cancel</h3>
+  <p class="muted" style="margin-top:0">The fee applies.</p>
+  <label for="lc-note">Note (optional)</label>
+  <textarea id="lc-note" rows="3" maxlength="280"></textarea>
+  <div id="latecancel-msg"></div>
+  <div class="row" style="margin-top:14px">
+    <span class="grow"></span>
+    <button type="button" id="latecancel-keep">Keep</button>
+    <button type="button" class="primary" id="latecancel-save">Late cancel</button>
+  </div>
+</dialog>
+
 <dialog id="walkup">
   <h3 style="margin-top:0">Add a player</h3>
   <p class="muted" style="margin-top:0">For someone who called or grabbed you at
@@ -388,6 +405,10 @@ function friendly(e) {
   if (m.includes("clinic_full")) return "That clinic is full now.";
   if (m.includes("request_not_pending")) return "Someone already handled that one.";
   if (m.includes("already_canceled")) return "That clinic is already canceled.";
+  // 20260927100001/2: one fee per player per clinic, and Tara's late cancel.
+  if (m.includes("charged_refund_first")) return "Already charged: refund it first.";
+  if (m.includes("clinic_canceled")) return "That clinic is canceled.";
+  if (m.includes("not_late_yet")) return "Not late yet.";
   if (m.includes("payments_disabled")) return "Payments are switched off.";
   if (m.includes("no_card_on_file")) return "No card on file for that player.";
   if (m.includes("already_charged")) return "That one is already charged.";
@@ -405,6 +426,7 @@ function friendly(e) {
 let editingId = null;
 let messagingClinic = null;
 let walkupClinic = null;
+let lateCancelReg = null;
 let templates = [];
 let signupMode = false;
 
@@ -466,10 +488,31 @@ async function loadActionNeeded(clinics, byPlayer) {
     .in("type", ["player_canceled", "invitation_declined", "invitation_accepted"])
     .order("created_at", { ascending: false }).limit(30);
 
+  // Money work (20260927100003): a clinic that has ended with players Charge
+  // clinic would charge now (only while payments are on, since the tap is
+  // the resolving action), and every card whose charge was declined.
+  const [{ data: owed }, { data: declined }] = await Promise.all([
+    sb.rpc("admin_money_clinics"), sb.rpc("admin_money_declined")]);
+  const uncharged = paymentsOn ? (owed || []).filter(r => !r.canceled && r.chargeable_count > 0) : [];
+  const moneyRows = [
+    ...uncharged.map(r => `<div class="row" data-uncharged="${r.clinic_id}">
+      <span class="grow">${esc(r.clinic_name)} ended, not charged yet<br><span class="muted">${fmtDate(r.starts_at)}</span></span>
+      <button class="small primary" data-chargeclinic="${r.clinic_id}">Charge clinic</button>
+    </div>`),
+    ...(declined || []).map(d => `<div class="row" data-declined="${d.registration_id}">
+      <span class="grow">${esc(d.first_name + " " + d.last_name)}'s card was declined<br>
+        <span class="muted">${esc(d.clinic_name)} · ${fmtDate(d.clinic_starts_at)}${d.failure_code ? " · " + esc(declineLabel(d.failure_code)) : ""}</span></span>
+      <span class="name">${money(d.amount_cents)}</span>
+    </div>`),
+  ];
+  const moneyEl = $("money-needs");
+  moneyEl.innerHTML = moneyRows.join("");
+  moneyEl.classList.toggle("hide", !moneyRows.length);
+
   const lateEl = $("late"), notesEl = $("notes");
   lateEl.classList.toggle("hide", !(late || []).length);
   notesEl.classList.toggle("hide", !(notes || []).length);
-  $("action").classList.toggle("hide", !(late || []).length && !(notes || []).length);
+  $("action").classList.toggle("hide", !(late || []).length && !(notes || []).length && !moneyRows.length);
 
   lateEl.innerHTML = (late || []).map(r => {
     const p = byPlayer[r.player_id], c = byClinic[r.clinic_id];
@@ -488,14 +531,18 @@ async function loadActionNeeded(clinics, byPlayer) {
     </div>`).join("");
 }
 
-// The four numbers Tara asked for, plus the money. revenue_summary() and the
-// per-clinic view were built and probe-covered on 2026-08-10; this is the
-// first screen to call them.
+// The four counts Tara asked for come from revenue_summary() (2026-08-10).
+// The money does not: its Expected / Collected / Not charged yet read the
+// Zelle-era Paid flag over every booking, future and rained-out clinics
+// included (MVP audit, 2026-09-27). Charged, Declined and Not charged yet now
+// come from the ledger (admin_money_*, 20260927100003): charged is the board
+// report's "Collected by card" over all time, so the two cannot disagree.
 async function loadMoney() {
-  const { data: sum, error } = await sb.rpc("revenue_summary");
-  if (error || !sum || !sum.length) { $("money").textContent = "Couldn't load the numbers."; return; }
-  const t = sum[0];
-  const { data: rows } = await sb.from("revenue_by_clinic").select("*").order("starts_at", { ascending: false }).limit(12);
+  const [{ data: sum, error: e1 }, { data: ms, error: e2 }, { data: perClinic }, { data: declined }] = await Promise.all([
+    sb.rpc("revenue_summary"), sb.rpc("admin_money_summary"),
+    sb.rpc("admin_money_clinics"), sb.rpc("admin_money_declined")]);
+  if (e1 || e2 || !sum || !sum.length || !ms || !ms.length) { $("money").textContent = "Couldn't load the numbers."; return; }
+  const t = sum[0], m = ms[0];
   $("money").classList.remove("muted");
   $("money").innerHTML = `
     <div class="grid" style="margin-bottom:8px">
@@ -504,14 +551,19 @@ async function loadMoney() {
       <div><span class="muted">Non-members, 60 min</span><br><span class="name">${t.nonmember_60_players}</span></div>
       <div><span class="muted">Non-members, 90 min</span><br><span class="name">${t.nonmember_90_players}</span></div>
     </div>
-    <div class="row" style="border-top:1px solid var(--fxe-hairline);padding-top:10px">
-      <span class="grow"><span class="muted">Expected</span> <span class="name">${money(t.expected_cents)}</span></span>
-      <span class="grow"><span class="muted">Collected</span> <span class="name">${money(t.collected_cents)}</span></span>
-      <span class="grow"><span class="muted">Not charged yet</span> <span class="name" style="color:#992E22">${money(t.outstanding_cents)}</span></span>
+    <div class="row" style="border-top:1px solid var(--fxe-hairline);padding-top:10px" id="money-line">
+      <span class="grow"><span class="muted">Charged</span> <span class="name">${money(m.charged_cents)}</span></span>
+      <span class="grow"><span class="muted">Declined</span> <span class="name"${m.declined_count ? ` style="color:#992E22"` : ""}>${m.declined_count}</span></span>
+      <span class="grow"><span class="muted">Not charged yet</span> <span class="name">${money(m.not_charged_cents)}</span></span>
     </div>
-    ${(rows || []).map(r => `<div class="row">
-      <span class="grow"><span class="name">${esc(r.name)}</span><br><span class="muted">${fmtDate(r.starts_at)} · ${r.total_players} players</span></span>
-      <span class="muted">${money(r.collected_cents)} of ${money(r.expected_cents)}</span>
+    ${(declined || []).map(d => `<div class="row">
+      <span class="grow"><span class="name" style="font-weight:700">${esc(d.first_name + " " + d.last_name)}</span> <span class="muted" style="color:#992E22">Declined</span><br>
+        <span class="muted">${esc(d.clinic_name)} · ${fmtDate(d.clinic_starts_at)}${d.failure_code ? " · " + esc(declineLabel(d.failure_code)) : ""}</span></span>
+      <span class="name">${money(d.amount_cents)}</span>
+    </div>`).join("")}
+    ${(perClinic || []).slice(0, 12).map(r => `<div class="row">
+      <span class="grow"><span class="name">${esc(r.clinic_name)}</span>${r.canceled ? ` <span class="chip canc">Canceled</span>` : ""}<br><span class="muted">${fmtDate(r.starts_at)}</span></span>
+      <span class="muted">Charged ${money(r.charged_cents)}${r.not_charged_count ? ` · Not charged yet ${money(r.not_charged_cents)}` : ""}${r.declined_count ? ` · Declined ${r.declined_count}` : ""}</span>
     </div>`).join("")}
     <div id="ledger"></div>`;
   loadLedger();
@@ -546,6 +598,41 @@ async function settleLedger() {
   const { data, error } = await sb.functions.invoke("stripe-charge", { body: {} });
   if (error) throw new Error(error.message || "stripe_charge_failed");
   return data;
+}
+
+// After Charge clinic: stripe-charge answers { processed: { payment id:
+// Stripe's status } } for every pending row it took, from any clinic. Keep
+// this clinic's fees, name the declines from the ledger, and count anything
+// queued by this tap that Stripe has not settled as still processing.
+async function chargeOutcome(clinicId, settled, queued) {
+  const processed = (settled && settled.processed) || {};
+  const ids = Object.keys(processed);
+  let rows = [];
+  if (ids.length) {
+    const { data } = await sb.from("payments_ledger").select("id,kind,clinic_id,first_name,last_name,failure_code").in("id", ids);
+    rows = (data || []).filter(r => r.clinic_id === clinicId && r.kind !== "refund");
+  }
+  let paid = 0, other = 0;
+  const declined = [];
+  for (const r of rows) {
+    const s = processed[r.id];
+    if (s === "succeeded") paid++;
+    else if (s === "failed") declined.push({ name: `${r.first_name} ${r.last_name}`, reason: r.failure_code ? declineLabel(r.failure_code) : "" });
+    else other++;
+  }
+  const processing = other + Math.max(0, (queued || 0) - paid - declined.length - other);
+  return { paid, declined, processing };
+}
+
+// Plain sentences, zero counts left out (Tara marked "Charged 6. Already
+// charged 0. No card 1." Change, 2026-09-22). Mirrors ChargeSummary.swift.
+function chargeSummaryText({ paid, declined, processing, already, noCard }) {
+  const parts = [paid === 1 ? "Charged 1 card." : `Charged ${paid} cards.`];
+  for (const d of declined) parts.push(d.reason ? `${d.name}'s card was declined: ${d.reason}.` : `${d.name}'s card was declined.`);
+  if (processing > 0) parts.push(processing === 1 ? "1 is still processing." : `${processing} are still processing.`);
+  if (already > 0) parts.push(already === 1 ? "1 was already charged." : `${already} were already charged.`);
+  if (noCard > 0) parts.push(noCard === 1 ? "1 player has no card on file." : `${noCard} players have no card on file.`);
+  return parts.join(" ");
 }
 
 async function loadLedger() {
@@ -721,6 +808,12 @@ async function loadClinics() {
       if (s !== "in") return rows;
       return rows.sort((a, b) => (a.court_number ?? 99) - (b.court_number ?? 99));
     };
+    // Late cancel (20260927100002): offered inside the cutoff or later, on a
+    // clinic that is not canceled, while the row holds no live charge. The
+    // server enforces all three; this only decides what to render.
+    const lateOpen = c.status !== "canceled" && Date.now() >= new Date(c.starts_at).getTime() - cutoffHours * 3600_000;
+    const liveCharge = (r) => ["pending", "processing", "succeeded"].includes(r.charge_status);
+    const nameOf = (r) => { const p = byPlayer[r.player_id]; return p ? `${p.first_name} ${p.last_name}` : "this player"; };
     const section = (s, extra) => {
       const rows = group(s);
       if (!rows.length) return "";
@@ -753,7 +846,7 @@ async function loadClinics() {
         ${c.status !== "canceled" ? `<button class="small" data-cancelclinic="${c.id}">Cancel clinic</button>` : `<span class="chip canceled">Canceled</span>`}
         ${paymentsOn && c.status !== "canceled" && new Date(c.ends_at) < new Date() ? `<button class="small primary" data-chargeclinic="${c.id}">Charge clinic</button>` : ""}
       </div>
-      ${section("in", r => `${courtSelect(r)}${zelleOn ? `<button class="small" data-paid="${r.id}" data-now="${r.paid}">${r.paid ? "Paid" : "Unpaid"}</button>` : ""}<button class="small${r.no_show ? " danger" : ""}" data-noshow="${r.id}" data-now="${r.no_show}">${r.no_show ? "No-show" : "Came"}</button>${chargeState(r)}`)}
+      ${section("in", r => `${courtSelect(r)}${zelleOn ? `<button class="small" data-paid="${r.id}" data-now="${r.paid}">${r.paid ? "Paid" : "Unpaid"}</button>` : ""}<button class="small${r.no_show ? " danger" : ""}" data-noshow="${r.id}" data-now="${r.no_show}">${r.no_show ? "No-show" : "Came"}</button>${lateOpen && !liveCharge(r) ? `<button class="small" data-latecancel="${r.id}" data-who="${esc(nameOf(r))}">Late cancel</button>` : ""}${chargeState(r)}`)}
       ${section("pool", r => `<button class="small primary" data-invite="${r.id}">Invite</button>`)}
       ${section("response_needed", r => `<button class="small" data-uninvite="${r.id}">Cancel invite</button>`)}
       ${section("canceled", r => r.late_cancel
@@ -813,16 +906,23 @@ document.addEventListener("click", async (e) => {
   if (b.dataset.noshow)   return run(() => call("admin_set_no_show", { p_registration: b.dataset.noshow, p_no_show: b.dataset.now !== "true" }));
   if (b.dataset.chargeclinic) return run(async () => {
     // Her tap per clinic (decision 0012): pending rows for everyone who owes,
-    // then stripe-charge. The counts come back so she sees who was skipped.
-    const { data, error } = await sb.rpc("admin_charge_clinic", { p_clinic: b.dataset.chargeclinic }); if (error) throw error;
-    await settleLedger();
+    // then stripe-charge. What she reads is what Stripe answered for this
+    // clinic's rows, not how many were queued (the audit: "Charged 6" when
+    // all six declined).
+    const clinicId = b.dataset.chargeclinic;
+    const { data, error } = await sb.rpc("admin_charge_clinic", { p_clinic: clinicId }); if (error) throw error;
+    const settled = await settleLedger();
+    const outcome = await chargeOutcome(clinicId, settled, data.charged);
     await loadMoney();
-    // Plain sentences, zero counts left out (Tara marked the old line Change, 2026-09-22).
-    const parts = [data.charged === 1 ? "Charged 1 card." : `Charged ${data.charged} cards.`];
-    if (data.already > 0) parts.push(data.already === 1 ? "1 was already charged." : `${data.already} were already charged.`);
-    if (data.no_card > 0) parts.push(data.no_card === 1 ? "1 player has no card on file." : `${data.no_card} players have no card on file.`);
-    chargeSummary = parts.join(" ");
+    chargeSummary = chargeSummaryText({ ...outcome, already: data.already, noCard: data.no_card });
   });
+  if (b.dataset.latecancel) {
+    lateCancelReg = b.dataset.latecancel;
+    $("lc-title").textContent = `Late cancel ${b.dataset.who}?`;
+    $("lc-note").value = ""; note($("latecancel-msg"), "");
+    $("latecancel").showModal();
+    return;
+  }
   if (b.dataset.refund)   return run(async () => {
     await call("admin_refund_payment", { p_payment: b.dataset.refund });
     await settleLedger();
@@ -937,6 +1037,25 @@ $("new-clinic").onclick = () => openEdit(null);
 $("edit-cancel").onclick = () => $("edit").close();
 $("message-cancel").onclick = () => $("message").close();
 $("walkup-cancel").onclick = () => $("walkup").close();
+$("latecancel-keep").onclick = () => $("latecancel").close();
+$("latecancel-save").onclick = async () => {
+  const btn = $("latecancel-save"); btn.disabled = true;
+  try {
+    const { error } = await sb.rpc("admin_mark_late_cancel", {
+      p_registration: lateCancelReg, p_note: $("lc-note").value.trim() || null });
+    if (error) throw error;
+    $("latecancel").close();
+    await loadClinics();
+  } catch (err) {
+    // Someone got there first (the player canceled, or another tap): hard
+    // rule 3's friendly sentence, then the latest state.
+    if ((err?.message || "").toLowerCase().includes("registration_not_in")) {
+      $("latecancel").close();
+      await loadClinics();
+      note($("msg"), "That just changed. Here's the latest.");
+    } else note($("latecancel-msg"), friendly(err));
+  } finally { btn.disabled = false; }
+};
 
 let searchTimer = null;
 // ── Player directory ──────────────────────────────────────────────────────

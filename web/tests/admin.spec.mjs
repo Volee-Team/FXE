@@ -80,6 +80,9 @@ test.describe("the week", () => {
     await expect(card.getByRole("button", { name: "Came" }).first()).toBeVisible();
     await expect(card.getByRole("button", { name: /Remind unpaid/ })).toHaveCount(0);
     await expect(card.getByRole("button", { name: /^(Paid|Unpaid)$/ })).toHaveCount(0);
+    // Tara's Late cancel (20260927100002) is offered only inside the 3-hour
+    // cutoff or later; Thursday Morning Cardio is days away.
+    await expect(card.getByRole("button", { name: "Late cancel" })).toHaveCount(0);
   });
 });
 
@@ -135,8 +138,16 @@ test.describe("money", () => {
     const money = page.locator("#money");
     await expect(money).toContainText("Members, 60 min");
     await expect(money).toContainText("Non-members, 90 min");
-    await expect(money).toContainText("Expected");
-    await expect(money).toContainText("Not charged yet");
+    // The money line is the ledger's since 2026-09-27 (20260927100003), not
+    // the Zelle-era Expected / Collected. From the rule: nothing is charged,
+    // declined or owed until a clinic has ENDED, and every seeded clinic is
+    // in the future, so a booking made earlier in this run (the walk-up puts
+    // Ken in Thursday Morning Cardio) must not read as "not charged yet".
+    const line = page.locator("#money-line");
+    await expect(line).toContainText("Charged $0");
+    await expect(line).toContainText("Declined 0");
+    await expect(line).toContainText("Not charged yet $0");
+    await expect(money).not.toContainText("Expected");
   });
 
   test("the Money tab lists card payments, and says so when there are none", async ({ page }) => {

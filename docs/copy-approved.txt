@@ -11,6 +11,7 @@ Admin sign-in.
 Agree and sign
 Alex sees your answers as they save. Copy them here if you want to text them as well.
 Almost there!
+Already charged: refund it first.
 America/New_York
 Ann finds Anna, Annette, Joann…
 Any personal information that we collect is stored on secure hosted servers. We are always striving to ensure a safe and convenient experience with the Services. This goes beyond our technologies to include physical, contractual, and managerial safeguards to protect your personal information.
@@ -120,7 +121,9 @@ Non-members attended
 Non-members, 60 min
 Non-members, 90 min
 Not charged yet
+Not late yet.
 Not now
+Note (optional)
 Note for Tara (optional)
 Notifications
 On your laptop, with your real account. Whatever you set up here is real: it is your schedule.
@@ -179,6 +182,7 @@ Tara has your message.
 Tara, only what's new
 That account is not an administrator.
 That clinic is already canceled.
+That clinic is canceled.
 That clinic is full now.
 That didn’t save. Try again.
 That email or password didn't work.
@@ -190,6 +194,7 @@ The Services are intended to be used by U.S. residents. Personal information you
 The Services may contain links to websites operated and maintained by third parties, over which we have no control. Privacy policies on such linked websites may be different from our privacy policy. You access such linked websites at your own risk. You should always read the privacy policy of a linked website before disclosing any of your information on such website.
 The app does not use cookies or tracking technologies. The web page your coach uses to manage clinics keeps you signed in with a browser session.
 The clinic hasn't ended yet.
+The fee applies.
 The information collected is used solely for providing the Services: clinic registration, communication from your coach about clinics, charging for clinics you attend under the club's cancellation policy, and keeping your clinic history. We do not share or sell your personal information with external parties for marketing purposes.
 The player's note at level entry; only you see it
 Third parties

@@ -396,6 +396,30 @@ back in front of her on round four of the review page:
 | ☐ | Tara, only what's new / Your changes from September 22 are in the app. … | The review page's heading and lede, round four | Only Tara reads it |
 | ☐ | Testing | Now a small grey link at the foot of the web admin, not a tab (Alex, 2026-09-27) | Only Alex uses it |
 
+## Money integrity (2026-09-27, the MVP audit's fixes) — awaiting Alex
+
+Chrome for four fixes: one fee per player per clinic, Tara's late cancel, the
+Money numbers from the ledger, and her removal no longer echoed as the
+player's. **Nothing here reaches a player**: every line is on Tara's surfaces.
+Most are built in template literals or ternaries, so the extractor sees only
+five of them; the rest are listed here by hand.
+
+| ✓ | String | Where | Why |
+|---|---|---|---|
+| ☐ | Charged / Declined / Not charged yet | Web Money tab, the line under the four counts; per clinic "Charged $X · Not charged yet $Y · Declined N" | Replaces Expected / Collected, which read the Zelle-era Paid flag over every booking. "Not charged yet" is decision 0016's word, now counting only clinics that have ended |
+| ☐ | Declined | Web Money tab, beside a declined player's name | Same word as the line |
+| ☐ | {Clinic} ended, not charged yet | Action Needed (web), with a Charge clinic button | The audit's words. Shown only while payments are on and one more tap would charge someone with a card |
+| ☐ | {First Last}'s card was declined | Action Needed (web), with the clinic, date and Stripe's reason under it | The audit's words |
+| ☐ | Late cancel | Web: a button on a You're In! row, only inside the 3-hour cutoff or later and while the row is not charged | Her own term: pros "can label them as no show, late cancellation" (decision 0016) |
+| ☐ | Late cancel {Name}? / The fee applies. | the confirmation | Chrome; "Fee applies" is the roster's existing word for a late row |
+| ☐ | Note (optional) | the confirmation's note box | Chrome |
+| ☐ | Keep | the confirmation's other button | Chrome, the same word as Remove's |
+| ☐ | Already charged: refund it first. | Came/No-show or Late cancel on a charged row | Chrome for `charged_refund_first` |
+| ☐ | Not late yet. | Late cancel more than 3 hours out (the button is hidden then; this is the race) | Chrome for `not_late_yet` |
+| ☐ | That clinic is canceled. | Charge clinic or Late cancel on a canceled clinic | Chrome for `clinic_canceled` |
+| ☐ | That just changed. Here's the latest. | Web, when the row changed before Late cancel landed | CLAUDE.md's own example sentence for hard rule 3 |
+| ☐ | {Name}'s card was declined: {reason}. / 1 is still processing. / N are still processing. | The summary after Charge clinic, web and phone | Extends decision 0016's sentences. "Charged N cards." now counts what Stripe accepted, not what was queued: the audit found "Charged 6" printed when all six declined |
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148
