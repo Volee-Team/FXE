@@ -107,7 +107,7 @@ control.
    medium italic **4.42:1 / 4.05:1**, just under the 4.5:1 floor for text
    below 24px; gator-green active tab label at 12px on navy **3.37:1**. Both
    are exactly what the guide asks for and are shipped as asked; a shade
-   darker green for text (for example #446A30, 5.2:1) would clear the floor
+   darker green for text (for example #446A30: 5.51:1 on porcelain, 5.04:1 at the gradient's warm end, recomputed 2026-09-27) would clear the floor
    without changing the look. Kat's call.
 3. **Tara's gradient.** Her standing ask (*"some kind of color variation, not
    just pure white"*, 2026-09-22) stays: pages run from porcelain to a warmer

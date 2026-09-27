@@ -114,6 +114,6 @@ if files:
         print("\n".join(lines))
         print("```")
     print()
-    print("Before touching code: check the summary's pending list against these prompts, `git log --oneline -5`, the top of docs/whats-next.md and the newest CLAUDE.md changelog entry. If they disagree, the repo wins over the summary.")
+    print("Before touching code: check the summary's pending list against these prompts, `git log --oneline -5`, section 0 of docs/launch-checklist.md (the one list of what is left) and the newest CLAUDE.md changelog entry. If they disagree, the repo wins over the summary.")
 PY
 fi

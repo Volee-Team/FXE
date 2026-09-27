@@ -437,6 +437,11 @@ jobs:
       # failure at 45). 2026-09-13.
       - name: Counts, index, question statuses, audit age
         run: bash scripts/check-doc-claims.sh
+      # The launch checklist is the one list Alex trusts (2026-09-27): every
+      # row has an owner and a status word, a DONE has its date, the steps
+      # file points only at real rows, and the list was re-derived within 21 days.
+      - name: Launch checklist is trustworthy
+        run: bash scripts/check-launch-checklist.sh
 
   copy-gate:
     name: No unapproved copy

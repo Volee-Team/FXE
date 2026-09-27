@@ -1,35 +1,57 @@
-# What's next, and what we need from Tara
+# State of the app
 
-Living file. Updated 2026-09-22. The MVP-critical list is `docs/mvp.md` (draft for Tara, Kat and Alex); launch party target 2026-10-16. Alex's target (2026-09-10): *"in the next week or two, get 95% of everything regarding the app/distribution/users"*, so about 2026-09-24; payments by October 1 (Tara). If something here is done, move it out; if
-something new blocks, add it. This exists because the answer to "what's next"
-kept living in chat and dying with the session.
+**This file holds no tasks.** Everything left to do before launch, with its
+owner and status, is in `docs/launch-checklist.md`, the one list (Alex,
+2026-09-27: *"i like having one thing to totally trust"*). This page says
+where things stand. Updated 2026-09-27; launch target 2026-10-16.
 
----
+## Where things stand, 2026-09-27
 
-## Blocked on Tara
+- **On testers' phones:** TestFlight build 2, from John's account (decision
+  0014). **Ready on `main`:** build 3, verified by a Release build on
+  2026-09-27; John uploads it (checklist C8).
+- **Hosted:** 36 of 36 migrations paired (`supabase migration list --linked`,
+  2026-09-27); every edge function deployed; Stripe's sandbox keys and
+  webhook secret in place (checklist A1); **payments switched off** until
+  Alex says go (A9); a signed-out caller reaches nothing (58 targets closed).
+- **Admin site:** https://fxe-tennis-admin.vercel.app, verified byte for byte
+  against `main` on 2026-09-27; the privacy draft is kept off it until
+  approved.
+- **Waiting on others:** Apple's LLC approval (C1), Tara's answers 52 to 68
+  (G2), Kat's style calls (G3), the MVP call (G1).
 
-Ordered by what it unblocks, not by how hard it is to answer.
+## The honest state of the iOS app
 
-| # | Question | Why it blocks | Our current assumption |
-|---|---|---|---|
-| 58–68 | **After the Final Updates** (`docs/questions-for-tara.md` §M, decision 0015): the board's 10% (of what, before or after Stripe's fee), Home with exactly one clinic, four edges of the back-to-back 105 rule (clock time, Pool counts, only 105s, the words a non-member sees), the court photo's original file, the card box wording, a card with no permission on record, and two about the board report (which month a later refund comes off, whether penalty fees count) | Nothing blocks: every default is built | As built |
-| 52–57 | **After her review of every word** (`docs/questions-for-tara.md` §L): the "Set by Tara" caption, the blank replacement for "Tara has your message.", "this week" under My Clinics, "Let's Play." vs "Let's play!", whether her policy block gets rewritten and shown, and whether "Stripe needs to be connected" was a note to us | Nothing blocks: every default is the current text | Keep as is |
-| 27–51 | **Answered.** §I/§J on 2026-09-12 and 2026-09-16 (decisions 0010, 0012), §K on 2026-09-21 (decision 0013: no courtesy, 3 hours, card only, waiver, keep history on deletion, Saturday and short weeks as built, her tap charges) | | |
+Works, and tested (probes, unit tests, browser tests in CI; the 13 UI tests
+on the simulator before each TestFlight build): sign up with profile, waiver
+and (once payments are on) a card with the permission box; sign in; the
+front page (your clinics, then what is open to you now); browse by week;
+register (You're In! or Player Pool by the Thursday/Friday rule, the
+back-to-back 105 rule for non-members); cancel, with the 3-hour rule and an
+optional note to Tara; leave the Pool; accept or decline an invitation;
+message Tara after registration closes; clinic messages; the "?" explainer;
+the bell and its notification center; My Clinics with Past, from Profile;
+edit profile; delete my account; and Tara's Manage tab (invite from the Pool,
+cancel an invitation, courts, Came or No-show, remove a player, cancel a
+clinic, message a clinic, late requests, the players directory with private
+notes, the Stripe link).
 
-**Blocked on Alex. Step by step, click by click: `docs/for-alex.md` (kept current; he reads that, not chat). Summary as of 2026-09-26:**
+**Does not work yet, and why:**
+- **Forgot password:** the app side works, but the email never reaches a
+  member. Hosted has no email sender of its own, and Supabase's built-in one
+  delivers only to the Supabase project's own team (checklist D1). Found
+  2026-09-27; this page and `docs/mvp.md` had said it worked.
+- **Card payments:** built and deployed; the switch is off (A9), and the real
+  card sheet has only ever run against Stripe's mock, never Stripe itself (A2).
+- **Push on the lock screen:** built and deployed; waits on Apple's key (C3).
+  Notifications show inside the app meanwhile.
 
-1. **Stripe test keys** (`docs/for-alex.md` §1, click by click, about 20 minutes): a Stripe *test-mode* account, its secret key, publishable key and webhook signing secret set as Supabase Edge Function secrets (dashboard or `supabase secrets set`, never the repo or chat). `supabase secrets list` on 2026-09-23 showed zero `STRIPE_*` names, so every card and charge path is dark. Everything else on the payments path is built and deployed. Live mode later takes Tara's business details, typed into Stripe's own form and nowhere else. Alex, 2026-09-23: *"i need to get that hooked up ASAP"*.
-2. **Privacy policy at a URL** (§C6): reuse Volee's (decision 16), host on fersc.com as Tara said. External TestFlight testers cannot be added without it.
-3. **Apple LLC enrollment** (§C1): in Apple's queue with Tara's documents. Until it lands: no APNs key (the push sender is built and waits on five secrets, see `supabase/functions/README.md`), no bundle id, no listing. Nothing to do but chase.
-4. **Auth email delivery** (§D1): password reset goes through Supabase's built-in mailer, which lands in spam and rate-limits. A Resend free account plus two DNS records on the club domain. Not needed for internal testing; needed before members.
-5. ~~The public half of the backup key~~ **done 2026-09-22**.
-6. **Share the review page, version 2** (`web/review.html` on the admin site): mint a link on the Players tab, text her the `review.html?t=…` URL. Her six open answers (questions 52 to 57) read back on the Testing tab.
+Missing on the phone by design: creating or editing a clinic (web only),
+News (deferred, decision 0006).
 
-**Blocked on Kat (2026-09-23):** three places the code could not follow her style guide, listed in `docs/style-guide.md`: the header (the arch as built; Alex dislikes it, 2026-09-23: *"revert it back to whatever u think she meant from the style guide then well see"*), the iOS 26 tab bar fill, and green text on porcelain at 4.42:1.
-
-Dropped 2026-09-18: the `fxe-ci` Supabase project (§F option 3 chosen, no money for now; UI tests run on a laptop before each TestFlight build).
-
-Also his: a tick through `docs/copy-review.md` for the connective words in the unpaid reminder. Tara's keep-or-change on the same strings supersedes his tick wherever she answers.
+Testing today: 15 Playwright tests, 13 XCUITests (5 on Tara's side), 31 unit
+tests, 28 SQL probes, a 34-check Stripe pipeline and a 48-check push pipeline
+against mocks in CI.
 
 **Answered already, do not re-ask.** Six of the eight closed on 2026-08-27; see
 `docs/decisions/0007`.
@@ -54,65 +76,3 @@ Also his: a tick through `docs/copy-review.md` for the connective words in the u
   message; she sees it under Action Needed with Put them in / No room
   (2026-09-01). No invented copy, because the message is theirs
 
-## Ask Kat (via Alex)
-
-- Her "tagged / tag spec / what tool" line: release tags (answered: one per TestFlight upload, launch-checklist §C10) or analytics tagging (not built; roadmap Parked)? `docs/kat-due-diligence.md` maps all 18 of her questions to where each answer lives.
-
-## Blocked on Apple / business
-
-| | Status |
-|---|---|
-| FXE Tennis, LLC Developer Program enrollment | **In review** (3+ weeks; meanwhile internal TestFlight through John's account, decision 0014, `docs/testflight.md`). fersc.com email accepted; ID and business docs submitted (same state as `docs/roadmap.md`) |
-| Company email at own domain | **Done.** `fersc.com` accepted |
-| D-U-N-S 11-654-7195 | Done |
-| Team ID, bundle id, App Store Connect record | Waiting on enrollment |
-| Privacy policy at a URL | Needed for external TestFlight and App Store, not internal |
-
-## Blocked on nothing: what to build
-
-Done since 2026-09-01 (all merged; hosted pushed through 20260921000010 on 2026-09-21; `delete-account` and `review-submit` deployed; the web admin redeployed with `review.html`):
-on the phone, the bell opens a notification center with read state in the
-database, My Clinics is its own screen grouped by week, players edit their own
-name, phone and rating, Tara cancels a clinic or removes a player from the
-roster's More menu, a notification row opens the clinic it is about, the push
-client half (permission sheet, APNs registration, `register_device` /
-`unregister_device`, decision 0008), week grouping on the clinic list with a
-five-week ceiling, and the cancel note sheet at the 3-hour cutoff (decisions 0010, 0013). On the
-web, three tabs (This week · Players · Money), canceled clinics hidden behind
-a toggle, templates archived and restored instead of deleted, "Edited <date>"
-under every note, the card-payments ledger on the Money tab, and Charge clinic (one tap per clinic once it has ended) and
-Refund as Tara's tap, rendered only while
-`payments_enabled` is true. Underneath: the whole payments foundation
-(decision 0009: ledger, card summary on accounts, `admin_charge_registration`
-/ `admin_refund_payment`, the ledger-drives-Paid trigger, `service_role`
-grants), the three Stripe edge functions deployed, the card screen on Profile
-with PaymentSheet, `payments_ledger`, and `cancel_registration` recording a late
-You're In! cancel with an optional note ("Note for Tara (optional)", decision 0013). Testing: 15 Playwright tests, 13 XCUITests
-(5 on Tara's side), 31 unit tests, 28 SQL probes, and a 34-check Stripe
-pipeline against stripe-mock in CI. `docs/architecture.md` was regenerated
-2026-09-01 and refreshed by hand 2026-09-12 and 2026-09-21. Nothing charges anyone: the switch is off.
-
-1. **Tara's real clinics in hosted.** Hers to create at
-   `fxe-tennis-admin.vercel.app`; asked 2026-09-01.
-2. **Push notifications** — client half built 2026-09-02 (decision 0008). What remains needs the Apple Developer account: the APNs key, then the `push` edge function, the webhook, and the audit columns.
-3. **Crash reporting** — none, before real members are on it.
-4. **Account deletion in the app**: built 2026-09-21 (decision 0013 §5, `delete_my_account()` + the `delete-account` edge function; history kept). What remains for guideline 5.1.1(v): the privacy policy at a URL (Volee's can be reused, decision 16).
-5. **XCUITests before each TestFlight build**: run on a laptop and pasted into the changelog (§F option 3, 2026-09-18). The `ios-ui-tests` job stays green with a notice until three CI secrets exist.
-
-## The honest state of the iOS app
-
-Works: sign in, sign up, forgot password, browse by week with a date floor
-and a five-week ceiling, register, cancel (with the optional note inside the 3-hour
-cutoff), leave pool, accept/decline, the late request ("Message Tara" after
-the close), clinic messages, the "?" explainer, the bell and its notification
-center, My Clinics, profile editing, a card on file behind Stripe's
-PaymentSheet (answers "Cards aren't set up yet." until the key exists), and an
-admin tab where Tara can invite from the Player Pool, cancel an invitation,
-assign courts, mark paid, send the unpaid reminder, message a clinic, answer
-late requests, remove a player, cancel a clinic, and search the directory with
-private notes.
-
-Missing on the phone: creating or editing a clinic (web only), push delivery
-(rows are written, nothing sends), and News (deferred, decision 0006). Built
-2026-09-21: the waiver, Delete my account, the notifications-off line on Home
-(decision 0008 item 3), and Past under My Clinics.
