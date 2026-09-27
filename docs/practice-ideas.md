@@ -34,10 +34,10 @@ Sources: firecrawl.dev/blog/what-is-jev, langchain.com/blog/building-a-harness-w
 |---|---|---|---|---|
 | 1 | **Screenshot tour as a UI test**: one XCUITest that walks every screen and saves a PNG of each, attached to the test result | Kat and Tara review every screen from one folder after each build; a visual change can't hide in a diff | half a day | Do before the testing group |
 | 2 | **Crash and error reporting** (Sentry, free tier) for the app and the edge functions | The first TestFlight crash is known in minutes, not when a tester texts | an hour plus Alex's account | Do before the testing group (launch checklist D6) |
-| 3 | **Tighten branch protection on `main`** | It exists with two required checks (2026-09-26, `gh api`), but admins may bypass it and the hosted smoke test is not required; tightening makes GitHub itself refuse a red merge | 5 minutes, Alex's setting | Do now |
+| 3 | **Tighten branch protection on `main`** (launch checklist G6, steps in `docs/for-alex.md` §8) | It exists with two required checks (2026-09-26, `gh api`), but admins may bypass it and the hosted smoke test is not required; tightening makes GitHub itself refuse a red merge | 5 minutes, Alex's setting | Do now |
 | 4 | **A git tag per TestFlight build** (`v0.1.0-tf2`) with the build number | A tester's "version 0.1.0 (3)" maps to one commit | minutes per build | Do at the next upload (launch checklist C10) |
 | 5 | **Supabase Pro** | No pause after a quiet week, point-in-time recovery | $25/month | Decide before real members (launch checklist D3) |
-| 6 | **Dependabot security alerts** turned on for the repo | Known-vulnerable dependencies flagged automatically | minutes | Do now (Dependabot version updates already run) |
+| 6 | **Dependabot security alerts** | Known-vulnerable dependencies flagged automatically | – | **Already on** (checked 2026-09-27: GitHub answers 204 for the repo's vulnerability alerts) |
 
 ## Adopted
 

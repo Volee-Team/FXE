@@ -54,7 +54,9 @@ Everything a build needs is on `main`; nothing lives only on Alex's machine.
 Sign up with a real email (the app sends no confirmation email; decision
 0011), fill the profile (name, phone, rating, member yes/no, an optional note
 for Tara), sign the waiver (typed full name), then Home. Nothing charges
-anyone: the payment switch is off until Stripe is configured. Tara's account
+anyone: Stripe's sandbox keys are in (2026-09-27), but the payment switch
+stays off until Alex says go (launch checklist A9), after build 3 is on
+phones. Tara's account
 is the one with the Manage tab; she creates it herself the same way and Alex
 promotes it once (`bootstrap_first_admin`, already done on hosted).
 
@@ -70,6 +72,14 @@ promotes it once (`bootstrap_first_admin`, already done on hosted).
 
 ## When the LLC account is approved
 
-Transfer or recreate the App Store Connect record under FXE Tennis, LLC,
-switch the Team in Xcode, keep the bundle id, and retire this stopgap. Public
-TestFlight and the App Store listing must be the LLC's (roadmap, 2026-08-19).
+**The bundle id cannot move.** Apple transfers an app between accounts only
+if it has had at least one App Store release, and uploading a build ties the
+bundle id to the account that uploaded it. `com.fxetennis.app` is therefore
+John's for good unless the app is released under his name first, which the
+roadmap rules out (2026-08-19: the seller is the LLC). So the LLC's app gets a
+**new bundle id** (launch checklist C12, Alex decides the name), a new App
+Store Connect record, and the LLC's Team in Xcode; testers install it once as
+a new app and sign in with the same account, because accounts live on our
+server, not on the phone. Public TestFlight and the App Store listing are the
+LLC's. If the LLC is late for 2026-10-16, the fallback is external TestFlight
+on John's account (checklist C11).

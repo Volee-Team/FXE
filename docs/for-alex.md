@@ -1,15 +1,22 @@
-# For Alex: everything only you can do, step by step
+# For Alex: how to do each thing only you can do
 
-Living file. The model keeps it current; Alex reads it instead of chat.
-Updated 2026-09-26. Newest asks first within each item. When a step is done,
-tell the model "done with N" and it verifies and strikes it here.
+**What is left, and whose it is, lives in `docs/launch-checklist.md` and
+nowhere else.** This file is only the how-to for Alex's rows, click by click.
+Each section names its checklist row; the CI check fails if a section points
+at a row that does not exist. Updated 2026-09-27.
 
-Never paste a key, password or secret into chat. Every step below keeps the
-value between you and the website.
+Never paste a key, password or secret into the chat with the model. Everything
+typed there is saved to `docs/prompt-log/`, which is committed to a public
+repository. The logging hooks scrub key-shaped text and the secret scan fails
+on it, but those are seatbelts, not permission.
 
 ---
 
-## 1. Stripe test keys (about 20 minutes) — blocks all payments
+## 1. Stripe keys (checklist A1, A8): DONE 2026-09-27
+
+Verified 2026-09-27: all three secret names exist on hosted, and a forged
+webhook call is rejected with `bad_signature`. The steps stay here for live
+mode (checklist A7, A10).
 
 Status 2026-09-27: `supabase secrets list` on hosted shows no `STRIPE_*`
 secret. Wording below checked against Stripe's and Supabase's docs on
@@ -99,21 +106,35 @@ her, never into chat or a doc. Then the same steps C to E in live mode
 (`pk_live_`, a restricted key instead of `sk_live_`, a live webhook with the
 same five events), and the model swaps the three secrets.
 
-## 2. Privacy policy (10 minutes) — blocks external TestFlight testers and the App Store
+## 2. Privacy policy (checklist C6), about 10 minutes
 
-1. Open `docs/legal/privacy-policy.md` and read only the section at the
-   bottom, **"What changed from Volee's text"**. Eight numbered changes.
-   Number 3 is the one with legal weight (it names Stripe, Apple and the host).
-2. Fill in the two blanks near the end: the contact email, and today's date.
-   Tell the model the email, or edit the file.
-3. Pick the URL: the admin site now
-   (`https://fxe-tennis-admin.vercel.app/privacy.html`) or fersc.com later.
-4. Tell the model "privacy approved, contact is X". Until then the page is
-   kept out of every deploy by `web/.vercelignore`. It removes the Draft
-   banner, deploys the page, links it from Profile, and gives you the URL to
-   paste into App Store Connect.
+Apple needs a public privacy policy URL before external TestFlight testers or
+the App Store. Tara said reuse Volee's (decision 16).
 
-## 3. Push notifications — blocked on Apple approving the LLC
+1. Open the draft on GitHub:
+   https://github.com/Volee-Team/FXE/blob/main/docs/legal/privacy-policy.md
+   and scroll to the last section, **"What changed from Volee's text, for
+   approval"**. Eight numbered changes.
+2. Number 3 is the one with legal weight. Volee's policy says it shares data
+   with no third parties. Ours cannot say that: Stripe handles the cards,
+   Apple delivers notifications, and Supabase hosts the data, so the draft
+   names all three as service providers. The other seven swap Volee's facts
+   for ours (what we collect, adults only, what deleting an account does, no
+   tracking cookies).
+3. Pick the contact email the policy will show, the address members write to
+   about their data (a club address Tara reads is best).
+4. Tell the model: **"privacy approved, contact is \_\_\_"**, or which change
+   you want different.
+5. The model then removes the Draft banner, dates it, publishes it at
+   `https://fxe-tennis-admin.vercel.app/privacy.html`, adds a Privacy policy
+   link on Profile (listed for your tick), and checks the live page from
+   outside.
+6. Paste that URL into App Store Connect: the app, **App Information**,
+   **Privacy Policy URL**. On John's account for now, so John or whoever has
+   access there does this. Moving the page to fersc.com later changes only
+   the URL.
+
+## 3. Push notifications (checklist C3): blocked on Apple approving the LLC
 
 Nothing to do until Apple's email arrives. Then:
 
@@ -135,70 +156,152 @@ Nothing to do until Apple's email arrives. Then:
 The final bundle id is decided when the LLC account exists; today's
 `com.fxetennis.app` is a placeholder.
 
-## 4. Tara's review page — 2 minutes
+## 4. John: TestFlight build 3 (checklist C8, C10)
 
-1. Open https://fxe-tennis-admin.vercel.app, sign in as Tara's admin account.
-2. Click the grey **Testing** tab (far right).
-3. Under **Review links**, type a label (for example "Tara round 2"), click
-   **Make link**, then **Copy**.
-4. Text her the link. Her answers save as she types; they show under
-   **Responses** on the same tab. Tell the model when she is done.
+`main` is ready: a Release build on 2026-09-27 carried build number 3, the
+camera sentence Apple asked for, the encryption flag, and the real backend.
+The build number is already 3 in `project.yml` (his PR #58), so no bump is
+needed. Text John something like this:
 
-The page (version 3, 2026-09-27) now carries 17 questions: the six from
-round two and eleven from the Final Updates (the board's 10%, Home with one
-clinic, four about back-to-back 105s, the card box, the court photo and
-logo), plus a "Try it" task to run the board report.
+> John, build 3 is ready on `main`. `git pull`, `xcodegen generate`, open
+> the project, scheme FXETennis, destination Any iOS Device, Product →
+> Archive, then Distribute App → TestFlight Internal Only → Upload. The
+> camera sentence and the encryption flag are in this build, so Apple should
+> not bounce it and App Store Connect should not ask the export question.
+> After it processes, add it to the internal group, then tag it:
+> `git tag -a v0.1.0-tf3 -m "TestFlight build 3, uploaded by John"` and
+> `git push origin v0.1.0-tf3`. Full steps are in `docs/testflight.md`.
 
-## 5. Kat — one message
+What testers get in build 3: the new front page with Tara's court photo, the
+card step with the permission box, the back-to-back 105 rule, the board
+report on Tara's web admin, and every fix since build 2. Payments stay off
+until you say go (checklist A9).
 
-Kat answered the header on 2026-09-26 ("straight line across"); it is built
-straight. Three left:
+## 5. Tara's review page, round three (checklist G2), about 5 minutes
 
-- **The green line under the header.** Built straight, 4pt, because her
-  guide had it and she asked for more colour. Keep it, or plain navy into
-  the photo like Tara's mockup?
+The page now has 17 questions (the six still open from round two and eleven
+new ones about the board report, the 105 rule, the card box and the photo)
+plus one thing to try: running the board report.
 
-- **Tab bar colour.** iOS 26 will not paint the bottom tab bar solid navy.
-  Is the light system bar with green and navy icons fine, or should we build
-  our own navy bar (about a day)?
-- **Green text contrast.** The guide's green is slightly too light for small
-  text by the accessibility standard. OK to use a shade darker for text only?
+1. On a laptop, open https://fxe-tennis-admin.vercel.app and sign in with the
+   admin login.
+2. Click the grey **Testing** tab at the far right.
+3. Under **Review links**, type a label such as `Tara round 3`, click **Make
+   link**, then **Copy**.
+4. Text her the link, with something like: *"Round 3 of the app review.
+   Short questions, one line each is plenty, and your answers save as you
+   type. There's also one thing to try on your laptop: the board report."*
+5. When she says she is done: the same tab, **Responses**, **Show**. Paste
+   her answers into the chat with the model; it turns them into a decision
+   record and the changes.
 
-## 5b. John: the next TestFlight build
+## 6. Email that reaches members (checklist D1, D11), about 45 minutes plus DNS time
 
-After PR #58 merges (John's purpose strings, with the camera sentence
-corrected), John archives **build 3** from `main` per `docs/testflight.md`.
-It carries everything through 2026-09-27: the new front page, the card
-step, the 105 rule. Build 2 was rejected-then-fixed on his branch only; any
-archive from `main` before #58 would be rejected again by Apple for the
-missing camera sentence.
+Today a member who taps Forgot password gets nothing. Verified 2026-09-27:
+hosted has no email sender of its own, and Supabase's built-in one refuses to
+deliver to anyone outside the Supabase project's team, at most 2 an hour.
+Resend is a sending service with a free plan that covers a club.
 
-## 6. From Tara (a text is enough)
+**First decide the sending domain.** It needs DNS records added, so it must
+be a domain you or Tara can edit: fersc.com (whoever hosts it can add the
+records), or a new domain for the app (about $12 a year). A subdomain such as
+`mail.fersc.com` keeps the club's own email untouched.
 
-- **The logo file.** She wrote "Need to get you the logo - not that one".
-  Any format; the model swaps it in.
-- **The court photo as the original file** (question 64). The one she sent
-  is a screenshot and looks soft on a full screen.
-- **Questions 58 to 65** in `docs/questions-for-tara.md` §M: the board's
-  10%, Home with one clinic, four about the back-to-back 105 rule, the card
-  box wording. They go on her review page next round.
+1. Sign up at https://resend.com.
+2. **Domains → Add Domain**, enter the domain or subdomain. Resend shows three
+   or four DNS records.
+3. Add those records at the domain's DNS provider exactly as shown, then back
+   in Resend click **Verify**. It can take from minutes to a few hours.
+4. **API Keys → Create API Key** with sending access. Copy it. It is a
+   password: it goes only into step 5.
+5. Supabase: https://supabase.com/dashboard/project/amnaxvznkadkgzdxzegw,
+   **Authentication**, **Emails**, **SMTP Settings**. Turn on custom SMTP:
+   - Sender email: `noreply@` your domain (for example `noreply@mail.fersc.com`)
+   - Sender name: `FXE Tennis`
+   - Host: `smtp.resend.com`
+   - Port: `465`
+   - Username: `resend`
+   - Password: the Resend API key
+   Save.
+6. **Authentication → Rate Limits**: raise "emails sent per hour" from 2 to
+   about 30.
+7. **Site URL (checklist D11)**: **Authentication → URL Configuration**. Set
+   Site URL to `https://fxe-tennis-admin.vercel.app` (today it is
+   `http://localhost:3000`). Leave the redirect URL for `reset.html` in
+   place. Save.
+8. Tell the model **"email is set up"**. It re-reads the settings through the
+   management API, then asks you for one real test: Forgot password with your
+   own email, the email arrives from FXE Tennis, the link opens the reset
+   page, the new password signs in.
 
-## 7. Two GitHub settings (5 minutes)
+The reset email's wording is Supabase's default today. Tara may want her own
+words later; that is a question for her, not a blocker.
 
-Recommended in `docs/practice-ideas.md`, which also has the answer on Jev.
+## 7. Kat's three style calls (checklist G3), one message
 
-1. https://github.com/Volee-Team/FXE/settings/branches → edit the rule
-   for `main`. It exists already (checked 2026-09-26 with `gh api
-   .../branches/main/protection`) and requires "Build iOS app + unit tests"
-   and "SQL probes + concurrency". Add "Hosted is closed to a signed-out
-   caller" to the required checks, and tick "Do not allow bypassing the
-   above settings" (today `enforce_admins` is off, so an admin, which the
-   model's token is, can merge red).
-2. https://github.com/Volee-Team/FXE/settings/security_analysis → turn on
-   Dependabot alerts.
+Text Kat something like this:
 
-## 8. Business (no rush from the model's side)
+> Three quick style calls on the app:
+> 1. **Bottom tab bar.** iOS 26 draws it as frosted glass and won't take a
+>    solid navy fill. Today it's the system bar with a green active icon and
+>    navy inactive ones. Keep it, or build our own navy bar (about a day)?
+> 2. **Green text.** Your gator green (#4F7A38) on the porcelain background
+>    measures 4.42:1 contrast, just under the 4.5:1 accessibility minimum for
+>    small text. OK to use a slightly darker green (#446A30, 5.51:1) for text
+>    only, and your green everywhere else?
+> 3. **The header.** Now straight across as you asked, with the guide's thin
+>    green line along the bottom. Keep the green line, or plain navy like
+>    Tara's mockup?
 
-- Apple LLC enrollment: chase if no email by 2026-10-01.
-- Password-reset email: a free Resend account plus two DNS records on the
-  club's domain; before members, not before testers.
+## 8. GitHub: make CI a real gate (checklist G6), about 5 minutes
+
+Today `main` requires two checks, and admins may merge past them. The model's
+GitHub access is admin, so today only its own scripts stop it merging a red
+PR. This makes GitHub itself refuse.
+
+1. Open https://github.com/Volee-Team/FXE/settings/branches
+2. Next to the rule for `main`, click **Edit**.
+3. Under **Require status checks to pass before merging**, use the search box
+   to add each of these (two are there already):
+   - `Hosted is closed to a signed-out caller`
+   - `Secret scan`
+   - `Docs are consistent`
+   - `No unapproved copy`
+   - `Stripe pipeline (mocked)`
+   - `Push pipeline (mocked)`
+   - `Web admin browser tests`
+   Do not add `iOS UI tests on a CI project`; it only prints a notice until a
+   CI database exists.
+4. Tick **Do not allow bypassing the above settings**.
+5. **Save changes**.
+
+Dependabot alerts are already on (checked 2026-09-27), so nothing to do there.
+
+## 9. From Tara (checklist G5, D5), a text is enough
+
+- **The logo file** she mentioned ("not that one"), any format, the largest
+  she has.
+- **The original court photo** from her phone (the one in the message is a
+  small screenshot and looks soft full screen).
+- **Her real templates and clinics** in the admin site. The review page's
+  "Try it" tab walks her through it.
+
+## 10. Decisions only you can make
+
+| Checklist | Decision | When | The model's recommendation |
+|---|---|---|---|
+| A9 | Switch payments on | After build 3 is on testers' phones | Go as soon as build 3 is out, then run the payment test the same day |
+| G1 | Payments and push in the MVP or not (with Kat and Tara) | This week | Payments in; push in only if Apple approves the LLC in time, otherwise launch with in-app notifications |
+| C11 | Fallback if the LLC is not approved in time: external TestFlight on John's account with a public link | By 2026-10-09 | Yes: prepare it (needs the privacy URL), use it only if needed |
+| C12 | The LLC app's bundle id (the current one is locked to John's account) | Before the first LLC build | Accept a new id such as `com.fxetennis.club`; testers reinstall once |
+| D3 | Supabase Pro ($25 a month): no pause after a quiet week, point-in-time recovery | Before real members | Yes, from launch week |
+
+## 11. Business
+
+- **Apple LLC enrollment (checklist C1).** Still processing on 2026-09-27. If
+  there is no email by 2026-10-01, contact Apple Developer Support
+  (https://developer.apple.com/contact, Membership and Account, Program
+  Enrollment) and ask what is outstanding.
+- **Stripe live mode (checklist A7)** after the payment test passes: Tara's
+  business and bank details typed into Stripe's own form by you or her, then
+  move the account's ownership to her.

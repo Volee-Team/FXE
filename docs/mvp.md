@@ -5,13 +5,14 @@ define w tara and kat: what is CRITICAL to get us to an MVP, then have some
 people start testing it and get full launch HOPEFULLY by the planned launch
 party oct 16"*). Every row below is a fact about the code today; the column
 "MVP?" is the proposal, and it is theirs to change. Owners and detail live in
-`docs/launch-checklist.md`; this page is the short version for the call.
+`docs/launch-checklist.md`, the one list of what is left; this page is the short version for the call.
 
 ## What a member can do today (built, on TestFlight)
 
 | Feature | State | MVP? |
 |---|---|---|
-| Sign up, sign in, forgot password | built | yes |
+| Sign up, sign in | built | yes |
+| Forgot password | the app side is built; **the email does not reach members** until a real email sender is set up (launch checklist D1, found 2026-09-27) | yes, and it blocks launch |
 | Profile: name, phone, rating (required), member yes/no, note for Tara | built | yes |
 | Waiver signed once, in the app | built | yes |
 | Browse clinics by week, prices by membership, the "?" explainer | built | yes |
@@ -21,7 +22,7 @@ party oct 16"*). Every row below is a fact about the code today; the column
 | Message Tara after registration has closed | built | yes |
 | Clinic messages from Tara, the bell, notifications in the app | built | yes |
 | My Clinics with Past | built | yes |
-| Card on file (Stripe PaymentSheet) | built, off until Stripe keys | **decide** |
+| Card on file (Stripe PaymentSheet) with the permission box | built; Stripe's sandbox keys in (2026-09-27); off until the switch (checklist A9) | **decide** |
 | Delete my account | built | yes (Apple requires it) |
 | Push notifications on the lock screen | client built; sender waits on Apple's key | **decide**: without it, updates are only in the app |
 
@@ -35,7 +36,7 @@ party oct 16"*). Every row below is a fact about the code today; the column
 | Walk-up straight into a clinic; late requests | built | yes |
 | Players directory with her private note, membership override | built | yes |
 | Money: expected/collected/owed, the card ledger | built | yes |
-| Charge clinic (one tap after it ends), refunds | built, off until Stripe keys | **decide** |
+| Charge clinic (one tap after it ends), refunds | built; off until the switch (A9) | **decide** |
 | Manage cards in Stripe's dashboard | link on Money (2026-09-22) | yes, if payments are in |
 
 ## Not built, and a decision each
@@ -43,7 +44,7 @@ party oct 16"*). Every row below is a fact about the code today; the column
 | Item | Why it is not in | Decide |
 |---|---|---|
 | Push delivery (APNs) | needs the Apple Developer key; the LLC enrollment is in Apple's queue | in MVP or not? If in, MVP waits on Apple |
-| Payments switched on | needs Stripe keys (Alex, "prob tomorrow") and Tara's Stripe account | if in, Q56's policy text and the card sentence go live |
+| Payments switched on | keys in 2026-09-27; waits on Alex's go after build 3 (A9), the payment test (A2), then live mode in Tara's name (A7) | if in, Q56's policy text and the card sentence go live |
 | Registration-is-open reminders | needs a scheduler and Tara's answer on timing | later |
 | Juniors, News, Community | deferred by Tara (decisions 0004, 0006) | later |
 | Privacy policy at a URL | Apple needs it for external TestFlight and the store | needed before launch, not before internal testing |
