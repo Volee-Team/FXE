@@ -150,9 +150,9 @@ final class RequestFailureTests: XCTestCase {
         XCTAssertEqual(SessionStore.friendly(wrong), "That email or password didn't work.")
     }
 
-    func testAnUntrustedCertificateIsNotAWrongPassword() {
-        // Its iOS text says the certificate "is invalid"; the old word match
-        // read that as a wrong password.
+    func testAWiFiSignInPageAtSignInIsAConnectionProblem() {
+        // What a club Wi-Fi sign-in page does to HTTPS. Read by its code, not
+        // its text: under the old word match it said "Something went wrong."
         XCTAssertEqual(SessionStore.friendly(URLError(.serverCertificateUntrusted)),
                        "Couldn't reach the server. Check your connection.")
     }
