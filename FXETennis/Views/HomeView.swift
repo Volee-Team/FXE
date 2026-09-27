@@ -53,6 +53,7 @@ struct HomeView: View {
 
     private func refreshUnread() async {
         unread = (try? await NotificationRepository.unreadCount()) ?? unread
+        PushRegistrar.shared.setBadge(unread)   // the icon shows the bell's count
     }
 
     var body: some View {
@@ -67,6 +68,8 @@ struct HomeView: View {
                                 Wordmark(compact: true)
                                 Spacer()
                                 BellButton(unread: unread) { showNotifications = true }
+                                    // A push landed while open, or was tapped (NotificationRouter).
+                                    .onChange(of: NotificationRouter.shared.reloads) { Task { await model.load(); await refreshUnread() } }
                             }
                             .padding(.horizontal, Brand.Spacing.pageMargin)
                             .padding(.top, geo.safeAreaInsets.top + 4)

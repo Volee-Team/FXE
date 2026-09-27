@@ -1,0 +1,12 @@
+{
+  "Simulator Target Bundle": "com.fxetennis.app",
+  "aps": {
+    "alert": { "body": "A spot opened in Evening Coed. Accept or decline." },
+    "sound": "default",
+    "badge": 2
+  },
+  "notification_id": "f0000000-0000-0000-0000-000000000001",
+  "type": "invitation_received",
+  "entity_type": "registration",
+  "entity_id": "e0000000-0000-0000-0000-000000000001"
+}

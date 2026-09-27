@@ -61,7 +61,7 @@ most important thing to understand here, and it is section 5.
 | iOS admin tab: rosters, invite, courts, paid, unpaid reminder, message audiences, late requests, Action Needed, player directory | **Built** |
 | Web admin: clinic + template CRUD (archive, never delete), rosters, walk-up, courts, reminder, Action Needed, Money with the card ledger, directory, password reset | **Built**, live on Vercel |
 | Nightly `pg_dump` backup + keep-warm | **Built**, first artifact 2026-09-01 |
-| APNs push delivery | **Built, waiting on the key** (decision 0008). Client half: permission sheet, registration, `register_device`. Sender (2026-09-23): trigger `push_on_notification` → pg_net → the `push` edge function → APNs, with `delivered_at` / `delivery_error` on each row, proven against a mock by `tests/push/run.sh`. Nothing is sent until Apple issues the key and the two vault secrets exist (`supabase/functions/README.md`, "What Alex does when the key arrives") |
+| APNs push delivery | **Built, waiting on the key** (decision 0008). Client half: permission sheet, registration, `register_device`; since 2026-09-27 also receiving (MVP audit item 12): a push that lands while the app is open shows as a banner and reloads Home, a tap opens its clinic through the same resolver as the bell (`NotificationRouter.swift`), and the icon's number is the bell's count, cleared at sign-out. Checked on the simulator with `tests/push/simctl-push.sh`, which pushes the payload the sender builds. Sender (2026-09-23): trigger `push_on_notification` → pg_net → the `push` edge function → APNs, with `delivered_at` / `delivery_error` on each row, proven against a mock by `tests/push/run.sh`. Nothing is sent until Apple issues the key and the two vault secrets exist (`supabase/functions/README.md`, "What Alex does when the key arrives") |
 | Stripe card payments | **Built, switched off** (decision 0009): ledger, RPCs, three edge functions ACTIVE on hosted, card screen, `payments_ledger`. `app_settings.payments_enabled` is `false`; nothing charges until the Stripe keys are set (launch checklist A1); her policy answers landed 2026-09-16 and 2026-09-21 (decisions 0012, 0013). The sandbox-to-live switch is `stripe_cutover_to_live()`, run once by a person at the key swap (20260927200001; procedure in `supabase/functions/README.md`) |
 | Juniors / parent accounts | **Deferred** to November or the spring session (decision 0007) |
 | App Store / TestFlight | **Blocked** on Apple Developer enrollment for FXE Tennis, LLC |
@@ -137,7 +137,14 @@ FXETennis/
 │   ├── Session.swift            SessionStore: auth, account, activePlayer, isAdmin,
 │   │                            signUp → create_my_account, password reset
 │   ├── PushRegistrar.swift      client half of decision 0008: permission (once, Tara's line),
-│   │                            APNs registration, token → register_device; sends nothing
+│   │                            APNs registration, token → register_device; sends nothing.
+│   │                            PushAppDelegate is also the notification center's delegate:
+│   │                            banner + Home reload in the foreground, taps to the router;
+│   │                            setBadge / syncBadge keep the icon at the bell's count
+│   ├── NotificationRouter.swift where a tapped notification goes, bell and push alike:
+│   │                            'clinic' or 'registration' → my_registrations or, for Tara,
+│   │                            registrations_admin → the player's clinic page or hers;
+│   │                            the push-tap sheet (pushTapRouting) and the shared state
 │   └── AppEnv.swift             DEBUG vs release: local stack vs hosted, reset URL
 ├── Data/
 │   ├── SupabaseClient.swift     the one client (URL + publishable key, implicit flow)
@@ -161,7 +168,9 @@ FXETennis/
     ├── MainTabView.swift        Home, Clinics, Profile, plus Manage when isAdmin
     ├── HomeView.swift           the front page (decision 0015): My Clinics on top, then what is open for
     │                            registration while fewer than two are yours, else the one blue button; the bell
-    ├── NotificationsView.swift  what the bell opens: rows the RPCs wrote, newest first, mark read
+    ├── NotificationsView.swift  what the bell opens: rows the RPCs wrote, newest first, mark read;
+    │                            a row opens its clinic through NotificationRouter, and while open
+    │                            the list takes tapped pushes and reloads when one lands
     │   (NotificationPermissionView.swift also holds NotificationsOffLine: the standing line on Home while permission is denied)
     ├── MyClinicsView.swift      the clinics I hold a live registration in, grouped by week, with chips,
     │                            then Past: what I played and what it cost me (my_past_clinics)
@@ -534,6 +543,7 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `past_clinics` | `my_past_clinics`: own rows only, a future clinic is not past, Ken never sees Maria's row, no hidden column, select-only for the signed-in |
 | `clinic_messaging` | Decision 0005: a targeted message is readable only by the group it went to; the whole list each player sees is asserted; the recipients table is hidden; each recipient notified once |
 | `schema_decisions` | Tara's decisions with a DB consequence stay true |
+| `notification_targets` | Every notification opens something (MVP audit item 12): `invite_from_pool` writes `registration` with the registration id, which the player resolves through `my_registrations` and nobody else can; Tara's accept and cancel rows name the registration and resolve through `registrations_admin` (never `my_registrations`, hence the app's second branch), a canceled one included; the seed's invitation is the producer's own and resolves for Maria; every row points at something its recipient may open; every `notify_account` caller names `clinic` or `registration` as a literal, and the seven known producers are found. Red first under three mutants (the old hand-typed seed row, 2 checks; an invite that names the clinic, 3; a third entity type and a variable one, 2) |
 | `push_devices` | `register_device` / `unregister_device`, attacked: nobody but the owner sees a token, the account is never a parameter, re-registering is idempotent |
 | `push_delivery` | 20260923000001: the audit columns exist and `authenticated` holds nothing on them (Maria's own `select delivery_error` is refused) while the app's eight columns still read; the AFTER INSERT trigger exists and no client can execute its function; with no vault secrets (or only one) an insert succeeds and queues nothing, with both (and an unreachable URL) it queues exactly one request carrying the row id and the secret header; and when the vault read itself raises (the trigger function handed to `anon` inside the rolled-back transaction) the insert still succeeds |
 | `template_archive` | Only Tara archives or restores; the stamp survives a repeat; archived rows show to her and to nobody else; a clinic can still be built from an archived template |
@@ -552,8 +562,8 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `back_to_back_105_race.sh` | Two concurrent registrations by one non-member for two same-day 105s: exactly one survives (the per-player lock in `register_for_clinic`; red without it, 2026-09-26) |
 | `one_fee_race.sh` | Two concurrent charges of different kinds for one player in one clinic (the unique index cannot see them): exactly one live fee survives (the per player-and-clinic lock in `admin_charge_registration`, 20260927100001; red without it, 2026-09-27: both went through) |
 
-**Swift**: 37 unit tests (`FXETennisTests`: price formatting, per-viewer
-pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016, and `CardSavePoll`, the wait for a saved card's summary, since 2026-09-27) and 13
+**Swift**: 45 unit tests (`FXETennisTests`: price formatting, per-viewer
+pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016, and 12 on where a tapped notification goes: the push payload as `index.ts` builds it, and which reads each recipient's resolution makes) and 13
 XCUITests: 8 player flows
 (`PlayerFlowUITests`: sign in / browse / register, undo, sign-up end to end,
 the bell, profile edit, My Clinics, prices, hidden information) and 5 admin
@@ -595,7 +605,11 @@ push type, collapse id, the row body verbatim, the unread count as badge, and
 an ES256 provider token the mock verifies against the public key), `gone` and
 `bad` tokens pruned, idempotency, Maria refused the audit columns through
 PostgREST, and the trigger delivering through pg_net with nobody calling the
-function by hand. The function is `supabase/functions/push/index.ts`.
+function by hand. The function is `supabase/functions/push/index.ts`. The
+receiving end is checked by eye on the simulator: `tests/push/simctl-push.sh`
+pushes `tests/push/simctl-invitation.apns` (the seeded invitation, in the
+payload shape `index.ts` builds) or, with `--latest <email>`, a payload built
+from that account's newest row.
 
 **Reset link**: `tests/reset/run.sh` against the served `admin-reset-link`
 function: signed out 401, a member 403, bad input 400, unknown player 404, a

@@ -44,7 +44,10 @@ notes, the Stripe link).
 - **Card payments:** built and deployed; the switch is off (A9), and the real
   card sheet has only ever run against Stripe's mock, never Stripe itself (A2).
 - **Push on the lock screen:** built and deployed; waits on Apple's key (C3).
-  Notifications show inside the app meanwhile.
+  Notifications show inside the app meanwhile. The app's receiving end is in
+  the build since 2026-09-27: a banner while it is open, a tap opens the
+  clinic (an invitation lands on Accept and Decline), and the icon's number
+  is the bell's.
 
 Missing on the phone by design: creating or editing a clinic (web only),
 News (deferred, decision 0006).
