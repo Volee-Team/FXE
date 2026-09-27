@@ -527,7 +527,7 @@ Chrome only, from the adversarial review's fixes (branch `fix-sql`). No player s
 
 | ☐ | String | Where | Why |
 |---|---|---|---|
-| ☐ | Too many attempts. Try again in a minute. | Web admin sign-in, sign-up and Forgot password on HTTP 429 (replaces "Too many attempts: wait a minute and try again." above) | The lead's exact line, one sentence without the colon. An hourly email or SMS limit still keeps GoTrue's own words, now also when the error code is unreadable. The iOS app says "Too many requests. Try again in a minute." (`FXETennis/Data/RequestFailure.swift`), so the two still differ by one word: Alex's call which wins |
+| ☐ | Too many attempts. Try again in a minute. | Web admin sign-in, sign-up and Forgot password on HTTP 429 (replaces "Too many attempts: wait a minute and try again." above) | The lead's exact line, one sentence without the colon. An hourly email or SMS limit still keeps GoTrue's own words, now also when the error code is unreadable. The iOS app says the same words since the fix-ios round (`FXETennis/Data/RequestFailure.swift`) |
 | ☐ | That clinic ended before card payments were on. | Web admin and iOS Charge clinic, if tapped on a clinic that ended before `payments_enabled_at` (the web no longer offers the button there) | Server refusal `clinic_before_payments` (20260927300001) in words |
 | ☐ | That charge is no longer held. | Web Money tab, if Went through / Did not go through is tapped on a row someone already resolved | Server refusal `payment_not_held` (20260927300003) |
 | ☐ | Check this charge in Stripe. | Web Money tab, under a card payment held for a person (processing, too old to retry or card changed) | The one instruction the row needs: only Stripe's dashboard knows whether it went through |
