@@ -110,6 +110,15 @@ t = re.sub(r"\b\d{3}-\d{2}-\d{4}\b", "[redacted id number]", t)
 t = re.sub(r"(?i)\b(ssn|social security)[^\n]*", r"\1 [redacted]", t)
 t = re.sub(r"(?i)\b(routing|account|acct|iban|card)( number| no\.?| #)?[ :#]*\d[\d -]{6,}", r"\1 [redacted]", t)
 t = re.sub(r"\b(?:\d[ -]?){13,19}\b", "[redacted long number]", t)
+# Keys and secrets (2026-09-27, before Alex set up Stripe): this log is
+# committed to a public repository, so a key pasted into a prompt would be
+# published. Stripe secret and restricted keys, webhook signing secrets,
+# Supabase secret keys, and long JWTs. Publishable keys (pk_) are public by
+# design and stay readable.
+t = re.sub(r"\b(sk|rk)_(test|live)_[A-Za-z0-9]{8,}", r"[redacted Stripe \2 key]", t)
+t = re.sub(r"\bwhsec_[A-Za-z0-9]{8,}", "[redacted webhook secret]", t)
+t = re.sub(r"\bsb_secre[t]_[A-Za-z0-9_-]{8,}", "[redacted Supabase secret]", t)
+t = re.sub(r"\beyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}", "[redacted token]", t)
 sys.stdout.write(t)
 '
 }

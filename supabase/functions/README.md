@@ -10,8 +10,12 @@ while Apple's signing key does not exist yet.
 
 ## Secrets (never in the repo, the app, or a log)
 
-Set in the Supabase dashboard, Project Settings → Edge Functions → Secrets,
-or with `supabase secrets set NAME=value`:
+Set on the dashboard's Edge Function Secrets page
+(https://supabase.com/dashboard/project/amnaxvznkadkgzdxzegw/functions/secrets).
+`supabase secrets set NAME=value` does the same, but typing a secret into a
+terminal leaves it in the shell history, so the page is preferred. Secrets
+reach the functions immediately; no redeploy. Alex's click-by-click steps
+are `docs/for-alex.md` §1:
 
 | Name | Who sets it | What it is |
 |---|---|---|

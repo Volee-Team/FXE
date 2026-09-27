@@ -9,34 +9,95 @@ value between you and the website.
 
 ---
 
-## 1. Stripe test keys (about 15 minutes) — blocks all payments
+## 1. Stripe test keys (about 20 minutes) — blocks all payments
 
-Status 2026-09-26: `supabase secrets list` on hosted shows no `STRIPE_*` secret.
+Status 2026-09-27: `supabase secrets list` on hosted shows no `STRIPE_*`
+secret. Wording below checked against Stripe's and Supabase's docs on
+2026-09-27; Stripe now calls test mode a **sandbox** and keeps webhooks in
+**Workbench** as "event destinations".
 
-1. Go to https://dashboard.stripe.com/register and sign up. Business name
-   "FXE Tennis" is fine. Skip "Activate your account" for now.
-2. Top right of the dashboard: make sure **Test mode** is on.
-3. **Developers → API keys.** You will copy two values: the *Publishable key*
-   (`pk_test_…`) and the *Secret key* (`sk_test_…`, click Reveal).
-4. Open https://supabase.com/dashboard/project/amnaxvznkadkgzdxzegw/functions/secrets
-   and add two secrets:
-   - `STRIPE_SECRET_KEY` = the `sk_test_…` value
-   - `STRIPE_PUBLISHABLE_KEY` = the `pk_test_…` value
-5. Back in Stripe: **Developers → Webhooks → Add endpoint.**
-   - Endpoint URL: `https://amnaxvznkadkgzdxzegw.supabase.co/functions/v1/stripe-webhook`
-   - Events (search each and tick it): `setup_intent.succeeded`,
-     `payment_intent.succeeded`, `payment_intent.payment_failed`,
-     `refund.updated`, `charge.refunded`
-   - Save. On the endpoint page click **Reveal** under *Signing secret* (`whsec_…`).
-6. Supabase secrets page again: add `STRIPE_WEBHOOK_SECRET` = the `whsec_…` value.
-7. Tell the model "Stripe keys are in". It checks the names exist (it never
-   sees the values) and runs the end-to-end test in `docs/stripe-e2e-test.md`
-   with you.
+Keep two tabs open: Stripe, and the Supabase secrets page (step 7).
 
-Later, for real money (live mode): Stripe → Activate account, Tara's business
-and bank details typed **into Stripe's own form** by you or her, never into
-chat or a doc. Then repeat steps 3 to 6 with the `pk_live_`/`sk_live_` keys and
-a live-mode webhook.
+**Do not paste any key into the chat with the model.** Everything typed there
+is saved to `docs/prompt-log/`, which is committed to a public repository.
+The logging hooks now scrub Stripe keys (2026-09-27), but that is a seatbelt,
+not permission. If a key ever lands somewhere it should not, rotate it: API
+keys page, the ⋯ menu beside the key, **Rotate key**.
+
+**A. The account**
+
+1. Go to https://dashboard.stripe.com/register and sign up: email, name,
+   country United States, password. Confirm the email Stripe sends.
+2. Skip every "activate your account" or "tell us about your business"
+   screen. Testing needs none of it. The account can be handed to Tara
+   before it takes real money: Settings, Team, invite her as Administrator,
+   then **Transfer ownership** to her (Stripe's own flow).
+
+**B. Get into the sandbox**
+
+3. In the account menu at the top left, pick the sandbox (it may say
+   **Sandbox** or **Test mode**). A banner tells you you are looking at test
+   data. If no sandbox exists, the same menu offers to create one.
+   Everything below happens inside the sandbox. Keys there start with
+   `pk_test_` and `sk_test_`; if you see `pk_live_`, you are in live mode.
+
+**C. Copy the two keys**
+
+4. Open the **API keys** page (Workbench, or https://dashboard.stripe.com/test/apikeys).
+5. **Publishable key** (`pk_test_…`) is shown already. Click it to copy.
+6. **Secret key** (`sk_test_…`): click **Reveal**, then click it to copy.
+   Use this standard secret key. Stripe may suggest a restricted key; for
+   live mode the model will set one up with only the permissions our code
+   uses (least privilege), but for testing the standard one is right.
+
+**D. Put them into Supabase**
+
+7. Open https://supabase.com/dashboard/project/amnaxvznkadkgzdxzegw/functions/secrets
+8. Add a secret. **Key** `STRIPE_PUBLISHABLE_KEY`, **Value** the `pk_test_…`
+   you copied. **Save**.
+9. Add another. **Key** `STRIPE_SECRET_KEY`, **Value** the `sk_test_…`.
+   **Save**. The names must be exactly these: capitals and underscores.
+   Nothing needs redeploying; the functions see secrets immediately.
+
+**E. The webhook** (Stripe telling our server a card was saved or charged)
+
+10. Stripe: Workbench, **Webhooks** tab (https://dashboard.stripe.com/test/webhooks),
+    **Create an event destination**.
+11. Events from: **Your account**. API version: leave the default.
+12. Select these five events (search each name and tick it):
+    - `setup_intent.succeeded`
+    - `payment_intent.succeeded`
+    - `payment_intent.payment_failed`
+    - `charge.refunded`
+    - `refund.updated`
+13. **Continue**, choose **Webhook endpoint**, **Continue**.
+14. **Endpoint URL**, exactly:
+    `https://amnaxvznkadkgzdxzegw.supabase.co/functions/v1/stripe-webhook`
+    Description is optional ("FXE app"). Create it.
+15. On the endpoint's page, find **Signing secret**, click **Reveal secret**,
+    copy the `whsec_…`.
+16. Back on the Supabase secrets page: **Key** `STRIPE_WEBHOOK_SECRET`,
+    **Value** the `whsec_…`. **Save**.
+
+**F. Tell the model "Stripe keys are in"**
+
+17. The model checks the three names exist on hosted (`supabase secrets
+    list` shows names and fingerprints, never values). Payments stay
+    switched **off** until you say go, because switching them on means
+    nobody can register without a saved card, and that should wait for the
+    TestFlight build with the card step (build 3). Then the eight-row
+    test in `docs/stripe-e2e-test.md`, with your own account.
+
+**The terminal command you may have seen** (`supabase secrets set
+STRIPE_SECRET_KEY=...`) is not needed. It does exactly what steps 8, 9 and
+16 do, and typing a key into the terminal leaves it in your shell history
+file in plain text. Use the web page.
+
+**Later, for real money (live mode):** Stripe, **Activate account**, with
+Tara's business and bank details typed **into Stripe's own form** by you or
+her, never into chat or a doc. Then the same steps C to E in live mode
+(`pk_live_`, a restricted key instead of `sk_live_`, a live webhook with the
+same five events), and the model swaps the three secrets.
 
 ## 2. Privacy policy (10 minutes) — blocks external TestFlight testers and the App Store
 

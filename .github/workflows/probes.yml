@@ -481,6 +481,17 @@ jobs:
             FAIL=1
           fi
 
+          # Stripe secret and restricted keys and webhook signing secrets
+          # (2026-09-27, the day Alex set up Stripe). They live only in
+          # Supabase's Edge Function secrets. Docs are scanned too: the prompt
+          # log is a doc, and it is where a pasted key would land. Publishable
+          # keys (pk_) are public by design and not matched.
+          if git grep -nE '(sk|rk)_(live|test)_[A-Za-z0-9]{10,}|whsec_[A-Za-z0-9]{16,}' -- ':!.github/workflows/*' | grep -q .; then
+            echo "::error::Possible Stripe key or webhook secret committed (rotate it in Stripe, then remove it):"
+            git grep -nE '(sk|rk)_(live|test)_[A-Za-z0-9]{10,}|whsec_[A-Za-z0-9]{16,}' -- ':!.github/workflows/*' | cut -c1-60
+            FAIL=1
+          fi
+
           # Personal identifiers. Tara sent her SSN and bank details in a
           # message on 2026-09-16 and the prompt-log hook copied them into a
           # tracked file before it learned to redact. Docs are scanned too.
