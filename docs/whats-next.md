@@ -15,7 +15,7 @@ Ordered by what it unblocks, not by how hard it is to answer.
 | 52–57 | **After her review of every word** (`docs/questions-for-tara.md` §L): the "Set by Tara" caption, the blank replacement for "Tara has your message.", "this week" under My Clinics, "Let's Play." vs "Let's play!", whether her policy block gets rewritten and shown, and whether "Stripe needs to be connected" was a note to us | Nothing blocks: every default is the current text | Keep as is |
 | 27–51 | **Answered.** §I/§J on 2026-09-12 and 2026-09-16 (decisions 0010, 0012), §K on 2026-09-21 (decision 0013: no courtesy, 3 hours, card only, waiver, keep history on deletion, Saturday and short weeks as built, her tap charges) | | |
 
-**Blocked on Alex (list of 2026-09-23; he asked for it to be kept here). Each spelled out in `docs/launch-checklist.md`:**
+**Blocked on Alex. Step by step, click by click: `docs/for-alex.md` (kept current; he reads that, not chat). Summary as of 2026-09-26:**
 
 1. **Stripe test keys** (§B, about 15 minutes): a Stripe *test-mode* account, its secret key, publishable key and webhook signing secret set as Supabase Edge Function secrets (dashboard or `supabase secrets set`, never the repo or chat). `supabase secrets list` on 2026-09-23 showed zero `STRIPE_*` names, so every card and charge path is dark. Everything else on the payments path is built and deployed. Live mode later takes Tara's business details, typed into Stripe's own form and nowhere else. Alex, 2026-09-23: *"i need to get that hooked up ASAP"*.
 2. **Privacy policy at a URL** (§C6): reuse Volee's (decision 16), host on fersc.com as Tara said. External TestFlight testers cannot be added without it.
@@ -87,7 +87,7 @@ Refund as Tara's tap, rendered only while
 grants), the three Stripe edge functions deployed, the card screen on Profile
 with PaymentSheet, `payments_ledger`, and `cancel_registration` recording a late
 You're In! cancel with an optional note ("Note for Tara (optional)", decision 0013). Testing: 14 Playwright tests, 13 XCUITests
-(5 on Tara's side), 23 unit tests, 25 SQL probes, and a 27-check Stripe
+(5 on Tara's side), 31 unit tests, 27 SQL probes, and a 27-check Stripe
 pipeline against stripe-mock in CI. `docs/architecture.md` was regenerated
 2026-09-01 and refreshed by hand 2026-09-12 and 2026-09-21. Nothing charges anyone: the switch is off.
 

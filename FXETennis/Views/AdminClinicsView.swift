@@ -90,7 +90,7 @@ struct AdminClinicsView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Brand.surfaceGradient.ignoresSafeArea()
+                CourtBackdrop()
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: Brand.Spacing.lg) {
@@ -130,6 +130,17 @@ struct AdminClinicsView: View {
                             .font(Brand.Typography.button)
                     }
                     .accessibilityIdentifier("admin.players")
+                }
+                // Final Updates p.2, Admin Panel item 1: "Add Stripe Admin link
+                // in the U/I." The web admin's Money tab has had it since
+                // 09-22; Tara's courtside surface gets it too. Opens Stripe's
+                // own dashboard in Safari, where refunds, disputes and payouts live.
+                ToolbarItem(placement: .topBarLeading) {
+                    Link(destination: URL(string: "https://dashboard.stripe.com")!) {
+                        Text("Stripe")
+                            .font(Brand.Typography.button)
+                    }
+                    .accessibilityIdentifier("admin.stripe")
                 }
             }
         }

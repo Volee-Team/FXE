@@ -1,60 +1,38 @@
 //
-//  ArchedHeader.swift
+//  BrandHeader.swift
 //  FXETennis
 //
-//  The header from Kat's style guide (docs/style-guide.md, 2026-09-22):
-//  navy-900, full width, arching into the porcelain body, with a single
-//  gator-green hairline (about 6pt) that follows the arch. One instance per
-//  screen, never a repeatable rule style.
+//  The navy header at the top of the front screens. Kat's style guide
+//  (2026-09-22) drew it arching into the page with a green hairline along the
+//  arch; built that way, it was rejected twice on 2026-09-23 (Alex: "legit
+//  ugly"; a rounded-corner version, "even uglier"), and on 2026-09-26 Kat
+//  settled it: "I'm not wild about the swoopy thing. I think I just like the
+//  straight line across." So: navy, straight across, and the guide's single
+//  gator-green line kept, straight, because the same message asked for "more
+//  color". Tara's mockup of the front page (2026-09-26) has the same straight
+//  edge.
 //
 
 import SwiftUI
 
-/// A rectangle whose bottom edge bows downward into a shallow arch.
-struct ArchedBottom: Shape {
-    /// How far the arch drops below the straight edge, in points.
-    var depth: CGFloat = 28
-
-    func path(in rect: CGRect) -> Path {
-        var p = Path()
-        p.move(to: CGPoint(x: rect.minX, y: rect.minY))
-        p.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
-        p.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - depth))
-        p.addQuadCurve(to: CGPoint(x: rect.minX, y: rect.maxY - depth),
-                       control: CGPoint(x: rect.midX, y: rect.maxY + depth))
-        p.closeSubpath()
-        return p
-    }
-
-    /// Only the arched edge, for the hairline.
-    func edge(in rect: CGRect) -> Path {
-        var p = Path()
-        p.move(to: CGPoint(x: rect.maxX, y: rect.maxY - depth))
-        p.addQuadCurve(to: CGPoint(x: rect.minX, y: rect.maxY - depth),
-                       control: CGPoint(x: rect.midX, y: rect.maxY + depth))
-        return p
-    }
-}
-
-struct ArchedHeader<Content: View>: View {
+struct BrandHeader<Content: View>: View {
     var height: CGFloat = 320
-    var depth: CGFloat = 28
+    /// The gator-green line along the bottom edge (style guide: one hairline).
+    var lineWidth: CGFloat = 4
     @ViewBuilder var content: () -> Content
 
     var body: some View {
         ZStack(alignment: .top) {
-            GeometryReader { geo in
-                let rect = CGRect(origin: .zero, size: geo.size)
-                let shape = ArchedBottom(depth: depth)
-                shape.fill(Brand.navy)
-                shape.edge(in: rect).stroke(Brand.court, lineWidth: 6)
-            }
+            Brand.navy
             content()
         }
         .frame(height: height)
+        .overlay(alignment: .bottom) {
+            Brand.court.frame(height: lineWidth)
+        }
         // The caller extends its own container under the status bar and pads
         // the content; doing it here leaked a safe-area inset into the scroll
-        // view below (a dead band between the arch and the greeting).
+        // view below (a dead band between the header and the greeting).
         .accessibilityElement(children: .contain)
     }
 }
@@ -69,10 +47,10 @@ struct Wordmark: View {
         VStack(spacing: compact ? 0 : Brand.Spacing.xs) {
             Image("gator-x")
                 .resizable().scaledToFit()
-                .frame(width: compact ? 44 : 120, height: compact ? 44 : 120)
+                .frame(width: compact ? 34 : 104, height: compact ? 34 : 104)
             Text("TENNIS")
-                .font(compact ? Brand.Typography.chip : Brand.Typography.wordmarkLockup)
-                .tracking(compact ? 3 : 6)
+                .font(compact ? Brand.Typography.caption : Brand.Typography.wordmarkLockup)
+                .tracking(compact ? 2.5 : 6)
         }
         .foregroundStyle(Brand.textOnNavy)
         .accessibilityElement(children: .combine)

@@ -70,6 +70,15 @@ sql "delete from public.payments; update public.accounts set stripe_customer_id=
 MARIA_JWT=$(jwt maria@fxe.test); TARA_JWT=$(jwt tara@fxe.test)
 check "signed in as Maria and Tara" "2" "$([ -n "$MARIA_JWT" ] && [ -n "$TARA_JWT" ] && echo 2)"
 
+# ---- 0. The permission box (decision 0015 §7): no card setup without a
+#         recorded consent to the current words. The server, not the screen.
+sql "delete from public.card_consents where account_id='$MARIA'" >/dev/null
+check "setup-intent refused without the permission" "card_consent_required" "$(fn stripe-setup-intent "$MARIA_JWT" '{}' | field "['error']")"
+check "no customer created by the refused call" "" "$(sql "select coalesce(stripe_customer_id,'') from public.accounts where id='$MARIA'")"
+curl -s -X POST "$API/rest/v1/rpc/record_card_consent" -H "apikey: $ANON" -H "Authorization: Bearer $MARIA_JWT" \
+  -H "Content-Type: application/json" -d '{"p_app_version":"stripe harness"}' >/dev/null
+check "consent recorded through the RPC" "1" "$(sql "select count(*) from public.card_consents where account_id='$MARIA'")"
+
 # ---- 1. SetupIntent: customer created and stored, secret handed back, nothing charged
 out=$(fn stripe-setup-intent "$MARIA_JWT" '{}')
 check "setup-intent returns a client secret" "seti_" "$(echo "$out" | field "['setupIntentClientSecret'][:5]")"
@@ -139,7 +148,7 @@ BODY="{\"p_registration\":\"$REG\",\"p_kind\":\"no_show\"}"
 check "payments_disabled once the switch is off" "payments_disabled" "$(rpc admin_charge_registration "$TARA_JWT" "$BODY" | field "['message']")"
 
 # Restore the seed state this touched.
-sql "delete from public.payments; delete from public.registrations where id in ('$REG','$REG2'); update public.accounts set stripe_customer_id=null, card_brand=null, card_last4=null, card_added_at=null where id='$MARIA';" >/dev/null
+sql "delete from public.card_consents where account_id='$MARIA'; delete from public.payments; delete from public.registrations where id in ('$REG','$REG2'); update public.accounts set stripe_customer_id=null, card_brand=null, card_last4=null, card_added_at=null where id='$MARIA';" >/dev/null
 
 echo ""
 if [ $FAILED -eq 0 ]; then echo "PASS: Stripe pipeline"; else echo "FAIL: Stripe pipeline"; exit 1; fi

@@ -48,7 +48,7 @@ struct ClinicsView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Brand.surfaceGradient.ignoresSafeArea()
+                CourtBackdrop()
                 Group {
                     if model.loading && model.clinics.isEmpty {
                         ProgressView().tint(Brand.navy)

@@ -352,6 +352,25 @@ page until ticked. Contact line and date are placeholders for Alex.
 - [ ] Contact email and date filled in
 - [ ] URL chosen: the admin site (https://fxe-tennis-admin.vercel.app/privacy.html) now, fersc.com later (decision 0012 §13)
 
+## H. The Final Updates front page (2026-09-26) — chrome, awaiting Alex
+
+| ☐ | String | Where | Why |
+|---|---|---|---|
+| ☐ | Open for Registration | Home, heading over the list of clinics a player can sign up for now | Lifted from Tara's own empty line, "No clinics currently open for registration"; Tara counted "clinic" six times on the old page, so the heading avoids it |
+| ☐ | Rating | Profile, the label beside the rating "?" | Was already shown; now a literal the extractor can see |
+| ☐ | Stripe | Manage tab, top left, opens stripe.com | Final Updates, Admin panel item 1 |
+| — | ~~View All Clinics~~ | Home | Removed (Final Updates "Remove all other CTAs"); My Clinics now opens from Profile with the existing label "My Clinics" |
+| — | ~~Payment can be made via zelle ...~~ | every clinic's page | Removed from the player app (Final Updates "Remove all 'pay via zelle' language"); the string stays in `app_settings`, unsent |
+
+## I. The card step and the permission box (2026-09-26) — awaiting Alex
+
+| ☐ | String | Where | Why |
+|---|---|---|---|
+| — | I give permission for my card to be charged | the box above Add a card, on Profile and in the card step | **Theirs, verbatim** (Final Updates p.2); question 65 asks if Tara wants it longer |
+| ☐ | Add a card | title of the onboarding card step | Same words as the existing button |
+| ☐ | Tick the box to continue. | under the card row if the server refuses a setup without consent | Chrome; the button is greyed until the box is ticked, so this shows only if the two disagree |
+| ☐ | Sign out | the card step's only exit | Chrome, same as elsewhere |
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148

@@ -21,6 +21,17 @@ async function handle(req: Request): Promise<Response> {
     .single();
   if (error || !account) { console.error("stripe-setup-intent: account lookup", error); return json({ error: "no_account", detail: error?.message ?? null }, 403); }
 
+  // Decision 0015 §7 (Final Updates, 2026-09-26): "a check box that says I
+  // give permission for my card to be charged and if deselected it does not
+  // let them proceed." The screen's box is not the control; this is. No card
+  // setup starts without a consent row for the CURRENT words, written by
+  // record_card_consent() when the box was ticked.
+  const { data: words } = await admin.from("app_settings").select("value").eq("key", "card_consent_text").maybeSingle();
+  const { count: consents } = await admin.from("card_consents")
+    .select("id", { count: "exact", head: true })
+    .eq("account_id", uid).eq("consent_text", words?.value ?? "");
+  if (!words?.value || !consents) return json({ error: "card_consent_required" }, 409);
+
   let customerId = account.stripe_customer_id as string | null;
   if (!customerId) {
     const customer = await getStripe().customers.create({

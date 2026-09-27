@@ -22,7 +22,7 @@ struct PlayersDirectoryView: View {
 
     var body: some View {
         ZStack {
-            Brand.surfaceGradient.ignoresSafeArea()
+            CourtBackdrop()
 
             ScrollView {
                 VStack(alignment: .leading, spacing: Brand.Spacing.md) {
