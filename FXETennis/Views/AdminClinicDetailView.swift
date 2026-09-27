@@ -229,6 +229,8 @@ struct AdminClinicDetailView: View {
         } message: { Text(cancelError ?? "") }
         .navigationBarTitleDisplayMode(.inline)
         .task { await model.load() }
+        // The roster as it is now when Tara comes back to the app (MVP audit item 8).
+        .reloadOnForeground { await model.load() }
         .sheet(isPresented: $showMessage) {
             MessageClinicSheet(clinic: clinic, unpaidCount: model.unpaidCount)
         }

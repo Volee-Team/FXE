@@ -12,6 +12,7 @@ import SwiftUI
 
 struct MyClinicsView: View {
     @Environment(SessionStore.self) private var session
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var model = ClinicsViewModel()
     /// Finished clinics, from the player's own view (decision 0012 §10).
     @State private var past: [PastClinic] = []
@@ -31,6 +32,15 @@ struct MyClinicsView: View {
             CourtBackdrop()
             if model.loading && model.clinics.isEmpty {
                 ProgressView().tint(Brand.navy)
+            } else if let loadError = model.loadError, model.clinics.isEmpty {
+                // Nothing loaded. "You're not registered" would be a claim
+                // about her spots the app cannot make (MVP audit item 9).
+                Text(loadError)
+                    .font(Brand.Typography.body)
+                    .foregroundStyle(Brand.Status.canceled.ink)
+                    .multilineTextAlignment(.center)
+                    .padding(Brand.Spacing.pageMargin)
+                    .accessibilityIdentifier("myClinics.loadError")
             } else if mine.isEmpty && past.isEmpty {
                 VStack(spacing: Brand.Spacing.sm) {
                     Image(systemName: "figure.tennis")
@@ -87,12 +97,14 @@ struct MyClinicsView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task { await model.load() }
         .task { await loadPast() }
+        .reloadOnForeground { await model.load(); await loadPast() }
     }
 }
 
 extension MyClinicsView {
+    /// A failed reload keeps the list it had rather than emptying it.
     private func loadPast() async {
-        past = (try? await RegistrationRepository.past()) ?? []
+        if let rows = try? await RegistrationRepository.past() { past = rows }
     }
 
     /// What I played and what it cost me. Own rows only: the view carries
@@ -105,19 +117,22 @@ extension MyClinicsView {
                 .padding(.top, Brand.Spacing.sm)
                 .accessibilityAddTraits(.isHeader)
             ForEach(past) { row in
-                HStack(alignment: .firstTextBaseline, spacing: Brand.Spacing.sm) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(row.name)
-                            .font(Brand.Typography.bodyEmphasis)
-                            .foregroundStyle(Brand.textPrimary)
-                        Text(row.startsAt.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
-                            .font(Brand.Typography.caption)
-                            .foregroundStyle(Brand.textSecondary)
+                // At the accessibility text sizes the outcome goes under the
+                // name instead of squeezing it.
+                Group {
+                    if typeSize.isAccessibilitySize {
+                        VStack(alignment: .leading, spacing: Brand.Spacing.xxs) {
+                            pastDetails(row)
+                            pastOutcomeText(row)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    } else {
+                        HStack(alignment: .firstTextBaseline, spacing: Brand.Spacing.sm) {
+                            pastDetails(row)
+                            Spacer()
+                            pastOutcomeText(row)
+                        }
                     }
-                    Spacer()
-                    Text(pastOutcome(row))
-                        .font(Brand.Typography.chip)
-                        .foregroundStyle(pastOutcomeColor(row))
                 }
                 .padding(Brand.Spacing.cardPadding)
                 .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
@@ -126,6 +141,23 @@ extension MyClinicsView {
                 .accessibilityIdentifier("myClinics.past")
             }
         }
+    }
+
+    private func pastDetails(_ row: PastClinic) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(row.name)
+                .font(Brand.Typography.bodyEmphasis)
+                .foregroundStyle(Brand.textPrimary)
+            Text(row.startsAt.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
+                .font(Brand.Typography.caption)
+                .foregroundStyle(Brand.textSecondary)
+        }
+    }
+
+    private func pastOutcomeText(_ row: PastClinic) -> some View {
+        Text(pastOutcome(row))
+            .font(Brand.Typography.chip)
+            .foregroundStyle(pastOutcomeColor(row))
     }
 
     private func pastOutcome(_ row: PastClinic) -> String {

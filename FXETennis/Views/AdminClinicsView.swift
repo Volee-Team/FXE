@@ -145,6 +145,9 @@ struct AdminClinicsView: View {
             }
         }
         .task { await model.load() }
+        // A late request or a reply that came in while the app slept shows
+        // when Tara comes back to it (MVP audit item 8).
+        .reloadOnForeground { await model.load() }
     }
 
     private var actionNeeded: some View {
