@@ -33,8 +33,8 @@ injected by the platform.
 | Function | Called by | Auth | Does |
 |---|---|---|---|
 | `stripe-setup-intent` | the iOS app, once per card | caller's JWT | creates or reuses the Stripe customer, returns a SetupIntent client secret + ephemeral key for PaymentSheet |
-| `stripe-webhook` | Stripe | Stripe signature (`verify_jwt = false`) | records the card summary on `setup_intent.succeeded`, and ledger outcomes on payment / refund events |
-| `stripe-charge` | the admin surfaces after `admin_charge_registration` / `admin_refund_payment` | admin JWT | turns up to 25 `pending` ledger rows per call (`.limit(25)`) into one PaymentIntent (off-session) or Refund each, with an idempotency key per row; safe to call again for the rest |
+| `stripe-webhook` | Stripe | Stripe signature (`verify_jwt = false`) | records the card summary on `setup_intent.succeeded`, and ledger outcomes on payment / refund events; on `payment_intent.payment_failed` it writes Stripe's sentence to `failure_reason` and its code to `failure_code` (`decline_code`, else `code`, 20260926000010) |
+| `stripe-charge` | the admin surfaces after `admin_charge_registration` / `admin_refund_payment` | admin JWT | turns up to 25 `pending` ledger rows per call (`.limit(25)`) into one PaymentIntent (off-session) or Refund each, with an idempotency key per row; safe to call again for the rest. A synchronous decline marks the row failed with the error's message and `failure_code` from its `decline_code` or `code` (null for our own errors such as `no_card_on_file`) |
 | `review-submit` | `web/review.html?t=<token>`, Tara's review page | the token in the body or query, checked against `review_links` (`verify_jwt = false`: she has no account) | `POST {token, page_version, answers}` upserts one jsonb blob per (link, page version) into `review_responses` and returns `{saved_at}`; `GET ?token=&page_version=` returns `{answers, saved_at}` so she can continue on another device; unknown or revoked token is 404, answers over 200 KB or not an object is 400. Uses `_shared/supabase.ts`, not the Stripe module. No rate limiting |
 | `push` | the database: trigger `push_on_notification` posts `{notification_id}` through pg_net on every insert into `notifications` (migration 20260923000001) | `X-Push-Secret` header equal to `PUSH_WEBHOOK_SECRET` (`verify_jwt = false`: the database has no JWT) | loads the row and the account's `devices`, signs an ES256 provider token (cached 50 minutes), `POST /3/device/<token>` per device with the row's `body` verbatim and the unread count as the badge. Writes `delivered_at` on any 200, else `delivery_error` (`no_device`, `apns_not_configured`, or Apple's reason). Deletes a token Apple answers 410 or `BadDeviceToken` for. A delivered row is skipped, so a retry never double-sends |
 | `delete-account` | the iOS app, Delete my account | caller's JWT | calls `delete_my_account()` (blanks name, phone, email, level note and card summary; keeps registrations, payments and Tara's notes), then soft-deletes the auth user through Supabase's admin API. Admins are refused by the RPC. Never writes the auth schema in SQL |
@@ -72,7 +72,7 @@ supabase functions deploy push --no-verify-jwt
 [stripe-mock](https://github.com/stripe/stripe-mock), Stripe's own mock server:
 SetupIntent → signed webhook writes the card summary → Tara's charge goes
 pending → processing → succeeded and marks the registration paid → refund
-unmarks it → a decline lands as failed with the reason → unsigned or
+unmarks it → a decline lands as failed with the reason and Stripe's decline code → unsigned or
 wrongly signed webhooks change nothing. Same PASS/FAIL lines as the probes.
 CI runs it on every PR ("Stripe pipeline (mocked)").
 
@@ -100,6 +100,9 @@ repo: GitHub's push protection refused the first draft, which carried Stripe's
 public example key, and that refusal was the right call. `STRIPE_API_HOST`
 is honoured by `_shared/stripe.ts` only when set; hosted never sets it. What the
 mock cannot prove: Stripe's real decisions (3-D Secure, declines, real ids).
+In particular `stripe-charge`'s synchronous decline branch has never seen a
+real `decline_code`: stripe-mock's errors carry neither `code` nor
+`decline_code`, so the harness proves the webhook's code path only.
 That needs the test keys and a test card, the same script with
 `stripe listen --forward-to` for the webhooks.
 

@@ -88,6 +88,28 @@ dialog titles and error branches it cannot (backlog row on the extractor).
 | ☐ | Sign the waiver first. | ClinicDetailView, waiver_required from register_for_clinic |
 | ☐ | Waiver signed / Waiver not signed | PlayersDirectoryView detail and row; web Players tab ("Waiver not signed") |
 | ☐ | Charge every card for …? Attendees pay the clinic fee; no-shows and late cancellations pay the full fee. | AdminClinicDetailView, confirmation (courtesy clause removed) |
+## New since the last review — 2026-09-26 (the board report and decline reasons), awaiting Alex
+
+Web admin Money tab only; Tara is the only reader (and the board, for the
+printed report and the CSV). Tara asked for the report and the reason codes
+("NSF, Card Expired, Etc") on 2026-09-26; every word below is chrome, mine,
+labels taken exactly from the spec. The extractor sees seven of them (marked
+†); the rest are short labels or JS map values it cannot see (the known gap
+below), so this table is their only record.
+
+| ✓ | String | Where |
+|---|--------|-------|
+| ☐ | Board report † | web/index.html, Money tab, the card's heading and the printed report's heading |
+| ☐ | From · To · Run | the card's two date fields and its button |
+| ☐ | Members attended † · Non-members attended † · Clinics · Fees at clinic prices † · Collected by card † · 10% of collected · 10% of fees | the summary table; the attended rows read "3 (2)", distinct people in brackets, with no caption |
+| ☐ | Clinic · Date · Total | the per-clinic table's headers and totals row (the other headers reuse the labels above); also the CSV's header and totals row |
+| ☐ | 2026-08-01 to 2026-08-31 | the period line under the heading ("to" between the two dates) |
+| ☐ | Download CSV † · Print | the two buttons under the report |
+| ☐ | Pick a From date on or before the To date. | error line for a backwards or missing range (`invalid_period`) |
+| ☐ | Declined: … | Card payments list, on a failed row, before the reason below |
+| ☐ | Insufficient funds (NSF) · Card expired · Card declined · Card declined by bank · Wrong security code · Wrong card number · Card reported lost · Card reported stolen · Needs the cardholder to approve · Processing error, try again | the reason, from Stripe's code (`insufficient_funds`, `expired_card`, `card_declined` and `generic_decline`, `do_not_honor`, `incorrect_cvc`, `incorrect_number`, `lost_card`, `stolen_card`, `authentication_required`, `processing_error`); any other code shows as the code itself |
+| — | America/New_York † | not visible: a time-zone id in the page's script that the extractor reads as a sentence. In the snapshot only so the gate stays quiet |
+
 ## New since the last review — 2026-09-21 (the review page saves to the server), awaiting Alex
 
 Tara's review page now lives on the admin site as `web/review.html`

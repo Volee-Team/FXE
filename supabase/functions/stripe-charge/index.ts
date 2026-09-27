@@ -65,9 +65,17 @@ async function handle(req: Request): Promise<Response> {
         results[row.id] = intent.status;
       }
     } catch (e) {
-      // A decline arrives here synchronously for off-session charges.
-      await admin.from("payments").update({ status: "failed", failure_reason: String((e as Error).message ?? e) })
-        .eq("id", row.id);
+      // A decline arrives here synchronously for off-session charges. Stripe's
+      // SDK errors carry decline_code (the bank's reason, e.g.
+      // insufficient_funds) and code (e.g. card_declined); record the first
+      // present as failure_code (20260926000010), the same rule as the
+      // webhook. Our own errors (no_card_on_file) carry neither: null.
+      const se = e as { message?: string; decline_code?: string; code?: string };
+      await admin.from("payments").update({
+        status: "failed",
+        failure_reason: String(se?.message ?? e),
+        failure_code: se?.decline_code ?? se?.code ?? null,
+      }).eq("id", row.id);
       results[row.id] = "failed";
     }
   }

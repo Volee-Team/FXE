@@ -10,11 +10,13 @@ Admin sign-in.
 Agree and sign
 Alex sees your answers as they save. Copy them here if you want to text them as well.
 Almost there!
+America/New_York
 Ann finds Anna, Annette, Joann…
 Any personal information that we collect is stored on secure hosted servers. We are always striving to ensure a safe and convenient experience with the Services. This goes beyond our technologies to include physical, contractual, and managerial safeguards to protect your personal information.
 Apple Inc. delivers notifications to your device.
 Are you currently a Foxcroft East Racquet & Swim Club member?
 At least 6 characters.
+Board report
 Cancel
 Cancel Invite
 Cancel Registration
@@ -30,6 +32,7 @@ Children's privacy
 Choose a new password
 Clinic updates come through the app. Keep notifications on so you don't miss them.
 Clinics
+Collected by card
 Cookies and tracking technologies
 Copy my answers
 Couldn't load card payments.
@@ -46,6 +49,7 @@ Delete my account
 Description (players see this under the “?”)
 Disclosure of your information
 Done
+Download CSV
 Draft
 Draft. Not yet in effect.
 Edit details
@@ -58,6 +62,7 @@ FXE Tennis · Privacy Policy
 FXE Tennis · Reset password
 FXE Tennis, LLC
 FXE Tennis, Tara's Review
+Fees at clinic prices
 First time? Create your account
 For someone who called or grabbed you at the club. They go straight to You&rsquo;re In!
 For testing with Tara and Kat. Nothing here is part of running the clinics.
@@ -89,6 +94,7 @@ Manage
 Manage payments in Stripe
 Mark all read
 Max players must be at least 1.
+Members attended
 Members get 24-hour early access to all clinics
 Members, 60 min
 Members, 90 min
@@ -111,6 +117,7 @@ No responses yet.
 No room
 No templates yet.
 Nobody by that name yet. They may need to sign up in the app first.
+Non-members attended
 Non-members, 60 min
 Non-members, 90 min
 Not now

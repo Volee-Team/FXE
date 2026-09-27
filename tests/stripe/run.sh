@@ -125,9 +125,12 @@ BODY="{\"p_registration\":\"$REG2\",\"p_kind\":\"late_cancel\"}"
 PAY2=$(rpc admin_charge_registration "$TARA_JWT" "$BODY" | field "['id']")
 fn stripe-charge "$TARA_JWT" '{}' >/dev/null
 PI2=$(sql "select stripe_payment_intent_id from public.payments where id='$PAY2'")
-OBJ="{\"id\":\"$PI2\",\"object\":\"payment_intent\",\"status\":\"requires_payment_method\",\"last_payment_error\":{\"code\":\"card_declined\",\"message\":\"Your card was declined.\"}}"
+# Stripe's shape for an NSF decline: code card_declined, decline_code the bank's reason.
+OBJ="{\"id\":\"$PI2\",\"object\":\"payment_intent\",\"status\":\"requires_payment_method\",\"last_payment_error\":{\"code\":\"card_declined\",\"decline_code\":\"insufficient_funds\",\"message\":\"Your card was declined.\"}}"
 webhook "$(event payment_intent.payment_failed "$OBJ")" >/dev/null
 check "payment_failed -> failed with Stripe's reason" "failed Your card was declined." "$(sql "select status||' '||failure_reason from public.payments where id='$PAY2'")"
+# 20260926000010: decline_code wins over code, so Tara reads "Insufficient funds (NSF)", not "Card declined".
+check "payment_failed records the decline code" "insufficient_funds" "$(sql "select coalesce(failure_code,'NULL') from public.payments where id='$PAY2'")"
 check "a failed fee can be charged again" "pending" "$(rpc admin_charge_registration "$TARA_JWT" "$BODY" | field "['status']")"
 
 # ---- 6. Switched off again, nothing new can be charged
