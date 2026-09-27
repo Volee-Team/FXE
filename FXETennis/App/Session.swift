@@ -27,6 +27,15 @@ final class SessionStore {
     var account: Account?
     /// nil until known; false shows the waiver over the app (decision 0013).
     var waiverAccepted: Bool?
+    /// Consent on file for the current card-permission words (decision 0015).
+    var cardConsent: Bool?
+    /// Payments are on and a card is required (app_settings), so onboarding
+    /// asks for a card after the waiver.
+    var cardsRequired = false
+    /// The onboarding card step is due: cards required, none saved, a player.
+    var cardStepDue: Bool {
+        cardsRequired && account != nil && account?.hasCard != true && account?.isAdmin != true
+    }
     var players: [PlayerProfile] = []
     var activePlayer: PlayerProfile?
     var authError: String?
@@ -67,6 +76,8 @@ final class SessionStore {
             // v1 is adults-only: the account's own player is the active one.
             activePlayer = players.first
             waiverAccepted = (try? await ProfileRepository.myWaiverAccepted()) ?? nil
+            cardConsent = try? await PaymentsRepository.myCardConsent()
+            cardsRequired = (try? await PaymentsRepository.cardStepRequired()) ?? false
         } catch {
             // A signed-in user with no profile row is a real state (see the
             // Volee "cannot load profile" lesson). Surface it rather than crash.
@@ -168,6 +179,8 @@ final class SessionStore {
         players = []
         activePlayer = nil
         waiverAccepted = nil
+        cardConsent = nil
+        cardsRequired = false
         phase = .signedOut
     }
 

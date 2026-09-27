@@ -552,10 +552,13 @@ final class PlayerFlowUITests: XCTestCase {
     /// is open to them (Final Updates), so what it lists depends on state an
     /// earlier test left behind. Same second-tap retry as the Profile tab.
     private func openClinicsTab() {
-        app.buttons["Clinics"].tap()
+        // The tab bar's button, not any other element labelled "Clinics"
+        // (a second match made the plain query ambiguous in the player tests).
+        let tab = app.tabBars.buttons["Clinics"].exists ? app.tabBars.buttons["Clinics"] : app.buttons["Clinics"].firstMatch
+        tab.tap()
         let card = app.buttons.matching(identifier: "clinic.card").firstMatch
         if !card.waitForExistence(timeout: 5) {
-            app.buttons["Clinics"].tap()
+            tab.tap()
         }
         XCTAssertTrue(card.waitForExistence(timeout: 20), "Clinics tab never listed a clinic")
     }

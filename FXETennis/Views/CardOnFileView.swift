@@ -2,10 +2,15 @@
 //  CardOnFileView.swift
 //  FXETennis
 //
-//  "Payment method" on Profile. Shows the card summary the webhook recorded,
-//  or an Add a card button that opens Stripe's PaymentSheet in setup mode.
-//  The sentence a player agrees to when adding a card is Tara's (Q37) and is
-//  not here yet; until she writes it, only chrome shows.
+//  "Payment method" on Profile and in the onboarding card step. Shows the
+//  card the webhook recorded (last four digits only, Final Updates p.2), or
+//  an Add a card button that opens Stripe's PaymentSheet in setup mode.
+//
+//  The permission box (decision 0015 §7): "a check box that says I give
+//  permission for my card to be charged and if deselected it does not let
+//  them proceed." Ticking it and tapping Add a card records the consent on
+//  the server first; the server refuses to start a card setup without one,
+//  so the box is enforced by the database, not by this view.
 //
 
 import SwiftUI
@@ -17,6 +22,7 @@ struct CardOnFileView: View {
     @State private var presenting = false
     @State private var busy = false
     @State private var note: String?
+    @State private var permission = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
@@ -27,6 +33,25 @@ struct CardOnFileView: View {
             Text("Your card will only be charged after the clinic you attended, late cancellations, or no-shows. Cancel at least 3 hours before clinic and you will not be charged.")
                 .font(Brand.Typography.caption)
                 .foregroundStyle(Brand.textSecondary)
+
+            // Their words, verbatim. A real Button so the element is a
+            // button with this identifier to XCUITest and VoiceOver.
+            Button { permission.toggle() } label: {
+                HStack(alignment: .top, spacing: Brand.Spacing.sm) {
+                    Image(systemName: permission ? "checkmark.square.fill" : "square")
+                        .font(.title3)
+                        .foregroundStyle(permission ? Brand.navy : Brand.textSecondary)
+                    Text(CardConsent.words)
+                        .font(Brand.Typography.body)
+                        .foregroundStyle(Brand.textPrimary)
+                        .multilineTextAlignment(.leading)
+                    Spacer(minLength: 0)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityAddTraits(permission ? [.isSelected] : [])
+            .accessibilityIdentifier("card.permission")
 
             HStack {
                 Text(session.account?.cardLabel ?? "No card on file")
@@ -43,7 +68,8 @@ struct CardOnFileView: View {
                         .frame(minHeight: Brand.Layout.minTapTarget)
                 }
                 .buttonStyle(.plain)
-                .disabled(busy)
+                .disabled(busy || !permission)
+                .opacity(permission ? 1 : 0.4)
                 .accessibilityIdentifier("profile.addCard")
             }
             .padding(Brand.Spacing.cardPadding)
@@ -57,6 +83,7 @@ struct CardOnFileView: View {
                     .accessibilityIdentifier("profile.cardNote")
             }
         }
+        .onAppear { if session.cardConsent == true { permission = true } }
         .paymentSheet(isPresented: $presenting, paymentSheet: sheet ?? PaymentSheet(setupIntentClientSecret: "", configuration: .init())) { result in
             Task { await finished(result) }
         }
@@ -65,7 +92,12 @@ struct CardOnFileView: View {
     private func startAddingCard() async {
         busy = true; note = nil
         defer { busy = false }
+        guard permission else { return }
         do {
+            if session.cardConsent != true {
+                try await PaymentsRepository.recordCardConsent()
+                session.cardConsent = true
+            }
             let payload = try await PaymentsRepository.setupIntent()
             if let pk = payload.publishableKey { STPAPIClient.shared.publishableKey = pk }
             var config = PaymentSheet.Configuration()
@@ -76,6 +108,9 @@ struct CardOnFileView: View {
             presenting = true
         } catch PaymentsError.notConfigured {
             note = "Cards aren't set up yet."
+        } catch PaymentsError.consentRequired {
+            session.cardConsent = false
+            note = "Tick the box to continue."
         } catch {
             note = "That didn't work. Check your connection and try again."
         }

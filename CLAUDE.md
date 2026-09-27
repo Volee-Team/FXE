@@ -323,6 +323,8 @@ Use these exact words in all UI copy. Do not substitute synonyms.
 | Situation | Result |
 |---|---|
 | Anyone who has not signed the current waiver | Rejected by `register_for_clinic` (`waiver_required`), admins exempt (decision 0013 §4) |
+| Anyone without a saved card, while payments are on | Rejected (`card_required`); a saved card is `card_last4`, not a Stripe customer id (decision 0015 §5), admins exempt |
+| Non-member already holding a spot in a 105 that New York day, taking a second 105 | Rejected (`back_to_back_105`) until 48 hours before the earlier start; members and Tara exempt (decision 0015 §13) |
 | Member, inside priority window, room available | You're In! |
 | Member, inside priority window, clinic full | Player Pool |
 | Member, after priority window | Player Pool |

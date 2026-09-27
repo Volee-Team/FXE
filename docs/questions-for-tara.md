@@ -318,7 +318,7 @@ say it's an emergency to cancel."* These are the gaps that remain.
 *Default: as built. With two or more, only their clinics and the blue button. Status: open, asked 2026-09-26.*
 
 **60. Back-to-back 105s: the 48 hours count from the start of the earlier 105 that day, so in your example both unlock Friday 4:30 for the Sunday 4:30 and 6:00. Right?**
-*Default: yes, built that way. Status: open, asked 2026-09-26.*
+*Default: yes, built that way, counted on the clock: two days earlier at the same time, so on the weekends the clocks change it is still Friday 4:30, not 3:30 or 5:30. Status: open, asked 2026-09-26.*
 
 **61. Does a Player Pool spot count as "signed up" for the 105 rule, or only You're In!?**
 *Default: any spot counts, Pool included, since non-members join the Pool. Status: open, asked 2026-09-26.*
@@ -334,6 +334,9 @@ say it's an emergency to cancel."* These are the gaps that remain.
 
 **65. The card box says "I give permission for my card to be charged", your exact words. Keep, or longer?**
 *Default: keep. Status: open, asked 2026-09-26.*
+
+**66. A player who added a card before the permission box existed (nobody today; cards could not be added until Stripe is connected) has no permission on record. Charge them anyway, or ask them to tick the box first?**
+*Default: ask first; nobody is in this position yet. Status: open, asked 2026-09-26.*
 
 ### How 52 to 57 are being sent
 

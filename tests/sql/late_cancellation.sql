@@ -149,7 +149,7 @@ begin
   -- 12. Charging is her tap: with payments on and a card, the late-cancel
   --     row is created pending at the price snapshot, by her, not by the cancel.
   update public.app_settings set value = 'true' where key = 'payments_enabled';
-  update public.accounts set stripe_customer_id = 'cus_probe_maria' where id = MARIA;
+  update public.accounts set stripe_customer_id = 'cus_probe_maria', card_brand = 'visa', card_last4 = '4242' where id = MARIA;
   perform set_config('role', 'authenticated', true);
   select has_card::text into v from public.registrations_admin where id = reg_soon2;
   insert into _probe_result values ('roster_shows_card_once_added', 'true', v);

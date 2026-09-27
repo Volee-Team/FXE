@@ -47,7 +47,8 @@ a live-mode webhook.
    Tell the model the email, or edit the file.
 3. Pick the URL: the admin site now
    (`https://fxe-tennis-admin.vercel.app/privacy.html`) or fersc.com later.
-4. Tell the model "privacy approved, contact is X". It removes the Draft
+4. Tell the model "privacy approved, contact is X". Until then the page is
+   kept out of every deploy by `web/.vercelignore`. It removes the Draft
    banner, deploys the page, links it from Profile, and gives you the URL to
    paste into App Store Connect.
 
@@ -107,7 +108,21 @@ straight. Three left:
   10%, Home with one clinic, four about the back-to-back 105 rule, the card
   box wording. They go on her review page next round.
 
-## 7. Business (no rush from the model's side)
+## 7. Two GitHub settings (5 minutes)
+
+Recommended in `docs/practice-ideas.md`, which also has the answer on Jev.
+
+1. https://github.com/Volee-Team/FXE/settings/branches → edit the rule
+   for `main`. It exists already (checked 2026-09-26 with `gh api
+   .../branches/main/protection`) and requires "Build iOS app + unit tests"
+   and "SQL probes + concurrency". Add "Hosted is closed to a signed-out
+   caller" to the required checks, and tick "Do not allow bypassing the
+   above settings" (today `enforce_admins` is off, so an admin, which the
+   model's token is, can merge red).
+2. https://github.com/Volee-Team/FXE/settings/security_analysis → turn on
+   Dependabot alerts.
+
+## 8. Business (no rush from the model's side)
 
 - Apple LLC enrollment: chase if no email by 2026-10-01.
 - Password-reset email: a free Resend account plus two DNS records on the

@@ -60,6 +60,7 @@ struct RootView: View {
             MainTabView()
                 .pushPermissionPrompt()
                 .waiverGate()
+                .cardGate()
         }
     }
 }
