@@ -36,16 +36,50 @@ injected by the platform.
 
 | Function | Called by | Auth | Does |
 |---|---|---|---|
-| `stripe-setup-intent` | the iOS app, once per card | caller's JWT | refuses with 409 `card_consent_required` unless `card_consents` holds the caller's permission to the current words (decision 0015 §7); then creates or reuses the Stripe customer and returns a SetupIntent client secret + ephemeral key for PaymentSheet |
-| `stripe-webhook` | Stripe | Stripe signature (`verify_jwt = false`) | records the card summary on `setup_intent.succeeded`, and ledger outcomes on payment / refund events; on `payment_intent.payment_failed` it writes Stripe's sentence to `failure_reason` and its code to `failure_code` (`decline_code`, else `code`, 20260926000010) |
-| `stripe-charge` | the admin surfaces after `admin_charge_registration` / `admin_refund_payment` | admin JWT | turns up to 25 `pending` ledger rows per call (`.limit(25)`) into one PaymentIntent (off-session, naming the saved card explicitly: the customer's default payment method, else their first card, because a PaymentIntent does not fall back to `invoice_settings`) or Refund each, with an idempotency key per row; safe to call again for the rest |
+| `stripe-setup-intent` | the iOS app, once per card | caller's JWT | refuses with 409 `card_consent_required` unless `card_consents` holds the caller's permission to the current words (decision 0015 §7), and 403 `account_deleted` for a deleted account; then creates or reuses the Stripe customer and returns a SetupIntent client secret + ephemeral key for PaymentSheet. A stored customer is checked first: one Stripe does not have (every sandbox customer after the live swap, or one deleted in the dashboard) is replaced, and its stale card summary cleared (2026-09-27) |
+| `stripe-webhook` | Stripe | Stripe signature (`verify_jwt = false`) | records the card summary on `setup_intent.succeeded`, and ledger outcomes on payment / refund events, each with the event's `livemode` (20260927200001); on `payment_intent.payment_failed` it writes Stripe's sentence to `failure_reason` and its code to `failure_code` (`decline_code`, else `code`, 20260926000010). A payment event that arrives before `stripe-charge` has stored the PaymentIntent id is attached to the row named in the PaymentIntent's `metadata.fxe_payment_id`, never to a refund row or a row that has another PaymentIntent (2026-09-27; before, it matched nothing, answered 200, and the charge sat in processing for good) |
+| `stripe-charge` | the admin surfaces after `admin_charge_registration` / `admin_refund_payment` | admin JWT | turns up to 25 `pending` ledger rows per call (`.limit(25)`) into one PaymentIntent (off-session, naming the saved card explicitly: the customer's default payment method, else their first card, because a PaymentIntent does not fall back to `invoice_settings`) or Refund each, with an idempotency key per row, storing Stripe's `livemode`; safe to call again for the rest. When a call throws (`_shared/stripe-errors.ts`, 2026-09-27): a decline, a request Stripe refused, or our own refusal (`no_card_on_file`, `account_deleted`) is `failed`; anything that may have reached Stripe (dropped connection, timeout, 5xx, 429, a refused key) goes back to `pending` and is repeated under the same key, which Stripe answers with the first result; an `idempotency_error`, or a retry more than 23 hours after the row was made, is held in processing with that reason for a person. Each call first sweeps rows left in processing without a Stripe id for over 5 minutes (a call that died) back to pending. A customer Stripe does not have fails the row as `no_card_on_file` and clears the stale card, so the app asks again; a deleted account is never charged |
 | `review-submit` | `web/review.html?t=<token>`, Tara's review page | the token in the body or query, checked against `review_links` (`verify_jwt = false`: she has no account) | `POST {token, page_version, answers}` upserts one jsonb blob per (link, page version) into `review_responses` and returns `{saved_at}`; `GET ?token=&page_version=` returns `{answers, saved_at}` so she can continue on another device; unknown or revoked token is 404, answers over 200 KB or not an object is 400. Uses `_shared/supabase.ts`, not the Stripe module. No rate limiting |
 | `push` | the database: trigger `push_on_notification` posts `{notification_id}` through pg_net on every insert into `notifications` (migration 20260923000001) | `X-Push-Secret` header equal to `PUSH_WEBHOOK_SECRET` (`verify_jwt = false`: the database has no JWT) | loads the row and the account's `devices`, signs an ES256 provider token (cached 50 minutes), `POST /3/device/<token>` per device with the row's `body` verbatim and the unread count as the badge. Writes `delivered_at` on any 200, else `delivery_error` (`no_device`, `apns_not_configured`, or Apple's reason). Deletes a token Apple answers 410 or `BadDeviceToken` for. A delivered row is skipped, so a retry never double-sends |
-| `delete-account` | the iOS app, Delete my account | caller's JWT | calls `delete_my_account()` (blanks name, phone, email, level note and card summary; keeps registrations, payments and Tara's notes), then soft-deletes the auth user through Supabase's admin API. Admins are refused by the RPC. Never writes the auth schema in SQL |
+| `delete-account` | the iOS app, Delete my account | caller's JWT | calls `delete_my_account()` (blanks name, phone, email, level note and card summary; keeps registrations, payments and Tara's notes), then deletes the Stripe customer (`customers.del`: the saved card goes, past payments stay in Stripe) and clears its id, then soft-deletes the auth user through Supabase's admin API. A customer Stripe no longer has counts as deleted; any other Stripe failure answers 502 `stripe_delete_failed` before the sign-in is touched, so a retry finishes the job. An account with no profile row (`account_not_found`) has nothing to scrub and still loses its sign-in. Answers `{deleted, stripe: deleted/already_gone/none}`. Admins are refused by the RPC. Never writes the auth schema in SQL |
 
 The database never talks to Stripe; the app never holds a key that can move
 money; the only writer of ledger status is the webhook (plus `stripe-charge`
-moving pending → processing and recording a synchronous decline).
+moving pending → processing, recording a synchronous decline, and returning a
+row to pending when a call may have reached Stripe; plus the one-off
+`stripe_cutover_to_live()` below).
+
+## Switching Stripe from the sandbox to live money
+
+Every Stripe customer and saved card made with the test key is invisible to
+the live key ("No such customer ... exists in test mode"). Left alone, every
+tester would still show `•••• 4242`, pass the card requirement, and fail at
+the first real charge; and sandbox "income" would sit in the board report.
+`public.stripe_cutover_to_live()` (migration 20260927200001) is the data half
+of the swap. It is NOT run by the migration: until the swap the testers'
+sandbox cards are the only cards there are. It runs once, as postgres (the
+SQL editor) or service_role, and refuses a second run (`already_live`) and any
+run after a live payment exists (`live_payments_exist`). In this order:
+
+1. `update public.app_settings set value = 'false' where key = 'payments_enabled';`
+   (no card sheet or card step can open while the keys change: Profile hides
+   the card section and the card step does not appear while payments are off).
+2. Swap `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY` and `STRIPE_WEBHOOK_SECRET`
+   to the live values, with the webhook endpoint made in live mode.
+3. `select * from public.stripe_cutover_to_live();` It answers
+   `accounts_cleared, payments_canceled, payments_marked_test, live_since`:
+   every account's Stripe customer and card summary cleared (the card step
+   then asks everyone), every ledger row still pending or processing canceled
+   (`live_cutover`), every row whose mode was never recorded marked test mode,
+   and `app_settings.stripe_live_since` written, after which the Money tab's
+   card list hides test rows. The board report never counts them either way.
+4. `update public.app_settings set value = 'true' where key = 'payments_enabled';`
+
+The functions also heal on their own if step 3 is late: a customer the live key
+cannot find is treated as none by `stripe-setup-intent` (a new one) and by
+`stripe-charge` (the row fails as `no_card_on_file`, the stale card is
+cleared). `tests/stripe/run.sh` section 13 runs the cutover end to end;
+`tests/sql/stripe_live_cutover.sql` pins it rule by rule.
 
 ## Run locally
 
@@ -77,7 +111,16 @@ supabase functions deploy push --no-verify-jwt
 SetupIntent → signed webhook writes the card summary → Tara's charge goes
 pending → processing → succeeded and marks the registration paid → refund
 unmarks it → a decline lands as failed with the reason and Stripe's decline code → unsigned or
-wrongly signed webhooks change nothing. Same PASS/FAIL lines as the probes.
+wrongly signed webhooks change nothing. Since 2026-09-27 also: livemode on
+every row and test money kept out of the Paid flag and the board report; the
+early webhook; the stuck-row sweep; a dropped connection retried as the same
+row (it stops and restarts the mock container, `STRIPE_MOCK_CONTAINER`,
+default `stripe-mock`; set it empty to skip when the mock is the Homebrew
+binary); a customer Stripe does not have; a deleted account; `delete-account`
+and Stripe; the live cutover end to end. Its last check runs
+`tests/stripe/errors.test.ts` with Deno, pinning the error rule with the
+Stripe SDK's own error objects (declines, timeouts, 5xx, idempotency errors:
+none of which stripe-mock can produce). Same PASS/FAIL lines as the probes.
 CI runs it on every PR ("Stripe pipeline (mocked)").
 
 ```bash
@@ -95,8 +138,13 @@ On a Mac where the image will not pull (Docker Hub hung for an hour on
 brew install stripe/stripe-mock/stripe-mock && stripe-mock -http-port 12111 &
 bash tests/stripe/make-env.sh host.docker.internal > /tmp/mock.env
 supabase functions serve --env-file /tmp/mock.env
-bash tests/stripe/run.sh
+STRIPE_MOCK_CONTAINER= bash tests/stripe/run.sh     # no container to stop: the retry check is skipped
 ```
+
+A customer that Stripe "does not have" is played by an id with a `/` in it:
+the SDK encodes it into the URL path, and stripe-mock answers 404 to a path
+it does not know, the same status Stripe gives for "No such customer". The
+functions treat any 404 on the customer (or `resource_missing`) as gone.
 
 `make-env.sh` invents the secret key each run (stripe-mock takes any
 `sk_test_` plus letters and digits) so no key-shaped string is ever in the
@@ -106,9 +154,11 @@ is honoured by `_shared/stripe.ts` only when set; hosted never sets it. What the
 mock cannot prove: Stripe's real decisions (3-D Secure, declines, real ids).
 In particular `stripe-charge`'s synchronous decline branch has never seen a
 real `decline_code`: stripe-mock's errors carry neither `code` nor
-`decline_code`, so the harness proves the webhook's code path only.
-That needs the test keys and a test card, the same script with
-`stripe listen --forward-to` for the webhooks.
+`decline_code`, so the harness proves the webhook's code path, and
+`tests/stripe/errors.test.ts` proves only how the SDK's own error objects are
+read (2026-09-27), not what Stripe really sends. That needs the test keys and
+a test card, the same script with `stripe listen --forward-to` for the
+webhooks.
 
 
 ## Testing without Apple

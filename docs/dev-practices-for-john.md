@@ -465,7 +465,7 @@ it has eight jobs (`grep -nE "^  [a-z-]+:$"` on the workflow):
   name failed on a runner image that lacked it). `ios-changes` gates it to PRs
   that touch Swift.
 * `web-browser-tests`: 12 Playwright tests against the same local stack.
-* `stripe-pipeline`: the payments harness (`tests/stripe/run.sh`, 34 checks)
+* `stripe-pipeline`: the payments harness (`tests/stripe/run.sh`, 69 checks)
   against `stripe-mock`.
 * `copy-gate`: fails on any user-visible string not in `docs/copy-approved.txt`.
 * `secret-scan`: fails on any key-shaped string in the repo.
