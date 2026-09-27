@@ -8,6 +8,18 @@
 //   payment_intent.succeeded        -> payments.status = succeeded
 //   payment_intent.payment_failed   -> payments.status = failed, failure_reason, failure_code
 //   charge.refunded / refund.updated -> refund row succeeded (when it clears)
+// Every ledger write also records the event's livemode (20260927200001): the
+// signed event is Stripe's word on which mode the money moved in, and test
+// mode is never counted as money.
+//
+// A payment event can arrive before stripe-charge has stored the
+// PaymentIntent's id, because Stripe may call back before paymentIntents.create
+// returns. Matching by id alone then found no row and answered 200, so Stripe
+// never retried and the row sat in processing forever: never paid, never
+// retryable, missing from the board report (MVP audit 2026-09-27, item 4). A
+// PaymentIntent this app made carries metadata.fxe_payment_id, so an event
+// that matches no id is attached to that row and the id is stored, the same
+// fallback recordRefund has used since 2026-09-26.
 //
 // verify_jwt is off for this function (config.toml): Stripe has no Supabase
 // JWT. The signature check is the auth.
@@ -49,8 +61,7 @@ async function handle(req: Request): Promise<Response> {
       const pi = event.data.object as Stripe.PaymentIntent;
       // A PaymentIntent that failed and later went through (the cardholder
       // approved it, or fixed the card) must not keep reading "Declined".
-      await admin.from("payments").update({ status: "succeeded", failure_code: null, failure_reason: null })
-        .eq("stripe_payment_intent_id", pi.id);
+      await recordPaymentOutcome(pi, { status: "succeeded", failure_code: null, failure_reason: null, ...mode(event) });
       break;
     }
     case "payment_intent.payment_failed": {
@@ -59,11 +70,12 @@ async function handle(req: Request): Promise<Response> {
       // when the bank gave one (insufficient_funds, expired_card, ...), else
       // the error code (card_declined, incorrect_cvc, ...). The web admin turns
       // it into words; failure_reason keeps Stripe's own sentence.
-      await admin.from("payments").update({
+      await recordPaymentOutcome(pi, {
         status: "failed",
         failure_reason: pi.last_payment_error?.message ?? pi.last_payment_error?.code ?? "declined",
         failure_code: pi.last_payment_error?.decline_code ?? pi.last_payment_error?.code ?? null,
-      }).eq("stripe_payment_intent_id", pi.id);
+        ...mode(event),
+      });
       break;
     }
     case "refund.updated":
@@ -78,13 +90,33 @@ async function handle(req: Request): Promise<Response> {
         const ch = obj as Stripe.Charge;
         refunds = ch.refunds?.data ?? (await getStripe().refunds.list({ charge: ch.id, limit: 100 })).data;
       }
-      for (const r of refunds) await recordRefund(r);
+      for (const r of refunds) await recordRefund(r, mode(event));
       break;
     }
     default:
       break;
   }
   return json({ received: true });
+}
+
+// The event's livemode, as a column value. Stripe sends it on every event; an
+// event without it (none should exist) leaves the row's value alone.
+function mode(event: Stripe.Event): { livemode?: boolean } {
+  return typeof event.livemode === "boolean" ? { livemode: event.livemode } : {};
+}
+
+// One PaymentIntent outcome into the ledger: by the id stripe-charge stored,
+// else (the event beat stripe-charge to it) by the row named in the
+// PaymentIntent's metadata, storing the id on the way. Never a refund row, and
+// never a row that already carries a different PaymentIntent.
+async function recordPaymentOutcome(pi: Stripe.PaymentIntent, outcome: Record<string, unknown>) {
+  const { data: byId } = await admin.from("payments").update(outcome)
+    .eq("stripe_payment_intent_id", pi.id).select("id");
+  if (byId && byId.length) return;
+  const mine = pi.metadata?.fxe_payment_id;
+  if (!mine) return;   // not a PaymentIntent this app made
+  await admin.from("payments").update({ stripe_payment_intent_id: pi.id, ...outcome })
+    .eq("id", mine).neq("kind", "refund").is("stripe_payment_intent_id", null);
 }
 
 // One Stripe refund into the ledger. Three cases, in this order:
@@ -102,9 +134,9 @@ async function handle(req: Request): Promise<Response> {
 //     goes processing -> succeeded, the same path as an in-app refund, so the
 //     trigger clears the Paid flag on a clinic fee; a partial one is recorded
 //     as succeeded directly and leaves Paid alone.
-async function recordRefund(r: Stripe.Refund) {
-  const outcome = r.status === "succeeded" ? { status: "succeeded" }
-    : (r.status === "failed" || r.status === "canceled") ? { status: "failed", failure_reason: r.failure_reason ?? r.status }
+async function recordRefund(r: Stripe.Refund, live: { livemode?: boolean }) {
+  const outcome = r.status === "succeeded" ? { status: "succeeded", ...live }
+    : (r.status === "failed" || r.status === "canceled") ? { status: "failed", failure_reason: r.failure_reason ?? r.status, ...live }
     : null;
 
   const { data: known } = await admin.from("payments").select("id").eq("stripe_refund_id", r.id);
@@ -115,7 +147,7 @@ async function recordRefund(r: Stripe.Refund) {
 
   const mine = r.metadata?.fxe_payment_id;
   if (mine) {
-    await admin.from("payments").update({ stripe_refund_id: r.id, ...(outcome ?? {}) })
+    await admin.from("payments").update({ stripe_refund_id: r.id, ...(outcome ?? live) })
       .eq("id", mine).eq("kind", "refund").is("stripe_refund_id", null);
     return;
   }
@@ -137,6 +169,7 @@ async function recordRefund(r: Stripe.Refund) {
     refunds_payment_id: orig.id,
     stripe_refund_id: r.id,
     status: whole ? "processing" : "succeeded",   // never 'pending': stripe-charge would refund it again
+    ...live,
   }, { onConflict: "stripe_refund_id", ignoreDuplicates: true }).select("id");
   if (whole && ins && ins.length) {
     await admin.from("payments").update({ status: "succeeded" }).eq("id", ins[0].id);
