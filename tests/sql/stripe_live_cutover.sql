@@ -203,6 +203,22 @@ begin
   insert into _probe_result values ('ledger_carries_livemode', 'false', coalesce(v, 'NULL'));
   perform set_config('role', 'postgres', true);
 
+  -- 3b. Before the switch a sandbox charge still holds its one-charge slot
+  --     (20260927300001): the sandbox run of docs/stripe-e2e-test.md must see
+  --     "already charged" on a second tap, exactly as a member will.
+  update public.app_settings set value = 'true' where key = 'payments_enabled';
+  perform set_config('role', 'authenticated', true);
+  select charge_status into v from public.registrations_admin where id = r_lr;
+  insert into _probe_result values ('before_switch_test_fee_shows_on_roster', 'succeeded', coalesce(v, 'NULL'));
+  begin
+    perform public.admin_charge_registration(r_lr, 'clinic_fee');
+    insert into _probe_result values ('before_switch_test_fee_blocks_second_charge', 'already_charged', 'CALL SUCCEEDED');
+  exception when others then
+    insert into _probe_result values ('before_switch_test_fee_blocks_second_charge', 'already_charged', sqlerrm);
+  end;
+  perform set_config('role', 'postgres', true);
+  update public.app_settings set value = 'false' where key = 'payments_enabled';
+
   -- -------------------------------- 4. refused while live money exists
   begin
     perform * from public.stripe_cutover_to_live();
@@ -264,6 +280,14 @@ begin
   perform set_config('role', 'authenticated', true);
   select count(*) into n from public.payments_ledger where clinic_id in (cl, cm, cw);
   insert into _probe_result values ('ledger_lists_live_rows_after_the_switch', '1', n::text);
+
+  -- 6b. After the switch test money is not money anywhere (20260927300001):
+  --     the Money tab's Charged for clinic L is the one live 1800 fee just
+  --     added (not 1800 + PT 2300 + PN 2300, both test mode now).
+  select charged_cents::text into v from public.admin_money_clinics() where clinic_id = cl;
+  insert into _probe_result values ('after_switch_money_charged_counts_no_test_money', '1800', coalesce(v, 'NULL'));
+  select charge_status into v from public.registrations_admin where id = r_lr;
+  insert into _probe_result values ('after_switch_test_fee_leaves_the_roster', 'NULL', coalesce(v, 'NULL'));
   perform set_config('role', 'postgres', true);
 
   -- Maria had a (sandbox) card before; with payments on, she must add a real one.
@@ -277,6 +301,26 @@ begin
     insert into _probe_result values ('maria_asked_for_a_real_card', 'card_required', sqlerrm);
   end;
   perform set_config('role', 'postgres', true);
+
+  -- 6c. Rob's L registration still holds PT, a succeeded TEST fee. After the
+  --     switch it is not a charge: with a real card on file Tara can charge
+  --     him for real, through the RPC and past the unique index.
+  update public.accounts set stripe_customer_id = 'cus_live_rob', card_brand = 'visa',
+                             card_last4 = '5556', card_added_at = now() where id = ROB;
+  perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
+  perform set_config('role', 'authenticated', true);
+  begin
+    select status::text || ' ' || amount_cents into v from public.admin_charge_registration(r_lr, 'clinic_fee');
+    insert into _probe_result values ('after_switch_test_fee_does_not_block_a_real_charge', 'pending 2300', v);
+  exception when others then
+    insert into _probe_result values ('after_switch_test_fee_does_not_block_a_real_charge', 'pending 2300', sqlerrm);
+  end;
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from pg_indexes
+   where schemaname = 'public' and tablename = 'payments'
+     and indexname in ('payments_one_live_charge', 'payments_one_live_app_refund')
+     and indexdef like '%livemode IS NOT FALSE%';
+  insert into _probe_result values ('unique_charge_indexes_ignore_test_rows', '2', n::text);
 
   -- ------------------------------------------------- 7. never twice
   update public.accounts set stripe_customer_id = 'cus_live_maria', card_brand = 'visa',

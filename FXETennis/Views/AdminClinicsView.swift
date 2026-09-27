@@ -60,7 +60,8 @@ final class AdminClinicsModel {
             zelleAllowed = (try? await AdminRepository.zelleAllowed()) ?? false
             paymentsOn = (try? await AdminRepository.paymentsEnabled()) ?? false
             moneyClinics = (try? await AdminRepository.moneyClinics()) ?? []
-            declines = (try? await AdminRepository.moneyDeclined()) ?? []
+            // A deleted account's decline is nobody's to fix (20260927300001).
+            declines = ((try? await AdminRepository.moneyDeclined()) ?? []).filter { $0.accountDeleted != true }
             error = nil
             await loadCounts()
         } catch {

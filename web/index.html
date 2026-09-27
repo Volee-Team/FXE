@@ -405,10 +405,14 @@ function friendly(e) {
   // cross-origin page may not read the header that carries its format. Email
   // and SMS send limits are also 429 but last up to an hour, so they keep
   // their own message rather than a promise that a minute is enough.
+  // When the version header cannot be read, the code is empty and only the
+  // message tells an hourly send limit from the per-minute one, so the
+  // message is checked too (MVP fix round, 2026-09-27).
   const code = String(e?.code || "");
-  if (code === "over_request_rate_limit" || m.includes("request rate limit")
-      || (e?.status === 429 && !/^over_(email|sms)_send_rate_limit$/.test(code)))
-    return "Too many attempts: wait a minute and try again.";
+  const sendLimit = /^over_(email|sms)_send_rate_limit$/.test(code)
+      || m.includes("email rate limit") || m.includes("sms");
+  if (!sendLimit && (code === "over_request_rate_limit" || m.includes("request rate limit") || e?.status === 429))
+    return "Too many attempts. Try again in a minute.";
   if (m.includes("not_authorized") || m.includes("permission denied"))
     return "That account is not an administrator.";
   if (m.includes("invalid login")) return "That email or password didn't work.";
@@ -421,6 +425,9 @@ function friendly(e) {
   // 20260927100001/2: one fee per player per clinic, and Tara's late cancel.
   if (m.includes("charged_refund_first")) return "Already charged: refund it first.";
   if (m.includes("clinic_canceled")) return "That clinic is canceled.";
+  // 20260927300001/3: nothing before card payments; a held charge resolved once.
+  if (m.includes("clinic_before_payments")) return "That clinic ended before card payments were on.";
+  if (m.includes("payment_not_held")) return "That charge is no longer held.";
   if (m.includes("not_late_yet")) return "Not late yet.";
   if (m.includes("payments_disabled")) return "Payments are switched off.";
   if (m.includes("no_card_on_file")) return "No card on file for that player.";
@@ -490,29 +497,42 @@ $("show-archived").addEventListener("change", () => loadTemplates());
 // Late requests come from their own table (they have a lifecycle); the rest
 // are unread notifications addressed to the admin. Each row has exactly one
 // resolving action, and everything reloads from the server afterwards.
-async function loadActionNeeded(clinics, byPlayer) {
+async function loadActionNeeded(clinics, byPlayer, money, stale = () => false) {
   const byClinic = Object.fromEntries(clinics.map(c => [c.id, c]));
   const { data: late } = await sb.from("late_requests").select("*")
     .eq("status", "pending").order("created_at");
+  if (stale()) return;
+  // A late request can be for a clinic not on the This week list (Show
+  // earlier off, or a clinic further out): read those by id so the row names
+  // its clinic instead of "a clinic".
+  const missing = [...new Set((late || []).map(r => r.clinic_id).filter(id => !byClinic[id]))];
+  if (missing.length) {
+    const { data: extra } = await readByIds(missing, (part) => sb.from("clinics_admin").select("*").in("id", part).order("id"));
+    if (stale()) return;
+    for (const c of (extra || [])) byClinic[c.id] = c;
+  }
   // Named columns, never "*": authenticated holds SELECT on eight columns
   // only (20260923000001), so "*" names the push audit columns and is refused.
   const { data: notes } = await sb.from("notifications").select("id,type,entity_type,entity_id,body,created_at,read_at")
     .is("read_at", null)
     .in("type", ["player_canceled", "invitation_declined", "invitation_accepted"])
     .order("created_at", { ascending: false }).limit(30);
+  if (stale()) return;
 
   // Money work (20260927100003): a clinic that has ended with players Charge
   // clinic would charge now (only while payments are on, since the tap is
-  // the resolving action), and every card whose charge was declined.
-  const [{ data: owed }, { data: declined }] = await Promise.all([
-    sb.rpc("admin_money_clinics"), sb.rpc("admin_money_declined")]);
-  const uncharged = paymentsOn ? (owed || []).filter(r => !r.canceled && r.chargeable_count > 0) : [];
+  // the resolving action), and every card whose charge was declined, except
+  // on an account since deleted: nobody can fix that card, so it waits on
+  // the Money tab instead (20260927300001). The same two lists decide what
+  // the This week tab keeps (readMoneyOwed).
+  const uncharged = paymentsOn ? chargeableClinics(money && money.clinics) : [];
+  const declined = openDeclines(money && money.declined);
   const moneyRows = [
     ...uncharged.map(r => `<div class="row" data-uncharged="${r.clinic_id}">
       <span class="grow">${esc(r.clinic_name)} ended, not charged yet<br><span class="muted">${fmtDate(r.starts_at)}</span></span>
       <button class="small primary" data-chargeclinic="${r.clinic_id}">Charge clinic</button>
     </div>`),
-    ...(declined || []).map(d => `<div class="row" data-declined="${d.registration_id}">
+    ...declined.map(d => `<div class="row" data-declined="${d.registration_id}">
       <span class="grow">${esc(d.first_name + " " + d.last_name)}'s card was declined<br>
         <span class="muted">${esc(d.clinic_name)} · ${fmtDate(d.clinic_starts_at)}${d.failure_code ? " · " + esc(declineLabel(d.failure_code)) : ""}</span></span>
       <span class="name">${money(d.amount_cents)}</span>
@@ -550,10 +570,13 @@ async function loadActionNeeded(clinics, byPlayer) {
 // included (MVP audit, 2026-09-27). Charged, Declined and Not charged yet now
 // come from the ledger (admin_money_*, 20260927100003): charged is the board
 // report's "Collected by card" over all time, so the two cannot disagree.
+let moneySeq = 0;
 async function loadMoney() {
+  const gen = ++moneySeq;
   const [{ data: sum, error: e1 }, { data: ms, error: e2 }, { data: perClinic }, { data: declined }] = await Promise.all([
     sb.rpc("revenue_summary"), sb.rpc("admin_money_summary"),
     sb.rpc("admin_money_clinics"), sb.rpc("admin_money_declined")]);
+  if (gen !== moneySeq) return;
   if (e1 || e2 || !sum || !sum.length || !ms || !ms.length) { $("money").textContent = "Couldn't load the numbers."; return; }
   const t = sum[0], m = ms[0];
   $("money").classList.remove("muted");
@@ -579,7 +602,7 @@ async function loadMoney() {
       <span class="muted">Charged ${money(r.charged_cents)}${r.not_charged_count ? ` · Not charged yet ${money(r.not_charged_cents)}` : ""}${r.declined_count ? ` · Declined ${r.declined_count}` : ""}</span>
     </div>`).join("")}
     <div id="ledger"></div>`;
-  loadLedger();
+  loadLedger(gen);
 }
 
 // Card payments (decision 0009). Read-only until Tara answers questions 27–37:
@@ -605,6 +628,17 @@ const DECLINE = {
   processing_error: "Processing error, try again",
 };
 const declineLabel = (code) => DECLINE[code] || code;
+// Our own reasons on a ledger row (stripe-charge, _shared/stripe-errors.ts),
+// in words. A code not listed shows as itself.
+const REASON = {
+  account_deleted: "Account deleted",
+  retry_window_passed: "Too old to retry",
+  idempotency_error: "Card changed between attempts",
+};
+const reasonLabel = (why) => REASON[why] || why;
+// A held charge (20260927300003): processing with one of these reasons. It
+// may or may not have gone through; Tara checks in Stripe and records which.
+const HELD = ["retry_window_passed", "idempotency_error"];
 // Every pending ledger row becomes one Stripe call (decision 0009). The
 // function needs the admin JWT the client already holds.
 async function settleLedger() {
@@ -648,11 +682,12 @@ function chargeSummaryText({ paid, declined, processing, already, noCard }) {
   return parts.join(" ");
 }
 
-async function loadLedger() {
+async function loadLedger(gen = moneySeq) {
   const box = $("ledger");
   if (!box) return;
   const { data: rows, error } = await sb.from("payments_ledger").select("*")
     .order("created_at", { ascending: false }).limit(50);
+  if (gen !== moneySeq) return;
   const head = `<div class="row" style="border-top:1px solid var(--fxe-hairline);margin-top:10px;padding-top:10px"><span class="grow name">Card payments</span></div>`;
   if (error) { box.innerHTML = head + `<div class="muted">Couldn't load card payments.</div>`; return; }
   if (!rows || !rows.length) { box.innerHTML = head + `<div class="muted">No card payments yet.</div>`; return; }
@@ -664,7 +699,8 @@ async function loadLedger() {
     const bad = failed ? ` style="color:#992E22"` : "";
     // Decline reason (20260926000010): Stripe's code in words when there is
     // one, else Stripe's own sentence as before.
-    const why = failed && r.failure_code ? "Declined: " + declineLabel(r.failure_code) : r.failure_reason;
+    const why = failed && r.failure_code ? "Declined: " + declineLabel(r.failure_code) : reasonLabel(r.failure_reason);
+    const held = r.status === "processing" && HELD.includes(r.failure_reason);
     // The account holder's name, bold on a failed row: that is the
     // "cardholder name" Tara asked for (PaymentSheet does not collect the
     // name printed on the card, so the account name is what we have).
@@ -673,7 +709,11 @@ async function loadLedger() {
         <span class="muted">${clinic ? esc(clinic.name) + " · " + fmtDate(clinic.starts_at) : ""}</span>${why ? `<span class="muted"${bad}> · ${esc(why)}</span>` : ""}</span>
       <span><span class="name">${r.kind === "refund" ? "−" : ""}${money(r.amount_cents)}</span><br><span class="muted"${bad}>${status}</span></span>
       ${paymentsOn && r.kind !== "refund" && r.status === "succeeded" ? `<button class="small" data-refund="${r.id}">Refund</button>` : ""}
-    </div>`;
+    </div>${held ? `<div class="row" data-held="${r.id}">
+      <span class="grow muted">Check this charge in Stripe.</span>
+      <button class="small" data-resolve="${r.id}" data-outcome="succeeded">Went through</button>
+      <button class="small" data-resolve="${r.id}" data-outcome="canceled">Did not go through</button>
+    </div>` : ""}`;
   }).join("");
 }
 
@@ -779,25 +819,36 @@ let paymentsOn = false;
 // 'false' the Paid toggle and the unpaid reminder are not rendered; flipping
 // the setting brings them back without a deploy (hard rule 6).
 let zelleOn = false;
+// When card payments were switched on (20260927300001). Clinics that ended
+// before it are never charged by card, so Charge clinic is not offered on them.
+let paymentsSince = null;
 async function loadPaymentsSwitch() {
-  const { data } = await sb.from("app_settings").select("key, value").in("key", ["payments_enabled", "cancel_cutoff_hours", "zelle_allowed"]);
+  const { data } = await sb.from("app_settings").select("key, value").in("key", ["payments_enabled", "payments_enabled_at", "cancel_cutoff_hours", "zelle_allowed"]);
   const byKey = Object.fromEntries((data || []).map(r => [r.key, r.value]));
   paymentsOn = byKey.payments_enabled === "true";
+  paymentsSince = byKey.payments_enabled_at ? new Date(byKey.payments_enabled_at) : null;
   zelleOn = byKey.zelle_allowed === "true";
   cutoffHours = parseInt(byKey.cancel_cutoff_hours, 10) || 3;
 }
 
-// Earlier clinics that Charge clinic would still charge someone for, by
-// admin_charge_clinic's own rule: You're In! (came or no-show) or a late
-// cancel without the courtesy, a card on file, and no charge yet. Read only
-// while payments are on: with them off nothing is ever charged, so every past
-// clinic would qualify and the list would grow without end again.
-async function readOwedClinicIds() {
-  const r = await readAll(() => sb.from("registrations_admin").select("id,clinic_id")
-    .is("charge_status", null).eq("has_card", true)
-    .or("status.eq.in,and(status.eq.canceled,late_cancel.is.true,courtesy_used.is.false)")
-    .order("id"));
-  return r.error ? r : { data: [...new Set(r.data.map(x => x.clinic_id))] };
+// What is still owed, by the database's one definition (money_rows, read
+// through admin_money_clinics and admin_money_declined, 20260927300001): a
+// clinic Charge clinic would charge someone in now (chargeable_count), or a
+// declined card on an account that still exists. Action Needed prompts for
+// exactly these and the This week tab keeps exactly these, so the prompt, the
+// tab and the tap cannot disagree. The old rule here was the page's own copy:
+// it ignored when payments were switched on and Tara's Paid tick, and would
+// have listed every clinic ever run on the day payments went on.
+const chargeableClinics = (rows) => (rows || []).filter(r => !r.canceled && r.chargeable_count > 0);
+const openDeclines = (rows) => (rows || []).filter(d => !d.account_deleted);
+async function readMoneyOwed() {
+  const [a, b] = await Promise.all([sb.rpc("admin_money_clinics"), sb.rpc("admin_money_declined")]);
+  if (a.error || b.error) return { error: a.error || b.error };
+  const clinics = a.data || [], declined = b.data || [];
+  const ids = paymentsOn
+    ? [...new Set([...chargeableClinics(clinics).map(r => r.clinic_id), ...openDeclines(declined).map(d => d.clinic_id)])]
+    : [];
+  return { data: ids, clinics, declined };
 }
 
 // This week (MVP audit 2026-09-27, item 14). It used to list every clinic
@@ -808,26 +859,37 @@ async function readOwedClinicIds() {
 // plus unfinished charging while payments are on; the rest wait behind Show
 // earlier. Rosters are read for what is on screen, a page at a time, and a
 // failed read says so instead of drawing empty rosters.
+// Every action reloads, and two reloads can overlap (a tap while the last
+// one is still reading). Each load takes a number; after every await it
+// checks it is still the newest and stops if not, so an older, slower load
+// can never draw over a newer one (MVP fix round, 2026-09-27).
+let loadSeq = 0;
 async function loadClinics() {
+  const gen = ++loadSeq;
+  const stale = () => gen !== loadSeq;
   note($("msg"), "");
   await loadTemplates();
+  if (stale()) return;
   await loadPaymentsSwitch();
+  if (stale()) return;
   const weekStart = serviceWeekStart();
   const since = weekStart.toISOString();
   const showEarlier = $("show-earlier").checked;
   const [cur, owed, past] = await Promise.all([
     readAll(() => sb.from("clinics_admin").select("*").gt("ends_at", since).order("starts_at").order("id")),
-    paymentsOn ? readOwedClinicIds() : { data: [] },
+    readMoneyOwed(),
     showEarlier
       ? readAll(() => sb.from("clinics_admin").select("*").lte("ends_at", since).order("starts_at", { ascending: false }).order("id"))
       : { data: [] },
   ]);
+  if (stale()) return;
   const failed = cur.error || owed.error || past.error;
   if (failed) return note($("msg"), friendly(failed));
   // An owed clinic from before this week, read by id unless Show earlier has it.
   const have = new Set([...cur.data, ...past.data].map(c => c.id));
   const owedOld = await readByIds(owed.data.filter(id => !have.has(id)),
     (part) => sb.from("clinics_admin").select("*").in("id", part).neq("status", "canceled").order("id"));
+  if (stale()) return;
   if (owedOld.error) return note($("msg"), friendly(owedOld.error));
   const clinics = [...cur.data, ...owedOld.data, ...past.data];
   const { current, earlier } = splitThisWeek(clinics, { weekStart, paymentsOn, owed: new Set(owed.data) });
@@ -848,6 +910,7 @@ async function loadClinics() {
     readByIds(onScreen, (part) => sb.from("registrations_admin").select("*").in("clinic_id", part).order("registered_at").order("id")),
     readAll(() => sb.from("players").select("id,first_name,last_name,is_member,adult_rating,level_note").order("id")),
   ]);
+  if (stale()) return;
   if (regsError || playersError) {
     $("clinics").innerHTML = "";
     return note($("msg"), "Couldn't load clinics.");
@@ -856,7 +919,8 @@ async function loadClinics() {
   clinicIndex = Object.fromEntries(clinics.map(c => [c.id, c]));
   regsByClinic = {};
   for (const r of (regs || [])) (regsByClinic[r.clinic_id] ||= []).push(r);
-  await loadActionNeeded(clinics, byPlayer);
+  await loadActionNeeded(clinics, byPlayer, owed, stale);
+  if (stale()) return;
   loadMoney();
 
   const renderCard = (c) => {
@@ -904,7 +968,7 @@ async function loadClinics() {
         ${zelleOn && unpaidIn(c).length ? `<button class="small" data-remind="${c.id}" data-n="${unpaidIn(c).length}">Remind unpaid (${unpaidIn(c).length})</button>` : ""}
         ${c.status === "draft" ? `<button class="small primary" data-publish="${c.id}">Publish</button>` : ""}
         ${c.status !== "canceled" ? `<button class="small" data-cancelclinic="${c.id}">Cancel clinic</button>` : `<span class="chip canceled">Canceled</span>`}
-        ${paymentsOn && c.status !== "canceled" && new Date(c.ends_at) < new Date() ? `<button class="small primary" data-chargeclinic="${c.id}">Charge clinic</button>` : ""}
+        ${paymentsOn && c.status !== "canceled" && new Date(c.ends_at) < new Date() && paymentsSince && new Date(c.ends_at) >= paymentsSince ? `<button class="small primary" data-chargeclinic="${c.id}">Charge clinic</button>` : ""}
       </div>
       ${section("in", r => `${courtSelect(r)}${zelleOn ? `<button class="small" data-paid="${r.id}" data-now="${r.paid}">${r.paid ? "Paid" : "Unpaid"}</button>` : ""}<button class="small${r.no_show ? " danger" : ""}" data-noshow="${r.id}" data-now="${r.no_show}">${r.no_show ? "No-show" : "Came"}</button>${lateOpen && !liveCharge(r) ? `<button class="small" data-latecancel="${r.id}" data-who="${esc(nameOf(r))}">Late cancel</button>` : ""}${chargeState(r)}`)}
       ${section("pool", r => `<button class="small primary" data-invite="${r.id}">Invite</button>`)}
@@ -994,6 +1058,10 @@ document.addEventListener("click", async (e) => {
   if (b.dataset.refund)   return run(async () => {
     await call("admin_refund_payment", { p_payment: b.dataset.refund });
     await settleLedger();
+    await loadMoney();
+  });
+  if (b.dataset.resolve)  return run(async () => {
+    await call("admin_resolve_held_payment", { p_payment: b.dataset.resolve, p_outcome: b.dataset.outcome });
     await loadMoney();
   });
   if (b.dataset.publish)  return run(() => call("publish_clinic",     { p_clinic: b.dataset.publish }));

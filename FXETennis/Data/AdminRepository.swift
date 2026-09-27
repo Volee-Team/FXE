@@ -653,6 +653,9 @@ struct MoneyDecline: Decodable, Identifiable, Sendable {
     let lastName: String?
     let amountCents: Int?
     let failureCode: String?
+    /// The account has since been deleted (20260927300001): nobody can fix
+    /// that card, so Action Needed leaves the row out; the web Money tab keeps it.
+    let accountDeleted: Bool?
 
     var id: UUID { registrationId }
     var displayName: String {
@@ -669,6 +672,7 @@ struct MoneyDecline: Decodable, Identifiable, Sendable {
         case lastName = "last_name"
         case amountCents = "amount_cents"
         case failureCode = "failure_code"
+        case accountDeleted = "account_deleted"
     }
 }
 

@@ -53,6 +53,10 @@ begin
 
   -- Payments on, no card: refused with card_required. With a card: in.
   update public.app_settings set value = 'true' where key = 'payments_enabled';
+  -- Switched on yesterday, recorded with the switch (20260927300001), so the
+  -- clinics below, which end today, can be charged.
+  insert into public.app_settings (key, value) values ('payments_enabled_at', (now() - interval '1 day')::text)
+    on conflict (key) do update set value = excluded.value;
   perform set_config('role', 'authenticated', true);
   begin
     perform public.register_for_clinic(FAR, MARIA_P);

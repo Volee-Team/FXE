@@ -498,6 +498,22 @@ older waits behind a checkbox, the same shape as Show canceled.
 | ☐ | Couldn't load clinics. | This week, when the rosters or the players cannot be read; the list is cleared rather than drawn with empty rosters | The iOS app's line for the same failure. Not seen by the extractor (a second argument) |
 | ☐ | Too many attempts: wait a minute and try again. | Admin sign-in, sign-up and Forgot password, when Supabase Auth answers HTTP 429 (30 sign-ins and sign-ups per 5 minutes per IP, and the launch party is one Wi-Fi; MVP audit item 15) | Was GoTrue's own "Request rate limit reached". A try comes back every few seconds, so a minute is honest. The reset email's limit is hourly, so that 429 keeps GoTrue's "email rate limit exceeded" rather than a promise of a minute. The iOS half of item 15 should say the same words |
 
+## MVP fix round (2026-09-27) — awaiting Alex
+
+Chrome only, from the adversarial review's fixes (branch `fix-sql`). No player sees any of these: every one is on Tara's side (web admin, or the iOS Manage tab).
+
+| ☐ | String | Where | Why |
+|---|---|---|---|
+| ☐ | Too many attempts. Try again in a minute. | Web admin sign-in, sign-up and Forgot password on HTTP 429 (replaces "Too many attempts: wait a minute and try again." above) | The lead's exact line, one sentence without the colon. An hourly email or SMS limit still keeps GoTrue's own words, now also when the error code is unreadable. The iOS app says "Too many requests. Try again in a minute." (`FXETennis/Data/RequestFailure.swift`), so the two still differ by one word: Alex's call which wins |
+| ☐ | That clinic ended before card payments were on. | Web admin and iOS Charge clinic, if tapped on a clinic that ended before `payments_enabled_at` (the web no longer offers the button there) | Server refusal `clinic_before_payments` (20260927300001) in words |
+| ☐ | That charge is no longer held. | Web Money tab, if Went through / Did not go through is tapped on a row someone already resolved | Server refusal `payment_not_held` (20260927300003) |
+| ☐ | Check this charge in Stripe. | Web Money tab, under a card payment held for a person (processing, too old to retry or card changed) | The one instruction the row needs: only Stripe's dashboard knows whether it went through |
+| ☐ | Went through | Web Money tab, button on a held charge | Records it as paid (marks the registration paid, as the webhook would) |
+| ☐ | Did not go through | Web Money tab, button on a held charge | Records it as canceled, so the player can be charged again |
+| ☐ | Too old to retry | Web Money tab, the reason on a row with `retry_window_passed` | Was the raw code |
+| ☐ | Card changed between attempts | Web Money tab, the reason on a row with `idempotency_error` | Was the raw code |
+| ☐ | Account deleted | Web Money tab, the reason on a row with `account_deleted` | Was the raw code |
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148

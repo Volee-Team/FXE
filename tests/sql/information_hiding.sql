@@ -30,6 +30,8 @@ declare
   KEN_ACC   constant uuid := '33333333-3333-3333-3333-333333333333';
   c uuid;
   ken_reg uuid;
+  maria_reg uuid;
+  cr public.registrations;
   n int;
 begin
   -- A clinic both players are in, with a court assigned and a payment recorded.
@@ -49,6 +51,8 @@ begin
   -- which would test the wrong thing.
   select id into ken_reg from public.registrations
    where clinic_id = c and player_id = KEN;
+  select id into maria_reg from public.registrations
+   where clinic_id = c and player_id = MARIA;
 
   -- Become Maria: an ordinary authenticated member, not an admin.
   perform set_config('request.jwt.claims', json_build_object('sub', MARIA_ACC)::text, true);
@@ -142,6 +146,14 @@ begin
   exception when others then
     insert into _probe_result values ('invite_from_pool_denied', 'not_authorized', sqlerrm);
   end;
+
+  -- 10b. Her own cancel hands back the whole row (20260927300002). Tara put
+  --      her on court 2 above; a court assignment is hidden fact 6, so the
+  --      returned row must not carry it, nor who canceled.
+  cr := public.cancel_registration(maria_reg);
+  insert into _probe_result values ('cancel_returns_no_court_to_player', 'NULL', coalesce(cr.court_number::text, 'NULL'));
+  insert into _probe_result values ('cancel_returns_no_canceled_by_to_player', 'NULL', coalesce(cr.canceled_by::text, 'NULL'));
+  insert into _probe_result values ('cancel_still_returns_the_status', 'canceled', cr.status::text);
 
   perform set_config('role', 'postgres', true);
 

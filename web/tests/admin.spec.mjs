@@ -339,3 +339,118 @@ test.describe("reset page", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// MVP fix round (2026-09-27). Each fixture is written through the REST API as
+// service_role (never SQL on auth), and removed again in finally, so a failure
+// cannot leave rows for the next test or the probe runner's DIRTY check.
+function stackEnv() {
+  return Object.fromEntries(execSync("supabase status -o env", { cwd: "..", stdio: ["ignore", "pipe", "ignore"] })
+    .toString().split("\n").filter(l => l.includes("="))
+    .map(l => { const i = l.indexOf("="); return [l.slice(0, i), l.slice(i + 1).replace(/^"|"$/g, "")]; }));
+}
+function service(request) {
+  const env = stackEnv();
+  const headers = { apikey: env.SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SERVICE_ROLE_KEY}`,
+                    "Content-Type": "application/json", Prefer: "return=representation" };
+  const go = async (method, path, body) => {
+    const res = await request.fetch(`${env.API_URL}/rest/v1/${path}`, { method, headers, data: body });
+    if (!res.ok()) throw new Error(`${method} ${path}: ${res.status()} ${await res.text()}`);
+    return res.status() === 204 ? null : res.json();
+  };
+  return {
+    insert: async (table, row) => (await go("POST", table, row))[0],
+    patch: (path, body) => go("PATCH", path, body),
+    del: (path) => go("DELETE", path),
+  };
+}
+const MARIA_P = "a0000000-0000-0000-0000-000000000001";
+const KEN_P = "a0000000-0000-0000-0000-000000000002";
+const DANA_P = "a0000000-0000-0000-0000-000000000004";
+const KEN_ACCT = "33333333-3333-3333-3333-333333333333";
+const DANA_ACCT = "66666666-6666-6666-6666-666666666666";
+const daysAgo = (d, h = 0) => new Date(Date.now() - d * 86_400_000 + h * 3_600_000).toISOString();
+const pastClinic = (name, endedDaysAgo) => ({
+  name, audience: "coed", category: "Clinic", description: "browser test",
+  starts_at: daysAgo(endedDaysAgo, -1), ends_at: daysAgo(endedDaysAgo),
+  member_opens_at: daysAgo(endedDaysAgo + 7), public_opens_at: daysAgo(endedDaysAgo + 6),
+  internal_capacity: 8, status: "published", duration_minutes: 60,
+});
+
+test.describe("fix round", () => {
+  test("a late request for a clinic off this week's list still names its clinic", async ({ page, request }) => {
+    const db = service(request);
+    const clinic = await db.insert("clinics", pastClinic("Browser Old Clinic", 10));
+    try {
+      await db.insert("late_requests", { clinic_id: clinic.id, player_id: MARIA_P, message: "Can I still come?" });
+      await signIn(page, TARA);
+      const late = page.locator("#late");
+      await expect(late).toContainText("asked to join");
+      await expect(late).toContainText("Browser Old Clinic");
+    } finally {
+      await db.del(`late_requests?clinic_id=eq.${clinic.id}`);
+      await db.del(`clinics?id=eq.${clinic.id}`);
+    }
+  });
+
+  test("a held charge offers Tara the two answers; a deleted account's decline waits on the Money tab", async ({ page, request }) => {
+    const db = service(request);
+    await db.patch("app_settings?key=eq.payments_enabled_at", { value: daysAgo(5) });
+    const clinic = await db.insert("clinics", pastClinic("Browser Held Clinic", 2));
+    try {
+      const reg = (player, cents) => db.insert("registrations",
+        { clinic_id: clinic.id, player_id: player, status: "in", source: "admin", price_cents_charged: cents, was_member: true, duration_minutes: 60 });
+      const dana = await reg(DANA_P, 1800), ken = await reg(KEN_P, 1800);
+      await db.insert("payments", { registration_id: dana.id, account_id: DANA_ACCT, kind: "clinic_fee", amount_cents: 1800,
+        status: "failed", failure_code: "expired_card", failure_reason: "Your card has expired." });
+      const held = await db.insert("payments", { registration_id: ken.id, account_id: KEN_ACCT, kind: "clinic_fee", amount_cents: 1800,
+        status: "processing", failure_reason: "retry_window_passed" });
+      await db.patch(`accounts?id=eq.${DANA_ACCT}`, { deleted_at: new Date().toISOString() });
+
+      await signIn(page, TARA);
+      await expect(page.getByRole("heading", { name: "This week" })).toBeVisible();
+      // Nobody can fix a deleted account's card: not in Action Needed...
+      await expect(page.locator(`#money-needs [data-declined="${dana.id}"]`)).toHaveCount(0);
+      // ...but still on the Money tab, under the account's name.
+      await page.getByRole("tab", { name: "Money" }).click();
+      await expect(page.locator("#money")).toContainText("Dana");
+      await expect(page.locator("#money")).toContainText("Card expired");
+      // The held charge: the reason in words, the guidance, the two answers.
+      const heldRow = page.locator(`#ledger [data-held="${held.id}"]`);
+      await expect(heldRow).toContainText("Check this charge in Stripe.");
+      await expect(page.locator("#ledger")).toContainText("Too old to retry");
+      await heldRow.getByRole("button", { name: "Did not go through" }).click();
+      await expect(page.locator(`#ledger [data-held="${held.id}"]`)).toHaveCount(0, { timeout: 15_000 });
+      await expect(page.locator("#ledger")).toContainText("Canceled");
+    } finally {
+      await db.patch(`accounts?id=eq.${DANA_ACCT}`, { deleted_at: null });
+      const regs = await request.fetch(`${stackEnv().API_URL}/rest/v1/registrations?clinic_id=eq.${clinic.id}&select=id`,
+        { headers: { apikey: stackEnv().SERVICE_ROLE_KEY, Authorization: `Bearer ${stackEnv().SERVICE_ROLE_KEY}` } }).then(r => r.json());
+      if (regs.length) await db.del(`payments?registration_id=in.(${regs.map(r => r.id).join(",")})`);
+      await db.del(`registrations?clinic_id=eq.${clinic.id}`);
+      await db.del(`clinics?id=eq.${clinic.id}`);
+      await db.patch("app_settings?key=eq.payments_enabled_at", { value: "" });
+    }
+  });
+
+  test("two overlapping reloads never leave the older one on screen", async ({ page }) => {
+    await signIn(page, TARA);
+    const cards = page.locator("#clinics .card", { hasText: "member /" });
+    await expect(cards.first()).toBeVisible();
+    // The next load's clinic read is held back and answers an empty week; a
+    // second load starts meanwhile and reads normally. The empty answer
+    // arrives last, and must not be drawn.
+    let held = false;
+    await page.route("**/rest/v1/clinics_admin*", async (route) => {
+      if (held) return route.continue();
+      held = true;
+      await new Promise(r => setTimeout(r, 2500));
+      return route.fulfill({ status: 200, contentType: "application/json", headers: { "content-range": "*/0" }, body: "[]" });
+    });
+    await page.getByLabel("Show canceled").check();
+    await page.getByLabel("Show canceled").uncheck();
+    await page.waitForTimeout(4000);
+    await expect(cards.first()).toBeVisible();
+    await expect(page.locator("#clinics")).not.toContainText("No clinics this week or later.");
+  });
+});
