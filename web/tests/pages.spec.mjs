@@ -25,7 +25,12 @@ test.describe("scripts", () => {
       if (new URL(r.url()).pathname === "/vendor/supabase-js.js") vendored.push(r.status());
     });
     page.on("pageerror", (e) => broken.push(e.message));
-    page.on("console", (m) => { if (m.type() === "error") broken.push(m.text()); });
+    // Errors raised by this site's own files. A Google Fonts hiccup logs an
+    // error too, located at fonts.googleapis.com, and is not this test's business.
+    page.on("console", (m) => {
+      const at = m.location().url;
+      if (m.type() === "error" && (!at || new URL(at).origin === origin)) broken.push(m.text());
+    });
 
     // The admin site, signed in: supabase-js has to work, not just load.
     await signIn(page, TARA);
