@@ -466,6 +466,22 @@ anything else happens). Test-mode rows cancelled at the switch to live read
 `live_cutover`, but those rows are hidden from the list from that moment.
 Whether these get words is Alex's call; they are admin-only.
 
+## L. Web admin: This week stops at the week, and a refused sign-in says to wait (2026-09-27, MVP audit items 14 and 15) — awaiting Alex
+
+Laptop only; no player sees any of it. This week lists clinics that end after
+this service week began (Sunday 00:00, New York), plus, while payments are on,
+any older clinic Charge clinic would still charge someone for. Everything
+older waits behind a checkbox, the same shape as Show canceled.
+
+| ☐ | String | Where | Why |
+|---|---|---|---|
+| ☐ | Show earlier | This week, the checkbox beside Show canceled | Chrome. Not seen by the extractor (a short HTML label) |
+| ☐ | Earlier | Heading over the older clinics once Show earlier is ticked, newest first | A section heading, like Action Needed and Templates |
+| ☐ | No earlier clinics. | Under Earlier when there are none | Chrome |
+| ☐ | No clinics this week or later. Use “New clinic” to add one. | This week, when nothing ends after the week began | Replaces "No clinics yet. Use “New clinic” to add your first one.", which stops being true once older clinics exist and are simply not listed |
+| ☐ | Couldn't load clinics. | This week, when the rosters or the players cannot be read; the list is cleared rather than drawn with empty rosters | The iOS app's line for the same failure. Not seen by the extractor (a second argument) |
+| ☐ | Too many attempts: wait a minute and try again. | Admin sign-in, sign-up and Forgot password, when Supabase Auth answers HTTP 429 (30 sign-ins and sign-ups per 5 minutes per IP, and the launch party is one Wi-Fi; MVP audit item 15) | Was GoTrue's own "Request rate limit reached". A try comes back every few seconds, so a minute is honest. The reset email's limit is hourly, so that 429 keeps GoTrue's "email rate limit exceeded" rather than a promise of a minute. The iOS half of item 15 should say the same words |
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148

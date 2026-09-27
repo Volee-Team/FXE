@@ -446,9 +446,17 @@ on the cancellation rule is open except her policy block's wording (Q56).
 
 ## 8. The web admin
 
-`web/` is five static files and no build step: `index.html`, `reset.html`,
-`review.html`, `config.js` (which picks local vs hosted by hostname) and `tokens.css`, plus
-the Playwright tooling (`package.json`, `playwright.config.mjs`, `tests/`). Hosted on Vercel by
+`web/` is static files and no build step: `index.html`, `reset.html`,
+`review.html`, `config.js` (which picks local vs hosted by hostname), `tokens.css`,
+two small modules the admin page imports (`week.js`: the service week and which
+clinics This week lists; `read.js`: reads that page past PostgREST's 1000-row
+cap), and `vendor/supabase-js.js`, plus the Playwright tooling (`package.json`,
+`playwright.config.mjs`, `tests/`). **supabase-js is vendored**, never loaded
+from a CDN (MVP audit 2026-09-27, item 17; it came from esm.sh at a floating
+`@2` until then): the npm package's own browser bundle at the exact version
+pinned in `web/package.json`, written by `scripts/vendor-supabase-js.sh` and
+checked byte for byte against the installed package in the `web-browser-tests`
+job, so a Dependabot bump is red until the file is regenerated. Hosted on Vercel by
 manual `vercel --prod` from that folder; the Git repo is deliberately **not**
 connected, because preview deploys would point at Tara's live data. It signs
 in with the same publishable key as the phone and calls the same RPCs; the
@@ -479,8 +487,16 @@ payments are on) and for each declined card; the Money line from
 list and per-clinic rows from `admin_money_declined` and `admin_money_clinics`
 (the four counts stay on `revenue_summary`); and the Charge clinic summary
 counting what Stripe accepted, from `stripe-charge`'s answer, not what was
-queued. Drag-and-drop courts are
-deliberately not built until the dropdown has been used for real.
+queued.
+Also 2026-09-27 (MVP audit item 14): This week
+lists clinics that end after the current service week began (Sunday 00:00,
+New York), plus, while payments are on, any older clinic Charge clinic would
+still charge someone for; everything older sits behind **Show earlier**, under
+an Earlier heading, newest first. Rosters are read only for the clinics on
+screen, in registration order, a page at a time, and a failed read says
+"Couldn't load clinics." rather than drawing empty rosters. A 429 from Supabase
+Auth reads "Too many attempts: wait a minute and try again." Drag-and-drop
+courts are deliberately not built until the dropdown has been used for real.
 
 Added 2026-09-21: **Tara's review page lives here too.** `web/review.html`
 is the second target of `scripts/build-tara-review.py` (the first is the
@@ -547,12 +563,16 @@ local stack and are order-dependent on a fresh seed. **They do not run in
 CI**: the macOS runner has no Docker for the stack; a `fxe-ci` Supabase
 project is the ask (`docs/launch-checklist.md` §F).
 
-**Web admin**: 16 Playwright tests (`web/tests/admin.spec.mjs`) walk Tara's
+**Web admin**: 22 Playwright tests (`web/tests/*.spec.mjs`) walk Tara's
 side against a fresh seed: sign-in and the non-admin door, prices, walk-up,
 courts, unpaid reminder, a note round-trip, cancel clinic, template archive
-and restore, Money counts, the card-payments ledger, payments off. One worker,
-file order; the suite is not idempotent (cancel clinic is for keeps), so reset
-between runs.
+and restore, Money counts, the card-payments ledger, payments off
+(`admin.spec.mjs`); every script served from the site itself and the
+rate-limit line (`pages.spec.mjs`); the service week at hand-worked instants in
+three laptop time zones, the This week split, a read past a 1000-row cap, and
+a past clinic kept off the tab until Show earlier (`week.spec.mjs`). One
+worker, files in name order; the suite is not idempotent (cancel clinic is for
+keeps), so reset between runs.
 
 **Stripe pipeline**: `tests/stripe/run.sh`, 70 checks against stripe-mock (the permission refusal, decline codes, a success clearing a decline, dashboard refunds recorded once):
 SetupIntent, signed and unsigned webhooks, charge → processing → succeeded →

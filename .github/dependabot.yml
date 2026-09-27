@@ -1,8 +1,13 @@
 # Dependency updates as pull requests, so a vulnerable Playwright or a stale
 # GitHub Action is a PR to review rather than a surprise. Swift packages are
 # pinned exactly in project.yml and bumped by hand on purpose (the Stripe SDK
-# and supabase-swift both changed behaviour between minors); npm here is only
-# the browser-test tooling. Weekly, Mondays, so a batch lands before the week's
+# and supabase-swift both changed behaviour between minors). npm here is the
+# browser-test tooling and, since 2026-09-27, the exact pin of
+# @supabase/supabase-js that scripts/vendor-supabase-js.sh copies into
+# web/vendor/: the admin site and the reset page import that file, never a
+# CDN. A bump PR for it fails the web job's vendor check until the script is
+# re-run and web/vendor/ committed, which is when the browser suite first runs
+# against the new version. Weekly, Mondays, so a batch lands before the week's
 # work rather than in the middle of it.
 version: 2
 updates:

@@ -111,9 +111,10 @@ New password
 No card on file for that player.
 No card payments yet.
 No clinics currently open for registration
-No clinics yet. Use “New clinic” to add your first one.
+No clinics this week or later. Use “New clinic” to add one.
 No court
 No description yet.
+No earlier clinics.
 No notifications yet
 No responses yet.
 No room
@@ -213,6 +214,7 @@ To
 To contact you: by notification in the app, email, telephone, or other equivalent forms of electronic communication, about clinics and the Services.
 To manage your requests: to attend to and manage your requests to us. Messages sent through the Services are stored on our servers.
 To provide and maintain our Services, including to monitor the usage of our Services.
+Too many attempts: wait a minute and try again.
 Turn on notifications
 Type at least two letters of a name.
 Type it again

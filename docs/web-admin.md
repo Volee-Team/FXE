@@ -2,8 +2,11 @@
 
 **Status:** BUILT and LIVE at `fxe-tennis-admin.vercel.app` (2026-08-28),
 with these recorded deviations from the plan below: plain HTML + supabase-js
-from a CDN instead of Vite/React (one user, five screens, zero build step; the
-reasoning is in commit dd55e36 and stands until the surface outgrows it); the
+instead of Vite/React (one user, five screens, zero build step; the
+reasoning is in commit dd55e36 and stands until the surface outgrows it), with
+supabase-js vendored in `web/vendor/` at an exact pinned version since
+2026-09-27 (it came from esm.sh at a floating `@2` until then;
+`scripts/vendor-supabase-js.sh`); the
 folder is `web/`, not `web-admin/`; the host is Vercel, not Cloudflare Pages,
 deployed by hand with `vercel --prod` and deliberately not connected to the
 repo (`web/README.md`); there is no `_headers` file and no CSP; there is no

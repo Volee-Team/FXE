@@ -53,7 +53,8 @@
 // would outlive the page, or replace Tara's own if she opened a link herself
 // (sql-auditor, 2026-09-27). implicit flow, never PKCE: a reset started on
 // the phone must finish here, and PKCE ties the code to the device that asked.
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+// supabase-js is vendored at an exact version (web/vendor, MVP audit item 17).
+import { createClient } from "./vendor/supabase-js.js";
 import { CONFIG } from "./config.js";
 const sb = createClient(CONFIG.url, CONFIG.key, {
   auth: { flowType: "implicit", persistSession: false, autoRefreshToken: false, storageKey: "fxe-reset" },
