@@ -9,6 +9,7 @@ Priority: 🔴 blocks a person · 🟡 should fix · 🟢 whenever
 
 | | Item | Found | Note |
 |---|---|---|---|
+| 🟢 | **Browser test "note round-trips" fails on the first full run after a local reset** | 2026-09-27 | Seen twice (both stacks): the first note save on a cold database takes longer than the 5-second wait for "Saved."; it passes warm and in CI. Before widening the wait, check whether the re-list after saving wipes the message early (a race the test would be right to catch). |
 | 🟡 | **Status bar text is dark over the navy header on a phone in light mode** | 2026-09-26 | Seen on the simulator with the straight header: time and battery in black on navy-900. SwiftUI has no per-screen status-bar style; the fix is a hosting-controller subclass that reads a preference (about an hour). Tara's mockup shows white, likely because her phone is in dark mode. |
 | 🟢 | **The court photo is a 920-pixel screenshot** | 2026-09-26 | Soft at full-screen size under the wash. Question 64 asks Tara for the original; swapping it is one file in `court-backdrop.imageset`. |
 | 🟢 | **Home's layout rule lives in the view** | 2026-09-26 | `showsOpenList` (fewer than two of your own clinics) is one line in `HomeView`; the open-for-registration rule it depends on is unit-tested (`OpenForRegistrationTests`), the layout choice is checked only by screenshots. If question 59 changes it, extract it and test it. |

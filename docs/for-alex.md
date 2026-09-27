@@ -83,6 +83,11 @@ The final bundle id is decided when the LLC account exists; today's
 4. Text her the link. Her answers save as she types; they show under
    **Responses** on the same tab. Tell the model when she is done.
 
+The page (version 3, 2026-09-27) now carries 17 questions: the six from
+round two and eleven from the Final Updates (the board's 10%, Home with one
+clinic, four about back-to-back 105s, the card box, the court photo and
+logo), plus a "Try it" task to run the board report.
+
 ## 5. Kat — one message
 
 Kat answered the header on 2026-09-26 ("straight line across"); it is built
@@ -97,6 +102,15 @@ straight. Three left:
   our own navy bar (about a day)?
 - **Green text contrast.** The guide's green is slightly too light for small
   text by the accessibility standard. OK to use a shade darker for text only?
+
+## 5b. John: the next TestFlight build
+
+After PR #58 merges (John's purpose strings, with the camera sentence
+corrected), John archives **build 3** from `main` per `docs/testflight.md`.
+It carries everything through 2026-09-27: the new front page, the card
+step, the 105 rule. Build 2 was rejected-then-fixed on his branch only; any
+archive from `main` before #58 would be rejected again by Apple for the
+missing camera sentence.
 
 ## 6. From Tara (a text is enough)
 
