@@ -47,7 +47,8 @@ a live-mode webhook.
    Tell the model the email, or edit the file.
 3. Pick the URL: the admin site now
    (`https://fxe-tennis-admin.vercel.app/privacy.html`) or fersc.com later.
-4. Tell the model "privacy approved, contact is X". It removes the Draft
+4. Tell the model "privacy approved, contact is X". Until then the page is
+   kept out of every deploy by `web/.vercelignore`. It removes the Draft
    banner, deploys the page, links it from Profile, and gives you the URL to
    paste into App Store Connect.
 
