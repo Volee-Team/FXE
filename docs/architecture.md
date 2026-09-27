@@ -546,7 +546,7 @@ Every migration that adds a rule adds a probe that is **red first**.
 
 | Probe | Asserts |
 |---|---|
-| `information_hiding` | A non-admin cannot read any of the nine hidden facts through any surface; since 20260927300002 including the row `cancel_registration` hands back (no court, no canceler) |
+| `information_hiding` | A non-admin cannot read any of the nine hidden facts through any surface; since 20260927300002 including the rows `cancel_registration` and `respond_to_invitation` hand back (no court, no canceler) |
 | `money_since_payments_on` | 20260927300001 from the rule: a clinic that ended before `payments_enabled_at` owes nothing and Charge clinic refuses it (`clinic_before_payments`), one ending exactly at it owes, nothing owes while it is empty, a row Tara marked Paid is settled (not declined, not charged), a deleted account's decline is listed and flagged, the refund lookup index exists, both helpers internal. Red first on the old schema, 13 checks |
 | `held_payments` | 20260927300003: `admin_resolve_held_payment` moves only a held row (a member is refused, an in-flight or already resolved row is `payment_not_held`, an unknown outcome `invalid_outcome`), went through marks paid, did not go through frees the charge; `first_attempted_at` unreadable and unwritable by clients. Red first, 14 checks |
 | `privilege_escalation` | Self-promotion to admin fails three ways |

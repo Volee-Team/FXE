@@ -123,6 +123,19 @@ join pg_namespace n on n.oid = c.relnamespace and n.nspname = 'public'
 where c.relkind = 'r'
   and has_table_privilege('authenticated', c.oid, 'SELECT');
 
+-- The same question asked of columns (sql-auditor, 2026-09-27): the check
+-- above cannot see a column-level grant, so without this one
+-- "grant select (court_number) on registrations to authenticated" would pass
+-- the whole suite. Every base table where authenticated can read ANY column.
+insert into _probe_result
+select 'authenticated_selects_columns_only_in_these_base_tables',
+       'accounts, app_settings, late_requests, notifications, payments, players',
+       coalesce(string_agg(c.relname, ', ' order by c.relname), '')
+from pg_class c
+join pg_namespace n on n.oid = c.relnamespace and n.nspname = 'public'
+where c.relkind = 'r'
+  and has_any_column_privilege('authenticated', c.oid, 'SELECT');
+
 -- --------------------------------------------- authenticated writes nothing
 -- Every legitimate write goes through a SECURITY DEFINER RPC, which runs as its
 -- owner and needs no caller grant. So a table-level write grant on a base table

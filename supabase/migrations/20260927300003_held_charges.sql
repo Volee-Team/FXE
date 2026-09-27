@@ -39,9 +39,14 @@ comment on column public.payments.first_attempted_at is
   'Every retry-window test measures from it: past RETRY_WINDOW_HOURS the row is '
   'held, never re-sent. Null: never attempted. service_role only. 20260927300003.';
 
--- Rows already past their first claim get the best stand-in there is.
+-- Rows already past their first claim get the best stand-in there is. The
+-- ledger trigger is off for this one statement: it stamps updated_at, which
+-- is when a decline happened (money_rows.failed_at), and every existing
+-- decline would otherwise read as the deploy's date (sql-auditor).
+alter table public.payments disable trigger payments_sync_registration_paid;
 update public.payments set first_attempted_at = created_at
  where first_attempted_at is null and status <> 'pending';
+alter table public.payments enable trigger payments_sync_registration_paid;
 
 -- The owner and admins read payments through RLS; the column list is every
 -- column but first_attempted_at. A column added later is unreadable until
