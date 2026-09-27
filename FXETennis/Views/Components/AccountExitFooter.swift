@@ -5,8 +5,8 @@
 //  The way off a step that is not "finish it": Sign out, and Delete my
 //  account behind the same confirmation Profile uses, word for word. Shared
 //  by every screen that stands between a new account and the app: the
-//  profile form, the waiver, the card step (CardStepView should adopt it in
-//  place of its own Sign out), and the load-failed screen (Sign out only).
+//  profile form, the waiver, the card step, and the load-failed screen (Sign
+//  out only, and not while Try again runs).
 //
 //  Why (MVP audit item 7, 2026-09-27). The waiver sheet cannot be swiped
 //  away and had no exit at all: someone who would not sign could not sign
@@ -26,6 +26,8 @@ struct AccountExitFooter: View {
     let signOutID: String
     /// Identifier for Delete my account; nil leaves the button out.
     let deleteID: String?
+    /// LoadFailedView turns Sign out off while Try again runs.
+    var signOutDisabled = false
 
     @State private var confirmDelete = false
     @State private var deleting = false
@@ -43,7 +45,7 @@ struct AccountExitFooter: View {
                     .frame(minHeight: Brand.Layout.minTapTarget)
             }
             .buttonStyle(.plain)
-            .disabled(deleting)
+            .disabled(deleting || signOutDisabled)
             .accessibilityIdentifier(signOutID)
             .accessibilityHint("Signs you out, you can finish later if needed")
 

@@ -58,7 +58,12 @@ struct LoadFailedView: View {
                         .disabled(retrying)
                         .accessibilityIdentifier("loadFailed.retry")
 
-                        AccountExitFooter(signOutID: "loadFailed.signOut", deleteID: nil)
+                        // Off while Try again runs: a sign-out racing the
+                        // retry could let its answer land after it (the
+                        // session's generation drops it anyway; this keeps
+                        // the two taps from crossing at all).
+                        AccountExitFooter(signOutID: "loadFailed.signOut", deleteID: nil,
+                                          signOutDisabled: retrying)
                     }
                     .padding(Brand.Spacing.pageMargin)
                     .padding(.top, Brand.Spacing.lg)

@@ -11,9 +11,10 @@
 //  webhook has recorded a card. CardOnFileView asks for the summary every 2
 //  seconds for about 30 after Stripe's sheet says the card is saved (it used
 //  to ask once, after 2), then offers Refresh, so a slow webhook no longer
-//  looks like a card that failed. Sign out is the one exit, so nobody is
-//  stuck on a step they cannot finish (the CompleteProfileView lesson,
-//  2026-08-15).
+//  looks like a card that failed. Sign out and Delete my account are the
+//  exits (AccountExitFooter, as on the profile form and the waiver), so
+//  nobody is stuck on a step they cannot finish (the CompleteProfileView
+//  lesson, 2026-08-15).
 //
 //  While payments are off (today, until Stripe is connected) the step never
 //  appears, because register_for_clinic does not require a card then either.
@@ -22,8 +23,6 @@
 import SwiftUI
 
 struct CardStepView: View {
-    @Environment(SessionStore.self) private var session
-
     var body: some View {
         NavigationStack {
             ZStack {
@@ -31,11 +30,7 @@ struct CardStepView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: Brand.Spacing.lg) {
                         CardOnFileView()
-                        Button("Sign out") { Task { await session.signOut() } }
-                            .font(Brand.Typography.subheadline)
-                            .foregroundStyle(Brand.textSecondary)
-                            .frame(maxWidth: .infinity)
-                            .accessibilityIdentifier("cardStep.signOut")
+                        AccountExitFooter(signOutID: "cardStep.signOut", deleteID: "cardStep.delete")
                     }
                     .padding(Brand.Spacing.pageMargin)
                 }
