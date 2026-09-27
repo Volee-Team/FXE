@@ -12,6 +12,7 @@ Ordered by what it unblocks, not by how hard it is to answer.
 
 | # | Question | Why it blocks | Our current assumption |
 |---|---|---|---|
+| 58–66 | **After the Final Updates** (`docs/questions-for-tara.md` §M, decision 0015): the board's 10% (of what, before or after Stripe's fee), Home with exactly one clinic, four edges of the back-to-back 105 rule (clock time, Pool counts, only 105s, the words a non-member sees), the court photo's original file, the card box wording, and a card with no permission on record | Nothing blocks: every default is built | As built |
 | 52–57 | **After her review of every word** (`docs/questions-for-tara.md` §L): the "Set by Tara" caption, the blank replacement for "Tara has your message.", "this week" under My Clinics, "Let's Play." vs "Let's play!", whether her policy block gets rewritten and shown, and whether "Stripe needs to be connected" was a note to us | Nothing blocks: every default is the current text | Keep as is |
 | 27–51 | **Answered.** §I/§J on 2026-09-12 and 2026-09-16 (decisions 0010, 0012), §K on 2026-09-21 (decision 0013: no courtesy, 3 hours, card only, waiver, keep history on deletion, Saturday and short weeks as built, her tap charges) | | |
 
