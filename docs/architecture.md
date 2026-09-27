@@ -531,7 +531,7 @@ and restore, Money counts, the card-payments ledger, payments off. One worker,
 file order; the suite is not idempotent (cancel clinic is for keeps), so reset
 between runs.
 
-**Stripe pipeline**: `tests/stripe/run.sh`, 69 checks against stripe-mock (the permission refusal, decline codes, a success clearing a decline, dashboard refunds recorded once):
+**Stripe pipeline**: `tests/stripe/run.sh`, 70 checks against stripe-mock (the permission refusal, decline codes, a success clearing a decline, dashboard refunds recorded once):
 SetupIntent, signed and unsigned webhooks, charge → processing → succeeded →
 paid, refund → unpaid, decline → failed with a reason, and the switch off
 proving nothing charges. Since 2026-09-27 (MVP audit items 3, 4, 11): Stripe's

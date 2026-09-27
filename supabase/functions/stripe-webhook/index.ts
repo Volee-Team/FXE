@@ -1,7 +1,11 @@
 // stripe-webhook: Stripe tells us what happened; we record it. This is the
-// ONLY writer of card summaries and of ledger status, apart from admin RPCs
-// that create pending rows. Signature verified with STRIPE_WEBHOOK_SECRET;
-// an unsigned request changes nothing.
+// only writer of a card summary and of a ledger outcome (succeeded, or a
+// failure Stripe reports later), apart from admin RPCs that create pending
+// rows, stripe-charge (processing, a synchronous failure, back to pending for
+// a retry), a card summary cleared once its customer is gone (stripe-charge,
+// stripe-setup-intent, delete-account), and the one-off live cutover.
+// Signature verified with STRIPE_WEBHOOK_SECRET; an unsigned request changes
+// nothing.
 //
 // Events handled:
 //   setup_intent.succeeded          -> accounts.card_brand / card_last4 / card_added_at

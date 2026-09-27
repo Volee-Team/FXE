@@ -6,7 +6,7 @@ account and need to test a refund."* This is that test. It runs against
 hosted with **Stripe test mode**, so no real money moves, and with **Alex's
 own account**, never a made-up one (no fixtures in hosted, CLAUDE.md).
 
-What is already proven without Stripe: `tests/stripe/run.sh`, 69 checks
+What is already proven without Stripe: `tests/stripe/run.sh`, 70 checks
 against Stripe's own mock server on every PR. What only this run proves:
 Stripe's real answers (real ids, real declines, 3-D Secure, the webhook
 signature from Stripe's servers).

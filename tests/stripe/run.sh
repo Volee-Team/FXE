@@ -245,6 +245,11 @@ PAY_S3=$(sql "with i as (insert into public.payments (registration_id, account_i
 fn stripe-charge "$TARA_JWT" '{}' >/dev/null
 check "a stuck charge is retried as the same row" "processing pi_ 1" "$(sql "select status||' '||coalesce(left(stripe_payment_intent_id,3),'NULL')||' '||(select count(*) from public.payments where registration_id='$REG_S1') from public.payments where id='$PAY_S1'")"
 check "one stuck past the key's lifetime is held for a person" "processing retry_window_passed NULL" "$(sql "select status||' '||coalesce(failure_reason,'NULL')||' '||coalesce(stripe_payment_intent_id,'NULL') from public.payments where id='$PAY_S2'")"
+# The same for a refund row, whose Stripe id is the Refund's (a second app
+# refund of $PAY: REF carries its Stripe id, so the one-live-app-refund index allows it).
+PAY_S4=$(sql "with i as (insert into public.payments (registration_id, account_id, kind, amount_cents, status, refunds_payment_id, created_at, updated_at) values ('$REG','$MARIA','refund',100,'processing','$PAY', now() - interval '10 minutes', now() - interval '10 minutes') returning id) select id from i")
+fn stripe-charge "$TARA_JWT" '{}' >/dev/null
+check "a stuck refund is retried as the same row" "processing re_" "$(sql "select status||' '||coalesce(left(stripe_refund_id,3),'NULL') from public.payments where id='$PAY_S4'")"
 check "a charge claimed moments ago is left to its call" "processing NULL NULL" "$(sql "select status||' '||coalesce(stripe_payment_intent_id,'NULL')||' '||coalesce(failure_reason,'NULL') from public.payments where id='$PAY_S3'")"
 
 # ---- 10. A dropped connection may have charged, so the row goes back to
