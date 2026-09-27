@@ -71,8 +71,16 @@ begin
   exception when others then
     insert into _probe_result values ('double_tap_is_one_fee', 'already_charged', sqlerrm);
   end;
-  -- A late-cancel fee with an explicit amount is a separate kind, allowed.
-  perform public.admin_charge_registration(reg_m, 'late_cancel', 1000);
+  -- A second fee of ANOTHER kind on the same row is still a second fee for
+  -- one clinic: refused (one fee per player per clinic, 20260927100001).
+  -- Until then this line asserted the opposite ("a separate kind, allowed"),
+  -- which is the double charge the 2026-09-27 audit called a blocker.
+  begin
+    perform public.admin_charge_registration(reg_m, 'late_cancel', 1000);
+    insert into _probe_result values ('second_kind_same_clinic_refused', 'already_charged', 'CALL SUCCEEDED');
+  exception when others then
+    insert into _probe_result values ('second_kind_same_clinic_refused', 'already_charged', sqlerrm);
+  end;
   begin
     perform public.admin_charge_registration(reg_m, 'refund');
     insert into _probe_result values ('refund_kind_not_via_charge', '22023', 'CALL SUCCEEDED');
@@ -81,7 +89,7 @@ begin
   end;
   perform set_config('role', 'postgres', true);
   select count(*) into n from public.payments where registration_id = reg_m;
-  insert into _probe_result values ('two_rows_for_maria', '2', n::text);
+  insert into _probe_result values ('one_fee_row_for_maria', '1', n::text);
 
   -- Pending is not paid. The ledger drives the checkbox only on success.
   select r.paid into paid from public.registrations r where r.id = reg_m;
@@ -114,7 +122,7 @@ begin
   perform set_config('request.jwt.claims', json_build_object('sub', MARIA)::text, true);
   perform set_config('role', 'authenticated', true);
   select count(*) into n from public.payments;
-  insert into _probe_result values ('player_sees_only_own_ledger', '3', n::text);   -- fee, late, refund; none of Rob's
+  insert into _probe_result values ('player_sees_only_own_ledger', '2', n::text);   -- fee, refund; none of Rob's
   begin
     execute 'update public.payments set status = $1::public.payment_status where id = $2' using 'canceled', pay;
     insert into _probe_result values ('player_cannot_write_ledger', 'denied', 'UPDATED');

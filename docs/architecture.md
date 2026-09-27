@@ -143,7 +143,8 @@ FXETennis/
 │   ├── SupabaseClient.swift     the one client (URL + publishable key, implicit flow)
 │   ├── Repositories.swift       player reads/writes: Clinic, Registration, News, Profile
 │   ├── PaymentsRepository.swift asks stripe-setup-intent for what PaymentSheet needs; that is all
-│   └── AdminRepository.swift    every admin RPC + the roster/late-request/notice models
+│   └── AdminRepository.swift    every admin RPC + the roster/late-request/notice models, the money
+│                                models (MoneyClinic, MoneyDecline) and Stripe's decline codes in words
 ├── Models/
 │   ├── CoreModels.swift         Codable mirrors of the views (no hidden columns exist here)
 │   ├── CancelPolicy.swift       decision 0010: is this cancel inside cancel_cutoff_hours? (pure, unit-tested)
@@ -175,9 +176,13 @@ FXETennis/
     ├── Components/BrandHeader.swift the straight navy header with the green line, the Wordmark, NavRowLabel
     ├── Components/CourtBackdrop.swift Tara's court photo under a porcelain wash, behind the main screens
     ├── WaiverView.swift         Tara's waiver, her checkbox sentence, the typed legal name; gates the app until signed
-    ├── AdminClinicsView.swift   Manage: Action Needed, Today, Upcoming, Past; toolbar → Players
-    ├── AdminClinicDetailView.swift roster: courts, Came/No-show, invite, cancel invite, late requests,
-    │                            Message Players, Charge clinic (Paid and Remind unpaid only while zelle_allowed)
+    ├── AdminClinicsView.swift   Manage: Action Needed (a clinic ended and not charged yet, a declined
+    │                            card, each opening its clinic; "N unpaid" only while zelle_allowed),
+    │                            Today, Upcoming, Past; toolbar → Players
+    ├── AdminClinicDetailView.swift roster: courts, Came/No-show, Late cancel (inside the cutoff), invite,
+    │                            cancel invite, late requests, Message Players, Charge clinic and its summary
+    │                            from Stripe's answer (ChargeSummary, ChargeOutcome); late cancels on the
+    │                            Canceled list with their note (Paid and Remind unpaid only while zelle_allowed)
     └── PlayersDirectoryView.swift search, member / active switches, private note
 ```
 
@@ -328,7 +333,7 @@ Enums: `account_type`, `account_role`, `player_kind`, `clinic_audience`
 
 **Player-facing** (self-gated by `owns_player()` or `auth.uid()`):
 `create_my_account`, `register_for_clinic` (refuses `card_required` once payments are on unless a card is saved, meaning `card_last4` and not merely a Stripe customer; `waiver_required` until the current waiver is signed; `back_to_back_105` for a non-member taking a second 105 the same New York day earlier than 48 hours before the earlier start, decision 0015, using `is_105` and `back_to_back_105_opens_at`), `record_card_consent` / `my_card_consent` / `card_consent_text` (the permission box, decision 0015 §7), `respond_to_invitation`,
-`cancel_registration(p_registration, p_note)` (inside the 3-hour cutoff the cancel is late and the fee applies; the note is optional, decisions 0012/0013), `leave_pool` (archives the row as canceled since 2026-09-21), `request_late_spot`,
+`cancel_registration(p_registration, p_note)` (inside the 3-hour cutoff the cancel is late and the fee applies; the note is optional, decisions 0012/0013; the admins are told only when the caller owns the player, so Tara's own removal no longer reads in her Action Needed as the player canceling, 20260927100002), `leave_pool` (archives the row as canceled since 2026-09-21), `request_late_spot`,
 `mark_news_read`, `register_device` / `unregister_device` (the account is
 always `auth.uid()`; `devices` stays client-unreadable), `current_waiver` / `waiver_version` / `my_waiver_accepted` / `accept_waiver` (the waiver, decision 0013 §4), `delete_my_account` (scrubs the person, keeps history; the `delete-account` edge function then removes the sign-in through Supabase's admin API, decision 0013 §5), `zelle_allowed` (false: the card is the only way to pay).
 
@@ -339,18 +344,21 @@ always `auth.uid()`; `devices` stays client-unreadable), `current_waiver` / `wai
 | `admin_upsert_clinic`, `admin_upsert_template`, `admin_set_template_archived`, `create_clinic_from_template` | Build the week. Templates are copy-on-create; archived, never deleted (`admin_delete_template` remains but the web admin no longer offers it). |
 | `publish_clinic`, `cancel_clinic` | Draft to published; cancel and notify everyone live. |
 | `invite_from_pool`, `cancel_invitation` | Tara's hand-pick, and taking it back. |
+| `admin_mark_late_cancel` | Tara records a late cancellation for someone who told her (a text an hour before; 20260927100002): You're In! to Canceled, `late_cancel` set, `canceled_by` her, optional note; Charge clinic then charges it as a late cancel. Only inside the cutoff or later (`not_late_yet`), never once the row is charged (`charged_refund_first`) or on a canceled clinic; tells nobody. Her plain Remove (`cancel_registration`) stays free. |
 | `resolve_late_request` | Put a late asker in, or say no room. |
 | `place_player` | Walk-up placement; ignores window and capacity by design; still snapshots the price. |
 | `set_paid`, `assign_court` | The court sheet. `assign_court` is the one unconditional update in the schema: a court is a value, not a transition. |
 | `send_clinic_message` | Audiences `everyone` / `in` / `pool` / `response_needed` / `unpaid`, resolved server-side. The one-tap unpaid reminder is this with a fixed body. |
 | `search_players`, `admin_player_note`, `admin_player_note_edited`, `admin_set_player_note`, `admin_set_membership`, `set_player_active` | The directory. `search_players` returns `has_notes`, never the note; `admin_player_note_edited` returns the note's `updated_at` or null (20260912000004). |
 | `publish_news` | Publish a draft post. |
-| `admin_charge_registration`, `admin_refund_payment` | Insert `pending` ledger rows for the Stripe edge functions to execute; refuse while `payments_enabled` is false. |
-| `revenue_summary` | The four numbers and the money (section 7). |
+| `admin_charge_registration`, `admin_refund_payment` | Insert `pending` ledger rows for the Stripe edge functions to execute; refuse while `payments_enabled` is false. Since 20260927100001, **one fee per player per clinic**: a charge is refused (`already_charged`) while the player holds a live fee in that clinic on any of their rows, of any kind (live = pending, processing, or succeeded and not refunded in full), checked under a per player-and-clinic advisory lock. |
+| `admin_set_no_show`, `admin_charge_clinic` | Came or No-show on a You're In! row, refused once that row holds a live fee (`charged_refund_first`: refund first); her one tap per ended clinic (decision 0012), which refuses a canceled clinic (`clinic_canceled`), skips a late cancel when the same player holds a You're In! row there, and locks the clinic's rows while it charges (20260927100001). |
+| `revenue_summary` | The four numbers and the money (section 7). Since 2026-09-27 the web admin reads only its four counts; the money comes from `admin_money_summary`. Kept (hard rule 6). |
+| `admin_money_summary`, `admin_money_clinics`, `admin_money_declined` | The Money numbers from the ledger (20260927100003): charged (succeeded fees minus their succeeded refunds, all time: the board report's collected without dates), declined and not charged yet for ended, not canceled clinics; per clinic, with how many not-charged players have a card (what one more Charge clinic would charge); and the declined list with the cardholder's name, the clinic and Stripe's code. One definition, the internal `money_rows()`, which the three only aggregate. |
 | `admin_board_report`, `admin_board_report_clinics` | The board report (Tara, 2026-09-26; 20260926000010): for New York dates `p_from..p_to` inclusive, attendances and distinct players by the `was_member` snapshot (You're In!, not a no-show, clinic ended and not canceled), clinics, fees due at the snapshot prices, card income net of refunds (clinic, late-cancel and no-show fees), and 10% of each, rounded half up; the second returns the same per clinic, adding up to the first. `invalid_period` for a null or backwards range. The 10% base is question 58. |
 | `admin_create_review_link`, `admin_review_responses` | Tara's review page (section 8): mint a link token with a label; list every saved response newest first, revoked links included (archive, never delete). |
 
-**Internal** (`notify_account`, `admin_account_ids`) is executable by no
+**Internal** (`notify_account`, `admin_account_ids`, and since 20260927100001 `registration_has_live_fee` and `player_has_live_fee`, the live-fee test, and since 20260927100003 `money_rows`, the Money tab's one definition) is executable by no
 client role. Helper functions used by defaults and views (`service_week_start`,
 `member_opens_at`, `public_opens_at`, `default_closes_at`,
 `default_price_cents`, `player_age`) and the settings readers
@@ -394,9 +402,13 @@ $23 for 60 minutes, $22 / $28 for 90. At registration the price, membership and
 duration are **snapshotted** onto the row (decision 0002), so editing a clinic
 or correcting a membership never rewrites history. `revenue_summary()` returns
 the four counts, expected, collected and outstanding; `revenue_by_clinic` and
-`revenue_by_segment` break it down. Only `status = 'in'` counts.
+`revenue_by_segment` break it down. Only `status = 'in'` counts. Its money columns
+are the Zelle era's (the Paid flag, future and canceled clinics included), so
+since 2026-09-27 the Money tab shows `admin_money_summary` instead: charged,
+declined, not charged yet, from the ledger, for ended clinics that were not
+canceled.
 
-Decision 0012 (2026-09-16), amended by 0013 (2026-09-21: no courtesy, 3 hours, card only), is Tara's cancellation policy in code: a courtesy late cancellation per player per `courtesy_cancel_days` (now 0, so never), applied by `cancel_registration` (`registrations.courtesy_used`); no-shows marked by `admin_set_no_show` (`registrations.no_show`); every card charged after the clinic by her one tap, `admin_charge_clinic`, which makes one pending ledger row per attendee (clinic fee), no-show and non-courtesy late cancel (full fee) and skips rows without a card; `register_for_clinic` raises `card_required` once payments are on (`card_required` setting); the player's own `players.level_note`, read by Tara only, written at sign-up (`create_my_account`) or on Edit details; `my_courtesy_available` tells the cancel sheet which of her sentences to show. Probe `cancellation_policy`. Decision 0009 (2026-09-12) adds card payments alongside Zelle: a `payments`
+Decision 0012 (2026-09-16), amended by 0013 (2026-09-21: no courtesy, 3 hours, card only), is Tara's cancellation policy in code: a courtesy late cancellation per player per `courtesy_cancel_days` (now 0, so never), applied by `cancel_registration` (`registrations.courtesy_used`); no-shows marked by `admin_set_no_show` (`registrations.no_show`); every card charged after the clinic by her one tap, `admin_charge_clinic`, which makes one pending ledger row per attendee (clinic fee), no-show and non-courtesy late cancel (full fee) and skips rows without a card, and never more than one live fee per player per clinic (20260927100001: a no-show flip under a charge is refused until refunded, a late cancel beside a You're In! row for the same player is skipped, a canceled clinic is refused); `register_for_clinic` raises `card_required` once payments are on (`card_required` setting); the player's own `players.level_note`, read by Tara only, written at sign-up (`create_my_account`) or on Edit details; `my_courtesy_available` tells the cancel sheet which of her sentences to show. Probe `cancellation_policy`. Decision 0009 (2026-09-12) adds card payments alongside Zelle: a `payments`
 ledger, admin RPCs that charge and refund, and `payments_ledger`, the admin's
 read of it with the player and clinic named. Three Deno edge functions do the
 Stripe half with `service_role`: `stripe-setup-intent` (customer + SetupIntent
@@ -413,7 +425,7 @@ is **3** (decision 0013 §2) and the note is optional (decision 0012). Before
 the cutoff any cancel is free; inside it the full fee applies and
 `cancel_registration(p_registration, p_note)` stamps `late_cancel` + the
 optional `cancel_note` on the row. Pool and Response
-Needed drop-outs and Tara's own removals are never late. The app judges
+Needed drop-outs and Tara's own removals are never late; since 2026-09-27 she records a late one on purpose with `admin_mark_late_cancel` (her 2026-09-22 answer: pros "can label them as no show, late cancellation"). The app judges
 nothing and charges nobody on its own: the note rides in her notification and
 shows on the roster, and any charge is her tap. Answered: Q38–42 on
 2026-09-16 (decision 0012) and Q43–47 on 2026-09-21 (decision 0013). Nothing
@@ -447,7 +459,16 @@ true (the late-cancel note shows always). Added 2026-09-26: a **Board report**
 card at the top of the Money tab (`admin_board_report` and
 `admin_board_report_clinics`, with Download CSV and Print) for Tara's board
 and its 10%, and "Declined: <reason>" on failed card payments from
-`payments.failure_code`. Drag-and-drop courts are
+`payments.failure_code`. Added 2026-09-27 (the MVP audit's money fixes):
+**Late cancel** on a You're In! row inside the cutoff or later
+(`admin_mark_late_cancel`, with an optional note); Action Needed rows for a
+clinic that ended and is not charged yet (with Charge clinic beside it, while
+payments are on) and for each declined card; the Money line from
+`admin_money_summary` (Charged, Declined, Not charged yet) with the declined
+list and per-clinic rows from `admin_money_declined` and `admin_money_clinics`
+(the four counts stay on `revenue_summary`); and the Charge clinic summary
+counting what Stripe accepted, from `stripe-charge`'s answer, not what was
+queued. Drag-and-drop courts are
 deliberately not built until the dropdown has been used for real.
 
 Added 2026-09-21: **Tara's review page lives here too.** `web/review.html`
@@ -489,21 +510,22 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `push_devices` | `register_device` / `unregister_device`, attacked: nobody but the owner sees a token, the account is never a parameter, re-registering is idempotent |
 | `push_delivery` | 20260923000001: the audit columns exist and `authenticated` holds nothing on them (Maria's own `select delivery_error` is refused) while the app's eight columns still read; the AFTER INSERT trigger exists and no client can execute its function; with no vault secrets (or only one) an insert succeeds and queues nothing, with both (and an unreachable URL) it queues exactly one request carrying the row id and the secret header; and when the vault read itself raises (the trigger function handed to `anon` inside the rolled-back transaction) the insert still succeeds |
 | `template_archive` | Only Tara archives or restores; the stamp survives a repeat; archived rows show to her and to nobody else; a clinic can still be built from an archived template |
-| `payments_foundation` | Nobody charges anyone while payments are off; a player cannot write the ledger or forge a card; a double tap is one fee; the ledger, not a checkbox, marks a registration paid |
+| `payments_foundation` | Nobody charges anyone while payments are off; a player cannot write the ledger or forge a card; a double tap is one fee, and a second fee of another kind on the same row is refused (it asserted the opposite until 2026-09-27); the ledger, not a checkbox, marks a registration paid |
 | `payments_ledger` | The gate on the owner-run view: Tara sees the row with names on it, Maria sees nothing, nobody writes through it |
-| `money_reports` | The board report from the rule, on a hand-computed fixture: every column of both functions, the snapshot beats a later membership correction, a refund is subtracted, late-cancel and no-show fees are income, the New York date decides the month at both edges, the clinic rows add up to the totals, `invalid_period`, a member gets `not_authorized`, anon and PUBLIC hold no EXECUTE, and the ledger shows `failure_code` to Tara and nothing to Maria. Red first under two mutants (membership from `players.is_member`, 7 checks; refunds not subtracted, 4) |
-| `cancellation_policy` | Decisions 0012/0013: card required to register, no-shows, the courtesy window switched off at 0 days (and proven reversible at 90), one tap per clinic after it ends, the note only Tara reads | 30 |
+| `money_reports` | The board report from the rule, on a hand-computed fixture: every column of both functions, the snapshot beats a later membership correction, a refund is subtracted, late-cancel and no-show fees are income, the New York date decides the month at both edges, the clinic rows add up to the totals, `invalid_period`, a member gets `not_authorized`, anon and PUBLIC hold no EXECUTE, and the ledger shows `failure_code` to Tara and nothing to Maria. Red first under two mutants (membership from `players.is_member`, 7 checks; refunds not subtracted, 4). Since 2026-09-27 also the Money tab on the same fixture (one failed fee added): charged equals the board's collected over all time, declined and not charged yet for ended, not canceled clinics (refunded in full is settled, a retry that went through is charged, a canceled clinic's fee counts as charged and owes nothing), the clinic rows newest first and adding up, the declined list naming the cardholder, a member refused all three, `money_rows` internal. Red first: the page's old arithmetic, 2 checks; future clinics counted as owing, 3 |
+| `cancellation_policy` | Decisions 0012/0013: card required to register, no-shows, the courtesy window switched off at 0 days (and proven reversible at 90), one tap per clinic after it ends, the note only Tara reads; and one fee per player per clinic (20260927100001): a no-show flip after a charge is refused, the same flip by any other path still yields one fee, refund-then-flip-then-tap works, put back in after a late cancel is one fee whether or not the late fee was already charged, a canceled clinic is never charged. Red first on the old functions, 9 checks | 40 |
 | `back_to_back_105` | Decision 0015 §13, Tara's rule and her own Sunday example as literals (Friday 16:30): a non-member's second 105 the same day is refused until 48 hours before the earlier start, allowed inside 48 hours, on another day, for a non-105, after leaving the first; members and Tara unaffected; clock time across both daylight-saving weekends; the same New York day across UTC midnight; a canceled clinic frees the day; the earlier start decides in either order; the helpers are internal | 22 |
 | `card_consent` | Decision 0015 §5 and §7: a Stripe customer without a saved card cannot register, is not "has card" on the roster, cannot be charged (all three passed before 20260926000001); the permission is recorded with the server's words, version and build, asked again when the words change, unreadable and unwritable by clients, kept through account deletion, not removable by a hard delete (RESTRICT), purged 90 days after it and not before; ticking twice records once | 25 |
 | `waiver` | Decision 0013 §4: her text is served, an unsigned account cannot register, a signature needs a full legal name and the current version, the email comes from the account, signing twice keeps the first record, Tara can place an unsigned player and see who has not signed, no client touches the tables | 23 |
 | `account_deletion` | Decision 0013 §5: the person is scrubbed, registrations, ledger and Tara's note stay, a spot in a future clinic is given back, a played clinic keeps its row and its revenue, Tara cannot delete herself, a deleted row is never an admin | 18 |
-| `late_cancellation` | Decision 0010 driven from the roles the app uses: a late You're In! cancel needs a note, pool drop-outs and Tara's removals are never late, the note reaches her roster |
+| `late_cancellation` | Decision 0010 driven from the roles the app uses: a late You're In! cancel needs a note, pool drop-outs and Tara's removals are never late, the note reaches her roster; since 20260927100002 Tara's late cancel (late, by her, note trimmed, charged as a late cancel after the clinic; refused before the cutoff, twice, on a Pool entry, by a member) while her plain Remove records no fee, and who was told per registration as account:type (a player's own cancel tells every admin; Tara's Remove and her late cancel tell nobody). Red first: the old fan-out, 1 check; late cancel as the old Remove, 8 |
 | `review_responses` | Only Tara mints a review link and the token is long and URL-safe; anon and authenticated hold no verb on either table; the edge function's role does; a repeat save on one (link, page version) is one row with a later `updated_at`; Tara reads every response back with its label, newest first; revoking a link keeps its responses |
 | `capacity_race.sh` | Two racing registrations; invite-vs-accept |
 | `back_to_back_105_race.sh` | Two concurrent registrations by one non-member for two same-day 105s: exactly one survives (the per-player lock in `register_for_clinic`; red without it, 2026-09-26) |
+| `one_fee_race.sh` | Two concurrent charges of different kinds for one player in one clinic (the unique index cannot see them): exactly one live fee survives (the per player-and-clinic lock in `admin_charge_registration`, 20260927100001; red without it, 2026-09-27: both went through) |
 
 **Swift**: 33 unit tests (`FXETennisTests`: price formatting, per-viewer
-pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016) and 13
+pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016, counted from Stripe's answers since 2026-09-27) and 13
 XCUITests: 8 player flows
 (`PlayerFlowUITests`: sign in / browse / register, undo, sign-up end to end,
 the bell, profile edit, My Clinics, prices, hidden information) and 5 admin

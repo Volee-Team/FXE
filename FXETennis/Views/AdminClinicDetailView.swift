@@ -48,6 +48,18 @@ final class AdminClinicModel {
     var unpaidCount: Int { youreIn.filter { !$0.registration.paid }.count }
     /// Decision 0013: false, so Paid/Unpaid and the reminder stay hidden.
     var zelleAllowed = false
+    /// app_settings.cancel_cutoff_hours (3, decision 0013), for Late cancel.
+    var cutoffHours = 3
+
+    /// Late cancel (20260927100002) is offered on a You're In! row inside the
+    /// cutoff or later, on a clinic that is not canceled, while the row holds
+    /// no live charge. The server enforces all three; this decides the menu.
+    func canLateCancel(_ entry: RosterEntry, now: Date = Date()) -> Bool {
+        !clinic.isCanceled
+            && entry.registration.status == .in_
+            && !entry.registration.hasLiveCharge
+            && CancelPolicy.isInsideCutoff(startsAt: clinic.startsAt, cutoffHours: cutoffHours, now: now)
+    }
 
     func load() async {
         loading = true
@@ -55,6 +67,7 @@ final class AdminClinicModel {
         do {
             roster = try await AdminRepository.roster(clinic: clinic.id)
             zelleAllowed = (try? await AdminRepository.zelleAllowed()) ?? false
+            cutoffHours = (try? await RegistrationRepository.cancelCutoffHours()) ?? 3
             let asks = (try? await AdminRepository.pendingLateRequests(clinic: clinic.id)) ?? []
             let people = (try? await AdminRepository.players(ids: asks.map(\.playerId))) ?? []
             let byId = Dictionary(uniqueKeysWithValues: people.map { ($0.id, $0) })
@@ -78,8 +91,25 @@ final class AdminClinicModel {
             try await work()
             await load()
         } catch {
-            self.error = "That didn't go through. Check your connection and try again."
+            let message = Self.message(for: error)
+            // A row that changed under her (hard rule 3): show the latest,
+            // then say so. load() clears the error, so the words go last.
+            if message == Self.changedUnderYou { await load() }
+            self.error = message
         }
+    }
+
+    static let changedUnderYou = "That just changed. Here's the latest."
+
+    /// The server's named refusals in words (20260927100001/2); anything
+    /// else is most likely the connection.
+    static func message(for error: Error) -> String {
+        let e = String(describing: error)
+        if e.contains("charged_refund_first") { return "Already charged: refund it first." }
+        if e.contains("not_late_yet") { return "Not late yet." }
+        if e.contains("clinic_canceled") { return "That clinic is canceled." }
+        if e.contains("registration_not_in") || e.contains("already_canceled") { return changedUnderYou }
+        return "That didn't go through. Check your connection and try again."
     }
 }
 
@@ -93,6 +123,8 @@ struct AdminClinicDetailView: View {
     @State private var confirmCharge = false
     @State private var chargeNote: String?
     @State private var removing: RosterEntry?
+    @State private var lateCanceling: RosterEntry?
+    @State private var lateNote = ""
     @State private var cancelError: String?
     @State private var model: AdminClinicModel
     @State private var showMessage = false
@@ -122,7 +154,7 @@ struct AdminClinicDetailView: View {
                     rosterSection(
                         Brand.Status.youreIn, model.youreIn,
                         empty: "Nobody is in yet."
-                    ) { entry in AnyView(HStack(spacing: Brand.Spacing.xs) { courtMenu(entry); if model.zelleAllowed { paidToggle(entry) }; noShowToggle(entry) }) }
+                    ) { entry in AnyView(HStack(spacing: Brand.Spacing.xs) { courtMenu(entry); if model.zelleAllowed { paidToggle(entry) }; noShowToggle(entry); declinedLabel(entry) }) }
 
                     rosterSection(
                         Brand.Status.playerPool, model.pool,
@@ -138,9 +170,10 @@ struct AdminClinicDetailView: View {
                     lateRequestSection
 
                     // Canceled stays visible: hard rule 4, and Screen 14 says
-                    // "Keep canceled players visible to Tara."
+                    // "Keep canceled players visible to Tara." A late cancel
+                    // says so, with its note, the way the web roster does.
                     if !model.canceled.isEmpty {
-                        rosterSection(Brand.Status.canceled, model.canceled, empty: "") { _ in AnyView(EmptyView()) }
+                        rosterSection(Brand.Status.canceled, model.canceled, empty: "") { entry in AnyView(lateLabel(entry)) }
                     }
                 }
                 .padding(Brand.Spacing.pageMargin)
@@ -176,13 +209,16 @@ struct AdminClinicDetailView: View {
             Button("Charge clinic") {
                 Task {
                     do {
-                        let c = try await AdminRepository.chargeClinic(clinic.id)
-                        chargeNote = ChargeSummary.text(charged: c["charged"] ?? 0, already: c["already"] ?? 0, noCard: c["no_card"] ?? 0)
+                        // What Stripe answered for this clinic's fees, then
+                        // the roster again, so each row's charge state is fresh.
+                        let outcome = try await AdminRepository.chargeClinic(clinic.id)
+                        chargeNote = ChargeSummary.text(outcome)
                         await model.load()
                     } catch {
                         let e = String(describing: error)
                         chargeNote = e.contains("payments_disabled") ? "Payments are switched off."
                             : e.contains("clinic_not_over") ? "The clinic hasn't ended yet."
+                            : e.contains("clinic_canceled") ? "That clinic is canceled."
                             : "That didn't go through. Try again."
                     }
                 }
@@ -223,6 +259,27 @@ struct AdminClinicDetailView: View {
                 removing = nil
             }
             Button("Keep", role: .cancel) { removing = nil }
+        }
+        // Late cancel (20260927100002): the player told Tara inside the
+        // cutoff. An alert, not a confirmation dialog, because it carries the
+        // optional note the web roster shows beside "Fee applies".
+        .alert(
+            "Late cancel \(lateCanceling?.displayName ?? "this player")?",
+            isPresented: Binding(get: { lateCanceling != nil }, set: { if !$0 { lateCanceling = nil } })
+        ) {
+            TextField("Note (optional)", text: $lateNote)
+            Button("Late cancel", role: .destructive) {
+                if let entry = lateCanceling {
+                    let note = lateNote
+                    Task { await model.perform(entry.id) {
+                        try await AdminRepository.markLateCancel(registration: entry.id, note: note)
+                    } }
+                }
+                lateCanceling = nil
+            }
+            Button("Keep", role: .cancel) { lateCanceling = nil }
+        } message: {
+            Text("The fee applies.")
         }
         .alert("Couldn't cancel", isPresented: Binding(get: { cancelError != nil }, set: { if !$0 { cancelError = nil } })) {
             Button("OK") { cancelError = nil }
@@ -459,7 +516,35 @@ struct AdminClinicDetailView: View {
                 Text(entry.subtitle)
                     .font(Brand.Typography.caption)
                     .foregroundStyle(Brand.textSecondary)
+                // The note left with a late cancel, the player's or Tara's.
+                if let note = entry.lateNote {
+                    Text(note)
+                        .font(Brand.Typography.caption)
+                        .foregroundStyle(Brand.textSecondary)
+                        .lineLimit(3)
+                }
             }
+        }
+    }
+
+    /// "Late · Fee applies" on a late cancel in the Canceled list (the web
+    /// roster's words); nothing on any other canceled row.
+    @ViewBuilder private func lateLabel(_ entry: RosterEntry) -> some View {
+        if let label = entry.lateLabel {
+            Text(label)
+                .font(Brand.Typography.chip)
+                .foregroundStyle(Brand.Status.canceled.ink)
+        }
+    }
+
+    /// A declined card, courtside: the row reads "Declined" until a retry
+    /// goes through. The name and Stripe's reason are in Action Needed and in
+    /// the summary after Charge clinic.
+    @ViewBuilder private func declinedLabel(_ entry: RosterEntry) -> some View {
+        if entry.registration.chargeStatus == "failed" {
+            Text("Declined")
+                .font(Brand.Typography.chip)
+                .foregroundStyle(Brand.Status.canceled.ink)
         }
     }
 
@@ -476,9 +561,16 @@ struct AdminClinicDetailView: View {
                 Button("Court \(n)") { assign(entry, n) }
             }
             Divider()
+            // A player who told Tara inside the cutoff (a text an hour
+            // before): off You're In!, marked late, the fee applies
+            // (20260927100002). Only while the server would accept it.
+            if model.canLateCancel(entry) {
+                Button("Late cancel") { lateNote = ""; lateCanceling = entry }
+            }
             // A walk-up placed on the wrong clinic, or a player who told Tara
             // in person. Same RPC the player's own Cancel uses; the row is
-            // kept as canceled, never deleted (hard rule 4).
+            // kept as canceled, never deleted (hard rule 4). Never late, and
+            // since 20260927100002 not echoed back as the player canceling.
             Button("Remove from clinic", role: .destructive) { removing = entry }
         } label: {
             Label(current.map { "Court \($0)" } ?? "Court", systemImage: "rectangle.split.2x1")
@@ -683,11 +775,71 @@ private struct MessageClinicSheet: View {
 /// What Tara reads after Charge clinic. Was "Charged 6. Already charged 0. No
 /// card 1.", which she marked Change on 2026-09-22 (decision 0016). Plain
 /// sentences, zero counts left out. Chrome, listed for Alex's tick.
+///
+/// Since 2026-09-27 "Charged" counts what Stripe accepted, not what was
+/// queued, and each declined card is named with its reason (the audit found
+/// "Charged 6" printed when all six declined). The web admin's
+/// chargeSummaryText is the same sentences.
 enum ChargeSummary {
-    static func text(charged: Int, already: Int, noCard: Int) -> String {
-        var parts = [charged == 1 ? "Charged 1 card." : "Charged \(charged) cards."]
+    /// One declined card: the cardholder and Stripe's reason in words.
+    struct Decline: Equatable, Sendable {
+        let name: String
+        let reason: String?
+    }
+
+    static func text(paid: Int, declined: [Decline] = [], processing: Int = 0, already: Int, noCard: Int) -> String {
+        var parts = [paid == 1 ? "Charged 1 card." : "Charged \(paid) cards."]
+        for d in declined {
+            if let reason = d.reason, !reason.isEmpty {
+                parts.append("\(d.name)'s card was declined: \(reason).")
+            } else {
+                parts.append("\(d.name)'s card was declined.")
+            }
+        }
+        if processing > 0 { parts.append(processing == 1 ? "1 is still processing." : "\(processing) are still processing.") }
         if already > 0 { parts.append(already == 1 ? "1 was already charged." : "\(already) were already charged.") }
         if noCard > 0 { parts.append(noCard == 1 ? "1 player has no card on file." : "\(noCard) players have no card on file.") }
         return parts.joined(separator: " ")
+    }
+
+    static func text(_ o: ChargeOutcome) -> String {
+        text(paid: o.paid, declined: o.declined, processing: o.processing, already: o.already, noCard: o.noCard)
+    }
+}
+
+/// What one Charge clinic tap came to, from Stripe's answers.
+struct ChargeOutcome: Equatable, Sendable {
+    /// One of this clinic's fees that stripe-charge took, named by the ledger.
+    struct Fee: Sendable {
+        let id: UUID
+        let name: String
+        let reason: String?
+    }
+
+    var paid = 0
+    var declined: [ChargeSummary.Decline] = []
+    var processing = 0
+    var already = 0
+    var noCard = 0
+
+    /// `statuses`: Stripe's status per payment id, for every row stripe-charge
+    /// took (any clinic). `fees`: this clinic's fees among them. `queued`: rows
+    /// this tap created (admin_charge_clinic's `charged`); any Stripe has not
+    /// answered for yet count as still processing.
+    static func tally(statuses: [UUID: String], fees: [Fee], queued: Int, already: Int, noCard: Int) -> ChargeOutcome {
+        var outcome = ChargeOutcome(already: already, noCard: noCard)
+        var answered = 0
+        for fee in fees {
+            guard let status = statuses[fee.id] else { continue }
+            answered += 1
+            switch status {
+            case "succeeded": outcome.paid += 1
+            case "failed": outcome.declined.append(.init(name: fee.name, reason: fee.reason))
+            default: outcome.processing += 1
+            }
+        }
+        // Queued by this tap, not answered by Stripe yet.
+        outcome.processing += max(0, queued - answered)
+        return outcome
     }
 }

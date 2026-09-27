@@ -41,13 +41,14 @@ yes before it reaches a real player.
 | `cancel_clinic` | `clinic_canceled` | Every live registration | `{clinic} has been canceled.` | 7 (different words) |
 | `send_clinic_message` | `clinic_message` | The audience she picked | Her typed body, pass-through | 12 |
 | `respond_to_invitation` | `invitation_accepted` / `invitation_declined` | Every admin | `{player} accepted.` / `{player} declined.` | 13, 14 (shorter) |
-| `cancel_registration` | `player_canceled` | Every admin | `{player} canceled.` plus ` Late, fee applies.` on a late cancel, plus ` Note: "{cancel_note}"` when a note was left (the ` Late, courtesy used.` branch is still in the SQL but unreachable since `courtesy_cancel_days = 0`, decision 0013) | 15 |
+| `cancel_registration` | `player_canceled` | Every admin, only when the player canceled their own spot (since 20260927100002 an admin's removal tells nobody; `admin_mark_late_cancel` tells nobody either) | `{player} canceled.` plus ` Late, fee applies.` on a late cancel, plus ` Note: "{cancel_note}"` when a note was left (the ` Late, courtesy used.` branch is still in the SQL but unreachable since `courtesy_cancel_days = 0`, decision 0013) | 15 |
 | `request_late_spot` | `LATE_REQUEST` | Every admin | `{player} is asking to join {clinic}.` plus the quoted message if any | not in her list |
 | `resolve_late_request` | `LATE_REQUEST_APPROVED` / `LATE_REQUEST_DECLINED` | The requesting player | `You're in for {clinic}.` / `Tara couldn't fit you into {clinic} this time.` | not in her list |
 
 No producer exists for 1 (You're In: neither `register_for_clinic` nor
-`place_player` notifies), 3, 4, 5, 6 (admin `cancel_registration` notifies
-only the admins, contradiction (b)), 9 (`publish_news` notifies nobody), 10,
+`place_player` notifies), 3, 4, 5, 6 (an admin's `cancel_registration` notifies
+nobody since 20260927100002; the player's half waits on her words,
+contradiction (b)), 9 (`publish_news` notifies nobody), 10,
 or 11 (a player's own `cancel_registration` notifies only the admins).
 `cancel_invitation` and `leave_pool` notify nobody. The payment reminder (8)
 is not a `notify_account` call at all: it is a clinic message, see below.
@@ -203,6 +204,15 @@ the opposite. This is a bug her copy caught.
 
 **Recommendation: option 1.** Same transition, same row, same race conditions.
 A second RPC would duplicate the conditional update for no gain.
+
+**Half fixed 2026-09-27** (20260927100002, option 1's first half). The
+self-notification is gone: when the caller is an admin who does not own the
+player, `cancel_registration` skips the admin fan-out, so Tara's Remove no
+longer reads in her own Action Needed as "{player} canceled."
+`late_cancellation.sql` asserts who was told per registration. **The player is
+still told nothing**: her notification 6 covers removal from the Player Pool
+only, and there are no words for removal from You're In!, so that half is on
+the audit's needs-Tara list.
 
 **Fixed 2026-09-21** (20260921000001). `leave_pool` used to delete the
 registration row outright, against hard rule 4; it now cancels the row

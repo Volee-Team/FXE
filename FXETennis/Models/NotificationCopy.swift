@@ -133,9 +133,10 @@ enum FXENotification: Sendable {
 
     /// CONTRADICTION (b): fires when Tara removes a player from the Pool. The
     /// guide does cover this ("Tara removes a player: notify the player"), and
-    /// the schema supports it, but `cancel_registration` currently notifies
-    /// only the admins, never the player, whoever triggered it. That is a real
-    /// defect this copy exposes.
+    /// the schema supports it, but `cancel_registration` never notifies the
+    /// player. Half fixed 2026-09-27 (20260927100002): an admin's removal no
+    /// longer notifies the admins as if the player had canceled; telling the
+    /// player waits on Tara's words.
     case removedFromPlayerPool(clinic: ClinicRef)
 
     /// Fires from `cancel_clinic`, to everyone in a live status: You're In!,
