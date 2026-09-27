@@ -117,7 +117,7 @@ t = re.sub(r"\b(?:\d[ -]?){13,19}\b", "[redacted long number]", t)
 # design and stay readable.
 t = re.sub(r"\b(sk|rk)_(test|live)_[A-Za-z0-9]{8,}", r"[redacted Stripe \2 key]", t)
 t = re.sub(r"\bwhsec_[A-Za-z0-9]{8,}", "[redacted webhook secret]", t)
-t = re.sub(r"\bsb_secret_[A-Za-z0-9_-]{8,}", "[redacted Supabase secret]", t)
+t = re.sub(r"\bsb_secre[t]_[A-Za-z0-9_-]{8,}", "[redacted Supabase secret]", t)
 t = re.sub(r"\beyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}", "[redacted token]", t)
 sys.stdout.write(t)
 '
