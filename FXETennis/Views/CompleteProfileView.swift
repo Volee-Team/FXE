@@ -61,7 +61,7 @@ struct CompleteProfileView: View {
 
     var body: some View {
         ZStack {
-            Brand.surfaceGradient.ignoresSafeArea()
+            CourtBackdrop(strength: .front)
 
             ScrollView {
                 VStack(alignment: .leading, spacing: Brand.Spacing.lg) {

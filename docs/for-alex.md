@@ -84,7 +84,12 @@ The final bundle id is decided when the LLC account exists; today's
 
 ## 5. Kat — one message
 
-Kat answered the header on 2026-09-26 ("straight line across"). Two left:
+Kat answered the header on 2026-09-26 ("straight line across"); it is built
+straight. Three left:
+
+- **The green line under the header.** Built straight, 4pt, because her
+  guide had it and she asked for more colour. Keep it, or plain navy into
+  the photo like Tara's mockup?
 
 - **Tab bar colour.** iOS 26 will not paint the bottom tab bar solid navy.
   Is the light system bar with green and navy icons fine, or should we build
@@ -92,7 +97,17 @@ Kat answered the header on 2026-09-26 ("straight line across"). Two left:
 - **Green text contrast.** The guide's green is slightly too light for small
   text by the accessibility standard. OK to use a shade darker for text only?
 
-## 6. Business (no rush from the model's side)
+## 6. From Tara (a text is enough)
+
+- **The logo file.** She wrote "Need to get you the logo - not that one".
+  Any format; the model swaps it in.
+- **The court photo as the original file** (question 64). The one she sent
+  is a screenshot and looks soft on a full screen.
+- **Questions 58 to 65** in `docs/questions-for-tara.md` §M: the board's
+  10%, Home with one clinic, four about the back-to-back 105 rule, the card
+  box wording. They go on her review page next round.
+
+## 7. Business (no rush from the model's side)
 
 - Apple LLC enrollment: chase if no email by 2026-10-01.
 - Password-reset email: a free Resend account plus two DNS records on the

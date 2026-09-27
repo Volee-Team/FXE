@@ -73,16 +73,11 @@ struct PlayerRef: Hashable, Sendable {
 
 // MARK: - Payment
 
-/// Tara's payment wording, exact and required (2026-08-02). Reproduce this
-/// string character for character wherever payment is mentioned. It is not in
-/// the payment-reminder push because the push has no room for it: it belongs
-/// on Clinic Details and in the persisted in-app message body.
-///
-/// See docs/notifications.md finding (g): the split between the short push and
-/// the full payment line is a decision that still needs Tara's confirmation.
-enum FXEPayment {
-    static let line = "Payment can be made via zelle to fersctennispro@gmail.com (preferred) or Venmo FXE Tennis"
-}
+/// Tara's Zelle/Venmo payment line (2026-08-02) used to be reproduced here and
+/// shown on every clinic's page. Removed 2026-09-26: "Remove all 'pay via
+/// zelle' language from the app" (Final Updates p.1; decision 0013 made the
+/// card the only way to pay). The string itself stays in
+/// app_settings.payment_instructions, unsent, behind zelle_allowed = false.
 
 // MARK: - Catalogue
 
