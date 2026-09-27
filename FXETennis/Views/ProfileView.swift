@@ -124,7 +124,8 @@ struct ProfileView: View {
             }
             .navigationTitle("Profile")
             // Read on every visit, so the switch shows without an app update.
-            .task { paymentsOn = (try? await PaymentsRepository.paymentsEnabled()) ?? false }
+            // A failed read (bad signal) keeps what was last known.
+            .task { if let on = try? await PaymentsRepository.paymentsEnabled() { paymentsOn = on } }
             .sheet(isPresented: $showNTRP) { NTRPExplainerSheet() }
             .sheet(isPresented: $editing) { EditProfileView() }
         }
