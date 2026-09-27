@@ -132,14 +132,24 @@ end $$;
 -- one of the two entity types the app opens, as a literal. A new producer with
 -- a third kind turns this red, which is the moment to teach NotificationRouter
 -- to open it.
+--
+-- The actual is the list of OTHER kinds, expected empty, so the comparison is
+-- exact. It used to be the list of all kinds against 'clinic,registration',
+-- and the harness's substring rule (expected has a letter) then passed any
+-- superset whose extra kind sorted outside the pair: a producer naming
+-- 'account' or 'waiver' read 'account,clinic,registration', which contains
+-- the expected text. Only a kind sorting between the two, like 'payment',
+-- went red (verify, 2026-09-27). An empty list is not vacuous: the next
+-- check goes red if this pattern stops matching the calls.
 with calls as (
   select p.proname, m[1] as entity
     from pg_proc p, regexp_matches(p.prosrc, 'notify_account\s*\(\s*[^,]+,\s*[^,]+,\s*''([^'']*)''', 'g') m
    where p.pronamespace = 'public'::regnamespace
 )
 insert into _probe_result
-select 'every_producer_names_clinic_or_registration', 'clinic,registration',
-       coalesce(string_agg(distinct entity, ',' order by entity), 'none')
+select 'every_producer_names_clinic_or_registration', '',
+       coalesce(string_agg(distinct entity, ',' order by entity)
+                  filter (where entity not in ('clinic', 'registration')), '')
   from calls;
 
 with every_call as (
