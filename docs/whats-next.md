@@ -52,8 +52,8 @@ notes, the Stripe link).
 Missing on the phone by design: creating or editing a clinic (web only),
 News (deferred, decision 0006).
 
-Testing today: 27 Playwright tests, 13 XCUITests (5 on Tara's side), 120 unit
-tests, 33 SQL probes, a 73-check Stripe pipeline and a 57-check push pipeline
+Testing today: 27 Playwright tests, 13 XCUITests (5 on Tara's side), 181 unit
+tests, 32 SQL probes, a 73-check Stripe pipeline and a 48-check push pipeline
 against mocks in CI.
 
 **Answered already, do not re-ask.** Six of the eight closed on 2026-08-27; see

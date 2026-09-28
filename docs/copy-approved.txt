@@ -5,6 +5,7 @@ Accept
 Action Needed
 Add a card
 Add a player
+Add to Calendar
 Add your first and last name.
 Add your name, phone number, and tennis rating. Please answer the membership question to continue
 Admin sign-in.
@@ -159,7 +160,9 @@ Registration has closed for this clinic.
 Registration open
 Registration opens \(openMoment.formatted(.dateTime.month(.abbreviated).day()))
 Registration opens \(openMoment.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day().hour().minute()))
+Remind me
 Remind unpaid (\(model.unpaidCount))
+Reminder set
 Remove
 Remove from clinic
 Response Needed
