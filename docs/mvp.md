@@ -54,4 +54,4 @@ party oct 16"*). Every row below is a fact about the code today; the column
 1. This week: Kat's style guide lands; the TestFlight round-two fixes ship; the MVP list above is settled.
 2. Then: a testing group on TestFlight (internal, through John's account) for two weeks, with Tara's real templates and clinics in the admin.
 3. Then: the LLC enrollment (or John's account as the fallback) carries the public TestFlight and the store listing; privacy policy URL; the Stripe switch if payments are in.
-4. Launch party, 2026-10-16.
+4. Launch party, 2026-11-06 (moved from 2026-10-16 by Tara on 2026-09-28).

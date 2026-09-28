@@ -136,7 +136,7 @@ struct CardOnFileView: View {
             note = "Cards aren't set up yet."
         } catch PaymentsError.consentRequired {
             session.cardConsent = false
-            note = "Tick the box to continue."
+            note = "Check the box to continue" // Tara, 2026-09-28 (decision 0024), verbatim
         } catch {
             note = "That didn't work. Check your connection and try again."
         }

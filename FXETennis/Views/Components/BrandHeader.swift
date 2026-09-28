@@ -120,3 +120,25 @@ extension View {
         }
     }
 }
+
+extension View {
+    /// Porcelain behind the status bar, fading into the page, for a screen
+    /// that scrolls but has no navigation bar to cover the clock: without it
+    /// the sign-up form's fields slid up under "9:41" (seen on the simulator,
+    /// 2026-09-28). Decoration only: no taps, nothing for VoiceOver.
+    func statusBarScrim() -> some View {
+        overlay(alignment: .top) {
+            GeometryReader { geo in
+                VStack(spacing: 0) {
+                    Brand.surface.frame(height: geo.safeAreaInsets.top)
+                    LinearGradient(colors: [Brand.surface, Brand.surface.opacity(0)],
+                                   startPoint: .top, endPoint: .bottom)
+                        .frame(height: Brand.Spacing.md)
+                }
+                .ignoresSafeArea(edges: .top)
+            }
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+        }
+    }
+}

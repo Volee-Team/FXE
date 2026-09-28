@@ -106,6 +106,7 @@ struct CompleteProfileView: View {
             }
             .scrollDismissesKeyboard(.interactively)
         }
+        .statusBarScrim()
         .sheet(isPresented: $showNTRP) { NTRPExplainerSheet() }
     }
 
@@ -220,18 +221,15 @@ struct CompleteProfileView: View {
 
     private var ratingPicker: some View {
         VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
-            HStack {
+            HStack(spacing: Brand.Spacing.xxs) {
                 Text("Your tennis rating")
                     .brandFont(.bodyEmphasis)
                     .foregroundStyle(Brand.textPrimary)
+                // Was a "Rating Guide" text link at the far right (her
+                // "Need Help?" before that, decision 0016). Tara, 2026-09-28:
+                // the tool tip goes next to the rating words (decision 0024).
+                RatingGuideButton(identifier: "profile.ratingGuide") { showNTRP = true }
                 Spacer()
-                // Was Tara's "Need Help?" from Screen 4; on 2026-09-22 she marked it
-                // Change with no replacement (decision 0016). "Rating Guide" names
-                // what it opens, the sheet title she kept; question 69 asks her.
-                Button("Rating Guide") { showNTRP = true }
-                    .brandFont(.subheadline)
-                    .foregroundStyle(Brand.navy)
-                    .frame(minHeight: Brand.Layout.minTapTarget)
             }
 
             // Required since 2026-09-16 (Tara: the app "needs to ask every

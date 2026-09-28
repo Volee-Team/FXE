@@ -241,7 +241,7 @@ and accepts.
 **Activate payments** / **Complete your profile** banner. She fills in:
 FXE Tennis, LLC as the business, its EIN, her own details as the
 representative, and the bank account payouts go to. Stripe may take a day or
-two to verify. This is the step with the 2026-10-14 deadline (A11).
+two to verify. This is the step with the 2026-11-04 deadline (A11; it was 10-14 until the party moved to 11-06).
 
 **Then the model** (checklist A10): builds the live key swap, the live webhook
 and the cutover migration that clears everyone's test cards, and runs the
@@ -453,7 +453,7 @@ Dependabot alerts are already on (checked 2026-09-27), so nothing to do there.
 | C11 | Fallback if the LLC is not approved in time: external TestFlight on John's account with a public link | This week (was 10-09; see below) | Yes: prepare it (needs the privacy URL), use it only if needed |
 | C12 | The LLC app's bundle id (the current one is locked to John's account) | Before the first LLC build | Accept a new id such as `com.fxetennis.club`; testers reinstall once |
 | D3 | Supabase Pro ($25 a month): no pause after a quiet week, point-in-time recovery | Before real members | Yes, from launch week |
-| A11 | Cut-off for real money at the party: if Tara's Stripe live activation (A7) is not done by 2026-10-14, payments stay off on 10-16 | Decided 2026-09-27 | Yes, 10-14 (your answer). Never "card required" for everyone while the keys are sandbox: a real card is declined in test mode |
+| A11 | Cut-off for real money at the party: if Tara's Stripe live activation (A7) is not done by 2026-11-04 (it was 10-14; the party moved to 11-06), payments stay off on 10-16 | Decided 2026-09-27 | Yes, 10-14 (your answer). Never "card required" for everyone while the keys are sandbox: a real card is declined in test mode |
 | C3 | Push with **John's** APNs key now: every tester build is signed by his team, so the LLC's key could never reach those phones | Decided 2026-09-27 | Yes: John makes the key (section 3), you set the secrets |
 | C11 (again) | Upload one build to external beta review **this week**, no testers invited, so Apple's review is done before it matters | Decided 2026-09-27 ("yes prob") | The privacy URL is live now, so build 5 can go to beta review as soon as John uploads it |
 | C13 | Apple's reviewer account: one real account called App Review, made through the app's sign-up with an address you control | Before the first external or App Store submission | Yes; the review notes give Stripe's 4242 test card while keys are sandbox |

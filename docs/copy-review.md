@@ -35,6 +35,19 @@ plus every "New since" block.
 
 ---
 
+## Tara's round four, applied (2026-09-28) — hers, nothing to tick
+
+Decision 0024. Every line below is Tara's own answer; listed so the diff has
+a home.
+
+| ✓ | String | Where | Why |
+|---|--------|-------|-----|
+| — | Check the box to continue | The card step, if Add a card is tapped before the permission box is checked | **Tara's words**, replacing "Tick the box to continue."; no full stop, as she typed it |
+| — | Contact Tara | Profile, above Privacy Policy; opens an email to fersctennispro@gmail.com | Question 76: she said "Yes" to exactly this link |
+| — | (removed) Only Tara can change this. | Was under membership on Edit details | **Tara**: "Remove “set my Tara” from view by user." |
+| — | Rating Guide | Now the "?" right beside "Your tennis rating" (sign-up and Edit details), read aloud as "Rating Guide" | **Tara**: "Correct. Words do not change. Tool tip next to “rating” language" |
+| — | The levels didn’t line up for this clinic, so we’ve released your spot. We keep each court close in level so everyone gets a great practice. We’ll catch you at the next clinic! | The notification when she takes an invitation back | **Tara's words**, question 79, verbatim with her curly apostrophes |
+
 ## Tara's Remove, and the polish round's chrome (2026-09-28) — awaiting Alex
 
 Tara could not take anyone out of the Player Pool on any screen, or out of

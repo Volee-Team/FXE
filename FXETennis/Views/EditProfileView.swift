@@ -19,6 +19,7 @@ struct EditProfileView: View {
     @State private var lastName = ""
     @State private var phone = ""
     @State private var rating: NTRPRating?
+    @State private var showNTRP = false
     @State private var levelNote = ""
     @State private var saving = false
     @State private var error: String?
@@ -60,9 +61,13 @@ struct EditProfileView: View {
                         }
 
                         VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
-                            Text("Your tennis rating")
-                                .brandFont(.bodyEmphasis)
-                                .foregroundStyle(Brand.textPrimary)
+                            HStack(spacing: Brand.Spacing.xxs) {
+                                Text("Your tennis rating")
+                                    .brandFont(.bodyEmphasis)
+                                    .foregroundStyle(Brand.textPrimary)
+                                RatingGuideButton(identifier: "edit.ratingGuide") { showNTRP = true }
+                                Spacer()
+                            }
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: Brand.Spacing.xs) {
                                     ForEach(NTRPRating.displayOrdered) { level in
@@ -92,11 +97,10 @@ struct EditProfileView: View {
                                 .brandFont(.body)
                                 .foregroundStyle(Brand.textPrimary)
                             Spacer()
-                            // Was "Set by Tara"; she wrote "I'm confused by this. Let's talk"
-                            // (2026-09-22, decision 0016). Plainer default until they talk (question 70).
-                            Text("Only Tara can change this.")
-                                .brandFont(.caption)
-                                .foregroundStyle(Brand.textSecondary)
+                            // No caption. It was "Set by Tara", then "Only Tara can
+                            // change this."; Tara, 2026-09-28: "Remove “set my Tara”
+                            // from view by user." (decision 0024). The row still
+                            // cannot be changed here: membership is hers (decision 5).
                         }
                         .padding(Brand.Spacing.cardPadding)
                         .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
@@ -113,6 +117,7 @@ struct EditProfileView: View {
                 .scrollDismissesKeyboard(.interactively)
             }
             .navigationTitle("Edit details")
+            .sheet(isPresented: $showNTRP) { NTRPExplainerSheet() }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

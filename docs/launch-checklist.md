@@ -1,7 +1,6 @@
 # Launch checklist: the single source of truth for what is left
 
-**Launch target: the launch party, Friday 2026-10-16.** Nineteen days from the
-last full check (Sunday 2026-09-27).
+**Launch target: the launch party, Friday 2026-11-06** (moved from 2026-10-16 by Tara on 2026-09-28, decision 0024; she would go earlier if the app is ready).
 
 How this file works, so it can be trusted:
 
@@ -25,7 +24,7 @@ How this file works, so it can be trusted:
 
 ---
 
-## 0. The critical path to 2026-10-16
+## 0. The critical path to 2026-11-06
 
 What must be true on the day, in the order it has to happen. Each item is a
 row below; this list adds nothing of its own. Re-derived 2026-09-28.
@@ -33,7 +32,7 @@ row below; this list adds nothing of its own. Re-derived 2026-09-28.
 1. **Build 5 is on the testers' phones** (C8): tag `v0.1.0-rc5`, everything
    below in section I plus the MVP-audit fixes. [John]
 2. **Payments on, then tested, then live in Tara's name** (A9, A2, A7, A10,
-   A12): on after build 5 is on phones; Tara's live activation by 2026-10-14
+   A12): on after build 5 is on phones; Tara's live activation by 2026-11-04
    is the gate (A11). [Alex, Tara, me]
 3. **Push on the lock screen** (C3): John makes the key, Alex sets five
    secrets; the Accept and Decline buttons and her words are already built.
@@ -64,7 +63,7 @@ row below; this list adds nothing of its own. Re-derived 2026-09-28.
 | A12 | Three more webhook events for chargebacks (`charge.dispute.created`, `.updated`, `.closed`), on the test endpoint now and the live one later (decision 0021) | [Alex] | **OPEN**: two minutes in Stripe, `docs/for-alex.md` §1; until then no dispute reaches Action Needed |
 | A9 | Switch payments on (`payments_enabled` true **and `payments_enabled_at` = now(), in the same migration**, decision 0018: nothing ends-before that moment is ever owed or charged). From that moment nobody registers without a saved card | [me] | **DECIDE** [Alex]: say go once build 4 is on the testers' phones. **Not for everyone while the keys are sandbox**: a real card is declined in test mode (MVP audit 2026-09-27) |
 | A10 | Live keys: a restricted key with only the permissions our code uses, a live webhook, the three secrets swapped, and at the same moment the cutover that forgets every sandbox card so everyone adds a real one (built on branch `stripe-robustness`, MVP audit 2026-09-27) | [me]+[Alex] | **OPEN if payments are in at the party**, after A7; otherwise LATER |
-| A11 | **Real money at the party**: payments fully live on 2026-10-16 (Alex, 2026-09-27: *"yes we want it fully done"*; promo codes "prob not"). The fallback if Tara's live activation (A7) is not done by **2026-10-14**: payments stay off for the party | [Alex]+[Tara] | **OPEN**: decided 2026-09-27, target live; A7 by 10-14 is the gate |
+| A11 | **Real money at the party**: payments fully live at the party (2026-11-06; it was 2026-10-16 until Tara moved it) (Alex, 2026-09-27: *"yes we want it fully done"*; promo codes "prob not"). The fallback if Tara's live activation (A7) is not done by **2026-11-04**: payments stay off for the party | [Alex]+[Tara] | **OPEN**: decided 2026-09-27, target live; A7 by 11-04 is the gate (moved with the party from 10-14; Alex to confirm) |
 
 ## B. Stripe steps
 

@@ -110,6 +110,18 @@ struct ProfileView: View {
                                 .frame(maxWidth: .infinity)
                         }
 
+                        // How a member reaches Tara: question 76, "Yes" on
+                        // 2026-09-28 (decision 0024). Her address, the one the
+                        // privacy policy and the App Store listing show.
+                        Button("Contact Tara") {
+                            openURL(URL(string: "mailto:fersctennispro@gmail.com")!)
+                        }
+                        .brandFont(.caption)
+                        .foregroundStyle(Brand.textPrimary)
+                        .buttonStyle(QuietLinkButtonStyle())
+                        .frame(maxWidth: .infinity)
+                        .accessibilityIdentifier("profile.contactTara")
+
                         // Apple requires the privacy policy to be reachable in the app
                         // (guideline 5.1.1). Tara approved it on 2026-09-27.
                         Button("Privacy Policy") {
@@ -249,5 +261,24 @@ struct NTRPExplainerSheet: View {
                 }
             }
         }
+    }
+}
+
+/// The Rating Guide's "?", placed right beside the rating words. Tara,
+/// 2026-09-28 (decision 0024): "Correct. Words do not change. Tool tip next to
+/// “rating” language". The words she kept are the accessible name; the glyph
+/// is the tool tip she asked for, the same one Profile already uses.
+struct RatingGuideButton: View {
+    let identifier: String
+    let action: () -> Void
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "questionmark.circle")
+                .font(.system(size: 17, weight: .regular))
+                .foregroundStyle(Brand.textSecondary)
+        }
+        .buttonStyle(QuietLinkButtonStyle())
+        .accessibilityLabel("Rating Guide")
+        .accessibilityIdentifier(identifier)
     }
 }

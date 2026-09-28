@@ -52,7 +52,7 @@ most important thing to understand here, and it is section 5.
 
 | Area | State |
 |---|---|
-| Postgres schema, RLS, narrow views, RPCs | **Built**, 49 migrations. Which of them are on hosted is `supabase migration list --linked`, recorded after each push in `docs/whats-next.md`; `20260928000001_notifications_in_her_words.sql`, `20260928200001_payment_disputes.sql`, `20260928300001_no_accepting_a_canceled_clinic.sql` and `20260928400001_invitations_after_the_fact.sql` go with their PR |
+| Postgres schema, RLS, narrow views, RPCs | **Built**, 50 migrations. Which of them are on hosted is `supabase migration list --linked`, recorded after each push in `docs/whats-next.md` (49 of 49 paired on 2026-09-28); `20260928500001_uninvite_message.sql` goes with its PR |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | **Built**, enumerated by probes |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | **Built** |
 | SQL probe suite (35 probes; the suite prints its own total) + concurrency probe, in CI | **Built** |

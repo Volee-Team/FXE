@@ -37,6 +37,7 @@ Choose a new password
 Clinic updates come through the app. Keep notifications on so you don't miss them.
 Clinics
 Collected by card
+Contact Tara
 Cookies and tracking technologies
 Copy my answers
 Couldn't load card payments.
@@ -134,7 +135,6 @@ Note (optional)
 Note for Tara (optional)
 Notifications
 On your laptop, with your real account. Whatever you set up here is real: it is your schedule.
-Only Tara can change this.
 Only Tara sees this.
 Only a You're In! player can be a no-show.
 Only a paid charge can be refunded.

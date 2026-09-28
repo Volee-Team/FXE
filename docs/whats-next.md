@@ -3,7 +3,7 @@
 **This file holds no tasks.** Everything left to do before launch, with its
 owner and status, is in `docs/launch-checklist.md`, the one list (Alex,
 2026-09-27: *"i like having one thing to totally trust"*). This page says
-where things stand. Updated 2026-09-27; launch target 2026-10-16.
+where things stand. Updated 2026-09-28; launch target 2026-11-06 (Tara moved the party, decision 0024).
 
 ## Where things stand, 2026-09-27
 
