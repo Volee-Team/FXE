@@ -50,7 +50,10 @@ A_OUT=$(cat /tmp/race105_a.out); rm -f /tmp/race105_a.out
 LIVE=$(psql -tAqc "select count(*) from public.registrations
   where player_id = '$ROB_P' and clinic_id in ('$X1','$X2') and status in ('in','pool','response_needed')" | tr -d '[:space:]')
 
-psql -q -c "delete from public.registrations where clinic_id in ('$X1','$X2'); delete from public.clinics where id in ('$X1','$X2');" >/dev/null
+# Rob is a seeded player, so the notifications his registration now writes
+# (Tara's #5, 20260928000001) outlive his account's cleanup: delete them with
+# the rows they point at, or notification_targets.sql fails on the next run.
+psql -q -c "delete from public.notifications where entity_id in (select id from public.registrations where clinic_id in ('$X1','$X2')); delete from public.registrations where clinic_id in ('$X1','$X2'); delete from public.clinics where id in ('$X1','$X2');" >/dev/null
 
 echo "session A: $(echo "$A_OUT" | grep -oE 'got [a-z_]+|ERROR:.*' | head -1)"
 echo "session B: $(echo "$B_OUT" | grep -oE 'got [a-z_]+|ERROR:.*' | head -1)"

@@ -37,15 +37,22 @@ FILE=tests/push/simctl-invitation.apns
 if [ "${1:-}" = "--latest" ]; then
   EMAIL=${2:?usage: simctl-push.sh --latest <email>}
   FILE=$(mktemp -t fxe-push)
-  # Same fields, same order of work as index.ts:67-79. psql -v binds the email.
+  # Same fields, same order of work as index.ts:67-92, including the
+  # INVITATION category and the clinic as thread-id (absent keys dropped, as
+  # index.ts never sets them). psql -v binds the email.
   docker exec -i "$DB" psql -U postgres -d postgres -At -v email="$EMAIL" -f - > "$FILE" <<'SQL'
 select json_build_object(
          'Simulator Target Bundle', 'com.fxetennis.app',
-         'aps', json_build_object(
-                  'alert', json_build_object('body', n.body),
+         'aps', jsonb_strip_nulls(jsonb_build_object(
+                  'alert', jsonb_build_object('body', n.body),
                   'sound', 'default',
                   'badge', (select count(*) from public.notifications u
-                             where u.account_id = n.account_id and u.read_at is null)),
+                             where u.account_id = n.account_id and u.read_at is null),
+                  'category', case when n.type = 'invitation_received' then 'INVITATION' end,
+                  'thread-id', case n.entity_type
+                                 when 'clinic' then n.entity_id::text
+                                 when 'registration' then (select r.clinic_id::text from public.registrations r
+                                                            where r.id = n.entity_id) end)),
          'notification_id', n.id,
          'type', n.type,
          'entity_type', n.entity_type,
