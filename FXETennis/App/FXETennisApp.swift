@@ -88,7 +88,7 @@ struct LaunchView: View {
                     .scaledToFit()
                     .frame(width: 120, height: 120)
                 Text("FXE Tennis")
-                    .font(Brand.Typography.title)
+                    .brandFont(.title)
                     .foregroundStyle(Brand.textOnNavy)
                 ProgressView()
                     .tint(Brand.textOnNavyMuted)

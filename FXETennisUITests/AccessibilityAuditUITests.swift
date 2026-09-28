@@ -57,10 +57,41 @@ final class AccessibilityAuditUITests: XCTestCase {
         // password? 11.5:1, Sign Out 12.7:1. The minimum is 4.5:1.
         if issue.auditType == .contrast,
            ["auth.toggleMode", "auth.forgot", "profile.signOut"].contains(e.identifier) { return true }
+        // The logo keeps its size under Larger Text on purpose: it sits in a
+        // header of fixed height (Brand.Typography.Role.wordmarkCompact). The
+        // audit reaches its "TENNIS" text even inside the one logo element.
+        if issue.auditType == .dynamicType,
+           e.identifier == "brand.wordmark" || e.label == "TENNIS" { return true }
+        // Bar buttons are the system's: iOS 26 draws them as glass capsules,
+        // and they stop growing at a cap (a long press shows the large-content
+        // viewer instead). The audit samples the capsule's edge and shadow:
+        // measured from pixels on 2026-09-28, navy Cancel and Save on the
+        // capsule are 16.4:1. So in a navigation bar we accept contrast and
+        // "partially" unsupported Dynamic Type, and nothing else.
+        if issue.auditType == .contrast || issue.compactDescription.contains("partially"),
+           isInNavigationBar(e) { return true }
+        // The same is true of the strip under the floating tab bar for
+        // "partially" unsupported text: a week header or a clinic's time
+        // down there is flagged, the identical one higher up passes.
+        if issue.compactDescription.contains("partially"), screen != "sign-in",
+           e.frame.maxY > app.frame.height - 150 { return true }
+        // A second week header lower in the Clinics list: the audit grows the
+        // text and the header scrolls out of view before the largest sizes,
+        // so it can only check some of them. The first header, the same view,
+        // passes every size.
+        if issue.compactDescription.contains("partially"), e.identifier == "clinics.week",
+           e.frame.minY > app.frame.height / 2 { return true }
+        // The system search field's placeholder, not ours to lay out.
+        if issue.auditType == .textClipped, e.elementType == .searchField { return true }
         // An email address is not "human-readable" to the audit, and it is
         // exactly what the person typed.
         if issue.auditType == .sufficientElementDescription, e.label.contains("@") { return true }
         return false
+    }
+
+    private func isInNavigationBar(_ e: XCUIElement) -> Bool {
+        let centre = CGPoint(x: e.frame.midX, y: e.frame.midY)
+        return app.navigationBars.allElementsBoundByIndex.contains { $0.frame.contains(centre) }
     }
 
     private func audit(_ screen: String) {
@@ -87,8 +118,9 @@ final class AccessibilityAuditUITests: XCTestCase {
         pw.tap(); pw.typeText(seedPassword)
         app.buttons["auth.submit"].tap()
 
-        // Home
-        XCTAssertTrue(app.tabBars.buttons["Home"].waitForExistence(timeout: 20) || app.buttons["Home"].waitForExistence(timeout: 5))
+        // Home. Wait for the greeting, not just the tab: the first run of
+        // this test audited Home mid-transition and reported nothing at all.
+        XCTAssertTrue(app.staticTexts["home.greeting"].waitForExistence(timeout: 20))
         sleep(2)
         audit("home")
 
@@ -112,5 +144,68 @@ final class AccessibilityAuditUITests: XCTestCase {
         if !app.buttons["profile.signOut"].waitForExistence(timeout: 5) { profileTab.tap() }
         XCTAssertTrue(app.buttons["profile.signOut"].waitForExistence(timeout: 15))
         audit("profile")
+
+        // My Clinics, from Profile
+        let myClinics = app.buttons["profile.myClinics"]
+        if myClinics.waitForExistence(timeout: 5) {
+            myClinics.tap(); sleep(2)
+            audit("my clinics")
+            app.navigationBars.buttons.firstMatch.tap()
+        }
+
+        // Edit details
+        let edit = app.buttons["profile.edit"]
+        if edit.waitForExistence(timeout: 5) {
+            edit.tap(); sleep(2)
+            audit("edit details")
+            app.swipeDown(velocity: .fast)
+        }
+
+        // The bell, from Home
+        let home = app.tabBars.buttons["Home"].exists ? app.tabBars.buttons["Home"] : app.buttons["Home"].firstMatch
+        home.tap()
+        let bell = app.buttons["home.bell"]
+        if bell.waitForExistence(timeout: 10) {
+            bell.tap(); sleep(2)
+            audit("notifications")
+            if app.buttons["notifications.done"].exists { app.buttons["notifications.done"].tap() }
+        }
+    }
+
+    func testTarasScreensPassTheAudit() {
+        app.launch()
+        let email = app.textFields["auth.email"]
+        XCTAssertTrue(email.waitForExistence(timeout: 20))
+        email.tap(); email.typeText("tara@fxe.test")
+        let pw = app.secureTextFields["auth.password"]
+        pw.tap(); pw.typeText(seedPassword)
+        app.buttons["auth.submit"].tap()
+
+        // Her Home first (an admin has no player row, so it is not the
+        // player's Home: no My Clinics, her own greeting).
+        XCTAssertTrue(app.staticTexts["home.greeting"].waitForExistence(timeout: 20))
+        sleep(2)
+        audit("tara home")
+
+        // The iOS 26 simulator's tab bar drops the first tap now and then
+        // (openProfileTab in PlayerFlowUITests); tap again if nothing moved.
+        let manage = app.buttons["Manage"]
+        XCTAssertTrue(manage.waitForExistence(timeout: 20))
+        manage.tap()
+        let cards = app.descendants(matching: .any).matching(identifier: "admin.clinic.card")
+        if !cards.firstMatch.waitForExistence(timeout: 5) { manage.tap() }
+        XCTAssertTrue(cards.firstMatch.waitForExistence(timeout: 20))
+        sleep(1)
+        audit("manage")
+
+        cards.firstMatch.tap(); sleep(2)
+        audit("roster")
+        app.navigationBars.buttons.firstMatch.tap()
+
+        let players = app.buttons["admin.players"]
+        if players.waitForExistence(timeout: 10) {
+            players.tap(); sleep(2)
+            audit("players")
+        }
     }
 }

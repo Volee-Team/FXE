@@ -55,8 +55,13 @@ struct Wordmark: View {
                 .tracking(compact ? 2.5 : 6)
         }
         .foregroundStyle(Brand.textOnNavy)
-        .accessibilityElement(children: .combine)
+        // One element read as the logo it is. `.combine` still let the audit
+        // reach "TENNIS" as text and report that it does not grow with
+        // Larger Text, which is on purpose for a logo (2026-09-28).
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel("FXE Tennis")
+        .accessibilityAddTraits(.isImage)
+        .accessibilityIdentifier("brand.wordmark")
     }
 }
 
@@ -84,7 +89,7 @@ struct NavRowLabel: View {
             }
             .frame(width: 28, height: 28)
             Text(title)
-                .font(Brand.Typography.navRowLabel)
+                .brandFont(.navRowLabel)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: Brand.Spacing.xs)

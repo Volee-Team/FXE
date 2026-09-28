@@ -43,20 +43,20 @@ struct EditProfileView: View {
 
                         VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
                             Text("Note for Tara (optional)")
-                                .font(Brand.Typography.bodyEmphasis)
+                                .brandFont(.bodyEmphasis)
                                 .foregroundStyle(Brand.textPrimary)
                             TextField("Just coming back from a back injury - probably a low 3.5", text: $levelNote, axis: .vertical)
                                 .lineLimit(2...4)
                                 .textFieldStyle(.roundedBorder)
                                 .accessibilityIdentifier("edit.levelNote")
                             Text("Only Tara sees this.")
-                                .font(Brand.Typography.caption)
+                                .brandFont(.caption)
                                 .foregroundStyle(Brand.textSecondary)
                         }
 
                         VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
                             Text("Your tennis rating")
-                                .font(Brand.Typography.bodyEmphasis)
+                                .brandFont(.bodyEmphasis)
                                 .foregroundStyle(Brand.textPrimary)
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: Brand.Spacing.xs) {
@@ -66,7 +66,7 @@ struct EditProfileView: View {
                                             typing = false
                                         } label: {
                                             Text(level.label)
-                                                .font(Brand.Typography.chip)
+                                                .brandFont(.chip)
                                                 .padding(.horizontal, Brand.Spacing.sm)
                                                 .frame(minHeight: Brand.Layout.minTapTarget)
                                                 .foregroundStyle(rating == level ? Brand.textOnNavy : Brand.textPrimary)
@@ -84,13 +84,13 @@ struct EditProfileView: View {
 
                         HStack {
                             Text(session.activePlayer?.isMember == true ? "FXE Member" : "Non-member")
-                                .font(Brand.Typography.body)
+                                .brandFont(.body)
                                 .foregroundStyle(Brand.textPrimary)
                             Spacer()
                             // Was "Set by Tara"; she wrote "I'm confused by this. Let's talk"
                             // (2026-09-22, decision 0016). Plainer default until they talk (question 70).
                             Text("Only Tara can change this.")
-                                .font(Brand.Typography.caption)
+                                .brandFont(.caption)
                                 .foregroundStyle(Brand.textSecondary)
                         }
                         .padding(Brand.Spacing.cardPadding)
@@ -99,7 +99,7 @@ struct EditProfileView: View {
 
                         if let error {
                             Text(error)
-                                .font(Brand.Typography.subheadline)
+                                .brandFont(.subheadline)
                                 .foregroundStyle(Brand.Status.canceled.ink)
                         }
                     }
@@ -136,11 +136,11 @@ struct EditProfileView: View {
                        keyboard: UIKeyboardType = .default, id: String) -> some View {
         VStack(alignment: .leading, spacing: Brand.Spacing.xxs) {
             Text(label)
-                .font(Brand.Typography.subheadline)
+                .brandFont(.subheadline)
                 .foregroundStyle(Brand.textSecondary)
             TextField("", text: text)
                 .focused($typing)
-                .font(Brand.Typography.body)
+                .brandFont(.body)
                 .foregroundStyle(Brand.textPrimary)
                 .textContentType(content)
                 .keyboardType(keyboard)

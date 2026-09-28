@@ -400,6 +400,21 @@ public extension Brand {
             }
 
             var font: Font { Font(uiFont()) }
+
+            /// The old role names, so `.brandFont(.display)` reads like the
+            /// `Brand.Typography.display` it replaced.
+            static let display = Role.greeting
+            static let button = Role.navRowLabel
+
+            /// The font at a Dynamic Type size. A `Font(UIFont)` is fixed at
+            /// the size it was made with, so text built from `font` ignored a
+            /// Larger Text change until the screen was rebuilt; the audit
+            /// (2026-09-28) reported that on every screen. `.brandFont(_:)`
+            /// reads the size from the environment and calls this, so the text
+            /// grows the moment the setting changes.
+            func font(at size: DynamicTypeSize) -> Font {
+                Font(uiFont(traits: UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(size))))
+            }
         }
 
         // Guide styles.
@@ -491,7 +506,7 @@ public struct StatusChip: View {
             Text(status.label)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .font(Brand.Typography.chip)
+        .brandFont(.chip)
         .foregroundStyle(status.ink)
         .padding(.horizontal, Brand.Spacing.xs)
         .padding(.vertical, Brand.Spacing.xxs)
@@ -585,5 +600,21 @@ struct QuietLinkButtonStyle: ButtonStyle {
             // modifier on the label made the accessibility audit read navy
             // text as failing contrast (2026-09-28).
             .brightness(configuration.isPressed ? 0.25 : 0)
+    }
+}
+
+// MARK: - Live Dynamic Type
+
+private struct BrandFont: ViewModifier {
+    @Environment(\.dynamicTypeSize) private var size
+    let role: Brand.Typography.Role
+    func body(content: Content) -> some View { content.font(role.font(at: size)) }
+}
+
+extension View {
+    /// A style from the scale that follows the Larger Text setting live.
+    /// Use this, not `.font(Brand.Typography.x)`, on anything a person reads.
+    func brandFont(_ role: Brand.Typography.Role) -> some View {
+        modifier(BrandFont(role: role))
     }
 }

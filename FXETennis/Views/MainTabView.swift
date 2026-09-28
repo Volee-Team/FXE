@@ -39,20 +39,28 @@ struct MainTabView: View {
     var body: some View {
         TabView {
             HomeView()
+                .tint(Brand.navy)
                 .tabItem { Label("Home", systemImage: "house") }
             ClinicsView()
+                .tint(Brand.navy)
                 .tabItem { Label("Clinics", systemImage: "figure.tennis") }
 
             if session.account?.isAdmin == true {
                 AdminClinicsView()
+                    .tint(Brand.navy)
                     .tabItem { Label("Manage", systemImage: "list.clipboard") }
                     .accessibilityIdentifier("tab.admin")
                 }
 
             ProfileView()
+                .tint(Brand.navy)
                 .tabItem { Label("Profile", systemImage: "person") }
                 .accessibilityIdentifier("tab.profile")
         }
+        // Gator-green is the active tab. It used to tint everything inside
+        // the tabs too, and green toolbar buttons on a sheet's glass (Cancel,
+        // Save, Done, Mark all read) failed the contrast audit (2026-09-28);
+        // each tab's content is navy instead, which sheets inherit.
         .tint(Brand.court)
     }
 }

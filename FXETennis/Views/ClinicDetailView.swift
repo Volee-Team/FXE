@@ -207,7 +207,7 @@ struct ClinicDetailView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
             Text(clinic.name)
-                .font(Brand.Typography.display)
+                .brandFont(.display)
                 .foregroundStyle(Brand.navy)
             if let reg = model.registration {
                 StatusChip(reg.status.display)
@@ -218,7 +218,7 @@ struct ClinicDetailView: View {
 
     private var canceledBanner: some View {
         Text("This clinic has been canceled.")
-            .font(Brand.Typography.bodyEmphasis)
+            .brandFont(.bodyEmphasis)
             .foregroundStyle(Brand.Status.canceled.ink)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(Brand.Spacing.md)
@@ -237,7 +237,7 @@ struct ClinicDetailView: View {
             if let desc = clinic.description, !desc.isEmpty {
                 Divider().overlay(Brand.hairline)
                 Text(desc)
-                    .font(Brand.Typography.body)
+                    .brandFont(.body)
                     .foregroundStyle(Brand.textPrimary)
             }
         }
@@ -249,7 +249,7 @@ struct ClinicDetailView: View {
 
     private func detailRow(_ symbol: String, _ text: String) -> some View {
         Label(text, systemImage: symbol)
-            .font(Brand.Typography.subheadline)
+            .brandFont(.subheadline)
             .foregroundStyle(Brand.textSecondary)
     }
 
@@ -258,12 +258,12 @@ struct ClinicDetailView: View {
     @ViewBuilder private var messageBoard: some View {
         if !model.messages.isEmpty {
             VStack(alignment: .leading, spacing: Brand.Spacing.sm) {
-                Text("FROM TARA").font(Brand.Typography.caption).foregroundStyle(Brand.textSecondary)
+                Text("FROM TARA").brandFont(.caption).foregroundStyle(Brand.textSecondary)
                 ForEach(model.messages) { msg in
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(msg.body).font(Brand.Typography.body).foregroundStyle(Brand.textPrimary)
+                        Text(msg.body).brandFont(.body).foregroundStyle(Brand.textPrimary)
                         Text(msg.sentAt.formatted(.dateTime.month().day().hour().minute()))
-                            .font(Brand.Typography.caption).foregroundStyle(Brand.textSecondary)
+                            .brandFont(.caption).foregroundStyle(Brand.textSecondary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(Brand.Spacing.sm)
@@ -276,7 +276,7 @@ struct ClinicDetailView: View {
 
     private func noticeText(_ text: String) -> some View {
         Text(text)
-            .font(Brand.Typography.caption)
+            .brandFont(.caption)
             .foregroundStyle(Brand.Status.playerPool.ink)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -370,7 +370,7 @@ struct ClinicDetailView: View {
             }
         case .opens(let openMoment):
             Text("Registration opens \(openMoment.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day().hour().minute()))")
-                .font(Brand.Typography.subheadline)
+                .brandFont(.subheadline)
                 .foregroundStyle(Brand.textSecondary)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(Brand.Spacing.md)
@@ -393,19 +393,19 @@ struct ClinicDetailView: View {
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(Brand.Status.youreIn.ink)
                     Text("Tara has your message.")
-                        .font(Brand.Typography.bodyEmphasis)
+                        .brandFont(.bodyEmphasis)
                         .foregroundStyle(Brand.textPrimary)
                 }
                 Text("She will let you know as soon as possible if there is room in this clinic")
-                    .font(Brand.Typography.subheadline)
+                    .brandFont(.subheadline)
                     .foregroundStyle(Brand.textSecondary)
                     .multilineTextAlignment(.center)
             } else {
                 Text("Registration has closed for this clinic.")
-                    .font(Brand.Typography.bodyEmphasis)
+                    .brandFont(.bodyEmphasis)
                     .foregroundStyle(Brand.textPrimary)
                 Text("You can still ask Tara to fit you in.")
-                    .font(Brand.Typography.subheadline)
+                    .brandFont(.subheadline)
                     .foregroundStyle(Brand.textSecondary)
                     .multilineTextAlignment(.center)
 
@@ -459,7 +459,7 @@ struct ClinicDetailView: View {
     private func actionLabel(_ title: String, fg: Color, bg: Color) -> some View {
         Group {
             if model.working { ProgressView().tint(fg) }
-            else { Text(title).font(Brand.Typography.button) }
+            else { Text(title).brandFont(.button) }
         }
         .frame(maxWidth: .infinity)
         .frame(minHeight: Brand.Layout.comfortableTapTarget)
@@ -498,7 +498,7 @@ private struct LateCancelSheet: View {
             VStack(alignment: .leading, spacing: Brand.Spacing.md) {
                 // Tara's words, 2026-09-22 round-two review (decision 0016).
                 Text("This cancellation is within 3 hours of clinic and the full clinic fee will apply. If an emergency, please leave a note below.")
-                    .font(Brand.Typography.body)
+                    .brandFont(.body)
                     .foregroundStyle(Brand.textPrimary)
                     .accessibilityIdentifier("lateCancel.sentence")
                 TextField("Note for Tara (optional)", text: $note, axis: .vertical)
@@ -512,7 +512,7 @@ private struct LateCancelSheet: View {
                 } label: {
                     Group {
                         if sending { ProgressView().tint(Brand.textOnNavy) }
-                        else { Text("Cancel my spot").font(Brand.Typography.button) }
+                        else { Text("Cancel my spot").brandFont(.button) }
                     }
                     .frame(maxWidth: .infinity)
                     .frame(minHeight: Brand.Layout.comfortableTapTarget)

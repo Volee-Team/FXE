@@ -115,7 +115,7 @@ struct AdminClinicsView: View {
                     VStack(alignment: .leading, spacing: Brand.Spacing.lg) {
                         if let error = model.error {
                             Text(error)
-                                .font(Brand.Typography.subheadline)
+                                .brandFont(.subheadline)
                                 .foregroundStyle(Brand.Status.canceled.ink)
                         }
 
@@ -146,7 +146,7 @@ struct AdminClinicsView: View {
                         // on iOS 26 whatever the label style says (seen 09-02),
                         // and an unlabelled icon breaks the icons-with-text rule.
                         Text("Players")
-                            .font(Brand.Typography.button)
+                            .brandFont(.button)
                     }
                     .accessibilityIdentifier("admin.players")
                 }
@@ -157,7 +157,7 @@ struct AdminClinicsView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Link(destination: URL(string: "https://dashboard.stripe.com")!) {
                         Text("Stripe")
-                            .font(Brand.Typography.button)
+                            .brandFont(.button)
                     }
                     .accessibilityIdentifier("admin.stripe")
                 }
@@ -185,7 +185,7 @@ struct AdminClinicsView: View {
             if waiting > 0 || unpaid > 0 || pool > 0 || asks > 0 || news > 0 || money {
                 VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
                     Text("ACTION NEEDED")
-                        .font(Brand.Typography.chip)
+                        .brandFont(.chip)
                         .foregroundStyle(Brand.textSecondary)
 
                     VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
@@ -226,11 +226,11 @@ struct AdminClinicsView: View {
             Circle().fill(status.ink).frame(width: 9, height: 9)
             VStack(alignment: .leading, spacing: 1) {
                 Text(text)
-                    .font(Brand.Typography.body)
+                    .brandFont(.body)
                     .foregroundStyle(Brand.textPrimary)
                 if let detail {
                     Text(detail)
-                        .font(Brand.Typography.caption)
+                        .brandFont(.caption)
                         .foregroundStyle(Brand.textSecondary)
                 }
             }
@@ -267,13 +267,13 @@ struct AdminClinicsView: View {
     private func section(_ title: String, _ clinics: [ClinicAdmin], empty: String) -> some View {
         VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
             Text(title.uppercased())
-                .font(Brand.Typography.chip)
+                .brandFont(.chip)
                 .foregroundStyle(Brand.textSecondary)
 
             if clinics.isEmpty {
                 if !empty.isEmpty {
                     Text(empty)
-                        .font(Brand.Typography.body)
+                        .brandFont(.body)
                         .foregroundStyle(Brand.textSecondary)
                 }
             } else {
@@ -299,20 +299,20 @@ private struct AdminClinicRow: View {
         VStack(alignment: .leading, spacing: Brand.Spacing.xxs) {
             HStack {
                 Text(clinic.name)
-                    .font(Brand.Typography.headline)
+                    .brandFont(.headline)
                     .foregroundStyle(Brand.navy)
                 Spacer()
                 if clinic.isCanceled {
                     StatusChip(.canceled)
                 } else if clinic.isDraft {
                     Text("Draft")
-                        .font(Brand.Typography.chip)
+                        .brandFont(.chip)
                         .foregroundStyle(Brand.textSecondary)
                 }
             }
 
             Text(timeLine)
-                .font(Brand.Typography.subheadline)
+                .brandFont(.subheadline)
                 .foregroundStyle(Brand.textSecondary)
 
             // Admin-only counts. Never render this on a player screen. A
@@ -336,7 +336,7 @@ private struct AdminClinicRow: View {
     private func countPill(_ status: Brand.Status, _ n: Int, of capacity: Int?) -> some View {
         let text = capacity.map { "\(status.label) \(n)/\($0)" } ?? "\(status.label) \(n)"
         return Text(text)
-            .font(Brand.Typography.chip)
+            .brandFont(.chip)
             .foregroundStyle(status.ink)
             .padding(.horizontal, Brand.Spacing.xs)
             .padding(.vertical, 3)

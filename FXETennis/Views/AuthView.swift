@@ -39,7 +39,7 @@ struct AuthView: View {
                 // Her line (question 55), as the guide's greeting-accent: italic,
                 // gator-green, centered under the header.
                 Text("Let's Play.")
-                    .font(Brand.Typography.greetingAccent)
+                    .brandFont(.greetingAccent)
                     .foregroundStyle(Brand.court)
                     .padding(.top, Brand.Spacing.md)
 
@@ -82,7 +82,7 @@ struct AuthView: View {
                         if mode == .signUp {
                             // The hosted rule, stated before the server has to.
                             Text("At least 6 characters.")
-                                .font(Brand.Typography.caption)
+                                .brandFont(.caption)
                                 .foregroundStyle(Brand.textSecondary)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .accessibilityIdentifier("auth.passwordRule")
@@ -94,7 +94,7 @@ struct AuthView: View {
                     // your thumb is how a real person mis-taps.
                     Text(session.authError ?? " ")
                         .accessibilityIdentifier("auth.error")
-                        .font(Brand.Typography.caption)
+                        .brandFont(.caption)
                         .foregroundStyle(Brand.Status.canceled.ink)
                         .frame(maxWidth: .infinity, minHeight: 18, alignment: .leading)
                         .opacity(session.authError == nil ? 0 : 1)
@@ -111,7 +111,7 @@ struct AuthView: View {
                 } label: {
                     Group {
                         if working { ProgressView().tint(Brand.textOnNavy) }
-                        else { Text(mode.cta).font(Brand.Typography.button) }
+                        else { Text(mode.cta).brandFont(.button) }
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -124,7 +124,7 @@ struct AuthView: View {
                 Button(mode.toggle) {
                     mode = (mode == .signIn) ? .signUp : .signIn
                 }
-                .font(Brand.Typography.caption)
+                .brandFont(.caption)
                 // Navy, not grey: the links sit over the court photo, where
                 // grey read under 4.5:1 (accessibility audit, 2026-09-28).
                 .foregroundStyle(Brand.textPrimary)
@@ -139,7 +139,7 @@ struct AuthView: View {
                         guard !resetSent else { return }
                         Task { resetSent = await session.sendPasswordReset(email: email) }
                     }
-                    .font(Brand.Typography.caption)
+                    .brandFont(.caption)
                     .foregroundStyle(resetSent ? Brand.Status.youreIn.ink : Brand.textPrimary)
                     .buttonStyle(QuietLinkButtonStyle())
                     .accessibilityIdentifier("auth.forgot")
@@ -147,7 +147,7 @@ struct AuthView: View {
 
                 if mode == .signUp {
                     Text("Clinic updates come through the app. Keep notifications on so you don't miss them.")
-                        .font(Brand.Typography.caption)
+                        .brandFont(.caption)
                         .foregroundStyle(Brand.textSecondary)
                         .multilineTextAlignment(.center)
                         .padding(.top, Brand.Spacing.xs)

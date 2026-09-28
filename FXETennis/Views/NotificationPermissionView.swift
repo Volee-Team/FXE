@@ -21,7 +21,7 @@ struct NotificationPermissionView: View {
                 .symbolRenderingMode(.palette)
                 .foregroundStyle(Brand.accent, Brand.navy)
             Text("Clinic updates come through the app. Keep notifications on so you don't miss them.")
-                .font(Brand.Typography.body)
+                .brandFont(.body)
                 .foregroundStyle(Brand.textPrimary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, Brand.Spacing.pageMargin)
@@ -31,7 +31,7 @@ struct NotificationPermissionView: View {
                 Task { await registrar.requestPermission(); dismiss() }
             } label: {
                 Text("Turn on notifications")
-                    .font(Brand.Typography.button)
+                    .brandFont(.button)
                     .frame(maxWidth: .infinity)
                     .frame(minHeight: Brand.Layout.comfortableTapTarget)
                     .foregroundStyle(Brand.textOnNavy)
@@ -44,7 +44,7 @@ struct NotificationPermissionView: View {
                 dismiss()
             } label: {
                 Text("Not now")
-                    .font(Brand.Typography.button)
+                    .brandFont(.button)
                     .frame(maxWidth: .infinity)
                     .frame(minHeight: Brand.Layout.comfortableTapTarget)
                     .foregroundStyle(Brand.navy)
@@ -75,7 +75,7 @@ struct NotificationsOffLine: View {
             if registrar.status == .denied {
                 VStack(alignment: .leading, spacing: Brand.Spacing.sm) {
                     Text("Clinic updates come through the app. Keep notifications on so you don't miss them.")
-                        .font(Brand.Typography.body)
+                        .brandFont(.body)
                         .foregroundStyle(Brand.textPrimary)
                         .fixedSize(horizontal: false, vertical: true)
                     Button {
@@ -84,7 +84,7 @@ struct NotificationsOffLine: View {
                         }
                     } label: {
                         Text("Turn on notifications")
-                            .font(Brand.Typography.button)
+                            .brandFont(.button)
                             .foregroundStyle(Brand.navy)
                             .frame(minHeight: Brand.Layout.minTapTarget)
                     }
