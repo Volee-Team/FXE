@@ -618,3 +618,36 @@ extension View {
         modifier(BrandFont(role: role))
     }
 }
+
+// MARK: - Page titles
+
+extension Brand {
+    /// The system navigation titles ("Clinics", "Profile", a sheet's title)
+    /// were SF Pro in black: a third family the guide rules out ("No third
+    /// family") in a colour it does not use for headlines (navy-900). A page
+    /// title names the page, so it takes the serif (2026-09-28). Called once
+    /// at launch; the appearance proxy covers every bar after that.
+    @MainActor static func styleNavigationTitles() {
+        Fonts.register()
+        let navy = UIColor(Brand.navy)
+        let bar = UINavigationBar.appearance()
+        bar.largeTitleTextAttributes = [
+            .font: Fonts.uiFont(.playfair, size: 34, weight: 700, textStyle: .largeTitle),
+            .foregroundColor: navy,
+        ]
+        bar.titleTextAttributes = [
+            .font: Fonts.uiFont(.playfair, size: 18, weight: 700, textStyle: .headline),
+            .foregroundColor: navy,
+        ]
+    }
+}
+
+extension View {
+    /// Keeps a screen's navigation title for VoiceOver and the back button
+    /// but does not draw it in the bar, where it repeated the page's own
+    /// serif heading (a clinic's page, 2026-09-28). iOS 18 and later; on 17
+    /// the title stays.
+    @ViewBuilder func hidesBarTitle() -> some View {
+        if #available(iOS 18.0, *) { self.toolbar(removing: .title) } else { self }
+    }
+}

@@ -13,6 +13,10 @@ struct FXETennisApp: App {
     @UIApplicationDelegateAdaptor(PushAppDelegate.self) private var pushDelegate
     @State private var session = SessionStore()
 
+    init() {
+        Brand.styleNavigationTitles()
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()
