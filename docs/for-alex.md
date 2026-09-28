@@ -134,27 +134,81 @@ the App Store. Tara said reuse Volee's (decision 16).
    access there does this. Moving the page to fersc.com later changes only
    the URL.
 
-## 3. Push notifications (checklist C3): blocked on Apple approving the LLC
+## 2b. Stripe to Tara (checklist A7), about 10 minutes of yours, 20 of hers
 
-Nothing to do until Apple's email arrives. Then:
+Real money at the party is the goal (A11). The Stripe account you made has to
+become Tara's before it can take real payments: Stripe's live activation asks
+for the business owner's own details and bank account, typed by her into
+Stripe's own form, never into anything of ours.
 
-1. https://developer.apple.com/account → **Certificates, Identifiers & Profiles → Keys → +**.
-   Name it "FXE Push", tick **Apple Push Notifications service (APNs)**, Continue, Register.
-2. **Download** the `.p8` file. Apple lets you download it once. Put it in
-   LastPass. Note the **Key ID** on that page and the **Team ID** (top right of
-   the developer site).
-3. In Terminal, from the repo folder:
-   ```bash
-   supabase secrets set APNS_KEY_ID=<key id> APNS_TEAM_ID=<team id> APNS_TOPIC=<final bundle id> PUSH_WEBHOOK_SECRET=$(openssl rand -hex 32)
-   ```
-   ```bash
-   supabase secrets set APNS_PRIVATE_KEY="$(cat ~/Downloads/AuthKey_<key id>.p8)"
-   ```
-4. The model then creates the two Vault entries (the URL and the same
-   webhook secret) and sends one real invitation to your phone.
+**You, today:**
 
-The final bundle id is decided when the LLC account exists; today's
-`com.fxetennis.app` is a placeholder.
+1. https://dashboard.stripe.com → the gear (Settings) → **Team and
+   security** → **Team** → **+ Add member**.
+2. Her email (fersctennispro@gmail.com, or whichever she uses), role
+   **Administrator** → **Send invite**.
+
+**Tara, from the invite email:** she creates her Stripe login (or signs in)
+and accepts.
+
+**You again, once she shows on the Team page:**
+
+3. On her row → the **⋯** menu → **Transfer ownership** → confirm. Only the
+   owner can do this, which is you today.
+4. You can stay on the team as Administrator (useful for helping her) or
+   remove yourself later.
+
+**Tara, as the owner: activate the account** (checklist A7). Stripe shows an
+**Activate payments** / **Complete your profile** banner. She fills in:
+FXE Tennis, LLC as the business, its EIN, her own details as the
+representative, and the bank account payouts go to. Stripe may take a day or
+two to verify. This is the step with the 2026-10-14 deadline (A11).
+
+**Then the model** (checklist A10): builds the live key swap, the live webhook
+and the cutover migration that clears everyone's test cards, and runs the
+payment test (A2) with you. Nothing about the test keys changes before then.
+
+## 3. Push notifications (checklist C3): John's key, about 10 minutes
+
+Decided 2026-09-27: push works for launch, on **John's** Apple account, because
+every tester build (and the launch build, if C11 is used) is signed by his
+team. A key from the LLC could never reach those phones. When the LLC's app
+ships later, it gets its own key the same way.
+
+**John (or you, signed in to his account with his OK):**
+
+1. https://developer.apple.com/account → **Certificates, IDs & Profiles** →
+   **Keys** → the **+** button.
+2. Key name `FXE Push`. Tick **Apple Push Notifications service (APNs)**.
+   Continue → Register.
+3. **Download** the `.p8` file. Apple allows one download only, so save it
+   straight into LastPass as an attachment. Copy the **Key ID** shown on that
+   page.
+4. Copy the **Team ID**: Membership details on the same site (10 characters).
+5. Check the app has push switched on: **Identifiers** → `com.fxetennis.app`
+   → **Push Notifications** is ticked. Xcode ticks it on its own when he
+   archives, since the project asks for push; if it is not there, tick it and
+   Save.
+
+**You, in Terminal from the repo folder** (the values go straight to Supabase,
+never into a chat or a file in the repo):
+
+```bash
+supabase secrets set APNS_KEY_ID=<key id> APNS_TEAM_ID=<team id> APNS_TOPIC=com.fxetennis.app
+```
+
+```bash
+supabase secrets set APNS_PRIVATE_KEY="$(cat ~/Downloads/AuthKey_<key id>.p8)"
+```
+
+Then delete the `.p8` from Downloads (LastPass has it) and tell the model
+**"push key is in"**. It does the rest in one step nobody sees: generates the
+webhook secret in a shell variable and puts it both in the function's secrets
+and in the database's Vault (with the function's address), so the two match
+without the value ever being printed. Then it sends one real invitation to
+your phone running build 4 to prove it, and reads back whether Apple took it.
+No `APNS_HOST` is needed: TestFlight builds use Apple's production server,
+which is the default.
 
 ## 4. John: TestFlight build 4 (checklist C8, C10)
 
