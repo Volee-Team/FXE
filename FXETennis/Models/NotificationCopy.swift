@@ -84,9 +84,12 @@ struct PlayerRef: Hashable, Sendable {
 /// Every notification the app can send, with its typed parameters.
 ///
 /// `typeKey` values match the `notifications.type` text column written by the
-/// SQL RPCs in `supabase/migrations/20260728000003_rpcs.sql`. The two lists are
-/// coupled by hand. If you add a case here, add the matching `notify_account`
-/// call there, and vice versa.
+/// SQL RPCs (first `supabase/migrations/20260728000003_rpcs.sql`; the bodies of
+/// #1, #3, #5, #6 and the three admin cases are written in her words by
+/// `20260928000001_notifications_in_her_words.sql` and pinned character for
+/// character by `tests/sql/notification_copy.sql`). The two lists are coupled
+/// by hand. If you add a case here, add the matching `notify_account` call
+/// there, and vice versa.
 enum FXENotification: Sendable {
 
     // ---------------------------------------------------------- player ----
@@ -98,6 +101,11 @@ enum FXENotification: Sendable {
     /// It does NOT fire when a player accepts an invitation. That path sends
     /// `invitationAccepted` instead. Firing both would push twice for one
     /// event. See docs/notifications.md finding (e).
+    ///
+    /// Wired 2026-09-28 (20260928000001). From `place_player` only when the
+    /// placement is what put them in, in a published clinic that has not
+    /// started, and not for a late request Tara approved (`resolve_late_request`
+    /// sends its own answer).
     case youreIn(clinic: ClinicRef)
 
     /// Fires from `invite_from_pool`, when Tara picks a specific player out of
@@ -115,7 +123,7 @@ enum FXENotification: Sendable {
     case invitationReceived(clinic: ClinicRef)
 
     /// Fires from `respond_to_invitation(accept: true)`, to the player who
-    /// accepted. Tara separately receives `playerAccepted`.
+    /// accepted. Tara separately receives `playerAccepted`. Wired 2026-09-28.
     case invitationAccepted
 
     /// CONTRADICTION (a), continued. There is no expiry mechanism, so today
@@ -129,14 +137,16 @@ enum FXENotification: Sendable {
     /// only. Player Pool is also reached by declining an invitation and by
     /// Tara cancelling one, and "Thanks for registering!" is wrong for both.
     /// The trigger is narrowed on purpose. See docs/notifications.md finding (i).
+    /// Wired 2026-09-28: `register_for_clinic` sends it, nothing else does.
     case addedToPlayerPool
 
     /// CONTRADICTION (b): fires when Tara removes a player from the Pool. The
-    /// guide does cover this ("Tara removes a player: notify the player"), and
-    /// the schema supports it, but `cancel_registration` never notifies the
-    /// player. Half fixed 2026-09-27 (20260927100002): an admin's removal no
-    /// longer notifies the admins as if the player had canceled; telling the
-    /// player waits on Tara's words.
+    /// guide does cover this ("Tara removes a player: notify the player").
+    /// Fixed in two halves: 20260927100002 stopped an admin's removal from
+    /// notifying the admins as if the player had canceled, and 20260928000001
+    /// sends the player this, from `cancel_registration` by an admin who does
+    /// not own the player, for the Pool of a published clinic. Removal from
+    /// You're In! still sends nothing: she has no words for it.
     case removedFromPlayerPool(clinic: ClinicRef)
 
     /// Fires from `cancel_clinic`, to everyone in a live status: You're In!,
@@ -178,7 +188,8 @@ enum FXENotification: Sendable {
     //
     // Tara: "Notifications to Tara herself: any sensible wording." These are
     // ours. They name a player, which is allowed only because the reader is
-    // the admin.
+    // the admin. The SQL writes exactly these since 20260928000001, with the
+    // late-fee and note suffixes after playerCanceled's.
 
     case playerAccepted(player: PlayerRef, clinic: ClinicRef)
     case playerDeclined(player: PlayerRef, clinic: ClinicRef)
