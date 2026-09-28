@@ -196,11 +196,18 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
         <button class="small" id="br-print">Print</button>
       </div>
     </div>
+    <!-- Payouts (2026-09-28): what Stripe holds for the club and what is on its
+         way to Tara's bank, from the stripe-payouts edge function, so the
+         day-to-day question needs no Stripe dashboard. -->
+    <div id="payouts" class="card">
+      <div class="row"><span class="grow name">Payouts</span><span class="muted hide" id="payouts-mode">Test mode</span></div>
+      <div id="payouts-body" class="muted" style="margin-top:8px">Loading…</div>
+      <!-- v1 (Kat, 2026-09-22): card management lives in Stripe's own dashboard.
+           Refunds, expired cards and disputes are handled there until the ledger
+           grows those controls. -->
+      <p class="muted" style="margin:10px 0 0"><a href="https://dashboard.stripe.com" target="_blank" rel="noopener" id="stripe-link">Manage payments in Stripe</a></p>
+    </div>
     <div id="money" class="card muted">Loading…</div>
-    <!-- v1 (Kat, 2026-09-22): card management lives in Stripe's own dashboard.
-         Refunds, expired cards and disputes are handled there until the ledger
-         grows those controls. -->
-    <p class="muted"><a href="https://dashboard.stripe.com" target="_blank" rel="noopener" id="stripe-link">Manage payments in Stripe</a></p>
     </div>
 
     <!-- Not a tab (Alex, 2026-09-27: "very removed from the other tabs ... a
@@ -472,6 +479,7 @@ async function showApp() {
   $("signin").classList.add("hide"); $("app").classList.remove("hide"); $("bar").classList.remove("hide");
   await loadClinics();
   loadReviewResponses();
+  if (!$("tab-money").classList.contains("hide")) loadPayouts();
 }
 
 async function loadTemplates() {
@@ -497,7 +505,11 @@ $("show-archived").addEventListener("change", () => loadTemplates());
 // Late requests come from their own table (they have a lifecycle); the rest
 // are unread notifications addressed to the admin. Each row has exactly one
 // resolving action, and everything reloads from the server afterwards.
-async function loadActionNeeded(clinics, byPlayer, money, stale = () => false) {
+// `owed` is readMoneyOwed()'s answer. It was called `money`, which shadowed
+// the money() formatter below, so the first open decline threw "money is not
+// a function" and the week never drew (found 2026-09-28; pinned by the
+// browser test "an open dispute and a declined card are in Action Needed").
+async function loadActionNeeded(clinics, byPlayer, owed, stale = () => false) {
   const byClinic = Object.fromEntries(clinics.map(c => [c.id, c]));
   const { data: late } = await sb.from("late_requests").select("*")
     .eq("status", "pending").order("created_at");
@@ -525,8 +537,11 @@ async function loadActionNeeded(clinics, byPlayer, money, stale = () => false) {
   // on an account since deleted: nobody can fix that card, so it waits on
   // the Money tab instead (20260927300001). The same two lists decide what
   // the This week tab keeps (readMoneyOwed).
-  const uncharged = paymentsOn ? chargeableClinics(money && money.clinics) : [];
-  const declined = openDeclines(money && money.declined);
+  const uncharged = paymentsOn ? chargeableClinics(owed && owed.clinics) : [];
+  const declined = openDeclines(owed && owed.declined);
+  // Open chargebacks (admin_money_disputes, 20260928200001), soonest
+  // respond-by first. Tara answers them in Stripe, so the row links there.
+  const disputes = (owed && owed.disputes) || [];
   const moneyRows = [
     ...uncharged.map(r => `<div class="row" data-uncharged="${r.clinic_id}">
       <span class="grow">${esc(r.clinic_name)} ended, not charged yet<br><span class="muted">${fmtDate(r.starts_at)}</span></span>
@@ -536,6 +551,11 @@ async function loadActionNeeded(clinics, byPlayer, money, stale = () => false) {
       <span class="grow">${esc(d.first_name + " " + d.last_name)}'s card was declined<br>
         <span class="muted">${esc(d.clinic_name)} · ${fmtDate(d.clinic_starts_at)}${d.failure_code ? " · " + esc(declineLabel(d.failure_code)) : ""}</span></span>
       <span class="name">${money(d.amount_cents)}</span>
+    </div>`),
+    ...disputes.map(d => `<div class="row" data-dispute="${d.payment_id}">
+      <span class="grow">${esc(d.first_name + " " + d.last_name)} disputed a charge<br>
+        <span class="muted">${esc(d.clinic_name)} · ${fmtDate(d.clinic_starts_at)} · ${money(d.amount_cents)}${d.respond_by ? " · Respond by " + esc(fmtRespondBy(d.respond_by)) : ""}</span></span>
+      <a href="https://dashboard.stripe.com" target="_blank" rel="noopener">Manage payments in Stripe</a>
     </div>`),
   ];
   const moneyEl = $("money-needs");
@@ -636,6 +656,10 @@ const REASON = {
   idempotency_error: "Card changed between attempts",
 };
 const reasonLabel = (why) => REASON[why] || why;
+// A chargeback on a card payment (payments.dispute_status, 20260928200001).
+// Every Stripe status but these three is still open.
+const DISPUTE = { won: "Dispute won", lost: "Dispute lost", warning_closed: "Dispute closed" };
+const disputeLabel = (s) => s ? (DISPUTE[s] || "Disputed") : "";
 // A held charge (20260927300003): processing with one of these reasons. It
 // may or may not have gone through; Tara checks in Stripe and records which.
 const HELD = ["retry_window_passed", "idempotency_error"];
@@ -701,12 +725,15 @@ async function loadLedger(gen = moneySeq) {
     // one, else Stripe's own sentence as before.
     const why = failed && r.failure_code ? "Declined: " + declineLabel(r.failure_code) : reasonLabel(r.failure_reason);
     const held = r.status === "processing" && HELD.includes(r.failure_reason);
+    // Open and lost disputes in red: money that is, or was, taken back.
+    const dispute = disputeLabel(r.dispute_status);
+    const disputeRed = dispute && !["won", "warning_closed"].includes(r.dispute_status);
     // The account holder's name, bold on a failed row: that is the
     // "cardholder name" Tara asked for (PaymentSheet does not collect the
     // name printed on the card, so the account name is what we have).
     return `<div class="row">
       <span class="grow"><span class="name"${failed ? ` style="font-weight:700"` : ""}>${esc(who)}</span> <span class="muted">${KIND[r.kind] || esc(r.kind)}</span><br>
-        <span class="muted">${clinic ? esc(clinic.name) + " · " + fmtDate(clinic.starts_at) : ""}</span>${why ? `<span class="muted"${bad}> · ${esc(why)}</span>` : ""}</span>
+        <span class="muted">${clinic ? esc(clinic.name) + " · " + fmtDate(clinic.starts_at) : ""}</span>${why ? `<span class="muted"${bad}> · ${esc(why)}</span>` : ""}${dispute ? `<span class="muted"${disputeRed ? ` style="color:#992E22"` : ""} data-dispute-status> · ${esc(dispute)}</span>` : ""}</span>
       <span><span class="name">${r.kind === "refund" ? "−" : ""}${money(r.amount_cents)}</span><br><span class="muted"${bad}>${status}</span></span>
       ${paymentsOn && r.kind !== "refund" && r.status === "succeeded" ? `<button class="small" data-refund="${r.id}">Refund</button>` : ""}
     </div>${held ? `<div class="row" data-held="${r.id}">
@@ -715,6 +742,55 @@ async function loadLedger(gen = moneySeq) {
       <button class="small" data-resolve="${r.id}" data-outcome="canceled">Did not go through</button>
     </div>` : ""}`;
   }).join("");
+}
+
+// ---------------------------------------------------------------- payouts
+// What Stripe holds for the club and what is on its way to Tara's bank
+// (stripe-payouts, 2026-09-28). Read at sign-in when the Money tab is the one
+// open, and whenever the tab is opened: Stripe's numbers move a few times a
+// day, and every tap on the week reloads the page's data, which should not
+// each cost a Stripe call.
+const PAYOUT_STATUS = { paid: "Paid", pending: "Pending", in_transit: "In transit", canceled: "Canceled", failed: "Failed" };
+// arrival_date is a bank day, "YYYY-MM-DD" (stripe-payouts): shown as that
+// calendar day, never shifted by the browser's time zone.
+const fmtBankDay = (ymd) => new Date(ymd + "T12:00:00Z").toLocaleDateString(undefined,
+  { timeZone: "UTC", weekday: "short", month: "short", day: "numeric" });
+// Stripe's respond-by is an instant (the end of a day in UTC); shown as the
+// New York date it falls on, like every other date the club runs on.
+const fmtRespondBy = (iso) => new Date(iso).toLocaleDateString(undefined, { timeZone: "America/New_York", month: "short", day: "numeric" });
+// Stripe keeps one balance per currency; the club charges in dollars.
+const usdOf = (list) => usd((list || []).filter(b => b.currency === "usd").reduce((n, b) => n + b.amount, 0));
+// The refusal code in a function's JSON answer. supabase-js hands back the
+// response as the error's context; its message alone says only "non-2xx".
+async function functionErrorCode(error) {
+  try { return (await error.context.json()).error || null; } catch { return null; }
+}
+let payoutsSeq = 0;
+async function loadPayouts() {
+  const gen = ++payoutsSeq;
+  const box = $("payouts-body");
+  const { data, error } = await sb.functions.invoke("stripe-payouts", { body: {} });
+  const code = error ? await functionErrorCode(error) : null;
+  if (gen !== payoutsSeq) return;
+  $("payouts-mode").classList.toggle("hide", !(data && data.livemode === false));
+  box.classList.toggle("muted", !!error || !data);
+  if (error || !data) {
+    box.textContent = code === "stripe_not_configured" ? "Stripe isn't connected yet." : "Couldn't load payouts.";
+    return;
+  }
+  const next = data.next_payout, recent = data.recent || [];
+  box.innerHTML = `
+    <div class="grid">
+      <div><span class="muted">Available</span><br><span class="name" id="payouts-available">${usdOf(data.available)}</span></div>
+      <div><span class="muted">Pending</span><br><span class="name" id="payouts-pending">${usdOf(data.pending)}</span></div>
+      ${next ? `<div><span class="muted">Next deposit</span><br><span class="name" id="payouts-next">${usd(next.amount)}</span> <span class="muted">${esc(fmtBankDay(next.arrival_date))}</span></div>` : ""}
+    </div>
+    <div class="row" style="border-top:1px solid var(--fxe-hairline);margin-top:10px;padding-top:10px"><span class="grow name">Recent deposits</span></div>
+    ${recent.length ? recent.map(p => `<div class="row" data-payout>
+      <span class="grow">${esc(fmtBankDay(p.arrival_date))}</span>
+      <span class="muted"${p.status === "failed" ? ` style="color:#992E22"` : ""}>${esc(PAYOUT_STATUS[p.status] || p.status)}</span>
+      <span class="name">${usd(p.amount)}</span>
+    </div>`).join("") : `<div class="muted">No deposits yet.</div>`}`;
 }
 
 // ---------------------------------------------------------- board report
@@ -842,13 +918,18 @@ async function loadPaymentsSwitch() {
 const chargeableClinics = (rows) => (rows || []).filter(r => !r.canceled && r.chargeable_count > 0);
 const openDeclines = (rows) => (rows || []).filter(d => !d.account_deleted);
 async function readMoneyOwed() {
-  const [a, b] = await Promise.all([sb.rpc("admin_money_clinics"), sb.rpc("admin_money_declined")]);
+  const [a, b, c] = await Promise.all([sb.rpc("admin_money_clinics"), sb.rpc("admin_money_declined"),
+    sb.rpc("admin_money_disputes")]);
   if (a.error || b.error) return { error: a.error || b.error };
   const clinics = a.data || [], declined = b.data || [];
+  // Disputes are read leniently: an unreadable list shows none rather than
+  // blanking the week (the page can reach Vercel before its migration reaches
+  // hosted, and without the migration no dispute can have been recorded).
+  const disputes = c.error ? [] : (c.data || []);
   const ids = paymentsOn
     ? [...new Set([...chargeableClinics(clinics).map(r => r.clinic_id), ...openDeclines(declined).map(d => d.clinic_id)])]
     : [];
-  return { data: ids, clinics, declined };
+  return { data: ids, clinics, declined, disputes };
 }
 
 // This week (MVP audit 2026-09-27, item 14). It used to list every clinic
@@ -1000,7 +1081,10 @@ const showTab = (name) => {
   // Testing is never the page a reload lands on.
   if (TABS.includes(name)) try { localStorage.setItem("fxe.tab", name); } catch {}
 };
-for (const b of document.querySelectorAll(".tabs [role=tab]")) b.addEventListener("click", () => showTab(b.dataset.tab));
+for (const b of document.querySelectorAll(".tabs [role=tab]")) b.addEventListener("click", () => {
+  showTab(b.dataset.tab);
+  if (b.dataset.tab === "money") loadPayouts();
+});
 $("open-testing").addEventListener("click", () => { showTab("testing"); window.scrollTo(0, 0); });
 try { const t = localStorage.getItem("fxe.tab"); if (TABS.includes(t)) showTab(t); } catch {}
 

@@ -374,6 +374,12 @@ enum AdminRepository {
         try await supabase.rpc("admin_money_declined").execute().value
     }
 
+    /// Open chargebacks on card payments (admin_money_disputes,
+    /// 20260928200001), soonest respond-by first. Tara answers them in Stripe.
+    static func moneyDisputes() async throws -> [MoneyDispute] {
+        try await supabase.rpc("admin_money_disputes").execute().value
+    }
+
     /// Whether the Zelle/Venmo path exists (app_settings.zelle_allowed).
     /// False since decision 0013: the card is the only way to pay, so the
     /// Paid toggle and the unpaid reminder are not rendered.
@@ -662,6 +668,41 @@ struct MoneyDecline: Decodable, Identifiable, Sendable {
         case amountCents = "amount_cents"
         case failureCode = "failure_code"
         case accountDeleted = "account_deleted"
+    }
+}
+
+/// A card payment the cardholder's bank is taking back, still open
+/// (admin_money_disputes, 20260928200001). Tara answers it in Stripe's
+/// dashboard by the respond-by date; a lost one is subtracted from Charged.
+struct MoneyDispute: Decodable, Identifiable, Sendable {
+    let paymentId: UUID
+    let clinicId: UUID
+    let clinicName: String
+    let clinicStartsAt: Date
+    let firstName: String?
+    let lastName: String?
+    /// What the bank is taking back; can be less than the fee.
+    let amountCents: Int
+    let reason: String?
+    let status: String
+    let respondBy: Date?
+
+    var id: UUID { paymentId }
+    var displayName: String {
+        let n = "\(firstName ?? "") \(lastName ?? "")".trimmingCharacters(in: .whitespaces)
+        return n.isEmpty ? "Unknown player" : n
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case reason, status
+        case paymentId = "payment_id"
+        case clinicId = "clinic_id"
+        case clinicName = "clinic_name"
+        case clinicStartsAt = "clinic_starts_at"
+        case firstName = "first_name"
+        case lastName = "last_name"
+        case amountCents = "amount_cents"
+        case respondBy = "respond_by"
     }
 }
 

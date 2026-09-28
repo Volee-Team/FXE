@@ -65,6 +65,42 @@ read and the icon's number drops), and nothing is said on a shared phone when
 the invitation was someone else's (`not_authorized`). The calendar entry's
 title and the reminder's title are the clinic's name: data, not copy.
 
+## Payouts and disputes (2026-09-28) — awaiting Alex
+
+Chrome only, mine, on Tara's side (web admin, and one row on the iOS Manage
+tab). No player sees any of these. Branch `payouts-disputes`: the Payouts card
+on the Money tab (`stripe-payouts`) and chargebacks recorded from Stripe
+(20260928200001). The extractor sees three of them ("Next deposit", "Recent
+deposits", "No deposits yet."); the rest are short labels, ternaries,
+template literals or Swift string arguments it cannot see (the known gap
+below), so they are listed by hand. Money words are Stripe's own where it has
+one ("Available", "Pending", "In transit").
+
+| ✓ | String | Where | Why |
+|---|--------|-------|-----|
+| ☐ | Payouts | Web Money tab, the new card's title | The name Stripe uses for money sent to the bank |
+| ☐ | Available | Payouts card: money in Stripe that can be paid out now | Stripe's word for that balance |
+| — | Pending | Payouts card: charged but not yet available; also a payout's status | Not new: the ledger's word for a queued charge |
+| ☐ | Next deposit | Payouts card: the soonest payout still on its way, and its bank day ("$42.00 Fri, Oct 2") | "Deposit" is what she sees at her bank; "payout" is Stripe's word |
+| ☐ | Recent deposits | Payouts card: the last ten payouts, each with its bank day, status and amount | Same |
+| ☐ | No deposits yet. | Payouts card when Stripe has never paid out | The honest empty state; one sentence |
+| ☐ | In transit | Payouts card: a payout on its way to the bank (Stripe's `in_transit`) | Stripe's own words; "Paid", "Pending", "Canceled" and "Failed" are reused for its other statuses |
+| ☐ | Test mode | Beside "Payouts" while Stripe answers from the sandbox (`livemode` false) | So sandbox money is never read as the club's |
+| ☐ | Couldn't load payouts. | Payouts card when the function or Stripe fails | The "Couldn't load clinics." pattern |
+| — | Stripe isn't connected yet. | Payouts card when no Stripe key is set | Not new: already the web's words for `stripe_not_configured` |
+| — | Manage payments in Stripe | Moved from the foot of the Money tab into the Payouts card; also at the end of each dispute row in Action Needed | Not new: the existing link, same words, same address |
+| ☐ | {First Last} disputed a charge | Action Needed, web and phone: a card payment the cardholder's bank is taking back, still open. Under it the clinic, its date and the amount | The fact only, no advice; she answers it in Stripe, which the row links to |
+| ☐ | Respond by {date} | Under a dispute row when Stripe gives a deadline ("Respond by Oct 5") | Stripe's respond-by date; after it the dispute is lost by default |
+| ☐ | Disputed | Money tab, card payments list: a payment with an open dispute (red) | Status word beside Stripe's decline reasons |
+| ☐ | Dispute lost | Same list: the bank kept the money; it is subtracted from Charged and Collected by card (red) | Same |
+| ☐ | Dispute won | Same list: the money came back (grey) | Same |
+| ☐ | Dispute closed | Same list: an inquiry that closed without a chargeback (grey) | Same |
+
+Words unchanged, meaning widened: **Charged** (Money tab) and **Collected by
+card** (board report, CSV) now subtract what Stripe took for a lost dispute,
+the way they already subtracted refunds. Alex may want the board report to say
+so in a footnote; nothing was added without asking.
+
 ## New since the last review — 2026-09-27 (bad signal, the waiver's exits, rate limits), awaiting Alex
 
 MVP audit items 7, 9 and 15 (branch `ios-resilience`). Two new strings, both

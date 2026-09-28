@@ -1,7 +1,8 @@
 # Edge functions
 
 Deno functions deployed to the Supabase project. Decision 0009 (payments)
-owns the three `stripe-*` functions; `review-submit` (2026-09-21) saves
+owns the `stripe-*` functions (`stripe-payouts`, 2026-09-28, is the read-only
+fourth: Tara's Payouts card); `review-submit` (2026-09-21) saves
 Tara's review-page answers; `delete-account` (2026-09-21, decision 0013 §5)
 removes the sign-in after `delete_my_account()` has scrubbed the personal
 data; `push` (2026-09-23, decision 0008) delivers each notification row to
@@ -24,6 +25,15 @@ are `docs/for-alex.md` §1:
 | `STRIPE_SECRET_KEY` | Alex (test), Tara or Alex (live) | `sk_test_…` now, `sk_live_…` when Tara's account is ready |
 | `STRIPE_WEBHOOK_SECRET` | Alex | `whsec_…` from the webhook endpoint Stripe creates for `…/functions/v1/stripe-webhook` |
 | `STRIPE_PUBLISHABLE_KEY` | Alex | `pk_test_…` / `pk_live_…`; safe in a client, returned to the app by `stripe-setup-intent` |
+
+The webhook endpoint in Stripe's dashboard sends only the events ticked on
+it. Besides the five payment and refund events, `stripe-webhook` records
+chargebacks from `charge.dispute.created`, `charge.dispute.updated` and
+`charge.dispute.closed` (2026-09-28): tick those on the test endpoint and on
+the live one, or no dispute ever reaches the app. A restricted live key needs
+Balance and Payouts read for `stripe-payouts`, Charges read for the rare
+dispute that names its charge but not its PaymentIntent, and PaymentIntents
+read for the dispute on a held charge that never learned its id.
 | `APNS_KEY_ID` | Alex | the 10-character Key ID Apple shows next to the APNs key |
 | `APNS_TEAM_ID` | Alex | FXE Tennis, LLC's 10-character Team ID (Membership page) |
 | `APNS_PRIVATE_KEY` | Alex | the whole contents of `AuthKey_<KEYID>.p8`, PEM markers included. Apple lets you download it once |
@@ -39,8 +49,9 @@ injected by the platform.
 | Function | Called by | Auth | Does |
 |---|---|---|---|
 | `stripe-setup-intent` | the iOS app, once per card | caller's JWT | refuses with 409 `card_consent_required` unless `card_consents` holds the caller's permission to the current words (decision 0015 §7), and 403 `account_deleted` for a deleted account; then creates or reuses the Stripe customer and returns a SetupIntent client secret + ephemeral key for PaymentSheet. A stored customer is checked first: one Stripe does not have (every sandbox customer after the live swap, or one deleted in the dashboard) is replaced, and its stale card summary cleared (2026-09-27) |
-| `stripe-webhook` | Stripe | Stripe signature (`verify_jwt = false`) | records the card summary on `setup_intent.succeeded`, and ledger outcomes on payment / refund events, each with the event's `livemode` (20260927200001); on `payment_intent.payment_failed` it writes Stripe's sentence to `failure_reason` and its code to `failure_code` (`decline_code`, else `code`, 20260926000010). A payment event that arrives before `stripe-charge` has stored the PaymentIntent id is attached to the row named in the PaymentIntent's `metadata.fxe_payment_id`, never to a refund row or a row that has another PaymentIntent (2026-09-27; before, it matched nothing, answered 200, and the charge sat in processing for good) |
+| `stripe-webhook` | Stripe | Stripe signature (`verify_jwt = false`) | records the card summary on `setup_intent.succeeded`, and ledger outcomes on payment / refund events, each with the event's `livemode` (20260927200001). Since 2026-09-28, `charge.dispute.created` / `.updated` / `.closed` onto the fee whose PaymentIntent the dispute names (else its charge's, asked of Stripe; else, when no row has that PaymentIntent, the row its metadata names, a held charge Tara marked "Went through") through `stripe_record_dispute`, with what Stripe withdrew for it read from the dispute's balance transactions; an event older than the one recorded, a late update to a decided dispute, and a second dispute on a payment whose dispute was lost change nothing (the last is logged); a dispute on anything this app did not charge matches nothing, and a database error answers 500 so Stripe delivers the event again; on `payment_intent.payment_failed` it writes Stripe's sentence to `failure_reason` and its code to `failure_code` (`decline_code`, else `code`, 20260926000010). A payment event that arrives before `stripe-charge` has stored the PaymentIntent id is attached to the row named in the PaymentIntent's `metadata.fxe_payment_id`, never to a refund row or a row that has another PaymentIntent (2026-09-27; before, it matched nothing, answered 200, and the charge sat in processing for good) |
 | `stripe-charge` | the admin surfaces after `admin_charge_registration` / `admin_refund_payment` | admin JWT; CORS for the admin site (`_shared/cors.ts`: hosted answered its preflight with 405 until 2026-09-27, so the web's Charge clinic could not reach it) | turns up to 25 `pending` ledger rows per call (`.limit(25)`) into one PaymentIntent (off-session, naming the saved card explicitly: the customer's default payment method, else their first card, because a PaymentIntent does not fall back to `invoice_settings`) or Refund each, with an idempotency key per row, storing Stripe's `livemode`; safe to call again for the rest. When a call throws (`_shared/stripe-errors.ts`, 2026-09-27): a decline, a request Stripe refused, or our own refusal (`no_card_on_file`, `account_deleted`) is `failed`; anything that may have reached Stripe (dropped connection, timeout, 5xx, 429, a refused key) goes back to `pending` and is repeated under the same key, which Stripe answers with the first result; an `idempotency_error`, or a retry more than 23 hours after the row was made, is held in processing with that reason for a person. Each call first sweeps rows left in processing without a Stripe id for over 5 minutes (a call that died) back to pending. A customer Stripe does not have fails the row as `no_card_on_file` and clears the stale card, so the app asks again; a deleted account is never charged |
+| `stripe-payouts` | the web admin's Money tab, the Payouts card (2026-09-28) | admin JWT, and `is_admin()` asked as the caller; CORS for the admin site (`_shared/cors.ts`) | read-only: `balance.retrieve()` and `payouts.list({ limit: 10 })` into `{ livemode, available, pending, next_payout, recent }`, each payout cut to `amount`, `currency`, `arrival_date` (the bank day as `YYYY-MM-DD`: Stripe sends midnight UTC, which a New York browser would show as the evening before) and `status`; never its bank account, description or id, and never Stripe's error text (an authentication error quotes the end of the key). 401 signed out, 403 for a member (before Stripe is asked), 503 `stripe_not_configured`, 502 `stripe_unavailable` |
 | `review-submit` | `web/review.html?t=<token>`, Tara's review page | the token in the body or query, checked against `review_links` (`verify_jwt = false`: she has no account) | `POST {token, page_version, answers}` upserts one jsonb blob per (link, page version) into `review_responses` and returns `{saved_at}`; `GET ?token=&page_version=` returns `{answers, saved_at}` so she can continue on another device; unknown or revoked token is 404, answers over 200 KB or not an object is 400. Uses `_shared/supabase.ts`, not the Stripe module. No rate limiting |
 | `push` | the database: trigger `push_on_notification` posts `{notification_id}` through pg_net on every insert into `notifications` (migration 20260923000001) | `X-Push-Secret` header equal to `PUSH_WEBHOOK_SECRET` (`verify_jwt = false`: the database has no JWT) | loads the row and the account's `devices`, signs an ES256 provider token (cached 50 minutes), `POST /3/device/<token>` per device with the row's `body` verbatim and the unread count as the badge. Writes `delivered_at` on any 200, else `delivery_error` (`no_device`, `apns_not_configured`, or Apple's reason). Deletes a token Apple answers 410 or `BadDeviceToken` for. A delivered row is skipped, so a retry never double-sends |
 | `admin-reset-link` | the web admin, Players → Reset link | caller's JWT, and `is_admin()` asked as the caller; CORS for the admin site (`_shared/cors.ts`) | `POST {player_id}`: 409 for a deleted account, 403 `admin_target` for an admin account (a leaked link would be an admin session); `auth.admin.generateLink({type: "recovery"})` (sends no email), checks the token's sign-in is that account (`identity_mismatch`), records a row in `reset_links_issued`, then returns `RESET_PAGE_URL#token_hash=…&type=recovery` (the fragment reaches no server log). The page exchanges it with `verifyOtp`; it works once, within `mailer_otp_exp`. Harness: `tests/reset/run.sh` |
@@ -87,13 +98,13 @@ cleared). `tests/stripe/run.sh` section 13 runs the cutover end to end;
 ## Called from a browser: CORS
 
 The web admin (`fxe-tennis-admin.vercel.app`) calls `review-submit`,
-`stripe-charge` and `admin-reset-link` from the browser, a different origin
+`stripe-charge`, `admin-reset-link` and `stripe-payouts` from the browser, a different origin
 from `<project>.supabase.co`, so the browser sends a preflight first. Hosted's
 gateway does not answer it for a function: the function must, or the browser
 refuses the call. The local gateway does answer it, so a function without CORS
 passes every local test and fails in production. `_shared/cors.ts` is the one
 place for it; `scripts/hosted-smoke.sh` sends the preflight to each of the
-three on every PR. Functions called only by the iOS app, Stripe or the
+four on every PR. Functions called only by the iOS app, Stripe or the
 database need none.
 
 ## Run locally
@@ -114,6 +125,7 @@ call fails, which is the intended state until the test keys exist.
 supabase functions deploy stripe-setup-intent
 supabase functions deploy stripe-webhook --no-verify-jwt
 supabase functions deploy stripe-charge
+supabase functions deploy stripe-payouts
 supabase functions deploy review-submit --no-verify-jwt
 supabase functions deploy delete-account
 supabase functions deploy push --no-verify-jwt
@@ -133,7 +145,10 @@ early webhook; the stuck-row sweep; a dropped connection retried as the same
 row (it stops and restarts the mock container, `STRIPE_MOCK_CONTAINER`,
 default `stripe-mock`; set it empty to skip when the mock is the Homebrew
 binary); a customer Stripe does not have; a deleted account; `delete-account`
-and Stripe; the live cutover end to end. Its last check runs
+and Stripe; the live cutover end to end. Since 2026-09-28 also `stripe-payouts`
+(an admin gets the balance and four fields per payout, a member 403, signed
+out 401) and disputes (the right row and nothing else, a replay and a late
+update changing nothing, a dispute on another sale recording nothing). Its last check runs
 `tests/stripe/errors.test.ts` with Deno, pinning the error rule with the
 Stripe SDK's own error objects (declines, timeouts, 5xx, idempotency errors:
 none of which stripe-mock can produce). Same PASS/FAIL lines as the probes.

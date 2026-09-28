@@ -110,11 +110,13 @@ Message players
 More
 My Clinics
 New password
+Next deposit
 No card on file for that player.
 No card payments yet.
 No clinics currently open for registration
 No clinics this week or later. Use “New clinic” to add one.
 No court
+No deposits yet.
 No description yet.
 No earlier clinics.
 No notifications yet
@@ -154,6 +156,7 @@ Rating
 Rating Guide
 Rating \(bucket.label)
 Really cancel? Everyone is told.
+Recent deposits
 Refresh
 Register
 Registration has closed for this clinic.

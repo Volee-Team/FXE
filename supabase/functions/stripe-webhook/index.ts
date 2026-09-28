@@ -12,6 +12,9 @@
 //   payment_intent.succeeded        -> payments.status = succeeded
 //   payment_intent.payment_failed   -> payments.status = failed, failure_reason, failure_code
 //   charge.refunded / refund.updated -> refund row succeeded (when it clears)
+//   charge.dispute.created / .updated / .closed
+//                                   -> the dispute columns on the disputed fee
+//                                      (stripe_record_dispute, 20260928200001)
 // Every ledger write also records the event's livemode (20260927200001): the
 // signed event is Stripe's word on which mode the money moved in, and test
 // mode is never counted as money.
@@ -97,10 +100,79 @@ async function handle(req: Request): Promise<Response> {
       for (const r of refunds) await recordRefund(r, mode(event));
       break;
     }
+    case "charge.dispute.created":
+    case "charge.dispute.updated":
+    case "charge.dispute.closed": {
+      await recordDispute(event.data.object as Stripe.Dispute, event);
+      break;
+    }
     default:
       break;
   }
   return json({ received: true });
+}
+
+// A chargeback onto the fee it disputes (20260928200001). Matched by the
+// PaymentIntent the ledger stores: the dispute's own payment_intent, else its
+// charge's (asked of Stripe). The rule is in SQL (stripe_record_dispute): an
+// event older than the one recorded changes nothing, a decided dispute is
+// never reopened, a replay writes the same values, and a lost dispute is
+// never replaced by a second one. When no row has the PaymentIntent, the
+// PaymentIntent's own metadata names the row it was made for (a held charge
+// Tara marked "Went through" never learned its id), the fallback
+// recordPaymentOutcome uses. A dispute on anything this app did not charge
+// matches no row and changes nothing. A database error is thrown, so the
+// webhook answers 500 and Stripe delivers the event again later: a dispute
+// must not be lost to a moment's outage, or to this function reaching hosted
+// before its migration.
+async function recordDispute(d: Stripe.Dispute, event: Stripe.Event) {
+  let pi = typeof d.payment_intent === "string" ? d.payment_intent : d.payment_intent?.id ?? null;
+  if (!pi) {
+    const chargeId = typeof d.charge === "string" ? d.charge : d.charge?.id;
+    if (chargeId) {
+      const ch = await getStripe().charges.retrieve(chargeId);
+      pi = typeof ch.payment_intent === "string" ? ch.payment_intent : ch.payment_intent?.id ?? null;
+    }
+  }
+  if (!pi) return;   // not a PaymentIntent charge: never one this app made
+  const at = (s: number | null | undefined) => (typeof s === "number" && s > 0 ? new Date(s * 1000).toISOString() : null);
+  // What Stripe has actually taken from the balance for this dispute: its
+  // balance transactions are the withdrawal and any reinstatement, amounts
+  // without Stripe's fee (negative when money left). Nothing for an inquiry,
+  // nothing net for a won dispute, nothing for a charge already refunded.
+  const moved = (d.balance_transactions ?? [])
+    .reduce((n, bt) => n + (typeof bt === "object" && bt && typeof bt.amount === "number" ? bt.amount : 0), 0);
+  const record = async (paymentId: string | null) => {
+    const { data, error } = await admin.rpc("stripe_record_dispute", {
+      p_payment_intent: pi,
+      p_dispute_id: d.id,
+      p_status: d.status,
+      p_reason: d.reason ?? null,
+      p_amount_cents: d.amount,
+      p_withdrawn_cents: Math.max(0, -moved),
+      p_disputed_at: at(d.created),
+      // Stripe sends 0 when the bank allows no response: no respond-by date.
+      p_due_by: at(d.evidence_details?.due_by),
+      // Every real event carries created; the fallback only keeps a malformed
+      // one from being dropped.
+      p_event_at: at(event.created) ?? new Date().toISOString(),
+      p_payment_id: paymentId,
+    });
+    if (error) throw new Error(`dispute_not_recorded: ${error.message}`);
+    return data as string;
+  };
+  let outcome = await record(null);
+  if (outcome === "no_payment") {
+    const intent = await getStripe().paymentIntents.retrieve(pi);
+    const mine = intent.metadata?.fxe_payment_id;
+    if (mine) outcome = await record(mine);
+  }
+  if (outcome === "second_dispute") {
+    // One dispute per payment in the ledger, and a lost one is kept (its
+    // money stays out of the numbers). Stripe's own dispute email still goes
+    // to the account; this line is the trace in the function's logs.
+    console.warn("stripe-webhook: second dispute on a payment whose dispute was lost", d.id);
+  }
 }
 
 // The event's livemode, as a column value. Stripe sends it on every event; an
