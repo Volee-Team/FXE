@@ -85,6 +85,10 @@ echo ""
 # Clean up the probe's own rows only.
 psql -q -c "delete from public.registrations where clinic_id = '$CLINIC';" >/dev/null
 psql -q -c "delete from public.clinics where id = '$CLINIC';" >/dev/null
+# The racers' waiver signatures first: since 20260927200002 a signature
+# blocks a hard delete of its account (RESTRICT), which is the point in
+# production and only a fixture here.
+psql -q -c "delete from public.waiver_acceptances w using auth.users u where u.id = w.account_id and u.email like 'racer%@probe.test';" >/dev/null
 psql -q -c "delete from auth.users where email like 'racer%@probe.test';" >/dev/null
 rm -rf "$TMP"
 

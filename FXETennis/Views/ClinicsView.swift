@@ -19,19 +19,33 @@ final class ClinicsViewModel {
     var myRegistrationsByClinic: [UUID: MyRegistration] = [:]
     var loading = false
     var loadError: String?
+    /// A load has finished, with an answer or a failure. Until then an empty
+    /// list means "not asked yet", not "none" (review, 2026-09-27: Home said
+    /// "No clinics currently open for registration" while the first load ran).
+    var hasLoaded = false
 
+    /// Both lists land together or not at all: a half-applied load showed new
+    /// clinics beside old registrations. A failure keeps what was shown and
+    /// says why; no signal reads as no signal, not as "no clinics" (MVP audit
+    /// item 9).
     func load() async {
         loading = true; loadError = nil
         do {
             async let clinics = ClinicRepository.upcoming()
             async let regs = RegistrationRepository.mine()
-            self.clinics = try await clinics
-            let live = try await regs.filter { $0.status != .canceled }
+            let (fetchedClinics, fetchedRegs) = try await (clinics, regs)
+            let live = fetchedRegs.filter { $0.status != .canceled }
+            self.clinics = fetchedClinics
             self.myRegistrationsByClinic = Dictionary(
                 live.map { ($0.clinicId, $0) }, uniquingKeysWith: { a, _ in a }
             )
+            hasLoaded = true
         } catch {
-            loadError = "Couldn't load clinics."
+            let failure = RequestFailure(error)
+            if failure != .cancelled {
+                loadError = failure.line ?? "Couldn't load clinics."
+                hasLoaded = true
+            }
         }
         loading = false
     }
@@ -64,6 +78,7 @@ struct ClinicsView: View {
             .navigationTitle("Clinics")
             .task { await model.load() }
             .refreshable { await model.load() }
+            .reloadOnForeground { await model.load() }
             .sheet(item: $explaining) { clinic in
                 ClinicExplainerSheet(clinic: clinic)
             }
@@ -146,24 +161,22 @@ struct ClinicCard: View {
     let clinic: ClinicPublic
     let registration: MyRegistration?
     let isMember: Bool
-
-    private var openMoment: Date? { isMember ? clinic.memberOpensAt : clinic.publicOpensAt }
-    private var isOpenNow: Bool {
-        guard let openMoment else { return true }
-        return openMoment <= Date()
-    }
+    /// At the accessibility text sizes the name and the chip stack instead of
+    /// sharing one row, where the chip left the name a sliver of width.
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
         VStack(alignment: .leading, spacing: Brand.Spacing.sm) {
-            HStack(alignment: .top) {
-                Text(clinic.name)
-                    .font(Brand.Typography.headline)
-                    .foregroundStyle(Brand.navy)
-                Spacer()
-                if let reg = registration {
-                    StatusChip(reg.status.display)
-                } else if clinic.isCanceled {
-                    StatusChip(.canceled)
+            if typeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
+                    name
+                    chip
+                }
+            } else {
+                HStack(alignment: .top) {
+                    name
+                    Spacer()
+                    chip
                 }
             }
 
@@ -180,14 +193,10 @@ struct ClinicCard: View {
             }
 
             if registration == nil && !clinic.isCanceled {
-                if isOpenNow {
-                    Text("Registration open")
-                        .font(Brand.Typography.caption)
-                        .foregroundStyle(Brand.Status.youreIn.ink)
-                } else if let openMoment {
-                    Text("Registration opens \(openMoment.formatted(.dateTime.month(.abbreviated).day()))")
-                        .font(Brand.Typography.caption)
-                        .foregroundStyle(Brand.textSecondary)
+                // Redrawn at the opening, so "Registration open" appears on
+                // the second without a pull (MVP audit item 8).
+                TimelineView(.explicit(RedrawSchedule.at(clinic.upcomingMoments(isMember: isMember)))) { _ in
+                    openLine(now: Date())
                 }
             }
         }
@@ -196,6 +205,38 @@ struct ClinicCard: View {
         .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.lg))
         .overlay(RoundedRectangle(cornerRadius: Brand.Radius.lg).stroke(Brand.hairline))
         .opacity(clinic.isCanceled ? 0.6 : 1)
+    }
+
+    private var name: some View {
+        Text(clinic.name)
+            .font(Brand.Typography.headline)
+            .foregroundStyle(Brand.navy)
+    }
+
+    @ViewBuilder private var chip: some View {
+        if let reg = registration {
+            StatusChip(reg.status.display)
+        } else if clinic.isCanceled {
+            StatusChip(.canceled)
+        }
+    }
+
+    /// The same decision as the clinic page (ClinicPublic.door): "open"
+    /// only while Register would work, so not after the close or the start
+    /// (review, 2026-09-27: the card said open all the way to the start).
+    @ViewBuilder private func openLine(now: Date) -> some View {
+        switch clinic.door(isMember: isMember, now: now) {
+        case .register:
+            Text("Registration open")
+                .font(Brand.Typography.caption)
+                .foregroundStyle(Brand.Status.youreIn.ink)
+        case .opens(let openMoment):
+            Text("Registration opens \(openMoment.formatted(.dateTime.month(.abbreviated).day()))")
+                .font(Brand.Typography.caption)
+                .foregroundStyle(Brand.textSecondary)
+        case .askTara, .none:
+            EmptyView()
+        }
     }
 
     private var dateLine: String {

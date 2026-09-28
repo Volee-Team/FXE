@@ -55,7 +55,7 @@ Sign up with a real email (the app sends no confirmation email; decision
 0011), fill the profile (name, phone, rating, member yes/no, an optional note
 for Tara), sign the waiver (typed full name), then Home. Nothing charges
 anyone: Stripe's sandbox keys are in (2026-09-27), but the payment switch
-stays off until Alex says go (launch checklist A9), after build 3 is on
+stays off until Alex says go (launch checklist A9), after build 4 is on
 phones. Tara's account
 is the one with the Manage tab; she creates it herself the same way and Alex
 promotes it once (`bootstrap_first_admin`, already done on hosted).

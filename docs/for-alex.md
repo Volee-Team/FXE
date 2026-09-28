@@ -92,7 +92,7 @@ keys page, the ⋯ menu beside the key, **Rotate key**.
     list` shows names and fingerprints, never values). Payments stay
     switched **off** until you say go, because switching them on means
     nobody can register without a saved card, and that should wait for the
-    TestFlight build with the card step (build 3). Then the eight-row
+    TestFlight build with the card step (build 4). Then the eight-row
     test in `docs/stripe-e2e-test.md`, with your own account.
 
 **The terminal command you may have seen** (`supabase secrets set
@@ -156,26 +156,27 @@ Nothing to do until Apple's email arrives. Then:
 The final bundle id is decided when the LLC account exists; today's
 `com.fxetennis.app` is a placeholder.
 
-## 4. John: TestFlight build 3 (checklist C8, C10)
+## 4. John: TestFlight build 4 (checklist C8, C10)
 
-`main` is ready: a Release build on 2026-09-27 carried build number 3, the
-camera sentence Apple asked for, the encryption flag, and the real backend.
-The build number is already 3 in `project.yml` (his PR #58), so no bump is
-needed. Text John something like this:
+**Wait for the model to say `main` is ready** (the `mvp-fixes` PR merged).
+Build 4 carries the MVP audit's fixes. The build number is already 4 in
+`project.yml`, so no bump is needed. If John already uploaded build 3, that
+is fine: 4 replaces it. Text John something like this:
 
-> John, build 3 is ready on `main`. `git pull`, `xcodegen generate`, open
+> John, build 4 is ready on `main`. `git pull`, `xcodegen generate`, open
 > the project, scheme FXETennis, destination Any iOS Device, Product →
-> Archive, then Distribute App → TestFlight Internal Only → Upload. The
-> camera sentence and the encryption flag are in this build, so Apple should
-> not bounce it and App Store Connect should not ask the export question.
-> After it processes, add it to the internal group, then tag it:
-> `git tag -a v0.1.0-tf3 -m "TestFlight build 3, uploaded by John"` and
-> `git push origin v0.1.0-tf3`. Full steps are in `docs/testflight.md`.
+> Archive, then Distribute App → TestFlight Internal Only → Upload. After it
+> processes, add it to the internal group, then tag it:
+> `git tag -a v0.1.0-tf4 -m "TestFlight build 4, uploaded by John"` and
+> `git push origin v0.1.0-tf4`. Full steps are in `docs/testflight.md`.
 
-What testers get in build 3: the new front page with Tara's court photo, the
-card step with the permission box, the back-to-back 105 rule, the board
-report on Tara's web admin, and every fix since build 2. Payments stay off
-until you say go (checklist A9).
+What testers get in build 4, on top of build 3's front page, card step and
+105 rule: the app no longer mistakes bad signal for "no account" or "someone
+beat you"; screens refresh when you come back to the app and Register appears
+at 8:00 on its own; a way out of the waiver and card steps; the iPhone's
+Larger Text setting; push notifications that open their clinic (once the key
+exists); and on Tara's side, Late cancel, honest Money numbers and one fee per
+player per clinic. Payments stay off until you say go (checklist A9).
 
 ## 5. Tara's review page, round four (checklist G2), about 5 minutes
 

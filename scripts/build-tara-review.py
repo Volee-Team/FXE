@@ -168,6 +168,26 @@ QUESTIONS = [
  [
   "When you move someone",
   "When you take someone out of a clinic, take back an invitation, or put someone in yourself, should the app tell them? Today it doesn't."
+ ],
+ [
+  "Late cancel, then back in",
+  "Someone cancels late and you then put them back in the same clinic: do they pay once or twice? If we don't hear otherwise: once."
+ ],
+ [
+  "A clinic canceled for rain",
+  "If you cancel a clinic, should anyone who had already canceled late for it still be charged? If we don't hear otherwise: no, a canceled clinic is never charged."
+ ],
+ [
+  "A declined card you won't chase",
+  "A card is declined and you decide to let it go: how do you want to clear it from your list? Today it stays until a later charge goes through."
+ ],
+ [
+  "Deleted before you charge",
+  "Someone plays a clinic, then deletes their account before you tap Charge: charge that clinic first, or let it go? If we don't hear otherwise: let it go."
+ ],
+ [
+  "Receipts",
+  "After you charge a clinic, should each player get an emailed receipt from Stripe? If we don't hear otherwise: no receipts."
  ]
 ]
 

@@ -70,4 +70,43 @@ final class OpenForRegistrationTests: XCTestCase {
         XCTAssertEqual(account.cardLabel, "•••• 4242")
         XCTAssertFalse(account.cardLabel?.lowercased().contains("visa") ?? true)
     }
+
+    // MARK: what the clinic page offers someone not registered (review, 2026-09-27)
+    //
+    // The rule: before this player's opening, "Registration opens <when>";
+    // from it until the close, Register; from the close until the start, the
+    // late request to Tara; from the start, nothing. Canceled: nothing.
+
+    func testTheDoorAtTheOpening() {
+        XCTAssertEqual(clinic().door(isMember: true, now: memberOpens.addingTimeInterval(-1)), .opens(memberOpens))
+        XCTAssertEqual(clinic().door(isMember: true, now: memberOpens), .register)
+        XCTAssertEqual(clinic().door(isMember: false, now: memberOpens), .opens(publicOpens))
+        XCTAssertEqual(clinic().door(isMember: false, now: publicOpens), .register)
+    }
+
+    func testTheDoorAtTheClose() {
+        XCTAssertEqual(clinic().door(isMember: true, now: closes.addingTimeInterval(-1)), .register)
+        XCTAssertEqual(clinic().door(isMember: true, now: closes), .askTara)
+        XCTAssertEqual(clinic().door(isMember: false, now: starts.addingTimeInterval(-1)), .askTara)
+    }
+
+    func testTheDoorAtTheStartIsShut() {
+        XCTAssertEqual(clinic().door(isMember: true, now: starts), .none)
+        XCTAssertEqual(clinic().door(isMember: true, now: starts.addingTimeInterval(1800)), .none)
+        // With no close stored, Register still ends at the start.
+        XCTAssertEqual(clinic(closesAt: .some(nil)).door(isMember: true, now: starts.addingTimeInterval(-1)), .register)
+        XCTAssertEqual(clinic(closesAt: .some(nil)).door(isMember: true, now: starts), .none)
+    }
+
+    func testACanceledClinicHasNoDoor() {
+        XCTAssertEqual(clinic(status: "canceled").door(isMember: true, now: publicOpens.addingTimeInterval(60)), .none)
+    }
+
+    /// Home's list and the page agree: open exactly when the door is Register.
+    func testOpenMeansTheRegisterDoor() {
+        for t in [memberOpens.addingTimeInterval(-1), memberOpens, publicOpens, closes, starts] {
+            XCTAssertEqual(clinic().isOpenForRegistration(isMember: true, now: t),
+                           clinic().door(isMember: true, now: t) == .register, "at \(t)")
+        }
+    }
 }

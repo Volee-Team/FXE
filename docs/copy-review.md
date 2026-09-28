@@ -35,6 +35,22 @@ plus every "New since" block.
 
 ---
 
+## New since the last review — 2026-09-27 (bad signal, the waiver's exits, rate limits), awaiting Alex
+
+MVP audit items 7, 9 and 15 (branch `ios-resilience`). Two new strings, both
+chrome, mine; everything else below is words already in the app, now shown
+in more places, listed so the new places are seen. The extractor sees only
+"Try again"; the rest are returns and dialog titles (the known gap below).
+
+| ✓ | String | Where | Why |
+|---|--------|-------|-----|
+| ☐ | Try again | The screen shown when the app is signed in but could not load who you are (launch with no signal; it used to be the sign-up form), and the waiver sheet when its text did not load | New. Both screens have no pull-to-refresh, and the waiver sheet cannot be swiped away, so a button is the only way to retry |
+| — | ~~Too many requests. Try again in a minute.~~ Replaced 2026-09-27 by "Too many attempts. Try again in a minute.", see "MVP fix round, the app" below | Sign-in, create account, password reset and the clinic page, when the server answers 429 | New. GoTrue allows 30 sign-ins and sign-ups per 5 minutes per address, and everyone on the party Wi-Fi shares one; this read "Something went wrong." with no reason to wait. The same line shows for the email-sending limit on password resets, where the wait can be longer than a minute. Alternative if Alex prefers plainer: "The server is busy. Try again in a minute." |
+| — | Couldn't reach the server. Check your connection. | Now also on Home (above the lists), My Clinics, the clinic page after a failed action or load, the waiver sheet, the can't-load screen, and the profile form when the save could not be read back | Not new: §B and the web admin. Chosen by the error's code now, not by the word "network" in iOS's text, which the offline error does not contain |
+| — | Something went wrong. Please try again. | The can't-load screen when the failure is not the connection | Not new (§B) |
+| — | Sign out · Delete my account · Keep my account · Delete your account? Your name, phone, email and card are removed and you are signed out. This can't be undone. · Couldn't delete your account. · Signs you out, you can finish later if needed (VoiceOver hint) | The foot of the waiver sheet and of the profile form (Delete is new on both), and the can't-load screen (Sign out only) | Not new: Profile's delete dialog word for word, and the profile form's existing Sign out and hint. The card step should use the same footer (another branch owns CardStepView) |
+| — | ~~No clinics currently open for registration~~ / ~~You're not registered for any clinics this week~~ / ~~Sorry, someone beat you to the punch. Here's the latest!~~ | Home, My Clinics, the clinic page | Not removed: no longer shown when the load or the tap FAILED, where each was a false claim (a member holding a spot was told nothing was open; a timed-out Register was told someone beat her) |
+
 ## New since the last review — 2026-09-22 (style guide), awaiting Alex
 
 | ✓ | String | Where |
@@ -406,6 +422,120 @@ Only Tara sees these, on the web admin's Players tab.
 | ☐ | Text this to them. It works once, within an hour. | Under the link | What she does with it, and the two facts that make it fail |
 | ☐ | Couldn't make a reset link. | If the function refuses or is unreachable | One sentence, says what happened |
 | ☐ | Copy / Copied | Beside the link | Chrome |
+
+## Money integrity (2026-09-27, the MVP audit's fixes) — awaiting Alex
+
+Chrome for four fixes: one fee per player per clinic, Tara's late cancel, the
+Money numbers from the ledger, and her removal no longer echoed as the
+player's. **Nothing here reaches a player**: every line is on Tara's surfaces.
+Most are built in template literals or ternaries, so the extractor sees only
+five of them; the rest are listed here by hand.
+
+| ✓ | String | Where | Why |
+|---|---|---|---|
+| ☐ | Charged / Declined / Not charged yet | Web Money tab, the line under the four counts; per clinic "Charged $X · Not charged yet $Y · Declined N" | Replaces Expected / Collected, which read the Zelle-era Paid flag over every booking. "Not charged yet" is decision 0016's word, now counting only clinics that have ended |
+| ☐ | Declined | Web Money tab, beside a declined player's name | Same word as the line |
+| ☐ | {Clinic} ended, not charged yet | Action Needed (web), with a Charge clinic button | The audit's words. Shown only while payments are on and one more tap would charge someone with a card |
+| ☐ | {First Last}'s card was declined | Action Needed (web), with the clinic, date and Stripe's reason under it | The audit's words |
+| ☐ | Late cancel | Web: a button on a You're In! row, only inside the 3-hour cutoff or later and while the row is not charged | Her own term: pros "can label them as no show, late cancellation" (decision 0016) |
+| ☐ | Late cancel {Name}? / The fee applies. | the confirmation | Chrome; "Fee applies" is the roster's existing word for a late row |
+| ☐ | Note (optional) | the confirmation's note box | Chrome |
+| ☐ | Keep | the confirmation's other button | Chrome, the same word as Remove's |
+| ☐ | Already charged: refund it first. | Came/No-show or Late cancel on a charged row | Chrome for `charged_refund_first` |
+| ☐ | Not late yet. | Late cancel more than 3 hours out (the button is hidden then; this is the race) | Chrome for `not_late_yet` |
+| ☐ | That clinic is canceled. | Charge clinic or Late cancel on a canceled clinic | Chrome for `clinic_canceled` |
+| ☐ | That just changed. Here's the latest. | Web, when the row changed before Late cancel landed | CLAUDE.md's own example sentence for hard rule 3 |
+| ☐ | {Name}'s card was declined: {reason}. / 1 is still processing. / N are still processing. | The summary after Charge clinic, web and phone | Extends decision 0016's sentences. "Charged N cards." now counts what Stripe accepted, not what was queued: the audit found "Charged 6" printed when all six declined |
+
+**The phone** (Manage tab) uses the same words, plus:
+
+| ✓ | String | Where | Why |
+|---|---|---|---|
+| ☐ | Late cancel | the row menu on a You're In! player, above Remove from clinic, only inside the cutoff or later | Same as the web |
+| ☐ | Late cancel {Name}? / The fee applies. / Note (optional) / Late cancel / Keep | the alert it opens (an alert, because it carries the note box) | Same as the web |
+| ☐ | Late · Fee applies / Late · Courtesy | a late cancel on the Canceled list, with its note quoted under the name | The web roster's existing words ("Courtesy · Fee applies"); the phone showed nothing there |
+| ☐ | Declined | a You're In! row whose charge failed | Same word as the web's Money tab |
+| ☐ | {Clinic} ended, not charged yet / {Name}'s card was declined | Action Needed on the clinic list, each opening its clinic; the date, and for a decline the clinic and reason, under it | Same as the web |
+| ☐ | Already charged: refund it first. / Not late yet. / That clinic is canceled. / That just changed. Here's the latest. | a roster action the server refused, instead of "That didn't go through. Check your connection and try again." | Same as the web |
+| — | ~~N unpaid~~ | Action Needed on the clinic list | Hidden while `zelle_allowed` is false, the same gate as the Unpaid audience: the Paid flag cannot turn true before a clinic ends, so it always equalled everyone booked |
+| — | Insufficient funds (NSF), Card expired, … | the reason after a decline | The web's eleven labels, copied into `DeclineReason` so the phone says the same thing |
+
+## L. Waiting for a saved card, and the card section's switch (2026-09-27, MVP audit items 3 and 4) — awaiting Alex
+
+| ✓ | String | Where | Why |
+|---|---|---|---|
+| ☐ | Refresh | Profile's card section and the onboarding card step, under "Saved. It may take a moment to show here.", only once the app has waited about 30 seconds for the card to show | Stripe's sheet says a card is saved before the webhook has written its last four digits. The app now asks every 2 seconds for about 30 and closes the card step the moment the card is there; if it is still not there, this asks once more. Chrome, one word |
+
+No other new words. "Saved. It may take a moment to show here." and "Saved."
+are unchanged; the first now shows, with a spinner, for the whole wait
+rather than after a single 2-second pause. The card section on Profile
+("Payment method", Tara's sentence, the permission box) is now hidden while
+`payments_enabled` is false, per her "Let's only do if stripe is connected"
+(decision 0016); nothing in it changed.
+
+Machine codes Tara can now read on the web Money tab's card list, shown raw
+the way `no_card_on_file` already is (the page maps only Stripe's decline
+codes to words): `account_deleted` (a fee queued for someone who has since
+deleted their account; it is not charged), `retry_window_passed` and
+`idempotency_error` (a charge held for Alex to check in Stripe before
+anything else happens). Test-mode rows cancelled at the switch to live read
+`live_cutover`, but those rows are hidden from the list from that moment.
+Whether these get words is Alex's call; they are admin-only.
+
+## L. Web admin: This week stops at the week, and a refused sign-in says to wait (2026-09-27, MVP audit items 14 and 15) — awaiting Alex
+
+Laptop only; no player sees any of it. This week lists clinics that end after
+this service week began (Sunday 00:00, New York), plus, while payments are on,
+any older clinic Charge clinic would still charge someone for. Everything
+older waits behind a checkbox, the same shape as Show canceled.
+
+| ☐ | String | Where | Why |
+|---|---|---|---|
+| ☐ | Show earlier | This week, the checkbox beside Show canceled | Chrome. Not seen by the extractor (a short HTML label) |
+| ☐ | Earlier | Heading over the older clinics once Show earlier is ticked, newest first | A section heading, like Action Needed and Templates |
+| ☐ | No earlier clinics. | Under Earlier when there are none | Chrome |
+| ☐ | No clinics this week or later. Use “New clinic” to add one. | This week, when nothing ends after the week began | Replaces "No clinics yet. Use “New clinic” to add your first one.", which stops being true once older clinics exist and are simply not listed |
+| ☐ | Couldn't load clinics. | This week, when the rosters or the players cannot be read; the list is cleared rather than drawn with empty rosters | The iOS app's line for the same failure. Not seen by the extractor (a second argument) |
+| ☐ | Too many attempts: wait a minute and try again. | Admin sign-in, sign-up and Forgot password, when Supabase Auth answers HTTP 429 (30 sign-ins and sign-ups per 5 minutes per IP, and the launch party is one Wi-Fi; MVP audit item 15) | Was GoTrue's own "Request rate limit reached". A try comes back every few seconds, so a minute is honest. The reset email's limit is hourly, so that 429 keeps GoTrue's "email rate limit exceeded" rather than a promise of a minute. The iOS half of item 15 should say the same words |
+
+## MVP fix round, the app (2026-09-27) — awaiting Alex
+
+Chrome only, one sentence each, mine. Neither string is seen by the
+extractor (both are `return` values, the known gap below), so the snapshot
+did not change; they are listed here by hand.
+
+| ✓ | String | Where | Why |
+|---|---|---|---|
+| ☐ | Too many attempts. Try again in a minute. | Sign-in, create account, password reset, the profile form and the clinic page, when the server answers 429 | Replaces "Too many requests. Try again in a minute." so the phone and the web admin say the same words (the lead's call, 2026-09-27). "Attempts" is what the person did; "requests" is ours |
+| ☐ | Too many reset emails. Try again later. | Forgot password, when GoTrue refuses because its hourly email limit is reached (`over_email_send_rate_limit`, or "email rate limit exceeded" from an older server) | New. That limit is hourly, so the minute line above would have been a false promise. "Later" rather than a number, because the wait depends on when the earlier emails went |
+
+Words already in the app, now shown in one more place:
+
+| ✓ | String | Where | Why |
+|---|---|---|---|
+| — | Delete my account (with the same confirmation as Profile) | The onboarding card step, under Sign out | Not new: AccountExitFooter, as on the profile form and the waiver. The card step had only Sign out |
+| — | Couldn't reach the server. Check your connection. | Register and every other clinic action, when the API gateway itself answers 502 or 504 | Not new. Those used to read "Sorry, someone beat you to the punch. Here's the latest!" |
+
+Taken away: "No clinics currently open for registration" no longer shows on
+Home while the first load is still out (a spinner does), "Registration open"
+no longer shows on a clinic card after the close, and Register no longer
+shows on a clinic page after the start.
+
+## MVP fix round (2026-09-27) — awaiting Alex
+
+Chrome only, from the adversarial review's fixes (branch `fix-sql`). No player sees any of these: every one is on Tara's side (web admin, or the iOS Manage tab).
+
+| ☐ | String | Where | Why |
+|---|---|---|---|
+| ☐ | Too many attempts. Try again in a minute. | Web admin sign-in, sign-up and Forgot password on HTTP 429 (replaces "Too many attempts: wait a minute and try again." above) | The lead's exact line, one sentence without the colon. An hourly email or SMS limit still keeps GoTrue's own words, now also when the error code is unreadable. The iOS app says the same words since the fix-ios round (`FXETennis/Data/RequestFailure.swift`) |
+| ☐ | That clinic ended before card payments were on. | Web admin and iOS Charge clinic, if tapped on a clinic that ended before `payments_enabled_at` (the web no longer offers the button there) | Server refusal `clinic_before_payments` (20260927300001) in words |
+| ☐ | That charge is no longer held. | Web Money tab, if Went through / Did not go through is tapped on a row someone already resolved | Server refusal `payment_not_held` (20260927300003) |
+| ☐ | Check this charge in Stripe. | Web Money tab, under a card payment held for a person (processing, too old to retry or card changed) | The one instruction the row needs: only Stripe's dashboard knows whether it went through |
+| ☐ | Went through | Web Money tab, button on a held charge | Records it as paid (marks the registration paid, as the webhook would) |
+| ☐ | Did not go through | Web Money tab, button on a held charge | Records it as canceled, so the player can be charged again |
+| ☐ | Too old to retry | Web Money tab, the reason on a row with `retry_window_passed` | Was the raw code |
+| ☐ | Card changed between attempts | Web Money tab, the reason on a row with `idempotency_error` | Was the raw code |
+| ☐ | Account deleted | Web Money tab, the reason on a row with `account_deleted` | Was the raw code |
 
 ## The rule going forward
 

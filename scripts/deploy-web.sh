@@ -24,9 +24,13 @@ TABS=$(grep -c 'role="tab"' index.html)
 # byte, so compare the md5 of every page and stylesheet with the working tree,
 # and confirm the files .vercelignore keeps out are really out.
 md5of() { if command -v md5 >/dev/null; then md5 -q "$1"; else md5sum "$1" | cut -d' ' -f1; fi; }
+# 2026-09-27: every script and stylesheet, not a list of names, and web/vendor
+# (supabase-js, scripts/vendor-supabase-js.sh), which the pages now import
+# instead of esm.sh. A module that is stale on the live site breaks the page
+# as surely as a stale page does.
 check() {
   local f live
-  for f in index.html review.html reset.html tokens.css config.js; do
+  for f in index.html review.html reset.html *.css *.js vendor/*; do
     [ -f "$f" ] || continue
     live=$(curl -s "$SITE/$f" -o /tmp/deploy-live-check && md5of /tmp/deploy-live-check)
     if [ "$live" != "$(md5of "$f")" ]; then echo "  live $f differs from the working tree"; return 1; fi
@@ -39,7 +43,7 @@ for attempt in 1 2; do
   echo "deploy attempt $attempt"
   npx -y vercel --prod --yes > /tmp/vercel-deploy.log 2>&1
   sleep 8
-  if check; then echo "live site matches the working tree byte for byte (index, review, reset, tokens, config; privacy draft absent)"; exit 0; fi
+  if check; then echo "live site matches the working tree byte for byte (the three pages, every stylesheet and script, web/vendor; privacy draft absent)"; exit 0; fi
   echo "live site does not match yet"
 done
 echo "DEPLOY NOT VERIFIED after two attempts; see /tmp/vercel-deploy.log"; exit 1

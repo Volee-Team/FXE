@@ -1,12 +1,13 @@
 {
   "name": "fxe-tennis-web-admin",
   "private": true,
-  "description": "Static web admin for FXE Tennis. No build step; package.json exists only for the browser tests.",
+  "description": "Static web admin for FXE Tennis. No build step. package.json exists for the browser tests and to pin the supabase-js that scripts/vendor-supabase-js.sh copies into web/vendor/.",
   "scripts": {
     "test": "playwright test",
     "test:headed": "playwright test --headed"
   },
   "devDependencies": {
-    "@playwright/test": "^1.62.1"
+    "@playwright/test": "^1.62.1",
+    "@supabase/supabase-js": "2.117.2"
   }
 }

@@ -69,7 +69,10 @@ def extract():
         for dirpath, dirnames, files in os.walk(root):
             # Dependencies and test tooling are not the product's copy.
             # web/node_modules alone would add tens of thousands of strings.
-            dirnames[:] = [d for d in dirnames if d not in ("node_modules", "test-results", "playwright-report", "tests", ".vercel")]
+            # web/vendor is supabase-js, a dependency like any other
+            # (scripts/vendor-supabase-js.sh); its error strings were never
+            # scanned while it came from esm.sh either.
+            dirnames[:] = [d for d in dirnames if d not in ("node_modules", "test-results", "playwright-report", "tests", ".vercel", "vendor")]
             for f in sorted(files):
                 if not f.endswith(exts):
                     continue

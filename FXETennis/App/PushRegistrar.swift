@@ -10,13 +10,32 @@
 //  Simulators on Apple silicon do receive real APNs tokens; a Debug build on
 //  the simulator therefore exercises this whole path except the final hop.
 //
+//  Receiving (MVP audit item 12, 2026-09-27). The app delegate is also the
+//  notification center's delegate: without one, iOS shows nothing for a push
+//  that lands while the app is open, a tap opens the app wherever it was, and
+//  the number the server put on the icon stays after everything is read. A
+//  push landing in the foreground shows as a banner and reloads Home; a tap
+//  is handed to NotificationRouter, which opens its clinic; the icon's number
+//  is set to the bell's own count wherever that count is refreshed.
+//  tests/push/simctl-push.sh shows a push on the simulator with the payload
+//  supabase/functions/push/index.ts sends.
+//
 
 import SwiftUI
 import UserNotifications
 
 /// UIKit's registration callbacks land on the app delegate, so a tiny one is
-/// adapted in. It forwards the token; it owns no other behaviour.
-final class PushAppDelegate: NSObject, UIApplicationDelegate {
+/// adapted in. It forwards the token, and as the notification center's
+/// delegate it passes arrivals and taps to NotificationRouter. It decides
+/// nothing itself.
+final class PushAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+    func application(_ application: UIApplication,
+                     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        // Before launch finishes, or the tap that launched the app is never delivered.
+        UNUserNotificationCenter.current().delegate = self
+        return true
+    }
+
     func application(_ application: UIApplication,
                      didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         let token = deviceToken.map { String(format: "%02x", $0) }.joined()
@@ -26,6 +45,37 @@ final class PushAppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFailToRegisterForRemoteNotificationsWithError error: Error) {
         PushRegistrar.shared.registrationFailed(error)
+    }
+
+    // iOS may call these off the main thread; each hands a Sendable value to
+    // the main actor and answers at once.
+
+    /// A push while the app is open: show it as it would show on the lock
+    /// screen, and reload Home so the bell and the clinic list move with it.
+    /// No .badge here: Home's reload sets the icon from the fresh count.
+    /// Nothing at all while nobody is signed in: on a shared phone a push
+    /// still in flight at sign-out would otherwise show the previous
+    /// account's words to the next person (review, 2026-09-27).
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                            willPresent notification: UNNotification,
+                                            withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        Task { @MainActor in
+            let router = NotificationRouter.shared
+            let options = NotificationRouter.presentationOptions(signedIn: router.signedIn)
+            if !options.isEmpty { router.requestReload() }
+            completionHandler(options)
+        }
+    }
+
+    /// A tap on a push, from the lock screen, a banner or Notification Center.
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                            didReceive response: UNNotificationResponse,
+                                            withCompletionHandler completionHandler: @escaping () -> Void) {
+        if response.actionIdentifier == UNNotificationDefaultActionIdentifier {
+            let tap = PushTap(userInfo: response.notification.request.content.userInfo)
+            Task { @MainActor in NotificationRouter.shared.tapped(tap) }
+        }
+        completionHandler()
     }
 }
 
@@ -85,8 +135,34 @@ final class PushRegistrar {
 
     /// Sign-out: the phone must stop receiving this account's pushes, and a
     /// shared phone must never show the next person someone else's invitation.
+    /// Runs while the session still exists (the RPC needs it); the icon's
+    /// number is cleared by `clearBadge` after the session is gone.
     func unregisterForSignOut() async {
+        NotificationRouter.shared.reset()
         guard let token else { return }
         try? await ProfileRepository.unregisterDevice(token)
+    }
+
+    /// The last step of sign-out, after supabase.auth.signOut() has returned:
+    /// a count fetched before then can no longer be set after this (review,
+    /// 2026-09-27: the 0 used to be set first, and a refresh in flight put the
+    /// previous person's number back).
+    func clearBadge() {
+        setBadge(0)
+    }
+
+    // MARK: - The icon's number
+
+    /// The icon shows the bell's count. The push function sets it to the
+    /// unread count when it sends; nothing cleared it after that, so a number
+    /// stayed on the icon once everything was read (MVP audit item 12). Home
+    /// calls this each time it refreshes the count.
+    func setBadge(_ unread: Int) {
+        UNUserNotificationCenter.current().setBadgeCount(max(0, unread), withCompletionHandler: nil)
+    }
+
+    /// For a path that does not hold the count itself: a tapped push.
+    func syncBadge() async {
+        if let unread = try? await NotificationRepository.unreadCount() { setBadge(unread) }
     }
 }

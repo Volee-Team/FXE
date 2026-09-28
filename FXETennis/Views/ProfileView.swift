@@ -15,6 +15,10 @@ struct ProfileView: View {
     @State private var confirmDelete = false
     @State private var deleting = false
     @State private var deleteError: String?
+    /// Payments are switched on. Until then there is no card to show or add
+    /// (decision 0016: "Let's only do if stripe is connected"). Starts false,
+    /// so the section never flashes up and away.
+    @State private var paymentsOn = false
 
     var body: some View {
         NavigationStack {
@@ -31,7 +35,9 @@ struct ProfileView: View {
                         }
                         .buttonStyle(.plain)
                         .accessibilityIdentifier("profile.myClinics")
-                        CardOnFileView()
+                        if paymentsOn {
+                            CardOnFileView()
+                        }
 
                         Button {
                             editing = true
@@ -117,6 +123,9 @@ struct ProfileView: View {
                 }
             }
             .navigationTitle("Profile")
+            // Read on every visit, so the switch shows without an app update.
+            // A failed read (bad signal) keeps what was last known.
+            .task { if let on = try? await PaymentsRepository.paymentsEnabled() { paymentsOn = on } }
             .sheet(isPresented: $showNTRP) { NTRPExplainerSheet() }
             .sheet(isPresented: $editing) { EditProfileView() }
         }

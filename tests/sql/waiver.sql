@@ -119,6 +119,42 @@ begin
     has_function_privilege('anon', 'public.accept_waiver(text,text,text)', 'EXECUTE')::text);
 end $$;
 
+-- 9. A hard delete cannot take a signature (20260927200002). The dashboard's
+--    Delete user removes the auth row and accounts cascade from it, so with
+--    the old ON DELETE CASCADE the signature went with the person. RESTRICT
+--    makes the whole delete fail and keeps both. Asserted by the resulting
+--    state first (hard rule 9), and by the error only as a second witness.
+do $$
+declare
+  SIGNED   constant uuid := 'ee000000-0000-0000-0000-000000000009';
+  UNSIGNED constant uuid := 'ee000000-0000-0000-0000-000000000010';
+  n int; st text;
+begin
+  insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
+  values (SIGNED,   '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'signer@probe.test', 'x', now(), now(), now()),
+         (UNSIGNED, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'nosig@probe.test',  'x', now(), now(), now());
+  insert into public.accounts (id, first_name, last_name, email, role)
+  values (SIGNED, 'Sig', 'Ner', 'signer@probe.test', 'member'),
+         (UNSIGNED, 'No', 'Sig', 'nosig@probe.test', 'member');
+  insert into public.waiver_acceptances (account_id, version, legal_name, email, app_version)
+  values (SIGNED, '2026-09', 'Sig Ner', 'signer@probe.test', 'probe');
+
+  begin
+    delete from auth.users where id = SIGNED;
+  exception when others then st := sqlstate;
+  end;
+  select count(*) into n from public.waiver_acceptances where account_id = SIGNED;
+  insert into _probe_result values ('hard_delete_cannot_take_a_signature', '1', n::text);
+  select count(*) into n from public.accounts where id = SIGNED;
+  insert into _probe_result values ('hard_delete_of_a_signer_changes_nothing', '1', n::text);
+  insert into _probe_result values ('hard_delete_refused_by_the_foreign_key', '23503', coalesce(st, 'none'));
+
+  -- Scoped to signers: an account that never signed can still be removed.
+  delete from auth.users where id = UNSIGNED;
+  select count(*) into n from public.accounts where id = UNSIGNED;
+  insert into _probe_result values ('unsigned_account_still_hard_deletable', '0', n::text);
+end $$;
+
 select check_name, expected, actual,
        case when actual = expected
               or (expected ~ '[a-z]' and actual like '%' || expected || '%')

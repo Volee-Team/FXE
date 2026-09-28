@@ -7,6 +7,13 @@
 -- for her one tap.
 -- Expected values come from her policy text, not from the functions.
 --
+-- 2026-09-27 (20260927100001): one fee per player per clinic, whatever
+-- happened. The six paths the audit named or implied (flip after charge, the
+-- same flip by another path, refund-first as the legitimate way, put back in
+-- after a late cancel before and after its fee, a rained-out clinic) each go
+-- through the tap and are counted from the ledger. Red on the old functions:
+-- 9 checks.
+--
 -- Expected: every row reads PASS.
 
 begin;
@@ -24,6 +31,7 @@ declare
   DANA_P  constant uuid := 'a0000000-0000-0000-0000-000000000004';
   FAR     constant uuid := 'd0000000-0000-0000-0000-000000000002';
   done_c uuid; reg_m uuid; reg_k uuid; reg_r uuid; reg_d uuid; n int; v text; j jsonb; r public.registrations;
+  done2 uuid; done3 uuid; done4 uuid; reg_late uuid; reg_back uuid;
 begin
   -- ---------------------------------------------------------- settings
   select value into v from public.app_settings where key = 'card_required';
@@ -45,6 +53,10 @@ begin
 
   -- Payments on, no card: refused with card_required. With a card: in.
   update public.app_settings set value = 'true' where key = 'payments_enabled';
+  -- Switched on yesterday, recorded with the switch (20260927300001), so the
+  -- clinics below, which end today, can be charged.
+  insert into public.app_settings (key, value) values ('payments_enabled_at', (now() - interval '1 day')::text)
+    on conflict (key) do update set value = excluded.value;
   perform set_config('role', 'authenticated', true);
   begin
     perform public.register_for_clinic(FAR, MARIA_P);
@@ -140,6 +152,131 @@ begin
   perform set_config('role', 'postgres', true);
   select count(*) into n from public.payments where registration_id in (reg_m, reg_r, reg_d);
   insert into _probe_result values ('still_one_row_each', '3', n::text);
+
+  -- ------------------------------ one fee per player per clinic (20260927100001)
+  -- THE RULE: whatever happened (came, no-show, late cancel, put back in), a
+  -- player holds at most one LIVE fee per clinic: pending, processing, or
+  -- succeeded and not refunded in full. Counted here from the ledger with
+  -- that definition written out, not through the helper under test.
+  --
+  -- 1. Flip after charge. Maria came and her clinic fee is pending. Tara
+  --    flips her to No-show: refused, and the row keeps its label.
+  perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
+  perform set_config('role', 'authenticated', true);
+  begin
+    perform public.admin_set_no_show(reg_m, true);
+    insert into _probe_result values ('flip_after_charge_refused', 'charged_refund_first', 'CALL SUCCEEDED');
+  exception when others then
+    insert into _probe_result values ('flip_after_charge_refused', 'charged_refund_first', sqlerrm);
+  end;
+  perform set_config('role', 'postgres', true);
+  select no_show::text into v from public.registrations where id = reg_m;
+  insert into _probe_result values ('flip_after_charge_keeps_label', 'false', v);
+
+  -- 2. The same flip arriving by any other path (a race, a future RPC):
+  --    Rob's no-show fee is pending and his row is set back to Came under it.
+  --    The next tap must not add a clinic fee beside the no-show fee.
+  update public.registrations set no_show = false where id = reg_r;
+  perform set_config('role', 'authenticated', true);
+  j := public.admin_charge_clinic(done_c);
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from public.payments x
+   where x.registration_id = reg_r and x.kind <> 'refund'
+     and x.status in ('pending', 'processing', 'succeeded')
+     and x.amount_cents > coalesce((select sum(f.amount_cents) from public.payments f
+                                     where f.refunds_payment_id = x.id and f.status = 'succeeded'), 0);
+  insert into _probe_result values ('flip_by_other_path_then_tap_is_still_one_fee', '1', n::text);
+  update public.registrations set no_show = true where id = reg_r;
+
+  -- 3. The legitimate path still works: refund first, then flip, then tap.
+  --    Maria's fee goes through, Tara refunds it in full, flips her to
+  --    No-show, taps again: exactly one live fee, and it is the no-show fee.
+  update public.payments set status = 'succeeded', stripe_payment_intent_id = 'pi_probe_m'
+   where registration_id = reg_m and kind = 'clinic_fee';
+  perform set_config('role', 'authenticated', true);
+  perform public.admin_refund_payment((select id from public.payments where registration_id = reg_m and kind = 'clinic_fee'));
+  perform set_config('role', 'postgres', true);
+  update public.payments set status = 'succeeded', stripe_refund_id = 're_probe_m'
+   where registration_id = reg_m and kind = 'refund';
+  perform set_config('role', 'authenticated', true);
+  r := public.admin_set_no_show(reg_m, true);
+  j := public.admin_charge_clinic(done_c);
+  perform set_config('role', 'postgres', true);
+  select string_agg(x.kind::text, ',') into v from public.payments x
+   where x.registration_id = reg_m and x.kind <> 'refund'
+     and x.status in ('pending', 'processing', 'succeeded')
+     and x.amount_cents > coalesce((select sum(f.amount_cents) from public.payments f
+                                     where f.refunds_payment_id = x.id and f.status = 'succeeded'), 0);
+  insert into _probe_result values ('refund_first_then_flip_then_tap', 'no_show', coalesce(v, 'NO LIVE FEE'));
+
+  -- 4. Put back in after a late cancel, one tap. Dana canceled late from an
+  --    ended clinic, then Tara added her back (place_player makes a second
+  --    row). One tap: one fee, the clinic fee on the row she played on; the
+  --    late cancel is skipped because she holds a You're In! row.
+  insert into public.clinics (name, audience, category, description, starts_at, ends_at,
+      member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
+  values ('Probe Readd', 'coed', 'Clinic', 'probe', now() - interval '3 hours', now() - interval '2 hours',
+          now() - interval '5 days', now() - interval '4 days', 8, 'published', 60)
+  returning id into done2;
+  insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes,
+                                    late_cancel, courtesy_used, canceled_at, registered_at)
+  values (done2, DANA_P, 'canceled', 'self', 1800, true, 60, true, false, now() - interval '4 hours', now() - interval '1 day')
+  returning id into reg_late;
+  perform set_config('role', 'authenticated', true);
+  r := public.place_player(done2, DANA_P, 'in');
+  reg_back := r.id;
+  j := public.admin_charge_clinic(done2);
+  insert into _probe_result values ('readd_one_tap_summary', '{"already": 0, "charged": 1, "no_card": 0, "not_owed": 1}', j::text);
+  perform set_config('role', 'postgres', true);
+  select string_agg(x.kind::text || '@' || case when x.registration_id = reg_back then 'back' else 'late' end, ',') into v
+    from public.payments x join public.registrations r2 on r2.id = x.registration_id
+   where r2.player_id = DANA_P and r2.clinic_id = done2 and x.kind <> 'refund'
+     and x.status in ('pending', 'processing', 'succeeded');
+  insert into _probe_result values ('readd_after_late_cancel_is_one_fee', 'clinic_fee@back', coalesce(v, 'NO FEE'));
+
+  -- 5. Put back in after the late fee was already charged. Tara taps, the
+  --    late fee is queued, then she adds Dana back and taps again: still one.
+  insert into public.clinics (name, audience, category, description, starts_at, ends_at,
+      member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
+  values ('Probe Readd Charged', 'coed', 'Clinic', 'probe', now() - interval '3 hours', now() - interval '2 hours',
+          now() - interval '5 days', now() - interval '4 days', 8, 'published', 60)
+  returning id into done3;
+  insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes,
+                                    late_cancel, courtesy_used, canceled_at, registered_at)
+  values (done3, DANA_P, 'canceled', 'self', 1800, true, 60, true, false, now() - interval '4 hours', now() - interval '1 day');
+  perform set_config('role', 'authenticated', true);
+  j := public.admin_charge_clinic(done3);
+  r := public.place_player(done3, DANA_P, 'in');
+  j := public.admin_charge_clinic(done3);
+  insert into _probe_result values ('readd_after_charge_summary', '{"already": 1, "charged": 0, "no_card": 0, "not_owed": 1}', j::text);
+  perform set_config('role', 'postgres', true);
+  select string_agg(x.kind::text, ',') into v
+    from public.payments x join public.registrations r2 on r2.id = x.registration_id
+   where r2.player_id = DANA_P and r2.clinic_id = done3 and x.kind <> 'refund'
+     and x.status in ('pending', 'processing', 'succeeded');
+  insert into _probe_result values ('readd_after_charge_is_still_one_fee', 'late_cancel', coalesce(v, 'NO FEE'));
+
+  -- 6. A canceled clinic is never charged: cancel_clinic leaves every row
+  --    'in', so a tap after a rain-out would otherwise charge the roster.
+  insert into public.clinics (name, audience, category, description, starts_at, ends_at,
+      member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
+  values ('Probe Rained Out', 'coed', 'Clinic', 'probe', now() - interval '3 hours', now() - interval '2 hours',
+          now() - interval '5 days', now() - interval '4 days', 8, 'published', 60)
+  returning id into done4;
+  insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
+  values (done4, ROB_P, 'in', 'self', 2300, false, 60);
+  perform set_config('role', 'authenticated', true);
+  perform public.cancel_clinic(done4);
+  begin
+    j := public.admin_charge_clinic(done4);
+    insert into _probe_result values ('canceled_clinic_tap_refused', 'clinic_canceled', 'CALL SUCCEEDED');
+  exception when others then
+    insert into _probe_result values ('canceled_clinic_tap_refused', 'clinic_canceled', sqlerrm);
+  end;
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from public.payments x join public.registrations r2 on r2.id = x.registration_id
+   where r2.clinic_id = done4;
+  insert into _probe_result values ('canceled_clinic_charges_nobody', '0', n::text);
 
   -- A courtesy late cancel owes nothing: flip Dana's row and check the tap skips it.
   update public.payments set status = 'canceled' where registration_id = reg_d;

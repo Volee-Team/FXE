@@ -41,18 +41,30 @@ struct HomeView: View {
     private var myClinics: [ClinicPublic] {
         model.clinics.filter { model.myRegistrationsByClinic[$0.id] != nil && !$0.isCanceled }
     }
-    /// Open for registration to this player right now, and not already theirs.
-    private var openNow: [ClinicPublic] {
+    /// Open for registration to this player at `now`, and not already theirs.
+    private func openNow(at now: Date) -> [ClinicPublic] {
         model.clinics.filter {
-            model.myRegistrationsByClinic[$0.id] == nil && $0.isOpenForRegistration(isMember: isMember)
+            model.myRegistrationsByClinic[$0.id] == nil && $0.isOpenForRegistration(isMember: isMember, now: now)
         }
+    }
+    /// When the open list changes on its own: any clinic's opening for this
+    /// player, its close, its start (MVP audit item 8). Thursday 8:00 lists
+    /// the week's clinics without a pull.
+    private var openListRedraws: [Date] {
+        RedrawSchedule.at(model.clinics.flatMap { $0.upcomingMoments(isMember: isMember) })
     }
     /// Final Updates p.1 items 3 and 5: the list while there is room, the
     /// blue button once two or more of the player's own clinics fill the top.
     private var showsOpenList: Bool { myClinics.count < 2 }
 
+    /// The icon shows the bell's count, set only from a count that came
+    /// back, and only while still signed in: a failed fetch used to set the
+    /// icon from the old number, and one landing after sign-out put the
+    /// previous person's number back (review, 2026-09-27).
     private func refreshUnread() async {
-        unread = (try? await NotificationRepository.unreadCount()) ?? unread
+        guard let count = try? await NotificationRepository.unreadCount() else { return }
+        unread = count
+        if session.phase == .signedIn { PushRegistrar.shared.setBadge(count) }
     }
 
     var body: some View {
@@ -67,6 +79,8 @@ struct HomeView: View {
                                 Wordmark(compact: true)
                                 Spacer()
                                 BellButton(unread: unread) { showNotifications = true }
+                                    // A push landed while open, or was tapped (NotificationRouter).
+                                    .onChange(of: NotificationRouter.shared.reloads) { Task { await model.load(); await refreshUnread() } }
                             }
                             .padding(.horizontal, Brand.Spacing.pageMargin)
                             .padding(.top, geo.safeAreaInsets.top + 4)
@@ -91,6 +105,19 @@ struct HomeView: View {
                                 .padding(.top, Brand.Spacing.xs)
                                 NotificationsOffLine()
 
+                                // The last load failed. Said above everything
+                                // else, because what is below may be old, and
+                                // an empty list below is not "no clinics"
+                                // (MVP audit item 9: with no signal, Home told
+                                // a member holding a spot that nothing was open).
+                                if let loadError = model.loadError {
+                                    Text(loadError)
+                                        .font(Brand.Typography.subheadline)
+                                        .foregroundStyle(Brand.Status.canceled.ink)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                        .accessibilityIdentifier("home.loadError")
+                                }
+
                                 if !myClinics.isEmpty {
                                     SectionBlock(title: "My Clinics") {
                                         ForEach(myClinics) { clinic in row(clinic) }
@@ -98,15 +125,18 @@ struct HomeView: View {
                                     .accessibilityIdentifier("home.myClinics")
                                 }
 
-                                if showsOpenList {
-                                    SectionBlock(title: "Open for Registration") {
-                                        if openNow.isEmpty {
-                                            EmptyLine("No clinics currently open for registration")
-                                        } else {
-                                            ForEach(openNow) { clinic in row(clinic) }
-                                        }
+                                if !model.hasLoaded {
+                                    // The first load is still out: nothing
+                                    // below would be true yet.
+                                    ProgressView()
+                                        .tint(Brand.navy)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, Brand.Spacing.lg)
+                                        .accessibilityIdentifier("home.loading")
+                                } else if showsOpenList {
+                                    TimelineView(.explicit(openListRedraws)) { _ in
+                                        openList(openNow(at: Date()))
                                     }
-                                    .accessibilityIdentifier("home.openList")
                                 } else {
                                     NavigationLink { ClinicsView() } label: {
                                         FilledButtonLabel("View Open Clinics", icon: "figure.tennis")
@@ -126,9 +156,28 @@ struct HomeView: View {
             .navigationBarHidden(true)
             .task { await model.load(); await refreshUnread() }
             .refreshable { await model.load(); await refreshUnread() }
+            // Opening the app is how a Pool player learns she was invited
+            // until push is live (MVP audit item 8).
+            .reloadOnForeground { await model.load(); await refreshUnread() }
             .sheet(isPresented: $showNotifications, onDismiss: { Task { await refreshUnread() } }) {
                 NotificationsView { Task { await refreshUnread() } }
             }
+        }
+    }
+
+    /// The open list, or its empty line. After a failed load with nothing to
+    /// show, the section is left out: "No clinics currently open" would be a
+    /// claim the app cannot make, and the error line above says why.
+    @ViewBuilder private func openList(_ open: [ClinicPublic]) -> some View {
+        if !(open.isEmpty && model.loadError != nil) {
+            SectionBlock(title: "Open for Registration") {
+                if open.isEmpty {
+                    EmptyLine("No clinics currently open for registration")
+                } else {
+                    ForEach(open) { clinic in row(clinic) }
+                }
+            }
+            .accessibilityIdentifier("home.openList")
         }
     }
 
@@ -262,34 +311,56 @@ struct ClinicRow: View {
     let clinic: ClinicPublic
     let registration: MyRegistration?
     let isMember: Bool
+    /// At the accessibility text sizes the status or price goes under the
+    /// name: beside it, "Response Needed" alone is wider than the screen and
+    /// left the name a sliver.
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        HStack(alignment: .center, spacing: Brand.Spacing.sm) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(clinic.name)
-                    .font(Brand.Typography.bodyEmphasis)
-                    .foregroundStyle(Brand.navy)
-                    .multilineTextAlignment(.leading)
-                Text(timeLine)
-                    .font(Brand.Typography.subheadline)
-                    .foregroundStyle(Brand.textSecondary)
-            }
-            Spacer(minLength: Brand.Spacing.sm)
-            if let reg = registration {
-                StatusDot(reg.status.display)
-            } else if let price = clinic.priceCents(forMember: isMember) {
-                Text(price.centsAsPrice)
-                    .font(Brand.Typography.subheadline)
-                    .foregroundStyle(Brand.navy)
-                    // Home renders a real price and had no identifier on it,
-                    // so the member-vs-non-member pricing test could not see
-                    // the number it exists to compare. ClinicsView:140 labels
-                    // the same value.
-                    .accessibilityIdentifier("clinic.price")
+        Group {
+            if typeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: Brand.Spacing.xxs) {
+                    details
+                    trailing
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                HStack(alignment: .center, spacing: Brand.Spacing.sm) {
+                    details
+                    Spacer(minLength: Brand.Spacing.sm)
+                    trailing
+                }
             }
         }
         .padding(.vertical, Brand.Spacing.sm)
         .contentShape(Rectangle())
+    }
+
+    private var details: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(clinic.name)
+                .font(Brand.Typography.bodyEmphasis)
+                .foregroundStyle(Brand.navy)
+                .multilineTextAlignment(.leading)
+            Text(timeLine)
+                .font(Brand.Typography.subheadline)
+                .foregroundStyle(Brand.textSecondary)
+        }
+    }
+
+    @ViewBuilder private var trailing: some View {
+        if let reg = registration {
+            StatusDot(reg.status.display)
+        } else if let price = clinic.priceCents(forMember: isMember) {
+            Text(price.centsAsPrice)
+                .font(Brand.Typography.subheadline)
+                .foregroundStyle(Brand.navy)
+                // Home renders a real price and had no identifier on it,
+                // so the member-vs-non-member pricing test could not see
+                // the number it exists to compare. ClinicsView:140 labels
+                // the same value.
+                .accessibilityIdentifier("clinic.price")
+        }
     }
 
     private var timeLine: String {

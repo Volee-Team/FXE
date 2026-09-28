@@ -62,6 +62,16 @@ enum PaymentsRepository {
         try await supabase.rpc("my_card_consent").execute().value
     }
 
+    /// Payments are switched on (app_settings.payments_enabled). Profile shows
+    /// the card section only then. Tara, round two (decision 0016), against
+    /// "Cards aren't set up yet.": "Let's only do if stripe is connected".
+    static func paymentsEnabled() async throws -> Bool {
+        struct Row: Decodable { let value: String }
+        let rows: [Row] = try await supabase.from("app_settings").select("value")
+            .eq("key", value: "payments_enabled").execute().value
+        return rows.first?.value == "true"
+    }
+
     /// Cards are required right now: payments are switched on and the club
     /// requires a card (both app_settings, readable by any signed-in user).
     /// The same two switches register_for_clinic reads.

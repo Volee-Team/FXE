@@ -10,7 +10,9 @@ weekly setup.
 
 ## What she can do here
 
-* See every clinic, including drafts, with capacity and both prices
+* See this week's clinics and everything after, including drafts, with capacity
+  and both prices. Older clinics wait behind "Show earlier" (newest first), except
+  that while payments are on, a finished clinic nobody has charged stays in view
 * **Create and edit clinics** — the thing she asked for directly
 * Publish a draft
 * Invite from the Player Pool, mark no-shows, cancel an invitation. (The Paid toggle and "Remind unpaid" are gated on `zelle_allowed`, which decision 0013 set to `false`: the card is the only way to pay, so neither renders today.)
@@ -43,8 +45,8 @@ get committed aimed at the wrong project. Sign in as `tara@fxe.test` /
 
 ## Test it
 
-Twelve Playwright tests (`grep -c 'test(' web/tests/admin.spec.mjs`,
-2026-09-12) walk this page the way Tara does, against the LOCAL stack on a
+27 Playwright tests (`cat web/tests/*.spec.mjs | grep -cE '^\s*test\('`,
+2026-09-27) walk this page the way Tara does, against the LOCAL stack on a
 fresh seed. They are the only automated check on the web admin,
 so they run in CI on every push (`web-browser-tests` in `probes.yml`).
 
@@ -56,6 +58,26 @@ cd web && npm ci && npx playwright install chromium && npx playwright test
 `playwright.config.mjs` starts a `python3 -m http.server` on port 8790 for
 you. Tests share one database, so they run in one worker, in file order, and
 none depends on another's writes; run them after a reset.
+
+## supabase-js lives in `vendor/`
+
+The pages import `./vendor/supabase-js.js`, never a CDN. Until 2026-09-27 they
+imported `https://esm.sh/@supabase/supabase-js@2`, whatever 2.x that site served
+that day, running with Tara's session; a CDN outage or a bad release would have
+taken this page and every password reset down on a day nobody deployed.
+
+The file is the npm package's own browser bundle at the exact version pinned in
+`package.json`, with two export lines added. To move to a new version (Dependabot
+proposes it, and the web CI job stays red until this is done):
+
+```bash
+cd web && npm ci && cd .. && bash scripts/vendor-supabase-js.sh
+supabase db reset && (cd web && npx playwright test)
+git add web/vendor web/package.json web/package-lock.json
+```
+
+`bash scripts/vendor-supabase-js.sh --check` is what CI runs: it rebuilds the
+file from the installed package and compares it byte for byte.
 
 ## Deploy it (free, ~5 minutes)
 

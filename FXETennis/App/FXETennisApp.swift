@@ -44,23 +44,36 @@ struct FXETennisApp: App {
 /// mark rather than a blank window, so there is no flash before we know.
 struct RootView: View {
     @Environment(SessionStore.self) private var session
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
-        switch session.phase {
-        case .loading:
-            LaunchView()
-        case .signedOut:
-            AuthView()
-        case .needsProfile:
-            // Authenticated but with no profile row. Previously this state sent
-            // the user back to signedOut, which was a dead end: their auth user
-            // already existed, so signing up again failed too.
-            CompleteProfileView()
-        case .signedIn:
-            MainTabView()
-                .pushPermissionPrompt()
-                .waiverGate()
-                .cardGate()
+        Group {
+            switch session.phase {
+            case .loading:
+                LaunchView()
+            case .signedOut:
+                AuthView()
+            case .needsProfile:
+                // Authenticated but with no profile row. Previously this state sent
+                // the user back to signedOut, which was a dead end: their auth user
+                // already existed, so signing up again failed too.
+                CompleteProfileView()
+            case .loadFailed:
+                // Authenticated, but the profile could not be loaded (no signal,
+                // a server error). Not the sign-up form: that is for "no row".
+                LoadFailedView()
+            case .signedIn:
+                MainTabView()
+                    .pushTapRouting()
+                    .pushPermissionPrompt()
+                    .waiverGate()
+                    .cardGate()
+            }
+        }
+        // Coming back to the app refreshes the identity and the waiver and card
+        // gates (throttled inside), or retries a failed load (MVP audit item 8).
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { Task { await session.returnedToForeground() } }
         }
     }
 }

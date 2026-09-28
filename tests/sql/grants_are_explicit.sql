@@ -112,15 +112,29 @@ where not exists (
 -- or a leak. Added 2026-09-27 (sql-auditor): granting SELECT on
 -- reset_links_issued to authenticated passed the whole suite before this row.
 -- notifications is not here because its SELECT is column-level (eight named
--- columns, 20260923000001), which has_table_privilege does not count.
+-- columns, 20260923000001), which has_table_privilege does not count; nor is
+-- payments since 20260927300003 (every column but first_attempted_at).
 insert into _probe_result
 select 'authenticated_selects_only_these_base_tables',
-       'accounts, app_settings, late_requests, payments, players',
+       'accounts, app_settings, late_requests, players',
        coalesce(string_agg(c.relname, ', ' order by c.relname), '')
 from pg_class c
 join pg_namespace n on n.oid = c.relnamespace and n.nspname = 'public'
 where c.relkind = 'r'
   and has_table_privilege('authenticated', c.oid, 'SELECT');
+
+-- The same question asked of columns (sql-auditor, 2026-09-27): the check
+-- above cannot see a column-level grant, so without this one
+-- "grant select (court_number) on registrations to authenticated" would pass
+-- the whole suite. Every base table where authenticated can read ANY column.
+insert into _probe_result
+select 'authenticated_selects_columns_only_in_these_base_tables',
+       'accounts, app_settings, late_requests, notifications, payments, players',
+       coalesce(string_agg(c.relname, ', ' order by c.relname), '')
+from pg_class c
+join pg_namespace n on n.oid = c.relnamespace and n.nspname = 'public'
+where c.relkind = 'r'
+  and has_any_column_privilege('authenticated', c.oid, 'SELECT');
 
 -- --------------------------------------------- authenticated writes nothing
 -- Every legitimate write goes through a SECURITY DEFINER RPC, which runs as its
@@ -245,7 +259,7 @@ select 'internal_helpers_not_callable_by_clients', '',
        coalesce(string_agg(p.proname, ', ' order by p.proname), '')
 from pg_proc p
 join pg_namespace n on n.oid = p.pronamespace and n.nspname = 'public'
-where p.proname in ('admin_account_ids', 'notify_account', 'courtesy_available', 'courtesy_cancel_days', 'card_required', 'waiver_accepted', 'purge_expired_card_consents', 'is_105', 'back_to_back_105_opens_at')
+where p.proname in ('admin_account_ids', 'notify_account', 'courtesy_available', 'courtesy_cancel_days', 'card_required', 'waiver_accepted', 'purge_expired_card_consents', 'is_105', 'back_to_back_105_opens_at', 'registration_has_live_fee', 'player_has_live_fee', 'money_rows', 'stripe_cutover_to_live', 'payments_enabled_at', 'payment_is_real')
   and has_function_privilege('authenticated', p.oid, 'EXECUTE');
 
 -- 4. TOO NARROW, the other direction: every function a signed-in client may
@@ -257,7 +271,7 @@ from pg_proc p
 join pg_namespace n on n.oid = p.pronamespace and n.nspname = 'public'
 where p.prokind = 'f'
   and p.prorettype <> 'trigger'::regtype
-  and p.proname not in ('admin_account_ids', 'notify_account', 'courtesy_available', 'courtesy_cancel_days', 'card_required', 'waiver_accepted', 'purge_expired_card_consents', 'is_105', 'back_to_back_105_opens_at')
+  and p.proname not in ('admin_account_ids', 'notify_account', 'courtesy_available', 'courtesy_cancel_days', 'card_required', 'waiver_accepted', 'purge_expired_card_consents', 'is_105', 'back_to_back_105_opens_at', 'registration_has_live_fee', 'player_has_live_fee', 'money_rows', 'stripe_cutover_to_live', 'payments_enabled_at', 'payment_is_real')
   and not has_function_privilege('authenticated', p.oid, 'EXECUTE');
 
 select

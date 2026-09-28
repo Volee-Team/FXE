@@ -83,7 +83,18 @@ struct CompleteProfileView: View {
                     }
 
                     saveButton
-                    escapeHatch
+                    // A way off this screen that is not "finish the form".
+                    //
+                    // Found by hand on 2026-08-15: this screen had no exit.
+                    // Anyone who reached it and could not or would not complete
+                    // it was stuck, with no sign-out and no back, and
+                    // relaunching returned them here because the auth session
+                    // is still valid. No automated test would have caught it
+                    // because every test completes the form. Since 2026-09-27
+                    // the exit is the footer every onboarding step shares, with
+                    // Delete my account beside Sign out (MVP audit item 7).
+                    // Signing out keeps the auth user, so they can finish later.
+                    AccountExitFooter(signOutID: "profile.signOutFromSetup", deleteID: "profile.deleteFromSetup")
                 }
                 .padding(Brand.Spacing.pageMargin)
             }
@@ -242,33 +253,6 @@ struct CompleteProfileView: View {
                 .padding(.vertical, Brand.Spacing.xxs)
             }
         }
-    }
-
-    /// A way off this screen that is not "finish the form".
-    ///
-    /// Found by hand on 2026-08-15: this screen had no exit. Anyone who reached
-    /// it and could not or would not complete it was stuck, with no sign-out and
-    /// no back, and relaunching returned them here because the auth session is
-    /// still valid. That is the same dead-end shape as the sign-up bug this
-    /// screen was built to fix, one screen further along, and no automated test
-    /// would have caught it because every test completes the form.
-    ///
-    /// Signing out is the correct escape: it clears the session, so the next
-    /// launch starts at sign-in. The auth user survives, which is why the copy
-    /// says the account is kept.
-    private var escapeHatch: some View {
-        Button {
-            Task { await session.signOut() }
-        } label: {
-            Text("Sign out")
-                .font(Brand.Typography.subheadline)
-                .foregroundStyle(Brand.textSecondary)
-                .frame(maxWidth: .infinity)
-                .frame(minHeight: Brand.Layout.minTapTarget)
-        }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier("profile.signOutFromSetup")
-        .accessibilityHint("Signs you out, you can finish later if needed")
     }
 
     private var saveButton: some View {

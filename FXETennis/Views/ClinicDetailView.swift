@@ -10,7 +10,11 @@
 //    Player Pool             -> Leave Player Pool
 //    Response Needed         -> Accept / Decline
 //    not open yet            -> "Registration opens ..."
+//    closed, not started     -> Message Tara (the late request)
+//    started, not registered -> no action (review, 2026-09-27: Register
+//                               stayed, and a tap met registration_closed)
 //    canceled clinic         -> Canceled banner, no action
+//  The not-registered rows are ClinicPublic.door(isMember:now:), unit-tested.
 //
 //  Still hides everything players must not see: no capacity, no counts, no other
 //  players, no court, no location. Only this player's own status.
@@ -48,16 +52,67 @@ final class ClinicDetailModel {
             let regs = try await RegistrationRepository.mine()
             registration = regs.first { $0.clinicId == clinicId && $0.status != .canceled }
             messages = try await ClinicRepository.messages(clinicId: clinicId)
+            // A load that worked clears an old "Couldn't reach the server"
+            // (review, 2026-09-27: it stayed after a pull that succeeded).
+            // `act` sets its own notice after this, so a refusal still shows.
+            notice = nil
         } catch {
-            notice = "Couldn't load this clinic."
+            let failure = RequestFailure(error)
+            if failure != .cancelled {
+                notice = failure.line ?? "Couldn't load this clinic."
+            }
         }
         loaded = true
+    }
+
+    /// What a failed action tells the player, and which onboarding step the
+    /// server's refusal should reopen.
+    struct FailureOutcome: Equatable {
+        let notice: String?
+        let reopens: SessionStore.Gate?
+    }
+
+    /// The refusals this screen can explain, then what the request met. Only
+    /// a real answer from the server is read as a race: a timeout or no signal
+    /// used to read "someone beat you to the punch", so she did not retry and
+    /// lost her place (MVP audit item 9).
+    nonisolated static func outcome(for error: Error) -> FailureOutcome {
+        let text = String(describing: error)
+        // A card on file is required to register once payments are on
+        // (decision 0012). The card step reopens with fresh switches.
+        if text.contains("card_required") {
+            return FailureOutcome(notice: "Add a card on your Profile to register.", reopens: .card)
+        }
+        // A new waiver version, or a check that failed at launch: the sheet
+        // reopens (decision 0013 §4). The words stay, under the sheet.
+        if text.contains("waiver_required") {
+            return FailureOutcome(notice: "Sign the waiver first.", reopens: .waiver)
+        }
+        // Decision 0015 §13. Placeholder words until Tara writes them
+        // (question 63); without this line a blocked non-member was
+        // told someone beat them to the punch, which is not what happened.
+        if text.contains("back_to_back_105") {
+            return FailureOutcome(notice: "Non-members can take one 105 a day until 48 hours before.", reopens: nil)
+        }
+        let failure = RequestFailure(error)
+        switch failure {
+        case .unreachable, .rateLimited:
+            return FailureOutcome(notice: failure.line, reopens: nil)
+        case .cancelled:
+            return FailureOutcome(notice: nil, reopens: nil)
+        case .other:
+            // The server answered and refused: every other refusal is a race,
+            // and the reload shows the real state.
+            return FailureOutcome(notice: "Sorry, someone beat you to the punch. Here's the latest!", reopens: nil)
+        }
     }
 
     /// Runs an action, surfaces a friendly notice on failure, and reloads so the
     /// button reflects the new truth. Every transition is conditional server-side
     /// (hard rule 3); a race just means the reload shows the real state.
-    func act(clinicId: UUID, _ work: @escaping () async throws -> Void, onChanged: () async -> Void) async {
+    func act(clinicId: UUID, _ work: @escaping () async throws -> Void,
+             onChanged: () async -> Void,
+             reopen: (SessionStore.Gate) async -> Void = { _ in }) async {
         working = true; notice = nil
         do {
             try await work()
@@ -65,20 +120,9 @@ final class ClinicDetailModel {
             await onChanged()
         } catch {
             await load(clinicId: clinicId)
-            // A card on file is required to register once payments are on
-            // (decision 0012). Every other failure is a race, and the reload
-            // shows the real state.
-            let text = String(describing: error)
-            notice = text.contains("card_required")
-                ? "Add a card on your Profile to register."
-                : text.contains("waiver_required")
-                ? "Sign the waiver first."
-                // Decision 0015 §13. Placeholder words until Tara writes them
-                // (question 63); without this line a blocked non-member was
-                // told someone beat them to the punch, which is not what happened.
-                : text.contains("back_to_back_105")
-                ? "Non-members can take one 105 a day until 48 hours before."
-                : "Sorry, someone beat you to the punch. Here's the latest!"
+            let outcome = Self.outcome(for: error)
+            notice = outcome.notice
+            if let gate = outcome.reopens { await reopen(gate) }
         }
         working = false
     }
@@ -109,13 +153,9 @@ struct ClinicDetailView: View {
     var onChanged: () async -> Void = {}
 
     @Environment(SessionStore.self) private var session
+    /// Accept and Decline stack at the accessibility text sizes.
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var model = ClinicDetailModel()
-
-    private var openMoment: Date? { isMember ? clinic.memberOpensAt : clinic.publicOpensAt }
-    private var isOpenNow: Bool {
-        guard let openMoment else { return true }
-        return openMoment <= Date()
-    }
 
     var body: some View {
         ScrollView {
@@ -125,7 +165,13 @@ struct ClinicDetailView: View {
                 detailCard
                 messageBoard
                 if let notice = model.notice { noticeText(notice) }
-                confirmDialog(actionArea)
+                // Redrawn at this viewer's opening, the close and the start,
+                // so Register appears at 8:00 on the second and gives way to
+                // the late-request door at the close, with nobody pulling to
+                // refresh (MVP audit item 8). The clock is read at each draw.
+                TimelineView(.explicit(RedrawSchedule.at(clinic.upcomingMoments(isMember: isMember)))) { _ in
+                    confirmDialog(actionArea(now: Date()))
+                }
             }
             .padding(Brand.Spacing.pageMargin)
         }
@@ -138,12 +184,22 @@ struct ClinicDetailView: View {
         }
         .sheet(item: $lateCancel) { reg in
             LateCancelSheet { note in
-                await model.act(clinicId: clinic.id, {
+                await run {
                     try await RegistrationRepository.cancelRegistration(registrationId: reg.id, note: note)
-                }, onChanged: onChanged)
+                }
             }
         }
         .refreshable { await model.load(clinicId: clinic.id) }
+        // A Pool player who left this page open sees Response Needed when she
+        // comes back to the app, not the state from before (MVP audit item 8).
+        .reloadOnForeground { await model.load(clinicId: clinic.id) }
+    }
+
+    /// Every action on this screen goes through here, so a refusal for the
+    /// waiver or the card reopens that step (SessionStore.reopen).
+    private func run(_ work: @escaping () async throws -> Void) async {
+        await model.act(clinicId: clinic.id, work, onChanged: onChanged,
+                        reopen: { gate in await session.reopen(gate) })
     }
 
     // MARK: header
@@ -237,14 +293,14 @@ struct ClinicDetailView: View {
         ) {
             if let p = pending {
                 Button(p.confirmLabel, role: .destructive) {
-                    Task { await model.act(clinicId: clinic.id, p.work, onChanged: onChanged) }
+                    Task { await run(p.work) }
                 }
                 Button("Keep my spot", role: .cancel) {}
             }
         }
     }
 
-    @ViewBuilder private var actionArea: some View {
+    @ViewBuilder private func actionArea(now: Date) -> some View {
         if clinic.isCanceled {
             EmptyView()
         } else if let reg = model.registration {
@@ -268,7 +324,12 @@ struct ClinicDetailView: View {
                     try await RegistrationRepository.leavePool(registrationId: reg.id)
                 }
             case .responseNeeded:
-                HStack(spacing: Brand.Spacing.sm) {
+                // Side by side, or stacked at the accessibility text sizes,
+                // where half the width cannot hold "Decline".
+                let layout = typeSize.isAccessibilitySize
+                    ? AnyLayout(VStackLayout(spacing: Brand.Spacing.sm))
+                    : AnyLayout(HStackLayout(spacing: Brand.Spacing.sm))
+                layout {
                     primaryButton("Accept") {
                         try await RegistrationRepository.respondToInvitation(registrationId: reg.id, accept: true)
                     }
@@ -279,7 +340,18 @@ struct ClinicDetailView: View {
             case .canceled:
                 EmptyView()
             }
-        } else if hasClosed {
+        } else {
+            notRegisteredArea(clinic.door(isMember: isMember, now: now))
+        }
+    }
+
+    /// Someone with no registration here. Which door is ClinicPublic.door:
+    /// before the opening, when it opens; then Register; from the close, the
+    /// late request; from the start, nothing, because a clinic Tara is
+    /// already coaching has nothing left to sign up for.
+    @ViewBuilder private func notRegisteredArea(_ door: RegistrationDoor) -> some View {
+        switch door {
+        case .askTara:
             // Registration has closed. Before 2026-08-27 this branch did not
             // exist: `closesAt` was decoded on ClinicPublic and read by NO view,
             // so the Register button stayed fully enabled on a closed clinic and
@@ -291,28 +363,20 @@ struct ClinicDetailView: View {
             // to get into the clinic, assuming there is space and it isn't
             // full." So the closed state is not a dead end, it is a door.
             lateRequestArea
-        } else if isOpenNow {
+        case .register:
             primaryButton("Register") {
                 guard let playerId = session.activePlayer?.id else { return }
                 _ = try await RegistrationRepository.register(clinicId: clinic.id, playerId: playerId)
             }
-        } else if let openMoment {
+        case .opens(let openMoment):
             Text("Registration opens \(openMoment.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day().hour().minute()))")
                 .font(Brand.Typography.subheadline)
                 .foregroundStyle(Brand.textSecondary)
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(Brand.Spacing.md)
+        case .none:
+            EmptyView()
         }
-    }
-
-    /// True once registration has closed but the clinic has not started.
-    ///
-    /// Deliberately NOT `closesAt < now` alone: after the clinic has begun there
-    /// is nothing to ask for, and offering to message Tara about a session she
-    /// is already coaching would be worse than saying nothing.
-    private var hasClosed: Bool {
-        guard let closes = clinic.closesAt else { return false }
-        return closes <= Date() && Date() < clinic.startsAt
     }
 
     /// The closed-window state: explain why, then offer the way through.
@@ -360,7 +424,7 @@ struct ClinicDetailView: View {
 
     private func primaryButton(_ title: String, _ work: @escaping () async throws -> Void) -> some View {
         Button {
-            Task { await model.act(clinicId: clinic.id, work, onChanged: onChanged) }
+            Task { await run(work) }
         } label: {
             actionLabel(title, fg: Brand.textOnNavy, bg: Brand.navy)
         }
@@ -369,7 +433,7 @@ struct ClinicDetailView: View {
 
     private func secondaryButton(_ title: String, _ work: @escaping () async throws -> Void) -> some View {
         Button {
-            Task { await model.act(clinicId: clinic.id, work, onChanged: onChanged) }
+            Task { await run(work) }
         } label: {
             actionLabel(title, fg: Brand.navy, bg: Brand.surfaceRaised)
                 .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.navy, lineWidth: Brand.Layout.borderWidth))

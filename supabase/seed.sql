@@ -87,11 +87,10 @@ values
 on conflict (id) do nothing;
 
 -- Two notifications for Maria so the bell has something to show on a fresh
--- reset (the notification-center XCUITest reads these). Bodies are the shape
--- the RPCs write; they are not shown to Tara and carry nothing hidden.
+-- reset (the notification-center XCUITest reads these): this clinic message,
+-- and an invitation written at the end of this file by invite_from_pool
+-- itself. They are not shown to Tara and carry nothing hidden.
 insert into public.notifications (account_id, type, entity_type, entity_id, body, created_at) values
-  ('22222222-2222-2222-2222-222222222222', 'invitation_received', 'clinic', 'd0000000-0000-0000-0000-000000000002',
-   'A spot opened up in Thursday Morning Cardio and it''s yours if you want it. Open the app to say yes or no.', now() - interval '2 hours'),
   ('22222222-2222-2222-2222-222222222222', 'clinic_message', 'clinic', 'd0000000-0000-0000-0000-000000000001',
    'Courts are wet, we start 15 minutes late tonight.', now() - interval '1 day');
 
@@ -121,3 +120,54 @@ insert into public.waiver_acceptances (account_id, version, legal_name, email, a
   ('55555555-5555-5555-5555-555555555555', '2026-09', 'Priya Raman',    'priya@fxe.test', 'seed'),
   ('66666666-6666-6666-6666-666666666666', '2026-09', 'Dana Okonkwo',   'dana@fxe.test',  'seed')
 on conflict (account_id, version) do nothing;
+
+-- ── The invitation in Maria's bell, written by the producer ─────────────────
+-- (2026-09-27, MVP audit item 12.) This row used to be typed here as
+-- entity_type 'clinic' with a clinic id and wording nobody sends. The real
+-- producer, invite_from_pool, writes entity_type 'registration' with the
+-- registration id, and the bell only opened 'clinic', so tapping a real
+-- invitation did nothing while the one invitation a test could see opened a
+-- clinic. The seed hid the bug. Now the producer writes the row itself, as
+-- Tara, so the fixture cannot drift from it again;
+-- tests/sql/notification_targets.sql pins the producer.
+--
+-- The clinic starts 40 days out, past the app's 35-day list horizon
+-- (ClinicRepository.upcoming), so Maria's Home, Clinics and My Clinics look
+-- exactly as they did before (the XCUITests read them, and Home's layout
+-- depends on how many clinics are hers). The bell and a push still open it:
+-- clinics_public has no horizon. Fixed ids so tests/push/simctl-invitation.apns
+-- can name this row and its registration.
+insert into public.clinics (id, name, audience, category, description, starts_at, ends_at,
+    member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
+values
+  ('d0000000-0000-0000-0000-000000000005', 'Evening Coed', 'coed', 'Clinic',
+   'Holds the invitation example in Maria''s bell.',
+   now() + interval '40 days', now() + interval '40 days 1 hour',
+   now() - interval '1 day', now() - interval '12 hours', 8, 'published', 60)
+on conflict (id) do nothing;
+
+insert into public.registrations (id, clinic_id, player_id, status, source,
+    price_cents_charged, was_member, duration_minutes, registered_at)
+values
+  ('e0000000-0000-0000-0000-000000000001', 'd0000000-0000-0000-0000-000000000005',
+   'a0000000-0000-0000-0000-000000000001', 'pool', 'self', 1800, true, 60, now() - interval '3 hours')
+on conflict (id) do nothing;
+
+do $$
+begin
+  -- Tara presses Invite. require_admin() reads auth.uid() from these claims;
+  -- they are cleared again so nothing after this runs as her.
+  perform set_config('request.jwt.claims',
+    json_build_object('sub', '11111111-1111-1111-1111-111111111111')::text, true);
+  if exists (select 1 from public.registrations
+              where id = 'e0000000-0000-0000-0000-000000000001' and status = 'pool') then
+    perform public.invite_from_pool('e0000000-0000-0000-0000-000000000001');
+    -- The one thing changed after the producer: the row's own id, so the
+    -- simctl payload file can mark exactly this row read.
+    update public.notifications set id = 'f0000000-0000-0000-0000-000000000001'
+     where account_id = '22222222-2222-2222-2222-222222222222'
+       and type = 'invitation_received'
+       and entity_id = 'e0000000-0000-0000-0000-000000000001';
+  end if;
+  perform set_config('request.jwt.claims', '', true);
+end $$;

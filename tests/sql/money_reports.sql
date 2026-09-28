@@ -28,7 +28,9 @@
 --   B  Mon 2026-08-31 21:00 (= 2026-09-01 01:00 UTC), 90 min
 --      Maria in  t 2200   P5 fee FAILED insufficient_funds; P11 fee 2200 PROCESSING
 --      Priya in  f 2800   P6 fee 2800 S
---      Ken   in  t 2200   (no payment)
+--      Ken   in  t 2200   PK fee 2200 FAILED expired_card (added 2026-09-27 for
+--                         the Money tab; a failed fee is never collected, so
+--                         no board number below moves)
 --      Rob   in  f 2800   P7 fee 2800 PENDING
 --      Dana  in  NULL snapshot, NULL price
 --   C  Fri 2026-07-31 22:00 (= 2026-08-01 02:00 UTC): July in New York
@@ -53,6 +55,31 @@
 --                  E 0|0|0|1805 ; B 2|3|10000|2800
 --   row sums: 3 | 4 | 14100 | 5400+2300+1805+2800 = 12305
 --
+-- THE MONEY TAB (20260927100003), same fixture, all time. THE RULE: charged =
+-- succeeded fees minus their succeeded refunds, every clinic (the board's
+-- collected without dates). Owing rows = ended, not canceled clinics: in owes
+-- the clinic fee, a no-show the no-show fee, a late cancel (no courtesy, no
+-- You're In! row beside it) the late fee. Each owing row is charged (the
+-- player holds a live fee there), refunded (that exact fee went through and
+-- came back), declined (a charge of it failed) or not charged.
+--   charged = 18205 (the nine succeeded fees, July and January included)
+--             - R1 2300 = 15905
+--   owing rows: A Maria charged (R2 failed, R3 pending: nothing came back);
+--     A Rob refunded (P2 back in full by R1); A Ken charged; A Dana charged;
+--     E Dana charged; B Maria charged (P11 processing is live, P5 is history);
+--     B Priya charged; B Ken DECLINED 2200 expired_card; B Rob charged (P7);
+--     B Dana NOT CHARGED (null price: counts 1, adds 0); C and W Maria
+--     charged; "Probe ended" Maria NOT CHARGED 1800. D is canceled: owes
+--     nothing, but its 2300 was taken. In progress and later today: not over.
+--   summary: 15905 | declined 1, 2200 | not charged 2, 1800, 2 clinics
+--   clinic rows, newest first, name|canceled|charged|declined|not|not cents|
+--   with a card (Maria's card is added first, Dana has none):
+--     Probe ended|f|0|0|1|1800|1 ; Probe Aug 31 late|f|2800|1|1|0|0 ;
+--     Probe Aug 20 all no-show|f|1805|0|0|0|0 ; Probe Aug 15 canceled|t|2300|0|0|0|0 ;
+--     Probe Aug 10|f|5400|0|0|0|0 ; Probe Jul 31 late|f|1800|0|0|0|0 ;
+--     Probe Jan 31 late|f|1800|0|0|0|0
+--   row sums: 15905 | 1 | 2 | 1800, the summary's.
+--
 -- Expected: every row reads PASS.
 
 begin;
@@ -75,10 +102,15 @@ declare
   ny      constant text := 'America/New_York';
   ca uuid; cb uuid; cc uuid; cd uuid; ce uuid; cw uuid; c_end uuid; c_now uuid; c_later uuid;
   r_am uuid; r_ar uuid; r_ak uuid; r_ad uuid; r_ed uuid; r_dr uuid;
-  r_bm uuid; r_bp uuid; r_br uuid; r_cm uuid; r_wm uuid;
+  r_bm uuid; r_bp uuid; r_br uuid; r_cm uuid; r_wm uuid; r_bk uuid;
   p1 uuid; p2 uuid; p5 uuid; p9 uuid;
   s record; v text; n int; n2 int; x text; per record; bad text;
 begin
+  -- Card payments were switched on before every clinic below (20260927300001:
+  -- only clinics ending at or after payments_enabled_at owe anything).
+  insert into public.app_settings (key, value)
+  values ('payments_enabled_at', (timestamp '2026-01-01 00:00' at time zone ny)::text)
+  on conflict (key) do update set value = excluded.value;
   -- ------------------------------------------------------------ clinics
   insert into public.clinics (name, audience, category, description, starts_at, ends_at,
       member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
@@ -155,7 +187,7 @@ begin
   insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
   values (cb, PRIYA_P, 'in', 'self', 2800, false, 90) returning id into r_bp;
   insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
-  values (cb, KEN_P, 'in', 'self', 2200, true, 90);
+  values (cb, KEN_P, 'in', 'self', 2200, true, 90) returning id into r_bk;
   insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
   values (cb, ROB_P, 'in', 'self', 2800, false, 90) returning id into r_br;
   insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
@@ -201,6 +233,8 @@ begin
   values (r_bp, PRIYA, 'clinic_fee', 2800, 'succeeded');                                   -- P6
   insert into public.payments (registration_id, account_id, kind, amount_cents, status)
   values (r_br, ROB, 'clinic_fee', 2800, 'pending');                                       -- P7
+  insert into public.payments (registration_id, account_id, kind, amount_cents, status, failure_reason, failure_code)
+  values (r_bk, KEN, 'clinic_fee', 2200, 'failed', 'Your card has expired.', 'expired_card');  -- PK
   insert into public.payments (registration_id, account_id, kind, amount_cents, status)
   values (r_cm, MARIA, 'clinic_fee', 1800, 'succeeded');                                   -- P8
   insert into public.payments (registration_id, account_id, kind, amount_cents, status)
@@ -393,6 +427,44 @@ begin
     'insufficient_funds | Maria Alvarez | failed', coalesce(v, 'NO ROW'));
   perform set_config('role', 'postgres', true);
 
+  -- ------------------------------------------ THE MONEY TAB (20260927100003)
+  -- Maria's card, so "with a card" has one yes (the webhook's job; postgres
+  -- stands in). Dana, the other not-charged row, has none.
+  update public.accounts set stripe_customer_id = 'cus_probe_maria', card_brand = 'visa', card_last4 = '4242' where id = MARIA;
+  perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
+  perform set_config('role', 'authenticated', true);
+
+  select m.charged_cents || '|' || m.declined_count || '|' || m.declined_cents || '|' || m.not_charged_count
+         || '|' || m.not_charged_cents || '|' || m.not_charged_clinics
+    into v from public.admin_money_summary() m;
+  insert into _probe_result values ('money_summary_from_the_ledger', '15905|1|2200|2|1800|2', coalesce(v, 'NO ROW'));
+
+  -- Charged is the board's collected with no dates: the two cannot disagree.
+  select s2.collected_cents || '|' || (select m.charged_cents from public.admin_money_summary() m)
+    into v from public.admin_board_report('2000-01-01', '2099-12-31') s2;
+  insert into _probe_result values ('money_charged_equals_board_collected', '15905|15905', v);
+
+  select string_agg(c.clinic_name || '|' || case when c.canceled then 't' else 'f' end || '|' || c.charged_cents
+                    || '|' || c.declined_count || '|' || c.not_charged_count || '|' || c.not_charged_cents
+                    || '|' || c.chargeable_count, ' ; ')
+    into v from public.admin_money_clinics() c;
+  insert into _probe_result values ('money_clinic_rows_newest_first',
+    'Probe ended|f|0|0|1|1800|1 ; Probe Aug 31 late|f|2800|1|1|0|0 ; Probe Aug 20 all no-show|f|1805|0|0|0|0 ; '
+    || 'Probe Aug 15 canceled|t|2300|0|0|0|0 ; Probe Aug 10|f|5400|0|0|0|0 ; Probe Jul 31 late|f|1800|0|0|0|0 ; '
+    || 'Probe Jan 31 late|f|1800|0|0|0|0',
+    coalesce(v, 'NO ROWS'));
+
+  select sum(c.charged_cents) || '|' || sum(c.declined_count) || '|' || sum(c.not_charged_count) || '|' || sum(c.not_charged_cents)
+    into v from public.admin_money_clinics() c;
+  insert into _probe_result values ('money_clinic_rows_add_up', '15905|1|2|1800', coalesce(v, 'NO ROWS'));
+
+  select string_agg(d.first_name || ' ' || d.last_name || '|' || d.clinic_name || '|' || d.amount_cents
+                    || '|' || coalesce(d.failure_code, 'NULL'), ' ; ')
+    into v from public.admin_money_declined() d;
+  insert into _probe_result values ('money_declined_names_the_cardholder', 'Ken Whitfield|Probe Aug 31 late|2200|expired_card',
+    coalesce(v, 'NO ROWS'));
+  perform set_config('role', 'postgres', true);
+
   -- ------------------------------------------------------ ATTACK: Maria
   -- A member asking for the report is refused outright: counts of anything
   -- are never returned to a player (hard rule 1).
@@ -413,6 +485,25 @@ begin
   -- Her own declined payment is not readable through the admin ledger.
   select count(*) into n from public.payments_ledger;
   insert into _probe_result values ('member_sees_nothing_in_ledger', '0', n::text);
+  -- Nor through the Money tab's three functions: refused, not zeroes.
+  begin
+    perform public.admin_money_summary();
+    insert into _probe_result values ('member_cannot_run_money_summary', 'not_authorized', 'CALL SUCCEEDED');
+  exception when others then
+    insert into _probe_result values ('member_cannot_run_money_summary', 'not_authorized', sqlerrm);
+  end;
+  begin
+    perform public.admin_money_clinics();
+    insert into _probe_result values ('member_cannot_run_money_clinics', 'not_authorized', 'CALL SUCCEEDED');
+  exception when others then
+    insert into _probe_result values ('member_cannot_run_money_clinics', 'not_authorized', sqlerrm);
+  end;
+  begin
+    perform public.admin_money_declined();
+    insert into _probe_result values ('member_cannot_run_money_declined', 'not_authorized', 'CALL SUCCEEDED');
+  exception when others then
+    insert into _probe_result values ('member_cannot_run_money_declined', 'not_authorized', sqlerrm);
+  end;
   perform set_config('role', 'postgres', true);
   perform set_config('request.jwt.claims', null, true);
 
@@ -453,6 +544,24 @@ begin
   -- No client writes failure_code: payments stays read-only to authenticated.
   insert into _probe_result values ('client_cannot_write_failure_code', 'false',
     has_column_privilege('authenticated', 'public.payments', 'failure_code', 'UPDATE')::text);
+
+  -- The Money tab's functions: anon and PUBLIC hold nothing, the signed-in
+  -- may call the three (each refuses a member inside), and money_rows is
+  -- internal to them.
+  select count(*) into n from pg_proc p join pg_namespace ns on ns.oid = p.pronamespace
+   where ns.nspname = 'public' and p.proname in ('admin_money_summary', 'admin_money_clinics', 'admin_money_declined', 'money_rows')
+     and (has_function_privilege('anon', p.oid, 'EXECUTE')
+          or p.proacl is null
+          or exists (select 1 from aclexplode(p.proacl) a where a.grantee = 0 and a.privilege_type = 'EXECUTE'));
+  insert into _probe_result values ('money_tab_functions_closed_to_anon_and_public', '0', n::text);
+  select count(*) into n from pg_proc p join pg_namespace ns on ns.oid = p.pronamespace
+   where ns.nspname = 'public' and p.proname in ('admin_money_summary', 'admin_money_clinics', 'admin_money_declined')
+     and has_function_privilege('authenticated', p.oid, 'EXECUTE')
+     and p.prosecdef
+     and exists (select 1 from unnest(p.proconfig) c where c like 'search_path=%');
+  insert into _probe_result values ('money_tab_functions_definer_pinned_callable', '3', n::text);
+  insert into _probe_result values ('money_rows_is_internal', 'false',
+    has_function_privilege('authenticated', 'public.money_rows()', 'EXECUTE')::text);
 end $$;
 
 select check_name, expected, actual,

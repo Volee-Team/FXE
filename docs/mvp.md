@@ -44,7 +44,7 @@ party oct 16"*). Every row below is a fact about the code today; the column
 | Item | Why it is not in | Decide |
 |---|---|---|
 | Push delivery (APNs) | needs the Apple Developer key; the LLC enrollment is in Apple's queue | in MVP or not? If in, MVP waits on Apple |
-| Payments switched on | keys in 2026-09-27; waits on Alex's go after build 3 (A9), the payment test (A2), then live mode in Tara's name (A7) | if in, Q56's policy text and the card sentence go live |
+| Payments switched on | keys in 2026-09-27; waits on Alex's go after build 4 (A9), the payment test (A2), then live mode in Tara's name (A7) | if in, Q56's policy text and the card sentence go live |
 | Registration-is-open reminders | needs a scheduler and Tara's answer on timing | later |
 | Juniors, News, Community | deferred by Tara (decisions 0004, 0006) | later |
 | Privacy policy at a URL | Apple needs it for external TestFlight and the store | needed before launch, not before internal testing |

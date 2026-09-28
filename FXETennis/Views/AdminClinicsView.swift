@@ -25,6 +25,20 @@ final class AdminClinicsModel {
     var notices: [AdminNotice] = []
     var loading = false
     var error: String?
+    /// Decision 0013: the card is the only way to pay, so "N unpaid" (the
+    /// Paid flag, which cannot turn true before a clinic ends) is not shown
+    /// while this is false, the same gate as the Unpaid audience.
+    var zelleAllowed = false
+    /// Money work from the ledger (20260927100003).
+    var paymentsOn = false
+    var moneyClinics: [MoneyClinic] = []
+    var declines: [MoneyDecline] = []
+
+    /// Clinics that ended with someone one more Charge clinic would charge.
+    /// Only while payments are on: the tap is the resolving action.
+    var uncharged: [MoneyClinic] {
+        paymentsOn ? moneyClinics.filter { !$0.canceled && $0.chargeableCount > 0 } : []
+    }
 
     struct RosterCounts: Sendable {
         var youreIn = 0
@@ -43,6 +57,11 @@ final class AdminClinicsModel {
             // cancellation, decline or acceptance she has not seen yet.
             lateRequests = (try? await AdminRepository.pendingLateRequests()) ?? []
             notices = (try? await AdminRepository.unreadNotices()) ?? []
+            zelleAllowed = (try? await AdminRepository.zelleAllowed()) ?? false
+            paymentsOn = (try? await AdminRepository.paymentsEnabled()) ?? false
+            moneyClinics = (try? await AdminRepository.moneyClinics()) ?? []
+            // A deleted account's decline is nobody's to fix (20260927300001).
+            declines = ((try? await AdminRepository.moneyDeclined()) ?? []).filter { $0.accountDeleted != true }
             error = nil
             await loadCounts()
         } catch {
@@ -145,24 +164,45 @@ struct AdminClinicsView: View {
             }
         }
         .task { await model.load() }
+        // A late request or a reply that came in while the app slept shows
+        // when Tara comes back to it (MVP audit item 8).
+        .reloadOnForeground { await model.load() }
     }
 
     private var actionNeeded: some View {
         let waiting = model.rosterCounts.values.reduce(0) { $0 + $1.responseNeeded }
-        let unpaid = model.rosterCounts.values.reduce(0) { $0 + $1.unpaid }
+        // The Paid flag cannot turn true before a clinic ends, so with the card
+        // as the only way to pay this always equalled everyone booked (the
+        // audit, 2026-09-27). Shown only while Zelle is allowed.
+        let unpaid = model.zelleAllowed ? model.rosterCounts.values.reduce(0) { $0 + $1.unpaid } : 0
         let pool = model.rosterCounts.values.reduce(0) { $0 + $1.pool }
 
         let asks = model.lateRequests.count
         let news = model.notices.count
+        let money = !model.uncharged.isEmpty || !model.declines.isEmpty
 
         return Group {
-            if waiting > 0 || unpaid > 0 || pool > 0 || asks > 0 || news > 0 {
+            if waiting > 0 || unpaid > 0 || pool > 0 || asks > 0 || news > 0 || money {
                 VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
                     Text("ACTION NEEDED")
                         .font(Brand.Typography.chip)
                         .foregroundStyle(Brand.textSecondary)
 
                     VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
+                        // Money first: each row opens its clinic, where Charge
+                        // clinic is (20260927100003).
+                        ForEach(model.uncharged) { m in
+                            clinicLink(m.clinicId) {
+                                needRow(Brand.Status.responseNeeded, "\(m.clinicName) ended, not charged yet",
+                                        detail: m.startsAt.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
+                            }
+                        }
+                        ForEach(model.declines) { d in
+                            clinicLink(d.clinicId) {
+                                needRow(Brand.Status.canceled, "\(d.displayName)'s card was declined",
+                                        detail: declineDetail(d))
+                            }
+                        }
                         if asks > 0 { needRow(Brand.Status.responseNeeded, "\(asks) asking to get in after close") }
                         if news > 0 { needRow(Brand.Status.canceled, "\(news) cancellations or replies to see") }
                         if waiting > 0 { needRow(Brand.Status.responseNeeded, "\(waiting) waiting on a reply") }
@@ -181,16 +221,47 @@ struct AdminClinicsView: View {
         }
     }
 
-    private func needRow(_ status: Brand.Status, _ text: String) -> some View {
+    private func needRow(_ status: Brand.Status, _ text: String, detail: String? = nil) -> some View {
         HStack(spacing: Brand.Spacing.xs) {
             Circle().fill(status.ink).frame(width: 9, height: 9)
-            Text(text)
-                .font(Brand.Typography.body)
-                .foregroundStyle(Brand.textPrimary)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(text)
+                    .font(Brand.Typography.body)
+                    .foregroundStyle(Brand.textPrimary)
+                if let detail {
+                    Text(detail)
+                        .font(Brand.Typography.caption)
+                        .foregroundStyle(Brand.textSecondary)
+                }
+            }
         }
         // The dot is decoration; the sentence carries the meaning, so the row
         // reads as one element and colour is never the only signal.
         .accessibilityElement(children: .combine)
+    }
+
+    /// "Tuesday Ladies 3.0+ · Tue, Sep 29 · Insufficient funds (NSF)".
+    private func declineDetail(_ d: MoneyDecline) -> String {
+        var parts = [d.clinicName, d.clinicStartsAt.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())]
+        if let reason = DeclineReason.label(d.failureCode) { parts.append(reason) }
+        return parts.joined(separator: " · ")
+    }
+
+    /// A money row opens its clinic. A clinic the list does not hold (it
+    /// should always) leaves the row as plain text rather than a dead link.
+    @ViewBuilder private func clinicLink<Content: View>(_ id: UUID, @ViewBuilder _ content: () -> Content) -> some View {
+        let row = content()
+        if let clinic = model.clinics.first(where: { $0.id == id }) {
+            NavigationLink {
+                AdminClinicDetailView(clinic: clinic, onChanged: { await model.load() })
+            } label: {
+                row
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("admin.actionNeeded.money")
+        } else {
+            row
+        }
     }
 
     private func section(_ title: String, _ clinics: [ClinicAdmin], empty: String) -> some View {

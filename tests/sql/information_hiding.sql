@@ -30,6 +30,10 @@ declare
   KEN_ACC   constant uuid := '33333333-3333-3333-3333-333333333333';
   c uuid;
   ken_reg uuid;
+  maria_reg uuid;
+  c2 uuid;
+  invited_reg uuid;
+  cr public.registrations;
   n int;
 begin
   -- A clinic both players are in, with a court assigned and a payment recorded.
@@ -49,6 +53,18 @@ begin
   -- which would test the wrong thing.
   select id into ken_reg from public.registrations
    where clinic_id = c and player_id = KEN;
+  select id into maria_reg from public.registrations
+   where clinic_id = c and player_id = MARIA;
+  -- A second clinic where Tara put Maria on court 4, moved her to the Pool
+  -- and invited her back: place_player and invite_from_pool change only the
+  -- status, so the court stays on the row (sql-auditor, 2026-09-27).
+  insert into public.clinics (name, audience, starts_at, ends_at,
+      member_opens_at, public_opens_at, internal_capacity, status)
+  values ('Hidden Info Probe 2', 'coed', now() + interval '4 days', now() + interval '4 days 1 hour',
+      now() - interval '1 hour', now() + interval '12 hours', 6, 'published')
+  returning id into c2;
+  insert into public.registrations (clinic_id, player_id, status, paid, court_number)
+  values (c2, MARIA, 'response_needed', false, 4) returning id into invited_reg;
 
   -- Become Maria: an ordinary authenticated member, not an admin.
   perform set_config('request.jwt.claims', json_build_object('sub', MARIA_ACC)::text, true);
@@ -142,6 +158,18 @@ begin
   exception when others then
     insert into _probe_result values ('invite_from_pool_denied', 'not_authorized', sqlerrm);
   end;
+
+  -- 10b. Her own cancel hands back the whole row (20260927300002). Tara put
+  --      her on court 2 above; a court assignment is hidden fact 6, so the
+  --      returned row must not carry it, nor who canceled.
+  cr := public.cancel_registration(maria_reg);
+  insert into _probe_result values ('cancel_returns_no_court_to_player', 'NULL', coalesce(cr.court_number::text, 'NULL'));
+  insert into _probe_result values ('cancel_returns_no_canceled_by_to_player', 'NULL', coalesce(cr.canceled_by::text, 'NULL'));
+  insert into _probe_result values ('cancel_still_returns_the_status', 'canceled', cr.status::text);
+  -- 10c. The same for accepting an invitation.
+  cr := public.respond_to_invitation(invited_reg, true);
+  insert into _probe_result values ('accept_returns_no_court_to_player', 'NULL', coalesce(cr.court_number::text, 'NULL'));
+  insert into _probe_result values ('accept_still_returns_the_status', 'in', cr.status::text);
 
   perform set_config('role', 'postgres', true);
 

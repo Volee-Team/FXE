@@ -11,6 +11,7 @@ Admin sign-in.
 Agree and sign
 Alex sees your answers as they save. Copy them here if you want to text them as well.
 Almost there!
+Already charged: refund it first.
 America/New_York
 Ann finds Anna, Annette, Joann…
 Any personal information that we collect is stored on secure hosted servers. We are always striving to ensure a safe and convenient experience with the Services. This goes beyond our technologies to include physical, contractual, and managerial safeguards to protect your personal information.
@@ -28,6 +29,7 @@ Cancel the invitation to \(entry.displayName)
 Canceled inside ${cutoffHours} hours
 Card payments
 Charge clinic
+Check this charge in Stripe.
 Checking your reset link…
 Children's privacy
 Choose a new password
@@ -46,8 +48,10 @@ Court \(n)
 Data retention
 Date &amp; time
 Decline
+Declined
 Delete my account
 Description (players see this under the “?”)
+Did not go through
 Disclosure of your information
 Done
 Download CSV
@@ -85,6 +89,7 @@ Keep my spot
 Keep the clinic
 Label
 Last updated: [DATE, when approved]
+Late cancel
 Leave Player Pool
 Length (minutes)
 Length must be more than 0 minutes.
@@ -108,9 +113,10 @@ New password
 No card on file for that player.
 No card payments yet.
 No clinics currently open for registration
-No clinics yet. Use “New clinic” to add your first one.
+No clinics this week or later. Use “New clinic” to add one.
 No court
 No description yet.
+No earlier clinics.
 No notifications yet
 No responses yet.
 No room
@@ -120,7 +126,9 @@ Non-members attended
 Non-members, 60 min
 Non-members, 90 min
 Not charged yet
+Not late yet.
 Not now
+Note (optional)
 Note for Tara (optional)
 Notifications
 On your laptop, with your real account. Whatever you set up here is real: it is your schedule.
@@ -146,6 +154,7 @@ Rating
 Rating Guide
 Rating \(bucket.label)
 Really cancel? Everyone is told.
+Refresh
 Register
 Registration has closed for this clinic.
 Registration open
@@ -179,7 +188,10 @@ Tara has your message.
 Tara, only what's new
 Text this to them. It works once, within an hour.
 That account is not an administrator.
+That charge is no longer held.
+That clinic ended before card payments were on.
 That clinic is already canceled.
+That clinic is canceled.
 That clinic is full now.
 That didn’t save. Try again.
 That email or password didn't work.
@@ -191,6 +203,7 @@ The Services are intended to be used by U.S. residents. Personal information you
 The Services may contain links to websites operated and maintained by third parties, over which we have no control. Privacy policies on such linked websites may be different from our privacy policy. You access such linked websites at your own risk. You should always read the privacy policy of a linked website before disclosing any of your information on such website.
 The app does not use cookies or tracking technologies. The web page your coach uses to manage clinics keeps you signed in with a browser session.
 The clinic hasn't ended yet.
+The fee applies.
 The information collected is used solely for providing the Services: clinic registration, communication from your coach about clinics, charging for clinics you attend under the club's cancellation policy, and keeping your clinic history. We do not share or sell your personal information with external parties for marketing purposes.
 The player's note at level entry; only you see it
 Third parties
@@ -205,6 +218,8 @@ To
 To contact you: by notification in the app, email, telephone, or other equivalent forms of electronic communication, about clinics and the Services.
 To manage your requests: to attend to and manage your requests to us. Messages sent through the Services are stored on our servers.
 To provide and maintain our Services, including to monitor the usage of our Services.
+Too many attempts. Try again in a minute.
+Try again
 Turn on notifications
 Type at least two letters of a name.
 Type it again
@@ -221,6 +236,7 @@ We respond to subpoenas, court orders, or legal processes, or to establish or ex
 We retain your personal information only as long as necessary to fulfill the purposes outlined in this Policy unless a longer retention period is required or permitted by law. You can delete your account from inside the app. When you do, your name, email address, phone number, note to your coach and card summary are removed; the record of clinics you attended and payments you made is kept, without your name, so that the club's records stay accurate. We will also retain and use personal information as necessary to comply with legal obligations, resolve disputes, and enforce our agreements.
 We transfer personal information about you if FXE Tennis or its assets are acquired by or merged with another company.
 We use your personal information to provide and improve the Services. By using the Services, you agree to the collection and use of information in accordance with this Privacy Policy. FXE Tennis is committed to safeguarding the privacy of our users. We do not sell your personal information. This Privacy Policy outlines how we collect, use, and protect the information you provide to us.
+Went through
 What do the ratings mean?
 What happened? Anything odd?
 What is 105?

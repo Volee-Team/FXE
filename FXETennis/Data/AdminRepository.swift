@@ -115,6 +115,12 @@ struct RegistrationAdmin: Codable, Identifiable, Sendable {
     let noShow: Bool?
     let lateCancel: Bool?
     let courtesyUsed: Bool?
+    /// The note left with a late cancel, the player's own or Tara's.
+    let cancelNote: String?
+    /// The latest non-refund charge on this row (pending, processing,
+    /// succeeded, failed), or nil when it was never charged.
+    let chargeStatus: String?
+    let hasCard: Bool?
 
     enum CodingKeys: String, CodingKey {
         case id, status, paid
@@ -126,6 +132,16 @@ struct RegistrationAdmin: Codable, Identifiable, Sendable {
         case noShow = "no_show"
         case lateCancel = "late_cancel"
         case courtesyUsed = "courtesy_used"
+        case cancelNote = "cancel_note"
+        case chargeStatus = "charge_status"
+        case hasCard = "has_card"
+    }
+
+    /// A charge that is pending, processing or went through. The server's rule
+    /// also frees a fee refunded in full (20260927100001); a row like that
+    /// just keeps its controls hidden here, and the server stays the judge.
+    var hasLiveCharge: Bool {
+        ["pending", "processing", "succeeded"].contains(chargeStatus ?? "")
     }
 }
 
@@ -151,6 +167,20 @@ struct RosterEntry: Identifiable, Sendable {
         parts.append(p.isMember ? "Member" : "Non-member")
         if let n = p.levelNote, !n.isEmpty { parts.append(n) }
         return parts.joined(separator: " · ")
+    }
+
+    /// A late cancel on the Canceled list reads the way the web roster reads
+    /// it: "Late · Fee applies", or "Late · Courtesy" when the courtesy was
+    /// used (switched off since decision 0013). Nil for any other row.
+    var lateLabel: String? {
+        guard registration.status == .canceled, registration.lateCancel == true else { return nil }
+        return registration.courtesyUsed == true ? "Late · Courtesy" : "Late · Fee applies"
+    }
+
+    /// The note left with a late cancel, quoted, for the Canceled list.
+    var lateNote: String? {
+        guard lateLabel != nil, let n = registration.cancelNote?.trimmingCharacters(in: .whitespacesAndNewlines), !n.isEmpty else { return nil }
+        return "“\(n)”"
     }
 }
 
@@ -272,12 +302,76 @@ enum AdminRepository {
 
     /// Her one tap per clinic (decision 0012): pending ledger rows for
     /// everyone who owes, then stripe-charge turns them into Stripe calls.
-    /// Returns the RPC's counts (charged, already, no_card, not_owed).
-    static func chargeClinic(_ clinic: UUID) async throws -> [String: Int] {
+    ///
+    /// Returns what Stripe answered for THIS clinic's fees, not how many rows
+    /// were queued: the audit (2026-09-27) found "Charged 6" printed when all
+    /// six declined. stripe-charge answers `{ processed: { payment id: status } }`
+    /// for every pending row it took, from any clinic; the ledger names them.
+    static func chargeClinic(_ clinic: UUID) async throws -> ChargeOutcome {
         struct P: Encodable { let p_clinic: UUID }
         let counts: [String: Int] = try await supabase.rpc("admin_charge_clinic", params: P(p_clinic: clinic)).execute().value
-        _ = try await supabase.functions.invoke("stripe-charge")
-        return counts
+        let settled: StripeChargeAnswer = try await supabase.functions.invoke("stripe-charge", options: .init(method: .post))
+        let statuses = Dictionary((settled.processed ?? [:]).compactMap { key, value in
+            UUID(uuidString: key).map { ($0, value) }
+        }, uniquingKeysWith: { first, _ in first })
+        var fees: [ChargeOutcome.Fee] = []
+        if !statuses.isEmpty {
+            let rows: [LedgerOutcomeRow] = try await supabase
+                .from("payments_ledger")
+                .select("id,kind,clinic_id,first_name,last_name,failure_code")
+                .in("id", values: Array(statuses.keys))
+                .execute()
+                .value
+            fees = rows.filter { $0.clinicId == clinic && $0.kind != "refund" }.map {
+                ChargeOutcome.Fee(id: $0.id,
+                                  name: "\($0.firstName ?? "") \($0.lastName ?? "")".trimmingCharacters(in: .whitespaces),
+                                  reason: DeclineReason.label($0.failureCode))
+            }
+        }
+        return ChargeOutcome.tally(statuses: statuses, fees: fees,
+                                   queued: counts["charged"] ?? 0,
+                                   already: counts["already"] ?? 0,
+                                   noCard: counts["no_card"] ?? 0)
+    }
+
+    /// Tara records a late cancellation for someone who told her (a text an
+    /// hour before). You're In! to Canceled, late, with an optional note; the
+    /// server refuses before the cutoff, once charged, or on a canceled clinic
+    /// (20260927100002). Tells nobody.
+    static func markLateCancel(registration: UUID, note: String?) async throws {
+        struct P: Encodable {
+            let p_registration: UUID
+            let p_note: String?
+            enum CodingKeys: String, CodingKey { case p_registration, p_note }
+            // An explicit null, never an omitted key: PostgREST picks the
+            // function by argument names (see AssignCourtParams above).
+            func encode(to encoder: Encoder) throws {
+                var c = encoder.container(keyedBy: CodingKeys.self)
+                try c.encode(p_registration, forKey: .p_registration)
+                if let n = p_note { try c.encode(n, forKey: .p_note) } else { try c.encodeNil(forKey: .p_note) }
+            }
+        }
+        let trimmed = note?.trimmingCharacters(in: .whitespacesAndNewlines)
+        _ = try await supabase
+            .rpc("admin_mark_late_cancel", params: P(p_registration: registration, p_note: (trimmed?.isEmpty ?? true) ? nil : trimmed))
+            .execute()
+    }
+
+    /// Whether charging exists yet (app_settings.payments_enabled).
+    static func paymentsEnabled() async throws -> Bool {
+        let value: Bool = try await supabase.rpc("payments_enabled").execute().value
+        return value
+    }
+
+    /// Per clinic that ended (or took a fee): charged, declined, not charged
+    /// yet, and how many of those have a card (20260927100003).
+    static func moneyClinics() async throws -> [MoneyClinic] {
+        try await supabase.rpc("admin_money_clinics").execute().value
+    }
+
+    /// Cards whose charge failed and has not gone through since.
+    static func moneyDeclined() async throws -> [MoneyDecline] {
+        try await supabase.rpc("admin_money_declined").execute().value
     }
 
     /// Whether the Zelle/Venmo path exists (app_settings.zelle_allowed).
@@ -447,17 +541,6 @@ extension AdminRepository {
             .execute()
             .value
     }
-
-    /// Mark one notice read. Column-scoped grant: read_at is the only field a
-    /// recipient may touch (20260901000001).
-    static func markRead(notice: UUID) async throws {
-        struct U: Encodable { let read_at: Date }
-        _ = try await supabase
-            .from("notifications")
-            .update(U(read_at: Date()), returning: .minimal)  // see NotificationRepository
-            .eq("id", value: notice)
-            .execute()
-    }
 }
 
 /// A row from `search_players`. Flatter than `PlayerProfile`: the RPC returns a
@@ -492,4 +575,116 @@ struct PlayerSearchResult: Codable, Identifiable, Sendable {
     }
 
     var displayName: String { "\(firstName) \(lastName)" }
+}
+
+// MARK: - Money (20260927100003)
+
+/// stripe-charge's answer: Stripe's status for every pending row it took.
+struct StripeChargeAnswer: Decodable, Sendable {
+    let processed: [String: String]?
+}
+
+/// The ledger's name for a payment stripe-charge just processed.
+struct LedgerOutcomeRow: Decodable, Sendable {
+    let id: UUID
+    let kind: String
+    let clinicId: UUID?
+    let firstName: String?
+    let lastName: String?
+    let failureCode: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, kind
+        case clinicId = "clinic_id"
+        case firstName = "first_name"
+        case lastName = "last_name"
+        case failureCode = "failure_code"
+    }
+}
+
+/// One clinic's money, from admin_money_clinics. Admin only.
+struct MoneyClinic: Decodable, Identifiable, Sendable {
+    let clinicId: UUID
+    let clinicName: String
+    let startsAt: Date
+    let canceled: Bool
+    let chargedCents: Int
+    let declinedCount: Int
+    let notChargedCount: Int
+    let notChargedCents: Int
+    /// Not charged yet AND the player has a card: what one more Charge clinic
+    /// would charge. Action Needed shows a clinic only while this is above 0.
+    let chargeableCount: Int
+
+    var id: UUID { clinicId }
+
+    enum CodingKeys: String, CodingKey {
+        case canceled
+        case clinicId = "clinic_id"
+        case clinicName = "clinic_name"
+        case startsAt = "starts_at"
+        case chargedCents = "charged_cents"
+        case declinedCount = "declined_count"
+        case notChargedCount = "not_charged_count"
+        case notChargedCents = "not_charged_cents"
+        case chargeableCount = "chargeable_count"
+    }
+}
+
+/// A card whose charge failed and has not gone through since
+/// (admin_money_declined). The name is the account holder's, the cardholder.
+struct MoneyDecline: Decodable, Identifiable, Sendable {
+    let registrationId: UUID
+    let clinicId: UUID
+    let clinicName: String
+    let clinicStartsAt: Date
+    let firstName: String?
+    let lastName: String?
+    let amountCents: Int?
+    let failureCode: String?
+    /// The account has since been deleted (20260927300001): nobody can fix
+    /// that card, so Action Needed leaves the row out; the web Money tab keeps it.
+    let accountDeleted: Bool?
+
+    var id: UUID { registrationId }
+    var displayName: String {
+        let n = "\(firstName ?? "") \(lastName ?? "")".trimmingCharacters(in: .whitespaces)
+        return n.isEmpty ? "Unknown player" : n
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case registrationId = "registration_id"
+        case clinicId = "clinic_id"
+        case clinicName = "clinic_name"
+        case clinicStartsAt = "clinic_starts_at"
+        case firstName = "first_name"
+        case lastName = "last_name"
+        case amountCents = "amount_cents"
+        case failureCode = "failure_code"
+        case accountDeleted = "account_deleted"
+    }
+}
+
+/// Stripe's decline codes in words, the same words as the web admin's DECLINE
+/// map (Tara, 2026-09-26: "reason codes ... (i.e. NSF, Card Expired, Etc)").
+/// A code not listed shows as itself; no code shows nothing.
+enum DeclineReason {
+    static let labels: [String: String] = [
+        "insufficient_funds": "Insufficient funds (NSF)",
+        "expired_card": "Card expired",
+        "card_declined": "Card declined",
+        "generic_decline": "Card declined",
+        "do_not_honor": "Card declined by bank",
+        "incorrect_cvc": "Wrong security code",
+        "incorrect_number": "Wrong card number",
+        "lost_card": "Card reported lost",
+        "stolen_card": "Card reported stolen",
+        "authentication_required": "Needs the cardholder to approve",
+        "processing_error": "Processing error, try again",
+    ]
+
+    static func label(_ code: String?) -> String? {
+        guard let code, !code.isEmpty else { return nil }
+        return labels[code] ?? code
+    }
 }

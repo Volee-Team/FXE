@@ -8,12 +8,12 @@ where things stand. Updated 2026-09-27; launch target 2026-10-16.
 ## Where things stand, 2026-09-27
 
 - **On testers' phones:** TestFlight build 2, from John's account (decision
-  0014). **Ready on `main`:** build 3, verified by a Release build on
-  2026-09-27; John uploads it (checklist C8).
-- **Hosted:** 37 of 37 migrations paired (`supabase migration list --linked`,
+  0014). **Next:** build 4 (the MVP audit's fixes), once the `mvp-fixes` PR
+  merges; John uploads it (checklist C8).
+- **Hosted:** 45 of 45 migrations paired (`supabase migration list --linked`,
   2026-09-27); every edge function deployed; Stripe's sandbox keys and
   webhook secret in place (checklist A1); **payments switched off** until
-  Alex says go (A9); a signed-out caller reaches nothing (63 targets closed, with the web admin's functions answering the browser's preflight).
+  Alex says go (A9); a signed-out caller reaches nothing (122 targets closed, with the web admin's functions answering the browser's preflight).
 - **Admin site:** https://fxe-tennis-admin.vercel.app, verified byte for byte
   against `main` on 2026-09-27; the privacy draft is kept off it until
   approved.
@@ -44,13 +44,16 @@ notes, the Stripe link).
 - **Card payments:** built and deployed; the switch is off (A9), and the real
   card sheet has only ever run against Stripe's mock, never Stripe itself (A2).
 - **Push on the lock screen:** built and deployed; waits on Apple's key (C3).
-  Notifications show inside the app meanwhile.
+  Notifications show inside the app meanwhile. The app's receiving end is in
+  the build since 2026-09-27: a banner while it is open, a tap opens the
+  clinic (an invitation lands on Accept and Decline), and the icon's number
+  is the bell's.
 
 Missing on the phone by design: creating or editing a clinic (web only),
 News (deferred, decision 0006).
 
-Testing today: 16 Playwright tests, 13 XCUITests (5 on Tara's side), 33 unit
-tests, 28 SQL probes, a 34-check Stripe pipeline and a 48-check push pipeline
+Testing today: 27 Playwright tests, 13 XCUITests (5 on Tara's side), 120 unit
+tests, 32 SQL probes, a 73-check Stripe pipeline and a 48-check push pipeline
 against mocks in CI.
 
 **Answered already, do not re-ask.** Six of the eight closed on 2026-08-27; see
