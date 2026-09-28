@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FXE Tennis</title>
+<!--
+  The one link the QR code points at: https://fxe-tennis-admin.vercel.app/app
+  (question 75, decision 0024). It forwards to wherever the app installs from,
+  so the code Tara prints and emails never has to change: TestFlight's public
+  link first, the App Store’s later. Change INSTALL_URL in app/target.js and deploy
+  (scripts/deploy-web.sh); nothing else.
+  Until it is set the page shows the mark and "Not available yet.", which is
+  what someone who scans early should see.
+-->
+<link rel="stylesheet" href="../tokens.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap">
+<style>
+  html, body { height: 100%; }
+  body { margin: 0; background: var(--fxe-navy); color: var(--fxe-text-on-navy);
+         font-family: var(--fxe-font-body); display: grid; place-items: center; text-align: center;
+         padding: 16px; box-sizing: border-box; }
+  main { display: grid; gap: 14px; justify-items: center; }
+  img { width: 120px; height: auto; }
+  h1 { font-family: var(--fxe-font-display); font-weight: 700; font-size: 2rem; margin: 0; letter-spacing: .02em; }
+  p { margin: 0; color: var(--fxe-text-on-navy-muted); font-size: 1rem; }
+  a.go { display: inline-block; margin-top: 6px; padding: 14px 28px; border-radius: 28px;
+         background: var(--fxe-surface-raised); color: var(--fxe-navy); font-weight: 600; text-decoration: none; }
+  a.go:focus-visible { outline: 3px solid var(--fxe-court); outline-offset: 3px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <img src="../gator.png" alt="">
+  <h1>FXE Tennis</h1>
+  <p id="soon">Not available yet.</p>
+  <a class="go" id="go" href="#" hidden>Get the app</a>
+</main>
+<script type="module">
+  // The destination lives in target.js, one line, so it can change without
+  // touching this page, and so the browser test can prove the forwarding
+  // works before the real link exists (web/tests/pages.spec.mjs).
+  import { INSTALL_URL } from "./target.js";
+  if (INSTALL_URL) {
+    document.getElementById("soon").hidden = true;
+    const go = document.getElementById("go");
+    go.href = INSTALL_URL;
+    go.hidden = false;
+    location.replace(INSTALL_URL);
+  }
+</script>
+</body>
+</html>

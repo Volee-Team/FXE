@@ -526,7 +526,10 @@ on the cancellation rule is open except her policy block's wording (Q56).
 ## 8. The web admin
 
 `web/` is static files and no build step: `index.html`, `reset.html`,
-`review.html`, `config.js` (which picks local vs hosted by hostname), `tokens.css`,
+`review.html`, `privacy.html`, the member QR code's pages (`web/app/index.html`,
+the one link the code says, forwarding to the install link in `web/app/target.js`;
+`web/qr.html`, Tara's printable card; `web/app-qr.svg` and `web/app-qr.png`, drawn and
+decode-checked by `scripts/make-qr.swift`; `web/gator.png`, the mark), `config.js` (which picks local vs hosted by hostname), `tokens.css`,
 two small modules the admin page imports (`week.js`: the service week and which
 clinics This week lists; `read.js`: reads that page past PostgREST's 1000-row
 cap), and `vendor/supabase-js.js`, plus the Playwright tooling (`package.json`,
@@ -662,7 +665,7 @@ local stack and are order-dependent on a fresh seed. **They do not run in
 CI**: the macOS runner has no Docker for the stack; a `fxe-ci` Supabase
 project is the ask (`docs/launch-checklist.md` §F).
 
-**Web admin**: 30 Playwright tests (`web/tests/*.spec.mjs`) walk Tara's
+**Web admin**: 33 Playwright tests (`web/tests/*.spec.mjs`) walk Tara's
 side against a fresh seed: sign-in and the non-admin door, prices, walk-up,
 courts, unpaid reminder, a note round-trip, cancel clinic, template archive
 and restore, Money counts, the card-payments ledger, payments off, the

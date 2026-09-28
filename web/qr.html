@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FXE Tennis QR code</title>
+<!--
+  Tara's QR code (question 75, decision 0024): "Def want a QR code and I will
+  be emailing membership about the app". The code points at /app, the one link
+  we control, which forwards to wherever the app installs from; so this card
+  can be printed today and never reprinted. The image is made by
+  scripts/make-qr.swift, which decodes what it drew before writing it.
+  The card has no sentence on it on purpose: the words around it (her email,
+  the party) are hers.
+-->
+<link rel="stylesheet" href="tokens.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Playfair+Display:wght@700&display=swap">
+<style>
+  body { margin: 0; background: var(--fxe-surface); color: var(--fxe-text-primary); font-family: var(--fxe-font-body);
+         padding: 24px 16px; box-sizing: border-box; }
+  .card { max-width: 360px; margin: 0 auto; background: var(--fxe-surface-raised); border-radius: 28px;
+          border: 1px solid var(--fxe-hairline); padding: 28px 24px; display: grid; justify-items: center; gap: 12px; text-align: center; }
+  .card img.mark { width: 88px; height: auto; }
+  .card h1 { font-family: var(--fxe-font-display); font-weight: 700; font-size: 1.75rem; margin: 0; color: var(--fxe-navy); }
+  .card img.qr { width: 100%; max-width: 280px; height: auto; image-rendering: pixelated; }
+  .card .url { font-size: .875rem; color: var(--fxe-text-secondary); }
+  .actions { max-width: 360px; margin: 16px auto 0; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .actions a, .actions button { font: 600 .9375rem var(--fxe-font-body); padding: 12px 20px; border-radius: 28px; cursor: pointer;
+          text-decoration: none; border: 1.5px solid var(--fxe-navy); }
+  .actions button { background: var(--fxe-navy); color: var(--fxe-text-on-navy); }
+  .actions a { background: var(--fxe-surface-raised); color: var(--fxe-navy); }
+  .actions a:focus-visible, .actions button:focus-visible { outline: 3px solid var(--fxe-court); outline-offset: 3px; }
+  @media print {
+    body { background: #fff; padding: 0; }
+    .actions { display: none; }
+    .card { border: 1px solid #ccc; }
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <img class="mark" src="gator.png" alt="">
+    <h1>FXE Tennis</h1>
+    <img class="qr" src="app-qr.svg" alt="QR code for fxe-tennis-admin.vercel.app/app">
+    <div class="url">fxe-tennis-admin.vercel.app/app</div>
+  </div>
+  <div class="actions">
+    <button type="button" id="print">Print</button>
+    <a href="app-qr.png" download="FXE-Tennis-QR.png">Download for email</a>
+  </div>
+  <script>document.getElementById("print").addEventListener("click", () => window.print());</script>
+</body>
+</html>

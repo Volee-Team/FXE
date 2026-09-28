@@ -57,16 +57,19 @@ Did not go through
 Disclosure of your information
 Done
 Download CSV
+Download for email
 Draft
 Edit details
 FROM TARA
 FXE Tennis
+FXE Tennis QR code
 FXE Tennis does not share your personal information with third parties for marketing or promotional purposes. Your personal information is kept confidential and is not disclosed to outside organizations, except to the service providers that operate the Services on our behalf and as described here:
 FXE Tennis · Admin
 FXE Tennis · Privacy Policy
 FXE Tennis · Reset password
 FXE Tennis, LLC
 FXE Tennis, Tara's Review
+FXE-Tennis-QR.png
 Fees at clinic prices
 First time? Create your account
 For someone who called or grabbed you at the club. They go straight to You&rsquo;re In!
@@ -128,6 +131,7 @@ Nobody by that name yet. They may need to sign up in the app first.
 Non-members attended
 Non-members, 60 min
 Non-members, 90 min
+Not available yet.
 Not charged yet
 Not late yet.
 Not now
@@ -152,6 +156,8 @@ Private note
 Profile
 Put in clinic
 Put them in
+QR code for fxe-tennis-admin.vercel.app/app
+QR code for the app
 Rating
 Rating Guide
 Rating \(bucket.label)

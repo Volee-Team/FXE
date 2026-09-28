@@ -35,6 +35,19 @@ plus every "New since" block.
 
 ---
 
+## The QR code and its link (2026-09-28) — awaiting Alex
+
+Question 75 (decision 0024). The printed card carries no sentence on purpose:
+her email and the party supply the words.
+
+| ✓ | String | Where | Why |
+|---|--------|-------|-----|
+| ☐ | Not available yet. | `/app`, the page the QR code opens, until the install link exists | Plain state; what someone who scans early sees |
+| ☐ | Get the app | `/app`, a fallback button once the link is set (the page forwards on its own) | Two words |
+| ☐ | QR code for the app | Tara's Players tab, a link to the printable card | Says what it opens |
+| ☐ | Print / Download for email | The card's two buttons, for Tara | Says what each does |
+| — | FXE Tennis QR code / QR code for fxe-tennis-admin.vercel.app/app / FXE-Tennis-QR.png | The card's page title, the image's spoken description, the downloaded file's name | Labels, not copy |
+
 ## Tara's round four, applied (2026-09-28) — hers, nothing to tick
 
 Decision 0024. Every line below is Tara's own answer; listed so the diff has

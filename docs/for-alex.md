@@ -312,6 +312,18 @@ a readable clock on the navy screens, Return moving through the sign-in form,
 and on Tara's side a Payouts card and chargeback alerts on the laptop's Money
 tab. Payments stay off until you say go (checklist A9).
 
+## 4b. The QR code's link (checklist I6), one message
+
+The QR code Tara prints and emails points at
+https://fxe-tennis-admin.vercel.app/app, which shows "Not available yet." until
+it knows where the app installs from. When the external TestFlight beta is
+approved, App Store Connect → the app → TestFlight → the external group →
+**Public Link** → copy it (it looks like `https://testflight.apple.com/join/…`)
+and send it to the model. It sets one line (`web/app/target.js`) and deploys;
+the printed code never changes, even when the App Store link replaces it later.
+Tara's card: web admin → Players → **QR code for the app** → Print, or
+Download for email.
+
 ## 5. Tara's review page, round four (checklist G2), about 5 minutes
 
 **Do not send the round-three link.** Tara answered round two on 2026-09-22

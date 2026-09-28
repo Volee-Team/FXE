@@ -121,7 +121,7 @@ observer.
 | SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 866 checks, 35 probes, plus six race probes | none known |
 | Stripe pipeline against stripe-mock | every PR | 94 checks | real Stripe behaviour waits on A2 |
 | Push pipeline against a mock APNs | every PR | 57 checks | real APNs waits on C3 |
-| Web admin browser tests (Playwright, real sign-in) | every PR | 30 | a cold-start flake after a local reset (backlog) |
+| Web admin browser tests (Playwright, real sign-in) | every PR | 33 | a cold-start flake after a local reset (backlog) |
 | Swift unit tests (pure logic) | every PR | 183 | fine |
 | Hosted signed-out smoke (`scripts/hosted-smoke.sh`) | every PR, read-only against production | 126 targets, including a browser preflight to each function the web admin calls | only the signed-out side |
 | XCUITests, player and admin flows, and Apple's accessibility audit | **local only** (section F) | 18 | run on a laptop before every TestFlight build |
@@ -188,6 +188,7 @@ each checked by an independent reviewer or the sql-auditor, then merged on
 | I3 | Text anyone can read: Larger Text followed live, Apple's accessibility audit as a UI test on every main screen, the clock readable on navy, Return through the forms, page titles in the guide's serif, outlined tab icons (decision 0023) | [me] | **OPEN**: in build 5 |
 | I4 | Payouts and chargebacks on the Money tab (H7, decision 0021); the Action Needed crash on the first declined card fixed | [me] | **OPEN**: done with H7 |
 | I5 | Tara's questions from this round: 79 narrowed, 88 to 90 new | [Tara] | **OPEN**: on the next review page |
+| I6 | The QR code for members (question 75): it points at `/app` on the admin site, which forwards to the install link, so the printed card never changes; Tara's printable card under Players → QR code for the app | [me]/[Alex] | **OPEN**: built 2026-09-28 (two decoders read the code back; a browser test proves the forward); live once the TestFlight public link exists: Alex sends it, the model sets `web/app/target.js` and deploys (`docs/for-alex.md` §4b) |
 
 ## F. The CI Supabase project (Alex asked 2026-09-12; corrected 2026-09-13; decided 2026-09-18)
 

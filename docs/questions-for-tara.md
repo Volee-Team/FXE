@@ -451,6 +451,9 @@ new and changed words and these questions, nothing else.
 **94. When you take an invitation back, the player now gets your words ("…so we’ve released your spot… We’ll catch you at the next clinic!"). Today they also go back into the Player Pool for that clinic. Should they come off the clinic altogether instead?**
 *Default: back into the Player Pool, as Cancel Invite has always done, until you say. Status: open, asked 2026-09-28.*
 
+**95. Every player signs your waiver in the app before they can sign up. A guest a member brings, who never installs the app, never signs it. Should the member sign for their guest, should the guest sign a paper waiver at the club, or can a guest not play until they have signed?**
+*Default: the guest feature is not built until you answer (`docs/guests.md`). Status: open, asked 2026-09-28.*
+
 ### How 52 to 57 are being sent
 
 Round two of the review page (2026-09-21, later): the Words tab now shows her
