@@ -70,8 +70,21 @@ async function handle(req: Request): Promise<Response> {
     .from("notifications").select("id", { count: "exact", head: true })
     .eq("account_id", row.account_id).is("read_at", null);
 
+  const aps: Record<string, unknown> = { alert: { body: row.body }, sound: "default", badge: unread ?? 0 };
+  // An invitation carries the INVITATION category: the id the app is to
+  // register its Accept and Decline actions under (finding (l) in
+  // docs/notifications.md: her #2 says "Tap below", which promises buttons).
+  // iOS shows a category no app has registered as a plain alert, so the
+  // server half is safe to ship before the app half.
+  if (row.type === "invitation_received") aps.category = "INVITATION";
+  // One lock-screen group per clinic: every row about the same clinic shares
+  // its id as thread-id. The recipient already knows the clinic (it is the
+  // one the row is about), so the id discloses nothing new.
+  const thread = await clinicOf(row.entity_type, row.entity_id);
+  if (thread) aps["thread-id"] = thread;
+
   const payload = JSON.stringify({
-    aps: { alert: { body: row.body }, sound: "default", badge: unread ?? 0 },
+    aps,
     notification_id: row.id,
     type: row.type,
     entity_type: row.entity_type,
@@ -100,6 +113,22 @@ async function handle(req: Request): Promise<Response> {
 
 async function record(id: string, patch: Record<string, unknown>) {
   await admin.from("notifications").update(patch).eq("id", id);
+}
+
+// The clinic a row is about, for thread-id: a 'clinic' row names it; a
+// 'registration' row is resolved to its clinic_id with the service role.
+// Anything else, or a lookup that fails, is no thread: grouping is a nicety
+// and must never cost the push itself.
+async function clinicOf(entityType: string | null, entityId: string | null): Promise<string | null> {
+  if (!entityId || !UUID.test(entityId)) return null;
+  if (entityType === "clinic") return entityId;
+  if (entityType !== "registration") return null;
+  try {
+    const { data } = await admin.from("registrations").select("clinic_id").eq("id", entityId).maybeSingle();
+    return typeof data?.clinic_id === "string" ? data.clinic_id : null;
+  } catch {
+    return null;
+  }
 }
 
 // Length leaks, content does not: the loop always walks the longer string.

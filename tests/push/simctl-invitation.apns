@@ -3,7 +3,9 @@
   "aps": {
     "alert": { "body": "A spot opened in Evening Coed. Accept or decline." },
     "sound": "default",
-    "badge": 2
+    "badge": 2,
+    "category": "INVITATION",
+    "thread-id": "d0000000-0000-0000-0000-000000000005"
   },
   "notification_id": "f0000000-0000-0000-0000-000000000001",
   "type": "invitation_received",

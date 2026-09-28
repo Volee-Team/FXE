@@ -32,6 +32,7 @@ FN_FROM_DB=${FXE_FN_FROM_DB:-http://supabase_kong_FXE-Tennis:8000/functions/v1/p
 ANON=$(supabase status -o env 2>/dev/null | grep '^ANON_KEY' | cut -d= -f2 | tr -d '"')
 SECRET=$(grep '^PUSH_WEBHOOK_SECRET=' "$ENVFILE" 2>/dev/null | cut -d= -f2)
 
+MARIA=22222222-2222-2222-2222-222222222222
 ROB=44444444-4444-4444-4444-444444444444
 KEN=33333333-3333-3333-3333-333333333333
 DANA=66666666-6666-6666-6666-666666666666
@@ -60,7 +61,7 @@ newrow() { # account body [read]
   sql "insert into public.notifications (account_id, type, entity_type, body, read_at)
        values ('$1', 'push_test', 'clinic', \$b\$$2\$b\$, ${3:-null}) returning id" | head -1; }
 cleanup() {
-  sql "delete from public.notifications where type = 'push_test';
+  sql "delete from public.notifications where type = 'push_test' or body like 'push probe %';
        delete from public.devices where apns_token like 'good-%' or apns_token like 'gone-%' or apns_token like 'bad-%';
        delete from vault.secrets where name in ('push_function_url', 'push_webhook_secret');" >/dev/null
 }
@@ -120,6 +121,8 @@ check "alert body is the row body, verbatim" "$BODY" "$(mocklast "['body']['aps'
 check "badge is the unread count (2)" "2" "$(mocklast "['body']['aps']['badge']")"
 check "sound default" "default" "$(mocklast "['body']['aps']['sound']")"
 check "payload carries notification_id, type, entity_type" "$N push_test clinic" "$(mocklast "['body']['notification_id']") $(mocklast "['body']['type']") $(mocklast "['body']['entity_type']")"
+check "no category on a row that is not an invitation" "None" "$(mocklast "['body']['aps'].get('category')")"
+check "no thread-id on a row that names no clinic" "None" "$(mocklast "['body']['aps'].get('thread-id')")"
 KEN_ROW=$N
 
 # ---- (e) A token Apple says is gone is pruned; its sibling still delivers
@@ -146,6 +149,28 @@ M2=$(mockcount)
 out=$(push "$SECRET" "$KEN_ROW")
 check "second call for a delivered row -> skipped" "already_delivered" "$(echo "${out#* }" | field "['skipped']")"
 check "mock saw no new request" "$M2" "$(mockcount)"
+
+# ---- (g2) An invitation carries the INVITATION category, the id the app is
+# to register its Accept and Decline actions under, and every row about a
+# clinic carries that clinic's id as thread-id so iOS groups them. The
+# expected clinic is read from the registration here, not taken from the
+# function. Rows are marked 'push probe' for the cleanup.
+sql "insert into public.devices (account_id, apns_token) values ('$MARIA', 'good-maria-1')" >/dev/null
+INV_REG=e0000000-0000-0000-0000-000000000001
+INV_CLINIC=$(sql "select clinic_id from public.registrations where id = '$INV_REG'")
+check "seed invitation registration has a clinic" "yes" "$([ -n "$INV_CLINIC" ] && echo yes)"
+N=$(sql "insert into public.notifications (account_id, type, entity_type, entity_id, body)
+         values ('$MARIA', 'invitation_received', 'registration', '$INV_REG', 'push probe k') returning id" | head -1)
+out=$(push "$SECRET" "$N")
+check "invitation -> sent 1" "1" "$(echo "${out#* }" | field "['sent']")"
+check "invitation carries category INVITATION" "INVITATION" "$(mocklast "['body']['aps'].get('category')")"
+check "a registration row's thread-id is its clinic" "$INV_CLINIC" "$(mocklast "['body']['aps'].get('thread-id')")"
+N=$(sql "insert into public.notifications (account_id, type, entity_type, entity_id, body)
+         values ('$MARIA', 'clinic_message', 'clinic', '$INV_CLINIC', 'push probe l') returning id" | head -1)
+out=$(push "$SECRET" "$N")
+check "clinic row -> sent 1" "1" "$(echo "${out#* }" | field "['sent']")"
+check "a clinic row's thread-id is the clinic" "$INV_CLINIC" "$(mocklast "['body']['aps'].get('thread-id')")"
+check "only an invitation carries a category" "None" "$(mocklast "['body']['aps'].get('category')")"
 
 # ---- (h) A player cannot read the audit columns through PostgREST
 MARIA_JWT=$(curl -s "$API/auth/v1/token?grant_type=password" -H "apikey: $ANON" -H "Content-Type: application/json" \
@@ -181,7 +206,7 @@ check "trigger -> pg_net -> push delivered the row" "t" "$(sql "select delivered
 check "mock saw the trigger's request" "$((M3 + 1)) $N" "$(mockcount) $(mocklast "['headers']['apns-collapse-id']")"
 
 cleanup
-check "fixtures removed" "0 0 0" "$(sql "select (select count(*) from public.notifications where type='push_test')||' '||(select count(*) from public.devices where apns_token ~ '^(good|gone|bad)-')||' '||(select count(*) from vault.secrets where name like 'push_%')")"
+check "fixtures removed" "0 0 0" "$(sql "select (select count(*) from public.notifications where type='push_test' or body like 'push probe %')||' '||(select count(*) from public.devices where apns_token ~ '^(good|gone|bad)-')||' '||(select count(*) from vault.secrets where name like 'push_%')")"
 
 echo ""
 if [ $FAILED -eq 0 ]; then echo "PASS: Push pipeline"; else echo "FAIL: Push pipeline"; exit 1; fi
