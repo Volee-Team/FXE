@@ -32,7 +32,7 @@ struct LoadFailedView: View {
                 ScrollView {
                     VStack(spacing: Brand.Spacing.lg) {
                         Text(session.loadFailureLine ?? "Something went wrong. Please try again.")
-                            .font(Brand.Typography.body)
+                            .brandFont(.body)
                             .foregroundStyle(Brand.textPrimary)
                             .multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
@@ -47,7 +47,7 @@ struct LoadFailedView: View {
                         } label: {
                             Group {
                                 if retrying { ProgressView().tint(Brand.textOnNavy) }
-                                else { Text("Try again").font(Brand.Typography.button) }
+                                else { Text("Try again").brandFont(.button) }
                             }
                             .frame(maxWidth: .infinity)
                             .frame(minHeight: Brand.Layout.comfortableTapTarget)

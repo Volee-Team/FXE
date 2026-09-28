@@ -36,7 +36,7 @@ struct MyClinicsView: View {
                 // Nothing loaded. "You're not registered" would be a claim
                 // about her spots the app cannot make (MVP audit item 9).
                 Text(loadError)
-                    .font(Brand.Typography.body)
+                    .brandFont(.body)
                     .foregroundStyle(Brand.Status.canceled.ink)
                     .multilineTextAlignment(.center)
                     .padding(Brand.Spacing.pageMargin)
@@ -46,8 +46,9 @@ struct MyClinicsView: View {
                     Image(systemName: "figure.tennis")
                         .font(.system(size: 40))
                         .foregroundStyle(Brand.disabled)
+                        .accessibilityHidden(true)
                     Text("You're not registered for any clinics this week")
-                        .font(Brand.Typography.body)
+                        .brandFont(.body)
                         .foregroundStyle(Brand.textSecondary)
                         .multilineTextAlignment(.center)
                     NavigationLink { ClinicsView() } label: {
@@ -57,18 +58,19 @@ struct MyClinicsView: View {
                     .padding(.top, Brand.Spacing.sm)
                 }
                 .padding(Brand.Spacing.pageMargin)
+                .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("myClinics.empty")
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: Brand.Spacing.md) {
                         if mine.isEmpty {
                             Text("You're not registered for any clinics this week")
-                                .font(Brand.Typography.body)
+                                .brandFont(.body)
                                 .foregroundStyle(Brand.textSecondary)
                         }
                         ForEach(weeks, id: \.start) { week in
                             Text(ServiceWeek.label(forWeekStarting: week.start).uppercased())
-                                .font(Brand.Typography.chip)
+                                .brandFont(.chip)
                                 .foregroundStyle(Brand.textSecondary)
                                 .padding(.top, week.start == weeks.first?.start ? 0 : Brand.Spacing.sm)
                                 .accessibilityAddTraits(.isHeader)
@@ -112,7 +114,7 @@ extension MyClinicsView {
     private var pastSection: some View {
         VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
             Text("PAST")
-                .font(Brand.Typography.chip)
+                .brandFont(.chip)
                 .foregroundStyle(Brand.textSecondary)
                 .padding(.top, Brand.Spacing.sm)
                 .accessibilityAddTraits(.isHeader)
@@ -146,17 +148,17 @@ extension MyClinicsView {
     private func pastDetails(_ row: PastClinic) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(row.name)
-                .font(Brand.Typography.bodyEmphasis)
+                .brandFont(.bodyEmphasis)
                 .foregroundStyle(Brand.textPrimary)
             Text(row.startsAt.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
-                .font(Brand.Typography.caption)
+                .brandFont(.caption)
                 .foregroundStyle(Brand.textSecondary)
         }
     }
 
     private func pastOutcomeText(_ row: PastClinic) -> some View {
         Text(pastOutcome(row))
-            .font(Brand.Typography.chip)
+            .brandFont(.chip)
             .foregroundStyle(pastOutcomeColor(row))
     }
 

@@ -55,8 +55,13 @@ struct Wordmark: View {
                 .tracking(compact ? 2.5 : 6)
         }
         .foregroundStyle(Brand.textOnNavy)
-        .accessibilityElement(children: .combine)
+        // One element read as the logo it is. `.combine` still let the audit
+        // reach "TENNIS" as text and report that it does not grow with
+        // Larger Text, which is on purpose for a logo (2026-09-28).
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel("FXE Tennis")
+        .accessibilityAddTraits(.isImage)
+        .accessibilityIdentifier("brand.wordmark")
     }
 }
 
@@ -84,7 +89,7 @@ struct NavRowLabel: View {
             }
             .frame(width: 28, height: 28)
             Text(title)
-                .font(Brand.Typography.navRowLabel)
+                .brandFont(.navRowLabel)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: Brand.Spacing.xs)
@@ -97,5 +102,21 @@ struct NavRowLabel: View {
         .frame(minHeight: 56)
         .background(navy ? Brand.navy : Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.lg))
         .overlay(RoundedRectangle(cornerRadius: Brand.Radius.lg).stroke(navy ? Color.clear : Brand.hairline))
+    }
+}
+
+extension View {
+    /// White status bar text over a navy top (sign-in, launch, the load
+    /// failure screen). SwiftUI sets the status bar only through a navigation
+    /// bar's colour scheme, so the screen sits in a NavigationStack whose bar
+    /// stays hidden. Home is already in one and sets the scheme itself. This
+    /// works only because light mode is locked in Info.plist, not by
+    /// `.preferredColorScheme(.light)`, which pinned the clock dark.
+    func lightStatusBar() -> some View {
+        NavigationStack {
+            self
+                .toolbar(.hidden, for: .navigationBar)
+                .toolbarColorScheme(.dark, for: .navigationBar)
+        }
     }
 }

@@ -23,7 +23,9 @@ struct EditProfileView: View {
     @State private var saving = false
     @State private var error: String?
     @State private var loaded = false
-    @FocusState private var typing: Bool
+    @FocusState private var typing: TypedField?
+    /// Return moves first name to last name to phone, as at sign-up.
+    private enum TypedField { case firstName, lastName, phone }
 
     private var canSave: Bool {
         !firstName.trimmingCharacters(in: .whitespaces).isEmpty
@@ -37,36 +39,39 @@ struct EditProfileView: View {
                 Brand.surfaceGradient.ignoresSafeArea()
                 ScrollView {
                     VStack(alignment: .leading, spacing: Brand.Spacing.lg) {
-                        field("First Name", text: $firstName, content: .givenName, id: "edit.firstName")
-                        field("Last Name", text: $lastName, content: .familyName, id: "edit.lastName")
-                        field("Phone", text: $phone, content: .telephoneNumber, keyboard: .phonePad, id: "edit.phone")
+                        field("First Name", text: $firstName, content: .givenName, id: "edit.firstName",
+                              name: .firstName, next: .lastName)
+                        field("Last Name", text: $lastName, content: .familyName, id: "edit.lastName",
+                              name: .lastName, next: .phone)
+                        field("Phone", text: $phone, content: .telephoneNumber, keyboard: .phonePad, id: "edit.phone",
+                              name: .phone, next: nil)
 
                         VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
                             Text("Note for Tara (optional)")
-                                .font(Brand.Typography.bodyEmphasis)
+                                .brandFont(.bodyEmphasis)
                                 .foregroundStyle(Brand.textPrimary)
                             TextField("Just coming back from a back injury - probably a low 3.5", text: $levelNote, axis: .vertical)
                                 .lineLimit(2...4)
                                 .textFieldStyle(.roundedBorder)
                                 .accessibilityIdentifier("edit.levelNote")
                             Text("Only Tara sees this.")
-                                .font(Brand.Typography.caption)
+                                .brandFont(.caption)
                                 .foregroundStyle(Brand.textSecondary)
                         }
 
                         VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
                             Text("Your tennis rating")
-                                .font(Brand.Typography.bodyEmphasis)
+                                .brandFont(.bodyEmphasis)
                                 .foregroundStyle(Brand.textPrimary)
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: Brand.Spacing.xs) {
                                     ForEach(NTRPRating.displayOrdered) { level in
                                         Button {
                                             rating = (rating == level) ? nil : level
-                                            typing = false
+                                            typing = nil
                                         } label: {
                                             Text(level.label)
-                                                .font(Brand.Typography.chip)
+                                                .brandFont(.chip)
                                                 .padding(.horizontal, Brand.Spacing.sm)
                                                 .frame(minHeight: Brand.Layout.minTapTarget)
                                                 .foregroundStyle(rating == level ? Brand.textOnNavy : Brand.textPrimary)
@@ -84,13 +89,13 @@ struct EditProfileView: View {
 
                         HStack {
                             Text(session.activePlayer?.isMember == true ? "FXE Member" : "Non-member")
-                                .font(Brand.Typography.body)
+                                .brandFont(.body)
                                 .foregroundStyle(Brand.textPrimary)
                             Spacer()
                             // Was "Set by Tara"; she wrote "I'm confused by this. Let's talk"
                             // (2026-09-22, decision 0016). Plainer default until they talk (question 70).
                             Text("Only Tara can change this.")
-                                .font(Brand.Typography.caption)
+                                .brandFont(.caption)
                                 .foregroundStyle(Brand.textSecondary)
                         }
                         .padding(Brand.Spacing.cardPadding)
@@ -99,7 +104,7 @@ struct EditProfileView: View {
 
                         if let error {
                             Text(error)
-                                .font(Brand.Typography.subheadline)
+                                .brandFont(.subheadline)
                                 .foregroundStyle(Brand.Status.canceled.ink)
                         }
                     }
@@ -133,14 +138,17 @@ struct EditProfileView: View {
     }
 
     private func field(_ label: String, text: Binding<String>, content: UITextContentType,
-                       keyboard: UIKeyboardType = .default, id: String) -> some View {
+                       keyboard: UIKeyboardType = .default, id: String,
+                       name: TypedField, next: TypedField?) -> some View {
         VStack(alignment: .leading, spacing: Brand.Spacing.xxs) {
             Text(label)
-                .font(Brand.Typography.subheadline)
+                .brandFont(.subheadline)
                 .foregroundStyle(Brand.textSecondary)
             TextField("", text: text)
-                .focused($typing)
-                .font(Brand.Typography.body)
+                .focused($typing, equals: name)
+                .submitLabel(next == nil ? .done : .next)
+                .onSubmit { typing = next }
+                .brandFont(.body)
                 .foregroundStyle(Brand.textPrimary)
                 .textContentType(content)
                 .keyboardType(keyboard)

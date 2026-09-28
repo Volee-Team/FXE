@@ -97,7 +97,7 @@ struct ClinicsView: View {
             LazyVStack(alignment: .leading, spacing: Brand.Spacing.md) {
                 ForEach(weeks, id: \.start) { week in
                     Text(ServiceWeek.label(forWeekStarting: week.start).uppercased())
-                        .font(Brand.Typography.chip)
+                        .brandFont(.chip)
                         .foregroundStyle(Brand.textSecondary)
                         .padding(.top, week.start == weeks.first?.start ? 0 : Brand.Spacing.sm)
                         .accessibilityAddTraits(.isHeader)
@@ -148,7 +148,7 @@ struct ClinicsView: View {
                 .font(.system(size: 40))
                 .foregroundStyle(Brand.disabled)
             Text(text)
-                .font(Brand.Typography.body)
+                .brandFont(.body)
                 .foregroundStyle(Brand.textSecondary)
                 .multilineTextAlignment(.center)
         }
@@ -181,12 +181,12 @@ struct ClinicCard: View {
             }
 
             Label(dateLine, systemImage: "calendar")
-                .font(Brand.Typography.subheadline)
+                .brandFont(.subheadline)
                 .foregroundStyle(Brand.textSecondary)
 
             if let price = clinic.priceCents(forMember: isMember) {
                 Label("\(durationLine) · \(price.centsAsPrice)", systemImage: "tennisball")
-                    .font(Brand.Typography.subheadline)
+                    .brandFont(.subheadline)
                     .foregroundStyle(Brand.textSecondary)
                     .accessibilityElement(children: .combine)
                     .accessibilityIdentifier("clinic.price")
@@ -209,7 +209,7 @@ struct ClinicCard: View {
 
     private var name: some View {
         Text(clinic.name)
-            .font(Brand.Typography.headline)
+            .brandFont(.headline)
             .foregroundStyle(Brand.navy)
     }
 
@@ -228,11 +228,11 @@ struct ClinicCard: View {
         switch clinic.door(isMember: isMember, now: now) {
         case .register:
             Text("Registration open")
-                .font(Brand.Typography.caption)
+                .brandFont(.caption)
                 .foregroundStyle(Brand.Status.youreIn.ink)
         case .opens(let openMoment):
             Text("Registration opens \(openMoment.formatted(.dateTime.month(.abbreviated).day()))")
-                .font(Brand.Typography.caption)
+                .brandFont(.caption)
                 .foregroundStyle(Brand.textSecondary)
         case .askTara, .none:
             EmptyView()

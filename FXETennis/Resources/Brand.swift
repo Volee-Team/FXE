@@ -71,9 +71,9 @@
 //  ============================================================================
 //
 //  These tokens define the LIGHT appearance only. A dark palette would require
-//  inventing surface colours Tara has not supplied, so the root view should set
-//  .preferredColorScheme(.light) until she signs off on a dark set.
-//  Flagged as an open item, not an oversight.
+//  inventing surface colours Tara has not supplied, so the app is locked to
+//  light mode (Info.plist UIUserInterfaceStyle, set in project.yml) until she
+//  signs off on a dark set. Flagged as an open item, not an oversight.
 //
 
 import SwiftUI
@@ -130,7 +130,7 @@ public enum Brand {
 
     public static let textPrimary = Color(hex: 0x0A1B3D)
     /// Secondary text. #6E6552 warm grey-brown is ~5.0:1 on the cream surface.
-    public static let textSecondary = Color(hex: 0x5C5A55)  // neutral grey, 5.5:1 on the gradient's warm end
+    public static let textSecondary = Color(hex: 0x4A4843)  // neutral grey; darkened from #5C5A55 on 2026-09-28 because the accessibility audit measured it under 4.5:1 where the court photo shows through the wash
     /// On navy: warm cream rather than pure white, so it belongs to this palette.
     public static let textOnNavy = Color(hex: 0xFFFFFF)     // surface-white, reversed
     public static let textOnNavyMuted = Color(hex: 0xC9CCD6)
@@ -400,6 +400,21 @@ public extension Brand {
             }
 
             var font: Font { Font(uiFont()) }
+
+            /// The old role names, so `.brandFont(.display)` reads like the
+            /// `Brand.Typography.display` it replaced.
+            static let display = Role.greeting
+            static let button = Role.navRowLabel
+
+            /// The font at a Dynamic Type size. A `Font(UIFont)` is fixed at
+            /// the size it was made with, so text built from `font` ignored a
+            /// Larger Text change until the screen was rebuilt; the audit
+            /// (2026-09-28) reported that on every screen. `.brandFont(_:)`
+            /// reads the size from the environment and calls this, so the text
+            /// grows the moment the setting changes.
+            func font(at size: DynamicTypeSize) -> Font {
+                Font(uiFont(traits: UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(size))))
+            }
         }
 
         // Guide styles.
@@ -491,7 +506,7 @@ public struct StatusChip: View {
             Text(status.label)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .font(Brand.Typography.chip)
+        .brandFont(.chip)
         .foregroundStyle(status.ink)
         .padding(.horizontal, Brand.Spacing.xs)
         .padding(.vertical, Brand.Spacing.xxs)
@@ -566,3 +581,73 @@ private extension Color {
 //  #D5DF24) shipped first and is in git history. Tara chose palette B ("full
 //  country club") on 2026-08-12. If she reverts, the A ratios are in that
 //  file's history.
+
+
+// MARK: - Text links
+
+/// A quiet text link ("Create an account", "Sign Out", "Privacy Policy") with
+/// Apple's full 44-point tap target. Found by the accessibility audit
+/// (2026-09-28): a plain-style Button answers taps only where its glyphs are
+/// drawn, so a frame set around it looks right and still misses the thumb.
+/// The frame and the tap shape have to be inside the button, which a style
+/// guarantees for every link at once.
+struct QuietLinkButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .frame(minWidth: Brand.Layout.minTapTarget, minHeight: Brand.Layout.minTapTarget)
+            .contentShape(Rectangle())
+            // Pressed feedback by colour weight, not opacity: an opacity
+            // modifier on the label made the accessibility audit read navy
+            // text as failing contrast (2026-09-28).
+            .brightness(configuration.isPressed ? 0.25 : 0)
+    }
+}
+
+// MARK: - Live Dynamic Type
+
+private struct BrandFont: ViewModifier {
+    @Environment(\.dynamicTypeSize) private var size
+    let role: Brand.Typography.Role
+    func body(content: Content) -> some View { content.font(role.font(at: size)) }
+}
+
+extension View {
+    /// A style from the scale that follows the Larger Text setting live.
+    /// Use this, not `.font(Brand.Typography.x)`, on anything a person reads.
+    func brandFont(_ role: Brand.Typography.Role) -> some View {
+        modifier(BrandFont(role: role))
+    }
+}
+
+// MARK: - Page titles
+
+extension Brand {
+    /// The system navigation titles ("Clinics", "Profile", a sheet's title)
+    /// were SF Pro in black: a third family the guide rules out ("No third
+    /// family") in a colour it does not use for headlines (navy-900). A page
+    /// title names the page, so it takes the serif (2026-09-28). Called once
+    /// at launch; the appearance proxy covers every bar after that.
+    @MainActor static func styleNavigationTitles() {
+        Fonts.register()
+        let navy = UIColor(Brand.navy)
+        let bar = UINavigationBar.appearance()
+        bar.largeTitleTextAttributes = [
+            .font: Fonts.uiFont(.playfair, size: 34, weight: 700, textStyle: .largeTitle),
+            .foregroundColor: navy,
+        ]
+        bar.titleTextAttributes = [
+            .font: Fonts.uiFont(.playfair, size: 18, weight: 700, textStyle: .headline),
+            .foregroundColor: navy,
+        ]
+    }
+}
+
+extension View {
+    /// Keeps a screen's navigation title for VoiceOver and the back button
+    /// but does not draw it in the bar, where it repeated the page's own
+    /// serif heading (a clinic's page, 2026-09-28). iOS 18 and later; on 17
+    /// the title stays.
+    @ViewBuilder func hidesBarTitle() -> some View {
+        if #available(iOS 18.0, *) { self.toolbar(removing: .title) } else { self }
+    }
+}

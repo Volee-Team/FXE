@@ -9,6 +9,7 @@
 import SwiftUI
 
 struct ProfileView: View {
+    @Environment(\.openURL) private var openURL
     @Environment(SessionStore.self) private var session
     @State private var showNTRP = false
     @State private var editing = false
@@ -43,7 +44,7 @@ struct ProfileView: View {
                             editing = true
                         } label: {
                             Text("Edit details")
-                                .font(Brand.Typography.button)
+                                .brandFont(.button)
                                 .frame(maxWidth: .infinity)
                                 .frame(minHeight: Brand.Layout.comfortableTapTarget)
                                 .foregroundStyle(Brand.textOnNavy)
@@ -63,13 +64,12 @@ struct ProfileView: View {
                             Task { await session.signOut() }
                         } label: {
                             Text("Sign Out")
-                                .font(Brand.Typography.body)
+                                .brandFont(.body)
                                 .underline()
-                                .foregroundStyle(Brand.textSecondary)
+                                .foregroundStyle(Brand.textPrimary)
                                 .frame(maxWidth: .infinity)
-                                .frame(minHeight: Brand.Layout.minTapTarget)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(QuietLinkButtonStyle())
                         .accessibilityIdentifier("profile.signOut")
 
                         // App Store 5.1.1(v); decision 0013 §5: history stays,
@@ -78,11 +78,11 @@ struct ProfileView: View {
                             confirmDelete = true
                         } label: {
                             Text("Delete my account")
-                                .font(Brand.Typography.caption)
+                                .brandFont(.caption)
                                 .frame(maxWidth: .infinity)
-                                .frame(minHeight: Brand.Layout.minTapTarget)
                                 .foregroundStyle(Brand.Status.canceled.ink)
                         }
+                        .buttonStyle(QuietLinkButtonStyle())
                         .disabled(deleting || session.account?.isAdmin == true)
                         .accessibilityIdentifier("profile.delete")
                         .confirmationDialog(
@@ -105,24 +105,27 @@ struct ProfileView: View {
                         }
                         if let deleteError {
                             Text(deleteError)
-                                .font(Brand.Typography.caption)
+                                .brandFont(.caption)
                                 .foregroundStyle(Brand.Status.canceled.ink)
                                 .frame(maxWidth: .infinity)
                         }
 
                         // Apple requires the privacy policy to be reachable in the app
                         // (guideline 5.1.1). Tara approved it on 2026-09-27.
-                        Link("Privacy Policy", destination: URL(string: "https://fxe-tennis-admin.vercel.app/privacy.html")!)
-                            .font(Brand.Typography.caption)
-                            .foregroundStyle(Brand.textSecondary)
-                            .frame(maxWidth: .infinity, minHeight: Brand.Layout.minTapTarget)
-                            .accessibilityIdentifier("profile.privacy")
+                        Button("Privacy Policy") {
+                            openURL(URL(string: "https://fxe-tennis-admin.vercel.app/privacy.html")!)
+                        }
+                        .brandFont(.caption)
+                        .foregroundStyle(Brand.textSecondary)
+                        .buttonStyle(QuietLinkButtonStyle())
+                        .frame(maxWidth: .infinity)
+                        .accessibilityIdentifier("profile.privacy")
 
                         // Which build is this? The first question in every
                         // "it looks wrong on my phone" text from Tara or a
                         // tester, and TestFlight installs several a week.
                         Text(Self.versionLine)
-                            .font(Brand.Typography.caption)
+                            .brandFont(.caption)
                             .foregroundStyle(Brand.textSecondary)
                             .frame(maxWidth: .infinity)
                             .accessibilityIdentifier("profile.version")
@@ -150,13 +153,21 @@ struct ProfileView: View {
 
     private var header: some View {
         let player = session.activePlayer
+        // An admin account can have no player row (Tara runs the program; she
+        // is not on a roster). Her name then comes from the account and there
+        // is no membership to show: her Profile used to read "Player" and
+        // "Non-member" (seen on the simulator, 2026-09-28).
+        let accountName = session.account.map { "\($0.firstName) \($0.lastName)" }?
+            .trimmingCharacters(in: .whitespaces)
         return VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
-            Text(player?.fullName ?? "Player")
-                .font(Brand.Typography.display)
+            Text(player?.fullName ?? accountName ?? "")
+                .brandFont(.display)
                 .foregroundStyle(Brand.navy)
-            Text(player?.isMember == true ? "FXE Member" : "Non-member")
-                .font(Brand.Typography.subheadline)
-                .foregroundStyle(Brand.textSecondary)
+            if let player {
+                Text(player.isMember ? "FXE Member" : "Non-member")
+                    .brandFont(.subheadline)
+                    .foregroundStyle(Brand.textSecondary)
+            }
         }
     }
 
@@ -172,17 +183,16 @@ struct ProfileView: View {
                 // Final Updates p.2 item 1: the "?" sits next to the rating,
                 // below the phone, and smaller (it was in the toolbar).
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Rating").font(Brand.Typography.caption).foregroundStyle(Brand.textSecondary)
+                    Text("Rating").brandFont(.caption).foregroundStyle(Brand.textSecondary)
                     HStack(spacing: Brand.Spacing.xxs) {
                         Text(String(format: "%.1f", rating))
-                            .font(Brand.Typography.body).foregroundStyle(Brand.textPrimary)
+                            .brandFont(.body).foregroundStyle(Brand.textPrimary)
                         Button { showNTRP = true } label: {
                             Image(systemName: "questionmark.circle")
                                 .font(.system(size: 15, weight: .regular))
                                 .foregroundStyle(Brand.textSecondary)
-                                .frame(minWidth: 32, minHeight: 28)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(QuietLinkButtonStyle())
                         .accessibilityLabel("What do the ratings mean?")
                         .accessibilityIdentifier("profile.ratingHelp")
                     }
@@ -200,8 +210,8 @@ struct ProfileView: View {
     /// the right-justified values sat too far from their labels to read as pairs.
     private func row(_ label: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(label).font(Brand.Typography.caption).foregroundStyle(Brand.textSecondary)
-            Text(value).font(Brand.Typography.body).foregroundStyle(Brand.textPrimary)
+            Text(label).brandFont(.caption).foregroundStyle(Brand.textSecondary)
+            Text(value).brandFont(.body).foregroundStyle(Brand.textPrimary)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -219,10 +229,10 @@ struct NTRPExplainerSheet: View {
                     ForEach(NTRPRating.displayOrdered) { rating in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(rating.label)
-                                .font(Brand.Typography.headline)
+                                .brandFont(.headline)
                                 .foregroundStyle(Brand.navy)
                             Text(rating.detail)
-                                .font(Brand.Typography.subheadline)
+                                .brandFont(.subheadline)
                                 .foregroundStyle(Brand.textSecondary)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
