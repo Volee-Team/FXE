@@ -155,6 +155,9 @@ struct HomeView: View {
             }
             .navigationBarHidden(true)
             .task { await model.load(); await refreshUnread() }
+            // A "Remind me" moves or goes with what this list says (RegistrationReminders).
+            .reconcilesReminders(clinics: model.clinics, registered: Set(model.myRegistrationsByClinic.keys),
+                                 isMember: isMember)
             .refreshable { await model.load(); await refreshUnread() }
             // Opening the app is how a Pool player learns she was invited
             // until push is live (MVP audit item 8).

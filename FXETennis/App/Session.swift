@@ -379,6 +379,8 @@ final class SessionStore {
         // Anything in flight now belongs to the person leaving.
         generation &+= 1
         await PushRegistrar.shared.unregisterForSignOut()
+        // "Remind me" reminders are this person's, like their pushes.
+        await RegistrationReminders.removeAll()
         try? await supabase.auth.signOut()
         // After the session is gone, so a count fetched before it cannot
         // put the number back on the icon.

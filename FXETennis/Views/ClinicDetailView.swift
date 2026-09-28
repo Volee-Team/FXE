@@ -16,6 +16,13 @@
 //    canceled clinic         -> Canceled banner, no action
 //  The not-registered rows are ClinicPublic.door(isMember:now:), unit-tested.
 //
+//  Beside the one action (2026-09-28): "Add to Calendar" under You're In!
+//  before the start (ClinicCalendarEvent: name and times only, hard rule 1),
+//  and "Remind me" / "Reminder set" under "Registration opens ..." (a
+//  notification on this phone at this player's opening, RegistrationReminder).
+//  A success haptic when Register, Accept or Decline lands, a warning when
+//  one is refused, and the status chip changes over 0.35 s (StatusChipMotion).
+//
 //  Still hides everything players must not see: no capacity, no counts, no other
 //  players, no court, no location. Only this player's own status.
 //
@@ -107,21 +114,52 @@ final class ClinicDetailModel {
         }
     }
 
+    /// The haptic after an action (2026-09-28). A success when Register,
+    /// Accept or Decline has landed the player in You're In! or the Player
+    /// Pool, read from the status the reload shows, not from the tap. A
+    /// warning when one of those was refused or could not reach the server.
+    /// Nothing for cancelling, leaving the Pool, the late request, or a
+    /// screen that went away. Unit-tested (PlayerFeelTests).
+    enum Haptic: Equatable { case success, warning }
+
+    nonisolated static func haptic(landing: Bool, landedIn status: RegistrationStatus?,
+                                   failure: FailureOutcome?) -> Haptic? {
+        guard landing else { return nil }
+        if let failure { return failure.notice == nil ? nil : .warning }
+        return status == .in_ || status == .pool ? .success : nil
+    }
+
+    /// Each moves once per haptic; the page plays one on every change.
+    var successes = 0
+    var warnings = 0
+
+    private func feel(_ haptic: Haptic?) {
+        switch haptic {
+        case .success?: successes &+= 1
+        case .warning?: warnings &+= 1
+        case nil: break
+        }
+    }
+
     /// Runs an action, surfaces a friendly notice on failure, and reloads so the
     /// button reflects the new truth. Every transition is conditional server-side
     /// (hard rule 3); a race just means the reload shows the real state.
-    func act(clinicId: UUID, _ work: @escaping () async throws -> Void,
+    /// `landing`: Register, Accept or Decline, whose result is a place in
+    /// You're In! or the Pool (the haptic above).
+    func act(clinicId: UUID, landing: Bool = false, _ work: @escaping () async throws -> Void,
              onChanged: () async -> Void,
              reopen: (SessionStore.Gate) async -> Void = { _ in }) async {
         working = true; notice = nil
         do {
             try await work()
             await load(clinicId: clinicId)
+            feel(Self.haptic(landing: landing, landedIn: registration?.status, failure: nil))
             await onChanged()
         } catch {
             await load(clinicId: clinicId)
             let outcome = Self.outcome(for: error)
             notice = outcome.notice
+            feel(Self.haptic(landing: landing, landedIn: registration?.status, failure: outcome))
             if let gate = outcome.reopens { await reopen(gate) }
         }
         working = false
@@ -148,6 +186,11 @@ struct ClinicDetailView: View {
     /// Inside the cutoff the cancel needs the player's note first (0010).
     @State private var lateCancel: MyRegistration?
     @State private var cutoffHours = 3
+    /// Apple's New Event editor is up ("Add to Calendar").
+    @State private var addingToCalendar = false
+    /// A "Remind me" is waiting for this clinic, as the notification center says.
+    @State private var reminderSet = false
+    @State private var reminderBusy = false
     let clinic: ClinicPublic
     let isMember: Bool
     var onChanged: () async -> Void = {}
@@ -178,10 +221,20 @@ struct ClinicDetailView: View {
         .background(CourtBackdrop())
         .navigationTitle(clinic.name)
         .navigationBarTitleDisplayMode(.inline)
-        .task { if !model.loaded { await model.load(clinicId: clinic.id) } }
+        .task {
+            if !model.loaded { await model.load(clinicId: clinic.id) }
+            await syncReminder()
+        }
         .task {
             cutoffHours = (try? await RegistrationRepository.cancelCutoffHours()) ?? 3
         }
+        .sheet(isPresented: $addingToCalendar) {
+            AddToCalendarSheet(clinic: clinic) { addingToCalendar = false }
+                .ignoresSafeArea()
+        }
+        // Played once the reload shows where the player landed (or why not).
+        .sensoryFeedback(.success, trigger: model.successes)
+        .sensoryFeedback(.warning, trigger: model.warnings)
         .sheet(item: $lateCancel) { reg in
             LateCancelSheet { note in
                 await run {
@@ -189,17 +242,35 @@ struct ClinicDetailView: View {
                 }
             }
         }
-        .refreshable { await model.load(clinicId: clinic.id) }
+        .refreshable { await model.load(clinicId: clinic.id); await syncReminder() }
         // A Pool player who left this page open sees Response Needed when she
         // comes back to the app, not the state from before (MVP audit item 8).
-        .reloadOnForeground { await model.load(clinicId: clinic.id) }
+        .reloadOnForeground { await model.load(clinicId: clinic.id); await syncReminder() }
+        // An answer from the invitation's own buttons, or a push landing,
+        // while this page is open (NotificationRouter).
+        .onChange(of: NotificationRouter.shared.reloads) {
+            Task { await model.load(clinicId: clinic.id); await syncReminder() }
+        }
     }
 
     /// Every action on this screen goes through here, so a refusal for the
     /// waiver or the card reopens that step (SessionStore.reopen).
-    private func run(_ work: @escaping () async throws -> Void) async {
-        await model.act(clinicId: clinic.id, work, onChanged: onChanged,
+    private func run(landing: Bool = false, _ work: @escaping () async throws -> Void) async {
+        await model.act(clinicId: clinic.id, landing: landing, work, onChanged: onChanged,
                         reopen: { gate in await session.reopen(gate) })
+        await syncReminder()
+    }
+
+    /// The waiting reminder for this clinic, kept true to what the page just
+    /// loaded: gone once she holds a spot, the clinic is canceled or already
+    /// open; moved if Tara moved the opening. And the permission, so the
+    /// button goes when notifications were turned off in Settings meanwhile.
+    private func syncReminder() async {
+        await PushRegistrar.shared.refreshStatus()
+        await RegistrationReminders.reconcile(clinics: [clinic],
+                                              registered: model.registration == nil ? [] : [clinic.id],
+                                              isMember: isMember)
+        reminderSet = await RegistrationReminders.isSet(for: clinic.id)
     }
 
     // MARK: header
@@ -211,9 +282,11 @@ struct ClinicDetailView: View {
                 .foregroundStyle(Brand.navy)
             if let reg = model.registration {
                 StatusChip(reg.status.display)
+                    .statusChipMotion()
                     .accessibilityIdentifier("clinic.statusChip")
             }
         }
+        .animatesStatusChip(model.registration?.status)
     }
 
     private var canceledBanner: some View {
@@ -306,17 +379,23 @@ struct ClinicDetailView: View {
         } else if let reg = model.registration {
             switch reg.status {
             case .in_:
-                if CancelPolicy.isInsideCutoff(startsAt: clinic.startsAt, cutoffHours: cutoffHours) {
-                    // Same button, different path: the server refuses a late
-                    // cancel without a note, so ask for it before the tap.
-                    Button(role: .destructive) { lateCancel = reg } label: {
-                        actionLabel("Cancel Registration", fg: Brand.Status.canceled.ink, bg: Brand.surfaceRaised)
-                            .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
+                VStack(spacing: Brand.Spacing.sm) {
+                    if CancelPolicy.isInsideCutoff(startsAt: clinic.startsAt, cutoffHours: cutoffHours) {
+                        // Same button, different path: the server refuses a late
+                        // cancel without a note, so ask for it before the tap.
+                        Button(role: .destructive) { lateCancel = reg } label: {
+                            actionLabel("Cancel Registration", fg: Brand.Status.canceled.ink, bg: Brand.surfaceRaised)
+                                .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
+                        }
+                        .disabled(model.working)
+                    } else {
+                        destructiveButton("Cancel Registration") {
+                            try await RegistrationRepository.cancelRegistration(registrationId: reg.id)
+                        }
                     }
-                    .disabled(model.working)
-                } else {
-                    destructiveButton("Cancel Registration") {
-                        try await RegistrationRepository.cancelRegistration(registrationId: reg.id)
+                    // Until the start: this area redraws at it (TimelineView).
+                    if ClinicCalendarEvent.offered(status: reg.status, clinic: clinic, now: now) {
+                        addToCalendarButton
                     }
                 }
             case .pool:
@@ -330,10 +409,10 @@ struct ClinicDetailView: View {
                     ? AnyLayout(VStackLayout(spacing: Brand.Spacing.sm))
                     : AnyLayout(HStackLayout(spacing: Brand.Spacing.sm))
                 layout {
-                    primaryButton("Accept") {
+                    primaryButton("Accept", landing: true) {
                         try await RegistrationRepository.respondToInvitation(registrationId: reg.id, accept: true)
                     }
-                    secondaryButton("Decline") {
+                    secondaryButton("Decline", landing: true) {
                         try await RegistrationRepository.respondToInvitation(registrationId: reg.id, accept: false)
                     }
                 }
@@ -364,16 +443,22 @@ struct ClinicDetailView: View {
             // full." So the closed state is not a dead end, it is a door.
             lateRequestArea
         case .register:
-            primaryButton("Register") {
+            primaryButton("Register", landing: true) {
                 guard let playerId = session.activePlayer?.id else { return }
                 _ = try await RegistrationRepository.register(clinicId: clinic.id, playerId: playerId)
             }
         case .opens(let openMoment):
-            Text("Registration opens \(openMoment.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day().hour().minute()))")
-                .font(Brand.Typography.subheadline)
-                .foregroundStyle(Brand.textSecondary)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(Brand.Spacing.md)
+            VStack(spacing: Brand.Spacing.xs) {
+                Text("Registration opens \(openMoment.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day().hour().minute()))")
+                    .font(Brand.Typography.subheadline)
+                    .foregroundStyle(Brand.textSecondary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(Brand.Spacing.md)
+                // Not while notifications are off: Home already says so.
+                if RegistrationReminder.offersButton(status: PushRegistrar.shared.status) {
+                    reminderButton
+                }
+            }
         case .none:
             EmptyView()
         }
@@ -422,18 +507,20 @@ struct ClinicDetailView: View {
 
     // MARK: button builders
 
-    private func primaryButton(_ title: String, _ work: @escaping () async throws -> Void) -> some View {
+    private func primaryButton(_ title: String, landing: Bool = false,
+                               _ work: @escaping () async throws -> Void) -> some View {
         Button {
-            Task { await run(work) }
+            Task { await run(landing: landing, work) }
         } label: {
             actionLabel(title, fg: Brand.textOnNavy, bg: Brand.navy)
         }
         .disabled(model.working)
     }
 
-    private func secondaryButton(_ title: String, _ work: @escaping () async throws -> Void) -> some View {
+    private func secondaryButton(_ title: String, landing: Bool = false,
+                                 _ work: @escaping () async throws -> Void) -> some View {
         Button {
-            Task { await run(work) }
+            Task { await run(landing: landing, work) }
         } label: {
             actionLabel(title, fg: Brand.navy, bg: Brand.surfaceRaised)
                 .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.navy, lineWidth: Brand.Layout.borderWidth))
@@ -454,6 +541,54 @@ struct ClinicDetailView: View {
                 .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
         }
         .disabled(model.working)
+    }
+
+    /// Apple's New Event editor, prefilled with the name and the times only.
+    private var addToCalendarButton: some View {
+        Button { addingToCalendar = true } label: {
+            Label("Add to Calendar", systemImage: "calendar.badge.plus")
+                .modifier(QuietButtonLabel(stroke: Brand.hairline))
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("clinic.addToCalendar")
+    }
+
+    /// Sets or cancels the reminder at this player's opening. Two literal
+    /// labels (not a ternary) so the copy gate sees both.
+    private var reminderButton: some View {
+        Button {
+            Task { await toggleReminder() }
+        } label: {
+            Group {
+                if reminderSet {
+                    Label("Reminder set", systemImage: "bell.fill")
+                } else {
+                    Label("Remind me", systemImage: "bell")
+                }
+            }
+            .modifier(QuietButtonLabel(stroke: reminderSet ? Brand.court : Brand.hairline))
+        }
+        .buttonStyle(.plain)
+        .disabled(reminderBusy)
+        .accessibilityIdentifier("clinic.remindMe")
+        .accessibilityAddTraits(reminderSet ? .isSelected : [])
+    }
+
+    /// Asks iOS first when it has not been asked; if the answer is no, the
+    /// button goes away (offersButton) and nothing else is said.
+    private func toggleReminder() async {
+        reminderBusy = true
+        defer { reminderBusy = false }
+        if reminderSet {
+            RegistrationReminders.cancel(for: clinic.id)
+            reminderSet = false
+            return
+        }
+        let registrar = PushRegistrar.shared
+        await registrar.refreshStatus()
+        if registrar.status == .notDetermined { await registrar.requestPermission() }
+        guard RegistrationReminder.canSchedule(status: registrar.status) else { return }
+        reminderSet = await RegistrationReminders.set(for: clinic, isMember: isMember)
     }
 
     private func actionLabel(_ title: String, fg: Color, bg: Color) -> some View {
@@ -477,6 +612,23 @@ struct ClinicDetailView: View {
     private var durationLine: String {
         if let d = clinic.durationMinutes { return "\(d) min" }
         return "Clinic"
+    }
+}
+
+/// Full width and a comfortable height like the page's actions, but white
+/// with navy words: these two sit under the one primary action and must not
+/// compete with it.
+private struct QuietButtonLabel: ViewModifier {
+    let stroke: Color
+    func body(content: Content) -> some View {
+        content
+            .font(Brand.Typography.button)
+            .foregroundStyle(Brand.navy)
+            .frame(maxWidth: .infinity)
+            .frame(minHeight: Brand.Layout.comfortableTapTarget)
+            .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
+            .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(stroke, lineWidth: Brand.Layout.borderWidth))
+            .contentShape(RoundedRectangle(cornerRadius: Brand.Radius.md))
     }
 }
 

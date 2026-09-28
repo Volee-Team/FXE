@@ -35,6 +35,36 @@ plus every "New since" block.
 
 ---
 
+## Player polish (2026-09-28) — awaiting Alex
+
+Branch `player-wow`: Accept and Decline on the invitation push, Add to
+Calendar, Remind me, haptics. Three new strings, all chrome, mine; the
+extractor sees all three and `docs/copy-approved.txt` carries them.
+
+| ✓ | String | Where | Why |
+|---|--------|-------|-----|
+| ☐ | Add to Calendar | The clinic page, under Cancel Registration, while the player holds You're In! and the clinic has not started | New. Opens Apple's own New Event editor with the clinic's name, start and end only; nothing in location, URL or notes (hard rule 1). Apple's words are Apple's |
+| ☐ | Remind me | The clinic page, under "Registration opens …", unless notifications are off | New. Sets a notification on this phone for the moment registration opens to this player |
+| ☐ | Reminder set | The same button once set; tapping it again cancels the reminder | New. Says the state; VoiceOver also hears it as selected |
+
+Words already in the app, now shown in one more place. Not new, and none
+of them is seen by the extractor (notification titles and bodies are
+built in code, the known gap below), so they are listed by hand:
+
+| ✓ | String | Where | Why |
+|---|--------|-------|-----|
+| — | Accept / Decline | The two buttons on the invitation push itself (long-press it, or pull it down); both need the phone unlocked | The clinic page's own buttons, locked terminology |
+| — | Sorry, someone beat you to the punch. Here's the latest! | A notification after Accept or Decline on the push, when the invitation had changed (Tara withdrew it, or it was already answered); a tap opens the clinic | **Tara's words** (`docs/copy.md`), the same line the clinic page shows for the same refusal |
+| — | Couldn't reach the server. Check your connection. | The same notification when there was no signal: the invitation may still be open, so it must not read as a race | Approved chrome (§B), the page's line for the same failure |
+| — | Too many attempts. Try again in a minute. | The same notification when the server answered 429 | Approved chrome ("MVP fix round, the app") |
+| — | Registration is LIVE!! Hope to see you on the court | The reminder's body at the opening moment, under the clinic's name as its title; a tap opens the clinic | **Tara's words**, notification 10 verbatim, read from `FXENotification.registrationIsOpen` so there is one copy. Opt-in per clinic; it is not the broadcast her question (c) in `docs/notifications.md` is about, which is still open |
+| — | (the invitation's own words, as the server wrote them) | Shown again, without buttons, if Accept or Decline is tapped when nobody is signed in on the phone; a tap opens the app to the clinic after sign-in | Not ours: the row's body, unchanged. iOS gives a background button no way to open the app, so this is the way in |
+
+Nothing is said when an answer from the push goes through (the row is marked
+read and the icon's number drops), and nothing is said on a shared phone when
+the invitation was someone else's (`not_authorized`). The calendar entry's
+title and the reminder's title are the clinic's name: data, not copy.
+
 ## New since the last review — 2026-09-27 (bad signal, the waiver's exits, rate limits), awaiting Alex
 
 MVP audit items 7, 9 and 15 (branch `ios-resilience`). Two new strings, both

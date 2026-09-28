@@ -20,6 +20,10 @@
 //  tests/push/simctl-push.sh shows a push on the simulator with the payload
 //  supabase/functions/push/index.ts sends.
 //
+//  Since 2026-09-28 it also registers the INVITATION category at launch and
+//  hands that category's Accept and Decline to InvitationActions, which
+//  answers in the background without opening the app.
+//
 
 import SwiftUI
 import UserNotifications
@@ -33,6 +37,9 @@ final class PushAppDelegate: NSObject, UIApplicationDelegate, UNUserNotification
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         // Before launch finishes, or the tap that launched the app is never delivered.
         UNUserNotificationCenter.current().delegate = self
+        // Accept and Decline on the invitation push (InvitationActions). iOS
+        // shows no buttons for a category the app has not registered.
+        UNUserNotificationCenter.current().setNotificationCategories([InvitationActions.category])
         return true
     }
 
@@ -67,12 +74,28 @@ final class PushAppDelegate: NSObject, UIApplicationDelegate, UNUserNotification
         }
     }
 
-    /// A tap on a push, from the lock screen, a banner or Notification Center.
+    /// A tap on a push, from the lock screen, a banner or Notification Center,
+    /// or one of the invitation's buttons (InvitationActions).
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
                                             didReceive response: UNNotificationResponse,
                                             withCompletionHandler completionHandler: @escaping () -> Void) {
+        let content = response.notification.request.content
+        let tap = PushTap(userInfo: content.userInfo)
+        // Accept or Decline, answered in the background. Only these two
+        // buttons ever answer (hard rule 2); iOS is told the work is done
+        // once the answer has been sent and its outcome shown.
+        if let accept = InvitationActions.answer(forAction: response.actionIdentifier,
+                                                 category: content.categoryIdentifier) {
+            let body = content.body
+            Task { @MainActor in
+                let hold = BackgroundHold("invitation-answer")
+                await InvitationActions.respond(accept: accept, to: tap, body: body)
+                completionHandler()
+                hold.end()
+            }
+            return
+        }
         if response.actionIdentifier == UNNotificationDefaultActionIdentifier {
-            let tap = PushTap(userInfo: response.notification.request.content.userInfo)
             Task { @MainActor in NotificationRouter.shared.tapped(tap) }
         }
         completionHandler()

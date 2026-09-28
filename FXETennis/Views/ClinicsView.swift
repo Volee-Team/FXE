@@ -77,6 +77,9 @@ struct ClinicsView: View {
             }
             .navigationTitle("Clinics")
             .task { await model.load() }
+            // A "Remind me" moves or goes with what this list says (RegistrationReminders).
+            .reconcilesReminders(clinics: model.clinics, registered: Set(model.myRegistrationsByClinic.keys),
+                                 isMember: isMember)
             .refreshable { await model.load() }
             .reloadOnForeground { await model.load() }
             .sheet(item: $explaining) { clinic in
@@ -205,6 +208,8 @@ struct ClinicCard: View {
         .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.lg))
         .overlay(RoundedRectangle(cornerRadius: Brand.Radius.lg).stroke(Brand.hairline))
         .opacity(clinic.isCanceled ? 0.6 : 1)
+        // The chip changes over 0.35 s when a reload moves it (StatusChipMotion).
+        .animatesStatusChip(registration?.status)
     }
 
     private var name: some View {
@@ -216,6 +221,7 @@ struct ClinicCard: View {
     @ViewBuilder private var chip: some View {
         if let reg = registration {
             StatusChip(reg.status.display)
+                .statusChipMotion()
         } else if clinic.isCanceled {
             StatusChip(.canceled)
         }
