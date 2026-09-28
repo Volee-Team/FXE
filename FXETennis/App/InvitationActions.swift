@@ -4,9 +4,12 @@
 //
 //  Accept and Decline on the invitation push itself (2026-09-28). Tara's
 //  invitation says "Tap below to accept", and "below" is two buttons on the
-//  notification: the server sends invitation pushes with the category
-//  INVITATION (supabase/functions/push/index.ts), and the app registers that
-//  category at launch with an Accept and a Decline (PushAppDelegate).
+//  notification. The app registers the category INVITATION at launch with an
+//  Accept and a Decline (PushAppDelegate); iOS shows them on any push whose
+//  `aps.category` is INVITATION. The server side is a separate change to
+//  supabase/functions/push/index.ts, which must set that category on
+//  invitation_received rows only. Until it is deployed no push carries the
+//  category, iOS shows no buttons, and a tap opens the clinic as before.
 //
 //  A button answers WITHOUT opening the app, and only on an unlocked phone
 //  (.authenticationRequired: someone picking up a locked phone cannot answer
@@ -28,12 +31,17 @@
 //      latest!", as a notification that opens the clinic;
 //    * no signal: "Couldn't reach the server. Check your connection.", the
 //      same words the page uses, because the invitation may still be open
-//      and she has to try again (MVP audit item 9: a timeout is not a race);
-//    * someone else's invitation on a shared phone: nothing (not_authorized);
-//    * nobody signed in: nothing can be sent, so the push is handed to the
-//      app (it opens the clinic once someone signs in) and the invitation is
-//      shown again, without buttons, so there is something to tap. iOS offers
-//      no way for a background action to bring the app forward.
+//      and she has to try again (MVP audit item 9: a timeout is not a race).
+//      iOS allows a background action about 30 seconds, so an answer still
+//      out after `answerLimit` counts as no signal, and if iOS takes the time
+//      back first, the same line goes out from the expiry handler;
+//    * someone else's invitation on a shared phone (respond_to_invitation's
+//      own not_authorized): nothing;
+//    * nobody signed in, or a login the database refused: nothing can be
+//      sent, so the push is handed to the app (it opens the clinic once
+//      someone signs in) and the invitation is shown again, without buttons,
+//      so there is something to tap. iOS offers no way for a background
+//      action to bring the app forward.
 //  No new words: every line above is already in the app.
 //
 
@@ -42,7 +50,7 @@ import UserNotifications
 import Supabase
 
 /// What answering an invitation from its notification ran into.
-enum InvitationAttempt {
+enum InvitationAttempt: Sendable {
     /// Nobody is signed in on this phone, or the server has ended the session.
     case noSession
     /// The server took the answer.
@@ -66,6 +74,11 @@ enum InvitationActions {
     static let categoryId = "INVITATION"
     static let acceptId = "ACCEPT"
     static let declineId = "DECLINE"
+
+    /// How long an answer from the notification may take before it counts as
+    /// no signal. iOS gives a background action about 30 seconds; this leaves
+    /// time to tell her.
+    static let answerLimit: Duration = .seconds(20)
 
     /// Registered once at launch (PushAppDelegate). The titles are the clinic
     /// page's own buttons. Neither opens the app; both need the phone
@@ -103,6 +116,10 @@ enum InvitationActions {
         RequestFailure(error).isNoAnswer ? .failed(error) : .noSession
     }
 
+    /// The database refused the login itself: an invalid or expired token,
+    /// or no token (PostgREST's JWT errors).
+    private static let refusedLogin: Set<String> = ["PGRST301", "PGRST302", "PGRST303"]
+
     static func plan(after attempt: InvitationAttempt) -> InvitationActionPlan {
         switch attempt {
         case .answered:
@@ -110,10 +127,15 @@ enum InvitationActions {
         case .noSession:
             return InvitationActionPlan(handToApp: true)
         case .failed(let error):
-            // Someone else's invitation reached this phone (a sign-out that
-            // could not unregister it offline). Not this person's to answer,
-            // and not a race: say nothing.
-            if (error as? PostgrestError)?.code == "42501" { return InvitationActionPlan() }
+            if let refusal = error as? PostgrestError {
+                // Someone else's invitation reached this phone (a sign-out that
+                // could not unregister it offline). respond_to_invitation's own
+                // ownership refusal, and only that one: Postgres's permission
+                // error shares the code and is a refusal like any other.
+                if refusal.code == "42501" && refusal.message == "not_authorized" { return InvitationActionPlan() }
+                // Not a race, and nobody can answer from here: the app signs in again.
+                if let code = refusal.code, refusedLogin.contains(code) { return InvitationActionPlan(handToApp: true) }
+            }
             // The clinic page's words for the same error.
             let outcome = ClinicDetailModel.outcome(for: error)
             switch RequestFailure(error) {
@@ -127,6 +149,23 @@ enum InvitationActions {
                 // The server answered and refused: the invitation changed.
                 return InvitationActionPlan(markRead: true, notice: outcome.notice)
             }
+        }
+    }
+
+    /// The answer, or no signal once `limit` has passed. The request is
+    /// cancelled then; supabase-swift's requests stop when their task is
+    /// cancelled, so this returns at the limit, not when the request gives up.
+    static func settle(within limit: Duration,
+                       _ work: @escaping @Sendable () async -> InvitationAttempt) async -> InvitationAttempt {
+        await withTaskGroup(of: InvitationAttempt?.self) { group in
+            group.addTask { await work() }
+            group.addTask {
+                try? await Task.sleep(for: limit)
+                return nil
+            }
+            let first = await group.next() ?? nil
+            group.cancelAll()
+            return first ?? .failed(URLError(.timedOut))
         }
     }
 
@@ -172,30 +211,48 @@ enum InvitationActions {
 
     // MARK: - The answer itself
 
-    /// Accept or Decline from the notification. Runs in the background; the
-    /// caller holds a background task and calls iOS's completion handler
-    /// after this returns.
+    /// Accept or Decline from the notification. Runs in the background under
+    /// `hold`; the caller calls iOS's completion handler after this returns.
     @MainActor
-    static func respond(accept: Bool, to tap: PushTap, body: String) async {
+    static func respond(accept: Bool, to tap: PushTap, body: String, hold: BackgroundHold) async {
         guard case .registration(let registrationId)? = tap.target else {
             // Nothing to answer: open it the way a plain tap would.
             NotificationRouter.shared.tapped(tap)
             return
         }
-        let attempt = await send(accept: accept, registrationId: registrationId)
+        let center = UNUserNotificationCenter.current()
+        // If iOS takes the time back before there is an outcome, she is told
+        // it did not go through rather than nothing: she has no other way to
+        // know, and the notification she answered is gone.
+        var settled = false
+        hold.onExpiry = {
+            guard !settled, let line = RequestFailure.unreachable.line else { return }
+            settled = true
+            center.add(noticeRequest(line, registrationId: registrationId))
+        }
+
+        let attempt = await settle(within: answerLimit) {
+            await send(accept: accept, registrationId: registrationId)
+        }
+        let expiredFirst = settled
+        settled = true
         let plan = plan(after: attempt)
+
+        // Tell her first: the one thing she must not miss if time runs out.
+        if !expiredFirst {
+            if let notice = plan.notice {
+                try? await center.add(noticeRequest(notice, registrationId: registrationId))
+            }
+            if plan.handToApp {
+                NotificationRouter.shared.tapped(tap)
+                try? await center.add(repostRequest(body: body, tap: tap))
+                return
+            }
+        }
         if plan.markRead, let id = tap.notificationId {
             try? await NotificationRepository.markRead(id)
         }
-        if let notice = plan.notice {
-            try? await UNUserNotificationCenter.current().add(noticeRequest(notice, registrationId: registrationId))
-        }
-        if plan.handToApp {
-            NotificationRouter.shared.tapped(tap)
-            try? await UNUserNotificationCenter.current().add(repostRequest(body: body, tap: tap))
-            return
-        }
-        // The icon's number, and Home and the bell if the app is open.
+        // The icon's number, and Home, the bell and an open clinic page.
         await PushRegistrar.shared.syncBadge()
         NotificationRouter.shared.requestReload()
     }
@@ -218,20 +275,27 @@ enum InvitationActions {
 }
 
 /// Keeps the app running in the background until an answer is sent. iOS
-/// gives a background action a few seconds; this asks for the usual
-/// allowance, and gives it back as soon as the work is done or the time is up.
+/// gives a background action a limited time; this asks for the usual
+/// allowance, runs `onExpiry` if the time runs out first, and gives it back
+/// as soon as the work is done.
 @MainActor
 final class BackgroundHold {
     private var id: UIBackgroundTaskIdentifier = .invalid
+    /// Runs once if iOS ends the allowance before `end()`.
+    var onExpiry: (() -> Void)?
 
     init(_ name: String) {
         id = UIApplication.shared.beginBackgroundTask(withName: name) { [weak self] in
             // Called on the main thread when the allowance runs out.
-            MainActor.assumeIsolated { self?.end() }
+            MainActor.assumeIsolated {
+                self?.onExpiry?()
+                self?.end()
+            }
         }
     }
 
     func end() {
+        onExpiry = nil
         guard id != .invalid else { return }
         UIApplication.shared.endBackgroundTask(id)
         id = .invalid

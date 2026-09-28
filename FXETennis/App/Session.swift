@@ -152,6 +152,11 @@ final class SessionStore {
             if failure.isNoAnswer {
                 fail(failure)
             } else {
+                // Ended by the server (signed out everywhere, or deleted):
+                // signOut() never runs on this path, so the person's
+                // "Remind me" reminders are cleared here (review, 2026-09-28).
+                await RegistrationReminders.removeAll()
+                guard started == generation else { return }
                 phase = .signedOut
             }
             return

@@ -89,7 +89,7 @@ final class PushAppDelegate: NSObject, UIApplicationDelegate, UNUserNotification
             let body = content.body
             Task { @MainActor in
                 let hold = BackgroundHold("invitation-answer")
-                await InvitationActions.respond(accept: accept, to: tap, body: body)
+                await InvitationActions.respond(accept: accept, to: tap, body: body, hold: hold)
                 completionHandler()
                 hold.end()
             }

@@ -158,11 +158,13 @@ FXETennis/
 │   │                            only those two buttons answer (hard rule 2), in the background,
 │   │                            through respond_to_invitation; the row read and the icon synced;
 │   │                            a changed invitation gets Tara's "beat you to the punch" line, no
-│   │                            signal the connection line, as a notification that opens the
-│   │                            clinic; nobody signed in hands the push to the app (unit-tested)
+│   │                            signal (or no answer within 20 s) the connection line, as a
+│   │                            notification that opens the clinic; nobody signed in hands the
+│   │                            push to the app (unit-tested)
 │   ├── RegistrationReminders.swift the notification-center half of "Remind me": set, cancel, what
-│   │                            is waiting; reconciled with every clinic list (Home, Clinics, the
-│   │                            clinic page); all removed at sign-out
+│   │                            is waiting; reconciled with each fresh clinic list (Home, Clinics),
+│   │                            dropped by the clinic page once she holds a spot; all removed at
+│   │                            sign-out and when a launch finds the session ended by the server
 │   └── AppEnv.swift             DEBUG vs release: local stack vs hosted, reset URL
 ├── Data/
 │   ├── SupabaseClient.swift     the one client (URL + publishable key, implicit flow)
@@ -608,7 +610,7 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `back_to_back_105_race.sh` | Two concurrent registrations by one non-member for two same-day 105s: exactly one survives (the per-player lock in `register_for_clinic`; red without it, 2026-09-26) |
 | `one_fee_race.sh` | Two concurrent charges of different kinds for one player in one clinic (the unique index cannot see them): exactly one live fee survives (the per player-and-clinic lock in `admin_charge_registration`, 20260927100001; red without it, 2026-09-27: both went through) |
 
-**Swift**: 176 unit tests (`FXETennisTests`: price formatting, per-viewer
+**Swift**: 181 unit tests (`FXETennisTests`: price formatting, per-viewer
 pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016; since 2026-09-27 the request-failure classifier, a failed load keeping who you are, the waiver and card refusals reopening their steps, the 30-second reload throttle, the redraw moments, and the type scale under Larger Text; since 2026-09-28 the invitation push's Accept and Decline, the Remind me reminder, the calendar entry, and the haptics and chip motion) and 13
 XCUITests: 8 player flows
 (`PlayerFlowUITests`: sign in / browse / register, undo, sign-up end to end,

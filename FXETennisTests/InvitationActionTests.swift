@@ -119,6 +119,55 @@ final class InvitationActionTests: XCTestCase {
                        InvitationActionPlan(markRead: false, notice: nil, handToApp: false))
     }
 
+    /// Only respond_to_invitation's own not_authorized means "someone else's
+    /// invitation". Postgres's permission error (a grant gone missing) is a
+    /// refusal like any other: the page's words, never silence, or she would
+    /// think she had answered (review, 2026-09-28).
+    func testAPermissionErrorIsNotMistakenForSomeoneElsesInvitation() {
+        let denied = PostgrestError(code: "42501", message: "permission denied for function respond_to_invitation")
+        XCTAssertEqual(InvitationActions.plan(after: .failed(denied)),
+                       InvitationActionPlan(markRead: true, notice: raceLine, handToApp: false))
+    }
+
+    /// The database refused the login itself (an expired or invalid token:
+    /// PostgREST's PGRST301 to PGRST303). The invitation may be open; that is
+    /// not a race. Nobody can answer from here, so it goes to the app.
+    func testALoginTheDatabaseRefusedGoesToTheApp() {
+        for code in ["PGRST301", "PGRST302", "PGRST303"] {
+            let refused = PostgrestError(code: code, message: "JWT expired")
+            XCTAssertEqual(InvitationActions.plan(after: .failed(refused)),
+                           InvitationActionPlan(markRead: false, notice: nil, handToApp: true), code)
+        }
+    }
+
+    // MARK: - the time iOS allows
+
+    /// iOS gives a background action about 30 seconds. An answer still out
+    /// when the limit passes is reported as no signal while there is time to
+    /// say so (review, 2026-09-28: four requests in a row on one bar could
+    /// outlast the allowance and she would be told nothing).
+    func testTheLimitLeavesTimeToTellHer() {
+        XCTAssertLessThanOrEqual(InvitationActions.answerLimit, .seconds(20))
+        XCTAssertGreaterThanOrEqual(InvitationActions.answerLimit, .seconds(10))
+    }
+
+    func testAnAnswerStillOutAtTheLimitIsNoSignal() async {
+        let started = Date()
+        let attempt = await InvitationActions.settle(within: .milliseconds(200)) {
+            try? await Task.sleep(for: .seconds(5))
+            return .answered
+        }
+        XCTAssertLessThan(Date().timeIntervalSince(started), 2, "the limit must not wait for the request")
+        XCTAssertEqual(InvitationActions.plan(after: attempt),
+                       InvitationActionPlan(markRead: false, notice: offlineLine, handToApp: false))
+    }
+
+    func testAnAnswerInTimeIsKept() async {
+        let attempt = await InvitationActions.settle(within: .seconds(5)) { .answered }
+        XCTAssertEqual(InvitationActions.plan(after: attempt),
+                       InvitationActionPlan(markRead: true, notice: nil, handToApp: false))
+    }
+
     func testACancelledRequestSaysNothing() {
         XCTAssertEqual(InvitationActions.plan(after: .failed(CancellationError())),
                        InvitationActionPlan(markRead: false, notice: nil, handToApp: false))

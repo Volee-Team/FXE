@@ -6,12 +6,19 @@
 //  is in Models/RegistrationReminder.swift and unit-tested; this file only
 //  asks iOS what is waiting, adds, and removes.
 //
-//  Kept true without anyone watching: Home and the Clinics tab reconcile the
-//  waiting reminders every time their list loads (`reconcilesReminders`), and
-//  the clinic page does for its one clinic, so a reminder moves when Tara
-//  moves an opening, and goes when the clinic is canceled, is already open,
-//  or the player holds a spot in it. Sign-out removes them all: on a shared
-//  phone the next person must not be reminded of someone else's clinic.
+//  Kept true when the app looks: Home and the Clinics tab reconcile the
+//  waiting reminders every time their list loads (`reconcilesReminders`), so
+//  a reminder moves when Tara has moved an opening, and goes when the clinic
+//  is canceled, is already open, or the player holds a spot in it; the
+//  clinic page drops it once she holds a spot. Only when the app looks,
+//  though: a change Tara makes while the player never opens the app is not
+//  seen, so a reminder can still go off for a clinic canceled or moved
+//  meanwhile (it then opens the clinic, which shows the truth). Nothing on
+//  the phone can know sooner without a push from the server.
+//
+//  Sign-out removes them all, and so does a launch that finds the session
+//  ended by the server: on a shared phone the next person must not be
+//  reminded of someone else's clinic.
 //
 
 import SwiftUI

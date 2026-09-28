@@ -54,7 +54,9 @@ final class ClinicDetailModel {
         lateRequestSent = true
     }
 
-    func load(clinicId: UUID) async {
+    /// `keepingNotice`: a reload nobody on this page asked for (a push, an
+    /// answer from a notification) leaves the line on screen alone.
+    func load(clinicId: UUID, keepingNotice: Bool = false) async {
         do {
             let regs = try await RegistrationRepository.mine()
             registration = regs.first { $0.clinicId == clinicId && $0.status != .canceled }
@@ -62,7 +64,7 @@ final class ClinicDetailModel {
             // A load that worked clears an old "Couldn't reach the server"
             // (review, 2026-09-27: it stayed after a pull that succeeded).
             // `act` sets its own notice after this, so a refusal still shows.
-            notice = nil
+            if !keepingNotice { notice = nil }
         } catch {
             let failure = RequestFailure(error)
             if failure != .cancelled {
@@ -213,7 +215,16 @@ struct ClinicDetailView: View {
                 // the late-request door at the close, with nobody pulling to
                 // refresh (MVP audit item 8). The clock is read at each draw.
                 TimelineView(.explicit(RedrawSchedule.at(clinic.upcomingMoments(isMember: isMember)))) { _ in
-                    confirmDialog(actionArea(now: Date()))
+                    let now = Date()
+                    VStack(spacing: Brand.Spacing.sm) {
+                        confirmDialog(actionArea(now: now))
+                        // Under the action and outside its confirmation, so
+                        // the cancel dialog stays anchored to the cancel
+                        // button alone. Gone at the start (this redraws then).
+                        if ClinicCalendarEvent.offered(status: model.registration?.status, clinic: clinic, now: now) {
+                            addToCalendarButton
+                        }
+                    }
                 }
             }
             .padding(Brand.Spacing.pageMargin)
@@ -248,8 +259,10 @@ struct ClinicDetailView: View {
         .reloadOnForeground { await model.load(clinicId: clinic.id); await syncReminder() }
         // An answer from the invitation's own buttons, or a push landing,
         // while this page is open (NotificationRouter).
+        // A refusal line on screen stays: an unrelated push landing a moment
+        // later must not wipe "Sign the waiver first." (review, 2026-09-28).
         .onChange(of: NotificationRouter.shared.reloads) {
-            Task { await model.load(clinicId: clinic.id); await syncReminder() }
+            Task { await model.load(clinicId: clinic.id, keepingNotice: true); await syncReminder() }
         }
     }
 
@@ -261,15 +274,16 @@ struct ClinicDetailView: View {
         await syncReminder()
     }
 
-    /// The waiting reminder for this clinic, kept true to what the page just
-    /// loaded: gone once she holds a spot, the clinic is canceled or already
-    /// open; moved if Tara moved the opening. And the permission, so the
-    /// button goes when notifications were turned off in Settings meanwhile.
+    /// The waiting reminder for this clinic. The page drops it once she
+    /// holds a spot (its registration is reloaded, so that is fresh) and
+    /// reads whether one is waiting. It never moves one: its copy of the
+    /// clinic is as old as the page, so moves and the other drops come from
+    /// Home and the Clinics tab, which load the clinic anew (review,
+    /// 2026-09-28). And the permission, so the button goes when
+    /// notifications were turned off in Settings meanwhile.
     private func syncReminder() async {
         await PushRegistrar.shared.refreshStatus()
-        await RegistrationReminders.reconcile(clinics: [clinic],
-                                              registered: model.registration == nil ? [] : [clinic.id],
-                                              isMember: isMember)
+        if model.registration != nil { RegistrationReminders.cancel(for: clinic.id) }
         reminderSet = await RegistrationReminders.isSet(for: clinic.id)
     }
 
@@ -379,23 +393,17 @@ struct ClinicDetailView: View {
         } else if let reg = model.registration {
             switch reg.status {
             case .in_:
-                VStack(spacing: Brand.Spacing.sm) {
-                    if CancelPolicy.isInsideCutoff(startsAt: clinic.startsAt, cutoffHours: cutoffHours) {
-                        // Same button, different path: the server refuses a late
-                        // cancel without a note, so ask for it before the tap.
-                        Button(role: .destructive) { lateCancel = reg } label: {
-                            actionLabel("Cancel Registration", fg: Brand.Status.canceled.ink, bg: Brand.surfaceRaised)
-                                .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
-                        }
-                        .disabled(model.working)
-                    } else {
-                        destructiveButton("Cancel Registration") {
-                            try await RegistrationRepository.cancelRegistration(registrationId: reg.id)
-                        }
+                if CancelPolicy.isInsideCutoff(startsAt: clinic.startsAt, cutoffHours: cutoffHours) {
+                    // Same button, different path: the server refuses a late
+                    // cancel without a note, so ask for it before the tap.
+                    Button(role: .destructive) { lateCancel = reg } label: {
+                        actionLabel("Cancel Registration", fg: Brand.Status.canceled.ink, bg: Brand.surfaceRaised)
+                            .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
                     }
-                    // Until the start: this area redraws at it (TimelineView).
-                    if ClinicCalendarEvent.offered(status: reg.status, clinic: clinic, now: now) {
-                        addToCalendarButton
+                    .disabled(model.working)
+                } else {
+                    destructiveButton("Cancel Registration") {
+                        try await RegistrationRepository.cancelRegistration(registrationId: reg.id)
                     }
                 }
             case .pool:
