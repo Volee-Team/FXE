@@ -362,12 +362,16 @@ function service(request) {
     insert: async (table, row) => (await go("POST", table, row))[0],
     patch: (path, body) => go("PATCH", path, body),
     del: (path) => go("DELETE", path),
+    get: (path) => go("GET", path),
   };
 }
 const MARIA_P = "a0000000-0000-0000-0000-000000000001";
 const KEN_P = "a0000000-0000-0000-0000-000000000002";
+const ROB_P = "a0000000-0000-0000-0000-000000000003";
 const DANA_P = "a0000000-0000-0000-0000-000000000004";
+const MARIA_ACCT = "22222222-2222-2222-2222-222222222222";
 const KEN_ACCT = "33333333-3333-3333-3333-333333333333";
+const ROB_ACCT = "44444444-4444-4444-4444-444444444444";
 const DANA_ACCT = "66666666-6666-6666-6666-666666666666";
 const daysAgo = (d, h = 0) => new Date(Date.now() - d * 86_400_000 + h * 3_600_000).toISOString();
 const pastClinic = (name, endedDaysAgo) => ({
@@ -375,6 +379,35 @@ const pastClinic = (name, endedDaysAgo) => ({
   starts_at: daysAgo(endedDaysAgo, -1), ends_at: daysAgo(endedDaysAgo),
   member_opens_at: daysAgo(endedDaysAgo + 7), public_opens_at: daysAgo(endedDaysAgo + 6),
   internal_capacity: 8, status: "published", duration_minutes: 60,
+});
+
+// Until 2026-09-28 the laptop could not take anyone out of a clinic, and no
+// screen anywhere could take someone out of the Player Pool, so Tara's own
+// "You've been removed from the Player Pool" (#6, decision 0022) never fired.
+test.describe("remove from a clinic", () => {
+  test("a Player Pool row comes off in two clicks, stays as canceled, and her #6 is sent", async ({ page, request }) => {
+    const db = service(request);
+    const TUESDAY = "d0000000-0000-0000-0000-000000000001";
+    const reg = await db.insert("registrations", { clinic_id: TUESDAY, player_id: ROB_P, status: "pool", source: "self",
+      price_cents_charged: 2300, was_member: false, duration_minutes: 60 });
+    try {
+      await signIn(page, TARA);
+      const card = page.locator("#clinics .card", { hasText: "Tuesday Ladies" });
+      const rob = card.locator(".row", { hasText: "Rob Delgado" });
+      await expect(rob.getByRole("button", { name: "Invite" })).toBeVisible({ timeout: 15_000 });
+      await rob.getByRole("button", { name: "Remove" }).click();
+      await rob.getByRole("button", { name: "Really remove?" }).click();
+      await expect(rob.getByRole("button", { name: "Invite" })).toHaveCount(0, { timeout: 15_000 });
+      const [row] = await db.get(`registrations?id=eq.${reg.id}&select=status`);
+      expect(row.status).toBe("canceled");
+      const sent = await db.get(`notifications?entity_id=eq.${reg.id}&select=body`);
+      expect(sent.map(n => n.body)).toEqual(
+        ["You've been removed from the Player Pool for Tuesday Ladies 3.0+. Hope to see you at another clinic soon!"]);
+    } finally {
+      await db.del(`notifications?entity_id=eq.${reg.id}`);
+      await db.del(`registrations?id=eq.${reg.id}`);
+    }
+  });
 });
 
 test.describe("fix round", () => {
@@ -452,5 +485,106 @@ test.describe("fix round", () => {
     await page.waitForTimeout(4000);
     await expect(cards.first()).toBeVisible();
     await expect(page.locator("#clinics")).not.toContainText("No clinics this week or later.");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Payouts and disputes (2026-09-28). The browser runs in New York, where a
+// bank day sent as midnight UTC would otherwise read as the evening before.
+test.describe("payouts and disputes", () => {
+  test.use({ timezoneId: "America/New_York" });
+
+  test("the Payouts card says Stripe isn't connected, then shows Stripe's numbers", async ({ page }) => {
+    // CI's browser job runs no edge runtime, so stripe-payouts is answered here
+    // with the function's own two shapes: 503 stripe_not_configured, which a
+    // deploy without STRIPE_SECRET_KEY gives, and its 200 answer.
+    // tests/stripe/run.sh drives the real function against stripe-mock.
+    let answer = { status: 503, body: { error: "stripe_not_configured" } };
+    await page.route("**/functions/v1/stripe-payouts", (route) => route.fulfill({
+      status: answer.status, contentType: "application/json", body: JSON.stringify(answer.body) }));
+    await signIn(page, TARA);
+    await page.getByRole("tab", { name: "Money" }).click();
+    const card = page.locator("#payouts");
+    await expect(card).toContainText("Payouts");
+    await expect(card).toContainText("Stripe isn't connected yet.");
+    await expect(card.getByRole("link", { name: "Manage payments in Stripe" })).toHaveAttribute("href", "https://dashboard.stripe.com");
+
+    answer = { status: 200, body: {
+      livemode: false,
+      available: [{ amount: 12345, currency: "usd" }],
+      pending: [{ amount: 4200, currency: "usd" }],
+      next_payout: { amount: 4200, currency: "usd", arrival_date: "2026-10-02", status: "in_transit" },
+      recent: [{ amount: 4200, currency: "usd", arrival_date: "2026-10-02", status: "in_transit" },
+               { amount: 1800, currency: "usd", arrival_date: "2026-09-25", status: "paid" }] } };
+    // Opening the tab reads Stripe again.
+    await page.getByRole("tab", { name: "This week" }).click();
+    await page.getByRole("tab", { name: "Money" }).click();
+    await expect(card.locator("#payouts-available")).toHaveText("$123.45");
+    await expect(card.locator("#payouts-pending")).toHaveText("$42.00");
+    await expect(card.locator("#payouts-next")).toHaveText("$42.00");
+    // 2026-10-02 is a Friday: shown as that day, not Thursday evening.
+    await expect(card).toContainText("Fri, Oct 2");
+    await expect(card.locator("[data-payout]")).toHaveCount(2);
+    await expect(card.locator("[data-payout]").first()).toContainText("In transit");
+    await expect(card.locator("[data-payout]").nth(1)).toContainText("Fri, Sep 25");
+    await expect(card.locator("[data-payout]").nth(1)).toContainText("Paid");
+    await expect(card.locator("#payouts-mode")).toHaveText("Test mode");
+  });
+
+  test("an open dispute and a declined card are in Action Needed; a lost dispute is on the ledger only", async ({ page, request }) => {
+    const db = service(request);
+    const errors = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await db.patch("app_settings?key=eq.payments_enabled_at", { value: daysAgo(5) });
+    const clinic = await db.insert("clinics", pastClinic("Browser Dispute Clinic", 2));
+    try {
+      const reg = (player, cents) => db.insert("registrations",
+        { clinic_id: clinic.id, player_id: player, status: "in", source: "admin", price_cents_charged: cents, was_member: true, duration_minutes: 60 });
+      const maria = await reg(MARIA_P, 1800), ken = await reg(KEN_P, 1800), rob = await reg(ROB_P, 2300);
+      const now = new Date().toISOString();
+      // As stripe-webhook leaves them: Maria's fee went through and her bank
+      // opened a dispute; Rob's went through and his bank won its dispute
+      // (the club lost the money); Ken's card was declined.
+      const open = await db.insert("payments", { registration_id: maria.id, account_id: MARIA_ACCT, kind: "clinic_fee",
+        amount_cents: 1800, status: "succeeded", livemode: true, stripe_payment_intent_id: `pi_browser_${Date.now()}_m`,
+        stripe_dispute_id: "dp_browser_open", dispute_status: "needs_response", dispute_reason: "fraudulent",
+        dispute_amount_cents: 1800, dispute_withdrawn_cents: 1800, disputed_at: now,
+        dispute_due_by: new Date(Date.now() + 6 * 86_400_000).toISOString(), dispute_event_at: now });
+      const lost = await db.insert("payments", { registration_id: rob.id, account_id: ROB_ACCT, kind: "clinic_fee",
+        amount_cents: 2300, status: "succeeded", livemode: true, stripe_payment_intent_id: `pi_browser_${Date.now()}_r`,
+        stripe_dispute_id: "dp_browser_lost", dispute_status: "lost", dispute_reason: "product_not_received",
+        dispute_amount_cents: 2300, dispute_withdrawn_cents: 2300, disputed_at: now, dispute_event_at: now });
+      await db.insert("payments", { registration_id: ken.id, account_id: KEN_ACCT, kind: "clinic_fee", amount_cents: 1800,
+        status: "failed", failure_code: "insufficient_funds", failure_reason: "Your card has insufficient funds." });
+
+      await signIn(page, TARA);
+      // The week draws: before 2026-09-28 the decline row below threw
+      // "money is not a function" and the clinics never appeared.
+      await expect(page.locator("#clinics .card").first()).toBeVisible();
+      const row = page.locator(`#money-needs [data-dispute="${open.id}"]`);
+      await expect(row).toContainText("Maria Alvarez disputed a charge");
+      await expect(row).toContainText("Browser Dispute Clinic");
+      await expect(row).toContainText("$18");
+      await expect(row).toContainText("Respond by");
+      await expect(row.getByRole("link", { name: "Manage payments in Stripe" })).toHaveAttribute("href", "https://dashboard.stripe.com");
+      await expect(page.locator(`#money-needs [data-dispute="${lost.id}"]`)).toHaveCount(0);
+      const declined = page.locator(`#money-needs [data-declined="${ken.id}"]`);
+      await expect(declined).toContainText("Ken Whitfield's card was declined");
+      await expect(declined).toContainText("$18");
+
+      await page.getByRole("tab", { name: "Money" }).click();
+      const ledger = page.locator("#ledger");
+      await expect(ledger).toContainText("Dispute lost");
+      await expect(ledger).toContainText("Disputed");
+      expect(errors).toEqual([]);
+    } finally {
+      const env = stackEnv();
+      const regs = await request.fetch(`${env.API_URL}/rest/v1/registrations?clinic_id=eq.${clinic.id}&select=id`,
+        { headers: { apikey: env.SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SERVICE_ROLE_KEY}` } }).then(r => r.json());
+      if (regs.length) await db.del(`payments?registration_id=in.(${regs.map(r => r.id).join(",")})`);
+      await db.del(`registrations?clinic_id=eq.${clinic.id}`);
+      await db.del(`clinics?id=eq.${clinic.id}`);
+      await db.patch("app_settings?key=eq.payments_enabled_at", { value: "" });
+    }
   });
 });

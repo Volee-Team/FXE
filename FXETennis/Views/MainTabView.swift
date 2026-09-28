@@ -39,20 +39,30 @@ struct MainTabView: View {
     var body: some View {
         TabView {
             HomeView()
-                .tabItem { Label("Home", systemImage: "house") }
+                .tint(Brand.navy)
+                .tabItem { Label("Home", systemImage: "house").environment(\.symbolVariants, .none) }
             ClinicsView()
-                .tabItem { Label("Clinics", systemImage: "figure.tennis") }
+                .tint(Brand.navy)
+                .tabItem { Label("Clinics", systemImage: "figure.tennis").environment(\.symbolVariants, .none) }
 
             if session.account?.isAdmin == true {
                 AdminClinicsView()
-                    .tabItem { Label("Manage", systemImage: "list.clipboard") }
+                    .tint(Brand.navy)
+                    .tabItem { Label("Manage", systemImage: "list.clipboard").environment(\.symbolVariants, .none) }
                     .accessibilityIdentifier("tab.admin")
                 }
 
             ProfileView()
-                .tabItem { Label("Profile", systemImage: "person") }
+                .tint(Brand.navy)
+                .tabItem { Label("Profile", systemImage: "person").environment(\.symbolVariants, .none) }
                 .accessibilityIdentifier("tab.profile")
         }
+        // Icons stay outlined (the guide: "single-weight outline only, no
+        // filled glyphs"); iOS fills tab bar symbols unless told not to.
+        // Gator-green is the active tab. It used to tint everything inside
+        // the tabs too, and green toolbar buttons on a sheet's glass (Cancel,
+        // Save, Done, Mark all read) failed the contrast audit (2026-09-28);
+        // each tab's content is navy instead, which sheets inherit.
         .tint(Brand.court)
     }
 }

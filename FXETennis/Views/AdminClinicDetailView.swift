@@ -147,7 +147,7 @@ struct AdminClinicDetailView: View {
 
                     if let error = model.error {
                         Text(error)
-                            .font(Brand.Typography.subheadline)
+                            .brandFont(.subheadline)
                             .foregroundStyle(Brand.Status.canceled.ink)
                     }
 
@@ -160,7 +160,15 @@ struct AdminClinicDetailView: View {
                         Brand.Status.playerPool, model.pool,
                         empty: "The Player Pool is empty.",
                         numbered: true
-                    ) { entry in AnyView(inviteButton(entry)) }
+                    ) { entry in
+                        // Nothing to invite into, or take out of, once the
+                        // clinic is canceled (20260928400001 refuses both).
+                        AnyView(Group {
+                            if clinic.status != "canceled" {
+                                HStack(spacing: Brand.Spacing.xs) { inviteButton(entry); removeFromPoolButton(entry) }
+                            }
+                        })
+                    }
 
                     rosterSection(
                         Brand.Status.responseNeeded, model.responseNeeded,
@@ -196,7 +204,7 @@ struct AdminClinicDetailView: View {
                         // icon-only on iOS 26 (seen 09-10), and an unlabelled icon
                         // breaks the icons-with-text rule.
                         Text("More")
-                            .font(Brand.Typography.button)
+                            .brandFont(.button)
                     }
                     .accessibilityIdentifier("admin.more")
                 }
@@ -297,7 +305,7 @@ struct AdminClinicDetailView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
             Text(dateLine)
-                .font(Brand.Typography.subheadline)
+                .brandFont(.subheadline)
                 .foregroundStyle(Brand.textSecondary)
 
             // Admin-only counts, with capacity. Shown so Tara can decide, never
@@ -314,7 +322,7 @@ struct AdminClinicDetailView: View {
                 showMessage = true
             } label: {
                 Label("Message Players", systemImage: "bubble.left.and.bubble.right")
-                    .font(Brand.Typography.button)
+                    .brandFont(.button)
                     .frame(maxWidth: .infinity)
                     .frame(minHeight: Brand.Layout.comfortableTapTarget)
                     .foregroundStyle(Brand.textOnNavy)
@@ -330,7 +338,7 @@ struct AdminClinicDetailView: View {
                     confirmRemind = true
                 } label: {
                     Label("Remind unpaid (\(model.unpaidCount))", systemImage: "bell")
-                        .font(Brand.Typography.button)
+                        .brandFont(.button)
                         .frame(maxWidth: .infinity)
                         .frame(minHeight: Brand.Layout.comfortableTapTarget)
                         .foregroundStyle(Brand.navy)
@@ -359,13 +367,13 @@ struct AdminClinicDetailView: View {
 
             if let remindNote {
                 Text(remindNote)
-                    .font(Brand.Typography.caption)
+                    .brandFont(.caption)
                     .foregroundStyle(Brand.textSecondary)
                     .accessibilityIdentifier("admin.remindNote")
             }
             if let chargeNote {
                 Text(chargeNote)
-                    .font(Brand.Typography.caption)
+                    .brandFont(.caption)
                     .foregroundStyle(Brand.textSecondary)
                     .accessibilityIdentifier("admin.chargeNote")
             }
@@ -384,14 +392,14 @@ struct AdminClinicDetailView: View {
                 StatusChip(status)
                 Spacer()
                 Text("\(entries.count)")
-                    .font(Brand.Typography.chip)
+                    .brandFont(.chip)
                     .foregroundStyle(Brand.textSecondary)
             }
 
             if entries.isEmpty {
                 if !empty.isEmpty {
                     Text(empty)
-                        .font(Brand.Typography.body)
+                        .brandFont(.body)
                         .foregroundStyle(Brand.textSecondary)
                 }
             } else {
@@ -438,11 +446,11 @@ struct AdminClinicDetailView: View {
                 HStack {
                     StatusChip(.responseNeeded)
                     Text("asking to get in")
-                        .font(Brand.Typography.caption)
+                        .brandFont(.caption)
                         .foregroundStyle(Brand.textSecondary)
                     Spacer()
                     Text("\(model.lateRequests.count)")
-                        .font(Brand.Typography.chip)
+                        .brandFont(.chip)
                         .foregroundStyle(Brand.textSecondary)
                 }
                 VStack(spacing: 0) {
@@ -450,11 +458,11 @@ struct AdminClinicDetailView: View {
                         HStack(spacing: Brand.Spacing.sm) {
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(item.player.map { "\($0.firstName) \($0.lastName)" } ?? "Unknown player")
-                                    .font(Brand.Typography.bodyEmphasis)
+                                    .brandFont(.bodyEmphasis)
                                     .foregroundStyle(Brand.textPrimary)
                                 if let m = item.request.message, !m.isEmpty {
                                     Text("“\(m)”")
-                                        .font(Brand.Typography.caption)
+                                        .brandFont(.caption)
                                         .foregroundStyle(Brand.textSecondary)
                                 }
                             }
@@ -465,26 +473,30 @@ struct AdminClinicDetailView: View {
                                 } }
                             } label: {
                                 Text("No room")
-                                    .font(Brand.Typography.chip)
+                                    .brandFont(.chip)
                                     .foregroundStyle(Brand.Status.canceled.ink)
                                     .frame(minHeight: Brand.Layout.minTapTarget)
                             }
                             .buttonStyle(.plain)
                             .accessibilityIdentifier("admin.lateDecline")
-                            Button {
-                                Task { await model.perform(item.request.id) {
-                                    try await AdminRepository.resolveLateRequest(id: item.request.id, approve: true)
-                                } }
-                            } label: {
-                                Text("Put them in")
-                                    .font(Brand.Typography.chip)
-                                    .foregroundStyle(Brand.textOnNavy)
-                                    .padding(.horizontal, Brand.Spacing.sm)
-                                    .frame(minHeight: Brand.Layout.minTapTarget)
-                                    .background(Capsule().fill(Brand.navy))
+                            // Not into a canceled clinic (20260928400001 refuses
+                            // it); No room still clears the request.
+                            if clinic.status != "canceled" {
+                                Button {
+                                    Task { await model.perform(item.request.id) {
+                                        try await AdminRepository.resolveLateRequest(id: item.request.id, approve: true)
+                                    } }
+                                } label: {
+                                    Text("Put them in")
+                                        .brandFont(.chip)
+                                        .foregroundStyle(Brand.textOnNavy)
+                                        .padding(.horizontal, Brand.Spacing.sm)
+                                        .frame(minHeight: Brand.Layout.minTapTarget)
+                                        .background(Capsule().fill(Brand.navy))
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityIdentifier("admin.lateApprove")
                             }
-                            .buttonStyle(.plain)
-                            .accessibilityIdentifier("admin.lateApprove")
                         }
                         .padding(.vertical, Brand.Spacing.xs)
                         .disabled(model.busy.contains(item.request.id))
@@ -507,22 +519,22 @@ struct AdminClinicDetailView: View {
         HStack(spacing: Brand.Spacing.sm) {
             if let index {
                 Text("\(index)")
-                    .font(Brand.Typography.chip)
+                    .brandFont(.chip)
                     .foregroundStyle(Brand.textSecondary)
                     .frame(width: 18, alignment: .trailing)
             }
             VStack(alignment: .leading, spacing: 1) {
                 Text(entry.displayName)
-                    .font(Brand.Typography.bodyEmphasis)
+                    .brandFont(.bodyEmphasis)
                     .foregroundStyle(Brand.textPrimary)
                     .lineLimit(1)
                 Text(entry.subtitle)
-                    .font(Brand.Typography.caption)
+                    .brandFont(.caption)
                     .foregroundStyle(Brand.textSecondary)
                 // The note left with a late cancel, the player's or Tara's.
                 if let note = entry.lateNote {
                     Text(note)
-                        .font(Brand.Typography.caption)
+                        .brandFont(.caption)
                         .foregroundStyle(Brand.textSecondary)
                         .lineLimit(3)
                 }
@@ -535,7 +547,7 @@ struct AdminClinicDetailView: View {
     @ViewBuilder private func lateLabel(_ entry: RosterEntry) -> some View {
         if let label = entry.lateLabel {
             Text(label)
-                .font(Brand.Typography.chip)
+                .brandFont(.chip)
                 .foregroundStyle(Brand.Status.canceled.ink)
         }
     }
@@ -546,7 +558,7 @@ struct AdminClinicDetailView: View {
     @ViewBuilder private func declinedLabel(_ entry: RosterEntry) -> some View {
         if entry.registration.chargeStatus == "failed" {
             Text("Declined")
-                .font(Brand.Typography.chip)
+                .brandFont(.chip)
                 .foregroundStyle(Brand.Status.canceled.ink)
         }
     }
@@ -582,7 +594,7 @@ struct AdminClinicDetailView: View {
             }
         } label: {
             Label(current.map { "Court \($0)" } ?? "Court", systemImage: "rectangle.split.2x1")
-                .font(Brand.Typography.chip)
+                .brandFont(.chip)
                 .foregroundStyle(current == nil ? Brand.textSecondary : Brand.navy)
                 .frame(minHeight: Brand.Layout.minTapTarget)
         }
@@ -606,7 +618,7 @@ struct AdminClinicDetailView: View {
             } }
         } label: {
             Label(noShow ? "No-show" : "Came", systemImage: noShow ? "person.fill.xmark" : "person.fill.checkmark")
-                .font(Brand.Typography.chip)
+                .brandFont(.chip)
                 .foregroundStyle(noShow ? Brand.Status.canceled.ink : Brand.textSecondary)
                 .frame(minHeight: Brand.Layout.minTapTarget)
         }
@@ -625,7 +637,7 @@ struct AdminClinicDetailView: View {
             // Icon PLUS text: an unlabelled checkbox is exactly the case
             // CLAUDE.md's "icons always paired with text labels" rule is for.
             Label(paid ? "Paid" : "Unpaid", systemImage: paid ? "checkmark.circle.fill" : "circle")
-                .font(Brand.Typography.chip)
+                .brandFont(.chip)
                 .foregroundStyle(paid ? Brand.Status.youreIn.ink : Brand.textSecondary)
                 .frame(minHeight: Brand.Layout.minTapTarget)
         }
@@ -642,7 +654,7 @@ struct AdminClinicDetailView: View {
             } }
         } label: {
             Text("Invite")
-                .font(Brand.Typography.chip)
+                .brandFont(.chip)
                 .foregroundStyle(Brand.textOnNavy)
                 .padding(.horizontal, Brand.Spacing.sm)
                 .frame(minHeight: Brand.Layout.minTapTarget)
@@ -654,6 +666,25 @@ struct AdminClinicDetailView: View {
         .accessibilityLabel("Invite \(entry.displayName)")
     }
 
+    /// Out of the Player Pool, behind the same confirmation as You're In!'s
+    /// Remove. Until 2026-09-28 no screen could do this, so her own "You've
+    /// been removed from the Player Pool" (#6, decision 0022) could never be
+    /// sent; the server sends it from this same cancel_registration.
+    private func removeFromPoolButton(_ entry: RosterEntry) -> some View {
+        Button { removing = entry } label: {
+            Text("Remove")
+                .brandFont(.chip)
+                .foregroundStyle(Brand.Status.canceled.ink)
+                .padding(.horizontal, Brand.Spacing.xs)
+                .frame(minHeight: Brand.Layout.minTapTarget)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(model.busy.contains(entry.id))
+        .accessibilityIdentifier("admin.removeFromPool")
+        .accessibilityLabel("Remove \(entry.displayName) from the Player Pool")
+    }
+
     private func cancelInviteButton(_ entry: RosterEntry) -> some View {
         Button {
             Task { await model.perform(entry.id) {
@@ -661,7 +692,7 @@ struct AdminClinicDetailView: View {
             } }
         } label: {
             Text("Cancel Invite")
-                .font(Brand.Typography.chip)
+                .brandFont(.chip)
                 .foregroundStyle(Brand.Status.canceled.ink)
                 .frame(minHeight: Brand.Layout.minTapTarget)
         }
@@ -673,7 +704,7 @@ struct AdminClinicDetailView: View {
 
     private func countPill(_ status: Brand.Status, _ n: Int, of capacity: Int?) -> some View {
         Text(capacity.map { "\(status.label) \(n)/\($0)" } ?? "\(status.label) \(n)")
-            .font(Brand.Typography.chip)
+            .brandFont(.chip)
             .foregroundStyle(status.ink)
             .padding(.horizontal, Brand.Spacing.xs)
             .padding(.vertical, 3)
@@ -710,7 +741,7 @@ private struct MessageClinicSheet: View {
 
                 VStack(alignment: .leading, spacing: Brand.Spacing.md) {
                     Text("To")
-                        .font(Brand.Typography.subheadline)
+                        .brandFont(.subheadline)
                         .foregroundStyle(Brand.textSecondary)
 
                     Picker("To", selection: $audience) {
@@ -724,12 +755,12 @@ private struct MessageClinicSheet: View {
 
                     if audience == .unpaid {
                         Text("\(unpaidCount) unpaid.")
-                            .font(Brand.Typography.caption)
+                            .brandFont(.caption)
                             .foregroundStyle(Brand.textSecondary)
                     }
 
                     TextEditor(text: $body_)
-                        .font(Brand.Typography.body)
+                        .brandFont(.body)
                         .frame(minHeight: 140)
                         .padding(Brand.Spacing.xs)
                         .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.sm))
@@ -739,7 +770,7 @@ private struct MessageClinicSheet: View {
 
                     if let error {
                         Text(error)
-                            .font(Brand.Typography.subheadline)
+                            .brandFont(.subheadline)
                             .foregroundStyle(Brand.Status.canceled.ink)
                     }
 

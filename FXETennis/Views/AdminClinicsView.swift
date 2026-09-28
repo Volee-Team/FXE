@@ -33,6 +33,8 @@ final class AdminClinicsModel {
     var paymentsOn = false
     var moneyClinics: [MoneyClinic] = []
     var declines: [MoneyDecline] = []
+    /// Open chargebacks (20260928200001). Tara answers them in Stripe.
+    var disputes: [MoneyDispute] = []
 
     /// Clinics that ended with someone one more Charge clinic would charge.
     /// Only while payments are on: the tap is the resolving action.
@@ -62,6 +64,7 @@ final class AdminClinicsModel {
             moneyClinics = (try? await AdminRepository.moneyClinics()) ?? []
             // A deleted account's decline is nobody's to fix (20260927300001).
             declines = ((try? await AdminRepository.moneyDeclined()) ?? []).filter { $0.accountDeleted != true }
+            disputes = (try? await AdminRepository.moneyDisputes()) ?? []
             error = nil
             await loadCounts()
         } catch {
@@ -115,7 +118,7 @@ struct AdminClinicsView: View {
                     VStack(alignment: .leading, spacing: Brand.Spacing.lg) {
                         if let error = model.error {
                             Text(error)
-                                .font(Brand.Typography.subheadline)
+                                .brandFont(.subheadline)
                                 .foregroundStyle(Brand.Status.canceled.ink)
                         }
 
@@ -146,7 +149,7 @@ struct AdminClinicsView: View {
                         // on iOS 26 whatever the label style says (seen 09-02),
                         // and an unlabelled icon breaks the icons-with-text rule.
                         Text("Players")
-                            .font(Brand.Typography.button)
+                            .brandFont(.button)
                     }
                     .accessibilityIdentifier("admin.players")
                 }
@@ -157,7 +160,7 @@ struct AdminClinicsView: View {
                 ToolbarItem(placement: .topBarLeading) {
                     Link(destination: URL(string: "https://dashboard.stripe.com")!) {
                         Text("Stripe")
-                            .font(Brand.Typography.button)
+                            .brandFont(.button)
                     }
                     .accessibilityIdentifier("admin.stripe")
                 }
@@ -179,13 +182,13 @@ struct AdminClinicsView: View {
 
         let asks = model.lateRequests.count
         let news = model.notices.count
-        let money = !model.uncharged.isEmpty || !model.declines.isEmpty
+        let money = !model.uncharged.isEmpty || !model.declines.isEmpty || !model.disputes.isEmpty
 
         return Group {
             if waiting > 0 || unpaid > 0 || pool > 0 || asks > 0 || news > 0 || money {
                 VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
                     Text("ACTION NEEDED")
-                        .font(Brand.Typography.chip)
+                        .brandFont(.chip)
                         .foregroundStyle(Brand.textSecondary)
 
                     VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
@@ -202,6 +205,16 @@ struct AdminClinicsView: View {
                                 needRow(Brand.Status.canceled, "\(d.displayName)'s card was declined",
                                         detail: declineDetail(d))
                             }
+                        }
+                        // A dispute is answered in Stripe, so the row opens
+                        // Stripe's dashboard in Safari, like the toolbar link.
+                        ForEach(model.disputes) { d in
+                            Link(destination: URL(string: "https://dashboard.stripe.com")!) {
+                                needRow(Brand.Status.canceled, "\(d.displayName) disputed a charge",
+                                        detail: disputeDetail(d))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("admin.actionNeeded.dispute")
                         }
                         if asks > 0 { needRow(Brand.Status.responseNeeded, "\(asks) asking to get in after close") }
                         if news > 0 { needRow(Brand.Status.canceled, "\(news) cancellations or replies to see") }
@@ -226,11 +239,11 @@ struct AdminClinicsView: View {
             Circle().fill(status.ink).frame(width: 9, height: 9)
             VStack(alignment: .leading, spacing: 1) {
                 Text(text)
-                    .font(Brand.Typography.body)
+                    .brandFont(.body)
                     .foregroundStyle(Brand.textPrimary)
                 if let detail {
                     Text(detail)
-                        .font(Brand.Typography.caption)
+                        .brandFont(.caption)
                         .foregroundStyle(Brand.textSecondary)
                 }
             }
@@ -244,6 +257,14 @@ struct AdminClinicsView: View {
     private func declineDetail(_ d: MoneyDecline) -> String {
         var parts = [d.clinicName, d.clinicStartsAt.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())]
         if let reason = DeclineReason.label(d.failureCode) { parts.append(reason) }
+        return parts.joined(separator: " · ")
+    }
+
+    /// "Tuesday Ladies 3.0+ · Tue, Sep 29 · $18 · Respond by Oct 5".
+    private func disputeDetail(_ d: MoneyDispute) -> String {
+        var parts = [d.clinicName, d.clinicStartsAt.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()),
+                     d.amountCents.centsAsPrice]
+        if let by = d.respondBy { parts.append("Respond by \(by.formatted(.dateTime.month(.abbreviated).day()))") }
         return parts.joined(separator: " · ")
     }
 
@@ -267,13 +288,13 @@ struct AdminClinicsView: View {
     private func section(_ title: String, _ clinics: [ClinicAdmin], empty: String) -> some View {
         VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
             Text(title.uppercased())
-                .font(Brand.Typography.chip)
+                .brandFont(.chip)
                 .foregroundStyle(Brand.textSecondary)
 
             if clinics.isEmpty {
                 if !empty.isEmpty {
                     Text(empty)
-                        .font(Brand.Typography.body)
+                        .brandFont(.body)
                         .foregroundStyle(Brand.textSecondary)
                 }
             } else {
@@ -299,20 +320,20 @@ private struct AdminClinicRow: View {
         VStack(alignment: .leading, spacing: Brand.Spacing.xxs) {
             HStack {
                 Text(clinic.name)
-                    .font(Brand.Typography.headline)
+                    .brandFont(.headline)
                     .foregroundStyle(Brand.navy)
                 Spacer()
                 if clinic.isCanceled {
                     StatusChip(.canceled)
                 } else if clinic.isDraft {
                     Text("Draft")
-                        .font(Brand.Typography.chip)
+                        .brandFont(.chip)
                         .foregroundStyle(Brand.textSecondary)
                 }
             }
 
             Text(timeLine)
-                .font(Brand.Typography.subheadline)
+                .brandFont(.subheadline)
                 .foregroundStyle(Brand.textSecondary)
 
             // Admin-only counts. Never render this on a player screen. A
@@ -336,7 +357,7 @@ private struct AdminClinicRow: View {
     private func countPill(_ status: Brand.Status, _ n: Int, of capacity: Int?) -> some View {
         let text = capacity.map { "\(status.label) \(n)/\($0)" } ?? "\(status.label) \(n)"
         return Text(text)
-            .font(Brand.Typography.chip)
+            .brandFont(.chip)
             .foregroundStyle(status.ink)
             .padding(.horizontal, Brand.Spacing.xs)
             .padding(.vertical, 3)

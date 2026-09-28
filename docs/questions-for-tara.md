@@ -398,7 +398,7 @@ new and changed words and these questions, nothing else.
 *Default: until you answer, only you see declines, with the player's name and the reason, on Money; nothing is sent to the player and they can keep signing up. Status: open, asked 2026-09-27 (MVP audit).*
 
 **79. When you take someone out of a clinic, take back an invitation, or put someone in yourself, should the app tell them?**
-*Default: until you answer, nothing is sent (today's behaviour). If yes, your own lines from your notification drafts would be used. Status: open, asked 2026-09-27 (MVP audit).*
+*Default: until you answer, nothing is sent (today's behaviour). If yes, your own lines from your notification drafts would be used. Status: open, asked 2026-09-27 (MVP audit). **Narrowed 2026-09-28 (decision 0022):** your catalogue already has words for two of these, so they are sent: putting someone in sends your "You're all set…" (#1), and taking someone out of the Player Pool sends your "You've been removed from the Player Pool…" (#6). Still open: taking someone out of You're In!, and taking back an invitation, send nothing until you say.*
 
 ## O. From the money fixes (added 2026-09-27, decisions 0018 and 0019)
 
@@ -425,6 +425,20 @@ new and changed words and these questions, nothing else.
 
 **87. On the laptop, This week starts fresh every Sunday; last week's clinics move under Show earlier, except one you still need to charge. Right, or keep last week visible through Monday?**
 *Default: as built. Status: open, asked 2026-09-27 (not on the page).*
+
+## P. From wiring her notification words and the Payouts card (added 2026-09-28, decisions 0021 and 0022)
+
+**88. Your "You're all set" message names the day ("on Thursday at 9:00 AM"). For a clinic a week or more away, should it also say the date ("on Thursday, Oct 8 at 9:00 AM")?**
+*Default: your words as written, the day only. Status: open, asked 2026-09-28 (review page, round four).*
+
+**89. If a player's bank takes back a clinic fee (a chargeback) and the bank sides with the player, should the app un-mark them as Paid on your roster?**
+*Default: Paid stays as it was; the Money tab shows "Dispute lost" and that money comes off Charged. Status: open, asked 2026-09-28 (review page, round four).*
+
+**90. When you approve a late request, the player gets "You're in for {clinic}." Should it be your "You're all set…" message instead?**
+*Default: the current line, one message. Status: open, asked 2026-09-28 (review page, round four).*
+
+**91. Someone taps Accept on your invitation after the clinic has already started. Let them in, or say no?**
+*Default: let them in until the clinic ends; after it ends, the app says no (a finished clinic can't be joined, and they would have been charged for it). Status: open, asked 2026-09-28 (review page, round four).*
 
 ### How 52 to 57 are being sent
 

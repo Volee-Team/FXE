@@ -38,11 +38,11 @@ struct CardOnFileView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
             Text("Payment method")
-                .font(Brand.Typography.bodyEmphasis)
+                .brandFont(.bodyEmphasis)
                 .foregroundStyle(Brand.textPrimary)
             // Tara's sentence, verbatim, as she edited it on 2026-09-22 (decision 0016).
             Text("Your card will only be charged after a clinic you attended, a late cancellation or no-show. Cancel at least 3 hours before clinic and you will not be charged.")
-                .font(Brand.Typography.caption)
+                .brandFont(.caption)
                 .foregroundStyle(Brand.textSecondary)
 
             // Their words, verbatim. A real Button so the element is a
@@ -53,7 +53,7 @@ struct CardOnFileView: View {
                         .font(.title3)
                         .foregroundStyle(permission ? Brand.navy : Brand.textSecondary)
                     Text(CardConsent.words)
-                        .font(Brand.Typography.body)
+                        .brandFont(.body)
                         .foregroundStyle(Brand.textPrimary)
                         .multilineTextAlignment(.leading)
                     Spacer(minLength: 0)
@@ -66,7 +66,7 @@ struct CardOnFileView: View {
 
             HStack {
                 Text(session.account?.cardLabel ?? "No card on file")
-                    .font(Brand.Typography.body)
+                    .brandFont(.body)
                     .foregroundStyle(session.account?.hasCard == true ? Brand.textPrimary : Brand.textSecondary)
                     .accessibilityIdentifier("profile.cardLabel")
                 Spacer()
@@ -74,7 +74,7 @@ struct CardOnFileView: View {
                     Task { await startAddingCard() }
                 } label: {
                     Text(session.account?.hasCard == true ? "Change card" : "Add a card")
-                        .font(Brand.Typography.chip)
+                        .brandFont(.chip)
                         .foregroundStyle(Brand.navy)
                         .frame(minHeight: Brand.Layout.minTapTarget)
                 }
@@ -91,7 +91,7 @@ struct CardOnFileView: View {
                 HStack(spacing: Brand.Spacing.xs) {
                     if polling { ProgressView() }
                     Text(note)
-                        .font(Brand.Typography.caption)
+                        .brandFont(.caption)
                         .foregroundStyle(Brand.textSecondary)
                         .accessibilityIdentifier("profile.cardNote")
                 }
@@ -101,7 +101,7 @@ struct CardOnFileView: View {
                     Task { await refreshOnce() }
                 } label: {
                     Text("Refresh")
-                        .font(Brand.Typography.chip)
+                        .brandFont(.chip)
                         .foregroundStyle(Brand.navy)
                         .frame(minHeight: Brand.Layout.minTapTarget)
                 }

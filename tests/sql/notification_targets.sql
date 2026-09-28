@@ -165,11 +165,14 @@ insert into _probe_result
 select 'every_producer_passes_its_entity_as_a_literal', '0',
        ((select count(*) from every_call) - (select count(*) from literal_calls))::text;
 
--- Not vacuous: the seven producers that exist today are the ones found.
+-- Not vacuous: the nine producers that exist today are the ones found.
+-- register_for_clinic and place_player joined on 2026-09-28 (Tara's #1 and
+-- #5, 20260928000001), naming 'registration'.
 insert into _probe_result
-select 'the_seven_known_producers_are_found', '7', count(*)::text
-  from unnest(array['cancel_clinic', 'cancel_registration', 'invite_from_pool', 'request_late_spot',
-                    'resolve_late_request', 'respond_to_invitation', 'send_clinic_message']) k
+select 'the_nine_known_producers_are_found', '9', count(*)::text
+  from unnest(array['cancel_clinic', 'cancel_registration', 'invite_from_pool', 'place_player',
+                    'register_for_clinic', 'request_late_spot', 'resolve_late_request',
+                    'respond_to_invitation', 'send_clinic_message']) k
  where exists (select 1 from pg_proc p
                 where p.pronamespace = 'public'::regnamespace and p.proname = k
                   and p.prosrc ~ 'notify_account\s*\(');

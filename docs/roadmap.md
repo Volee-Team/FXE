@@ -158,8 +158,43 @@ Alex, 2026-08-19: *"we're not in a big rush, I can do it as an org from the star
 | ⬜ | **Juniors.** Deferred by Tara to November or the spring session (decision 0007 §6). Enum values already in the schema so this is UI work, not a migration |
 | ⬜ | Parent accounts managing children, junior age groups |
 | ⬜ | Duplicate an entire week and adjust dates |
-| ⬜ | Add to Calendar |
+| ✅ | Add to Calendar (2026-09-28, decision 0023: nothing about where goes into the entry) |
 | ⬜ | Attendance check-in |
+
+---
+
+## Player-facing polish: the wow list (Alex, 2026-09-27)
+
+Alex: *"wow things need to be very user facing, not for tara and kat"*, and
+*"WE WANT EXTRA FEATURES NOT JUST MVP"*. Built means merged and in the next
+TestFlight build; ideas are not scheduled until Alex picks them.
+
+**Built 2026-09-28** (decisions 0022, 0023):
+
+| | |
+|---|---|
+| ✅ | Accept and Decline right on an invitation's notification, without opening the app (appears once push is live) |
+| ✅ | Tara's own words on every notification the club sends, the same on the lock screen and in the bell |
+| ✅ | Add to Calendar on a clinic you're in |
+| ✅ | Remind me: a notification at the moment registration opens to you |
+| ✅ | A tap you can feel when you land a spot; the status changes smoothly |
+| ✅ | Text that grows with the iPhone's Larger Text setting, live; Apple's accessibility audit on every main screen |
+| ✅ | A readable clock over the navy screens; page titles in the club's serif; outlined icons |
+| ✅ | Return moves through sign-in and the profile form |
+
+**Ideas, not built** (each says what it waits on):
+
+| Idea | Waits on |
+|---|---|
+| A Home Screen widget: your next clinic and its time | The LLC's bundle id (checklist C12): a widget needs an App Group, tied to the id |
+| Sign in with Apple: one tap, no password to forget | The LLC's Apple account (a Services ID) and Supabase's Apple provider |
+| Saved passwords offered for the club's site and app together | The LLC's team id in a file on the admin site (associated domains) |
+| Clinic day on the Lock Screen (a Live Activity: "Tonight 7:00, You're In!") | After launch; needs push live |
+| Placeholders shaped like the list while it loads, instead of a spinner | Nothing; small |
+| Share a clinic with a friend | Tara: she hides FXE from non-members, so this is her call first |
+
+**Tara-facing, waiting on her answers:** pro logins (question 71), guests
+billed to a member (72), a Contact Tara link (76), Stripe receipts (86).
 
 ---
 

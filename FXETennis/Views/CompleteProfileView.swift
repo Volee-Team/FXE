@@ -42,7 +42,10 @@ struct CompleteProfileView: View {
     /// is the exact experience of a real player. Leaving the text fields, by
     /// answering the membership question or picking a rating, drops the keyboard;
     /// so does dragging the form.
-    @FocusState private var typing: Bool
+    @FocusState private var typing: TypedField?
+    /// Return moves first name to last name to phone (the phone pad has no
+    /// Return key; the membership question below drops the keyboard).
+    private enum TypedField { case firstName, lastName, phone }
 
     /// Both names are required because they are NOT NULL on both tables and are
     /// what Tara reads in her roster. Membership is required because it decides
@@ -67,9 +70,12 @@ struct CompleteProfileView: View {
                 VStack(alignment: .leading, spacing: Brand.Spacing.lg) {
                     header
 
-                    field("First Name", text: $firstName, content: .givenName, id: "profile.firstName")
-                    field("Last Name", text: $lastName, content: .familyName, id: "profile.lastName")
-                    field("Phone", text: $phone, content: .telephoneNumber, keyboard: .phonePad, id: "profile.phone")
+                    field("First Name", text: $firstName, content: .givenName, id: "profile.firstName",
+                          name: .firstName, next: .lastName)
+                    field("Last Name", text: $lastName, content: .familyName, id: "profile.lastName",
+                          name: .lastName, next: .phone)
+                    field("Phone", text: $phone, content: .telephoneNumber, keyboard: .phonePad, id: "profile.phone",
+                          name: .phone, next: nil)
 
                     membershipQuestion
                     ratingPicker
@@ -77,7 +83,7 @@ struct CompleteProfileView: View {
 
                     if let error = session.authError {
                         Text(error)
-                            .font(Brand.Typography.subheadline)
+                            .brandFont(.subheadline)
                             .foregroundStyle(Brand.Status.canceled.ink)
                             .accessibilityAddTraits(.isStaticText)
                     }
@@ -106,10 +112,10 @@ struct CompleteProfileView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
             Text("Almost there!")
-                .font(Brand.Typography.display)
+                .brandFont(.display)
                 .foregroundStyle(Brand.textPrimary)
             Text("Members get 24-hour early access to all clinics")
-                .font(Brand.Typography.subheadline)
+                .brandFont(.subheadline)
                 .foregroundStyle(Brand.textSecondary)
         }
         .padding(.bottom, Brand.Spacing.xs)
@@ -120,15 +126,19 @@ struct CompleteProfileView: View {
         text: Binding<String>,
         content: UITextContentType,
         keyboard: UIKeyboardType = .default,
-        id: String
+        id: String,
+        name: TypedField,
+        next: TypedField?
     ) -> some View {
         VStack(alignment: .leading, spacing: Brand.Spacing.xxs) {
             Text(label)
-                .font(Brand.Typography.subheadline)
+                .brandFont(.subheadline)
                 .foregroundStyle(Brand.textSecondary)
             TextField("", text: text)
-                .focused($typing)
-                .font(Brand.Typography.body)
+                .focused($typing, equals: name)
+                .submitLabel(next == nil ? .done : .next)
+                .onSubmit { typing = next }
+                .brandFont(.body)
                 .foregroundStyle(Brand.textPrimary)
                 .textContentType(content)
                 .keyboardType(keyboard)
@@ -154,13 +164,13 @@ struct CompleteProfileView: View {
     private var membershipQuestion: some View {
         VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
             Text("Are you currently a Foxcroft East Racquet & Swim Club member?")
-                .font(Brand.Typography.bodyEmphasis)
+                .brandFont(.bodyEmphasis)
                 .foregroundStyle(Brand.textPrimary)
                 .fixedSize(horizontal: false, vertical: true)
 
             HStack(spacing: Brand.Spacing.sm) {
-                choice("Yes", selected: isMember == true, id: "profile.member.yes") { isMember = true; typing = false }
-                choice("No", selected: isMember == false, id: "profile.member.no") { isMember = false; typing = false }
+                choice("Yes", selected: isMember == true, id: "profile.member.yes") { isMember = true; typing = nil }
+                choice("No", selected: isMember == false, id: "profile.member.no") { isMember = false; typing = nil }
             }
         }
     }
@@ -173,7 +183,7 @@ struct CompleteProfileView: View {
     ) -> some View {
         Button(action: action) {
             Text(label)
-                .font(Brand.Typography.button)
+                .brandFont(.button)
                 .frame(maxWidth: .infinity)
                 .frame(minHeight: Brand.Layout.comfortableTapTarget)
                 .foregroundStyle(selected ? Brand.textOnNavy : Brand.textPrimary)
@@ -196,14 +206,14 @@ struct CompleteProfileView: View {
     private var levelNoteField: some View {
         VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
             Text("Note for Tara (optional)")
-                .font(Brand.Typography.bodyEmphasis)
+                .brandFont(.bodyEmphasis)
                 .foregroundStyle(Brand.textPrimary)
             TextField("Just coming back from a back injury - probably a low 3.5", text: $levelNote, axis: .vertical)
                 .lineLimit(2...4)
                 .textFieldStyle(.roundedBorder)
                 .accessibilityIdentifier("profile.levelNote")
             Text("Only Tara sees this.")
-                .font(Brand.Typography.caption)
+                .brandFont(.caption)
                 .foregroundStyle(Brand.textSecondary)
         }
     }
@@ -212,14 +222,14 @@ struct CompleteProfileView: View {
         VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
             HStack {
                 Text("Your tennis rating")
-                    .font(Brand.Typography.bodyEmphasis)
+                    .brandFont(.bodyEmphasis)
                     .foregroundStyle(Brand.textPrimary)
                 Spacer()
                 // Was Tara's "Need Help?" from Screen 4; on 2026-09-22 she marked it
                 // Change with no replacement (decision 0016). "Rating Guide" names
                 // what it opens, the sheet title she kept; question 69 asks her.
                 Button("Rating Guide") { showNTRP = true }
-                    .font(Brand.Typography.subheadline)
+                    .brandFont(.subheadline)
                     .foregroundStyle(Brand.navy)
                     .frame(minHeight: Brand.Layout.minTapTarget)
             }
@@ -233,10 +243,10 @@ struct CompleteProfileView: View {
                     ForEach(NTRPRating.displayOrdered) { level in
                         Button {
                             rating = (rating == level) ? nil : level
-                            typing = false
+                            typing = nil
                         } label: {
                             Text(level.label)
-                                .font(Brand.Typography.chip)
+                                .brandFont(.chip)
                                 .padding(.horizontal, Brand.Spacing.sm)
                                 .frame(minHeight: Brand.Layout.minTapTarget)
                                 .foregroundStyle(rating == level ? Brand.textOnNavy : Brand.textPrimary)
@@ -272,7 +282,7 @@ struct CompleteProfileView: View {
                 }
             } label: {
                 Text(saving ? "Saving…" : "Continue")
-                    .font(Brand.Typography.button)
+                    .brandFont(.button)
                     .frame(maxWidth: .infinity)
                     .frame(minHeight: Brand.Layout.comfortableTapTarget)
                     .foregroundStyle(Brand.textOnNavy)
@@ -288,7 +298,7 @@ struct CompleteProfileView: View {
             // A disabled control always gets visible helper text saying why.
             if !canSave && !saving {
                 Text("Add your name, phone number, and tennis rating. Please answer the membership question to continue")
-                    .font(Brand.Typography.caption)
+                    .brandFont(.caption)
                     .foregroundStyle(Brand.textSecondary)
             }
         }

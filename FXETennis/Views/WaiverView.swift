@@ -47,15 +47,15 @@ struct WaiverView: View {
                     if let w = waiver {
                         VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
                             Text(w.title)
-                                .font(Brand.Typography.title)
+                                .brandFont(.title)
                                 .foregroundStyle(Brand.navy)
                             Text(w.organizer)
-                                .font(Brand.Typography.subheadline)
+                                .brandFont(.subheadline)
                                 .foregroundStyle(Brand.textSecondary)
                         }
                         ForEach(Array(w.paragraphs.enumerated()), id: \.offset) { _, paragraph in
                             Text(paragraph.text)
-                                .font(paragraph.isHeading ? Brand.Typography.bodyEmphasis : Brand.Typography.body)
+                                .brandFont(paragraph.isHeading ? .bodyEmphasis : .body)
                                 .foregroundStyle(Brand.textPrimary)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
@@ -64,7 +64,7 @@ struct WaiverView: View {
                         // A failed load used to end here, with no button, on a
                         // sheet that cannot be swiped away (MVP audit item 7).
                         Text(loadError)
-                            .font(Brand.Typography.body)
+                            .brandFont(.body)
                             .foregroundStyle(Brand.Status.canceled.ink)
                             .fixedSize(horizontal: false, vertical: true)
                             .accessibilityIdentifier("waiver.loadError")
@@ -72,7 +72,7 @@ struct WaiverView: View {
                             Task { await load() }
                         } label: {
                             Text("Try again")
-                                .font(Brand.Typography.button)
+                                .brandFont(.button)
                                 .frame(maxWidth: .infinity)
                                 .frame(minHeight: Brand.Layout.comfortableTapTarget)
                                 .foregroundStyle(Brand.textOnNavy)
@@ -110,7 +110,7 @@ struct WaiverView: View {
                         .foregroundStyle(agreed ? Brand.navy : Brand.textSecondary)
                     // Her required-checkbox sentence, verbatim.
                     Text("I have read and agree to the Adult Tennis Participation Waiver and Release.")
-                        .font(Brand.Typography.body)
+                        .brandFont(.body)
                         .foregroundStyle(Brand.textPrimary)
                         .multilineTextAlignment(.leading)
                     Spacer(minLength: 0)
@@ -123,7 +123,7 @@ struct WaiverView: View {
 
             VStack(alignment: .leading, spacing: Brand.Spacing.xxs) {
                 Text("Full legal name")
-                    .font(Brand.Typography.caption)
+                    .brandFont(.caption)
                     .foregroundStyle(Brand.textSecondary)
                 TextField("First and last name", text: $legalName)
                     .textContentType(.name)
@@ -134,7 +134,7 @@ struct WaiverView: View {
 
             if let error {
                 Text(error)
-                    .font(Brand.Typography.caption)
+                    .brandFont(.caption)
                     .foregroundStyle(Brand.Status.canceled.ink)
             }
 
@@ -143,7 +143,7 @@ struct WaiverView: View {
             } label: {
                 Group {
                     if sending { ProgressView().tint(Brand.textOnNavy) }
-                    else { Text("Agree and sign").font(Brand.Typography.button) }
+                    else { Text("Agree and sign").brandFont(.button) }
                 }
                 .frame(maxWidth: .infinity)
                 .frame(minHeight: Brand.Layout.comfortableTapTarget)

@@ -93,12 +93,12 @@ struct HomeView: View {
                                 // line in italic gator-green.
                                 VStack(spacing: Brand.Spacing.xxs) {
                                     Text(greetingText)
-                                        .font(Brand.Typography.greeting)
+                                        .brandFont(.greeting)
                                         .foregroundStyle(Brand.navy)
                                         .multilineTextAlignment(.center)
                                         .accessibilityIdentifier("home.greeting")
                                     Text("Let's Play.")
-                                        .font(Brand.Typography.greetingAccent)
+                                        .brandFont(.greetingAccent)
                                         .foregroundStyle(Brand.court)
                                 }
                                 .frame(maxWidth: .infinity)
@@ -112,7 +112,7 @@ struct HomeView: View {
                                 // a member holding a spot that nothing was open).
                                 if let loadError = model.loadError {
                                     Text(loadError)
-                                        .font(Brand.Typography.subheadline)
+                                        .brandFont(.subheadline)
                                         .foregroundStyle(Brand.Status.canceled.ink)
                                         .fixedSize(horizontal: false, vertical: true)
                                         .accessibilityIdentifier("home.loadError")
@@ -154,7 +154,14 @@ struct HomeView: View {
                 }
             }
             .navigationBarHidden(true)
+            // White status bar text over the navy header (the bar stays
+            // hidden; its colour scheme is what sets the status bar). See
+            // lightStatusBar() in BrandHeader.swift.
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .task { await model.load(); await refreshUnread() }
+            // A "Remind me" moves or goes with what this list says (RegistrationReminders).
+            .reconcilesReminders(clinics: model.clinics, registered: Set(model.myRegistrationsByClinic.keys),
+                                 isMember: isMember)
             .refreshable { await model.load(); await refreshUnread() }
             // Opening the app is how a Pool player learns she was invited
             // until push is live (MVP audit item 8).
@@ -234,6 +241,9 @@ struct BellButton: View {
                 .symbolRenderingMode(.palette)
                 .foregroundStyle(Brand.court, Brand.textOnNavy)
                 .frame(minWidth: Brand.Layout.minTapTarget, minHeight: Brand.Layout.minTapTarget)
+                // A plain button is only the drawn glyph without this; the
+                // audit measured the bell at 19 by 20 points (2026-09-28).
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("home.bell")
@@ -257,7 +267,7 @@ struct NavyHeaderBar: View {
     var body: some View {
         HStack {
             Text(title)
-                .font(Brand.Typography.bodyEmphasis)
+                .brandFont(.bodyEmphasis)
                 .foregroundStyle(Brand.textOnNavy)
                 .accessibilityIdentifier(titleIdentifier ?? "")
             Spacer()
@@ -273,6 +283,7 @@ struct NavyHeaderBar: View {
                             .foregroundStyle(Brand.accent, Brand.textOnNavy)
                     }
                     .frame(minWidth: Brand.Layout.minTapTarget, minHeight: Brand.Layout.minTapTarget)
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .disabled(onBell == nil)
@@ -296,7 +307,7 @@ struct SectionBlock<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Brand.Spacing.sm) {
             Text(title.uppercased())
-                .font(Brand.Typography.chip)
+                .brandFont(.chip)
                 .tracking(0.6)
                 .foregroundStyle(Brand.navy)
             content
@@ -339,11 +350,11 @@ struct ClinicRow: View {
     private var details: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(clinic.name)
-                .font(Brand.Typography.bodyEmphasis)
+                .brandFont(.bodyEmphasis)
                 .foregroundStyle(Brand.navy)
                 .multilineTextAlignment(.leading)
             Text(timeLine)
-                .font(Brand.Typography.subheadline)
+                .brandFont(.subheadline)
                 .foregroundStyle(Brand.textSecondary)
         }
     }
@@ -353,7 +364,7 @@ struct ClinicRow: View {
             StatusDot(reg.status.display)
         } else if let price = clinic.priceCents(forMember: isMember) {
             Text(price.centsAsPrice)
-                .font(Brand.Typography.subheadline)
+                .brandFont(.subheadline)
                 .foregroundStyle(Brand.navy)
                 // Home renders a real price and had no identifier on it,
                 // so the member-vs-non-member pricing test could not see
@@ -381,7 +392,7 @@ struct StatusDot: View {
                 .fill(status.ink)
                 .frame(width: 9, height: 9)
             Text(status.label)
-                .font(Brand.Typography.subheadline)
+                .brandFont(.subheadline)
                 .foregroundStyle(status.ink)
                 .fixedSize()
         }
@@ -410,7 +421,7 @@ struct EmptyLine: View {
     init(_ text: String) { self.text = text }
     var body: some View {
         Text(text)
-            .font(Brand.Typography.body)
+            .brandFont(.body)
             .foregroundStyle(Brand.textSecondary)
             .padding(.vertical, Brand.Spacing.xs)
     }

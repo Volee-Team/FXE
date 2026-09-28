@@ -47,7 +47,7 @@ struct NotificationsView: View {
                             .font(.system(size: 40))
                             .foregroundStyle(Brand.disabled)
                         Text("No notifications yet")
-                            .font(Brand.Typography.body)
+                            .brandFont(.body)
                             .foregroundStyle(Brand.textSecondary)
                     }
                     .padding(Brand.Spacing.pageMargin)
@@ -76,7 +76,7 @@ struct NotificationsView: View {
 
                         if let error {
                             Text(error)
-                                .font(Brand.Typography.subheadline)
+                                .brandFont(.subheadline)
                                 .foregroundStyle(Brand.Status.canceled.ink)
                                 .padding(.horizontal, Brand.Spacing.pageMargin)
                         }
@@ -85,7 +85,9 @@ struct NotificationsView: View {
                 }
             }
             .navigationTitle("Notifications")
-            .navigationBarTitleDisplayMode(.inline)
+            // Large, not inline: between Done and Mark all read an inline
+            // title is clipped at larger text sizes (audit, 2026-09-28).
+            .navigationBarTitleDisplayMode(.large)
             .navigationDestination(item: $destination) { shown in
                 NotificationDestinationView(destination: shown)
             }
@@ -124,11 +126,11 @@ struct NotificationsView: View {
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.body)
-                    .font(item.isUnread ? Brand.Typography.bodyEmphasis : Brand.Typography.body)
+                    .brandFont(item.isUnread ? .bodyEmphasis : .body)
                     .foregroundStyle(Brand.textPrimary)
                     .multilineTextAlignment(.leading)
                 Text(item.createdAt.formatted(.relative(presentation: .named)))
-                    .font(Brand.Typography.caption)
+                    .brandFont(.caption)
                     .foregroundStyle(Brand.textSecondary)
             }
             Spacer(minLength: 0)

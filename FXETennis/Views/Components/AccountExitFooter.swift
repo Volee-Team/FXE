@@ -39,7 +39,7 @@ struct AccountExitFooter: View {
                 Task { await session.signOut() }
             } label: {
                 Text("Sign out")
-                    .font(Brand.Typography.subheadline)
+                    .brandFont(.subheadline)
                     .foregroundStyle(Brand.textSecondary)
                     .frame(maxWidth: .infinity)
                     .frame(minHeight: Brand.Layout.minTapTarget)
@@ -56,7 +56,7 @@ struct AccountExitFooter: View {
                     confirmDelete = true
                 } label: {
                     Text("Delete my account")
-                        .font(Brand.Typography.caption)
+                        .brandFont(.caption)
                         .foregroundStyle(Brand.Status.canceled.ink)
                         .frame(maxWidth: .infinity)
                         .frame(minHeight: Brand.Layout.minTapTarget)
@@ -76,7 +76,7 @@ struct AccountExitFooter: View {
 
                 if let deleteError {
                     Text(deleteError)
-                        .font(Brand.Typography.caption)
+                        .brandFont(.caption)
                         .foregroundStyle(Brand.Status.canceled.ink)
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)

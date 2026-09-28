@@ -27,24 +27,24 @@ struct PlayersDirectoryView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: Brand.Spacing.md) {
                     Toggle("Show inactive players", isOn: $includeInactive)
-                        .font(Brand.Typography.subheadline)
+                        .brandFont(.subheadline)
                         .tint(Brand.navy)
                         .accessibilityIdentifier("admin.players.inactive")
                         .onChange(of: includeInactive) { _, _ in search() }
 
                     if let error {
                         Text(error)
-                            .font(Brand.Typography.subheadline)
+                            .brandFont(.subheadline)
                             .foregroundStyle(Brand.Status.canceled.ink)
                     }
 
                     if query.trimmingCharacters(in: .whitespaces).count < 2 {
                         Text("Type at least two letters of a name.")
-                            .font(Brand.Typography.body)
+                            .brandFont(.body)
                             .foregroundStyle(Brand.textSecondary)
                     } else if results.isEmpty {
                         Text("Nobody by that name yet. They may need to sign up in the app first.")
-                            .font(Brand.Typography.body)
+                            .brandFont(.body)
                             .foregroundStyle(Brand.textSecondary)
                     } else {
                         VStack(spacing: 0) {
@@ -79,10 +79,10 @@ struct PlayersDirectoryView: View {
         HStack(spacing: Brand.Spacing.sm) {
             VStack(alignment: .leading, spacing: 1) {
                 Text("\(player.firstName) \(player.lastName)")
-                    .font(Brand.Typography.bodyEmphasis)
+                    .brandFont(.bodyEmphasis)
                     .foregroundStyle(Brand.textPrimary)
                 Text(subtitle(player))
-                    .font(Brand.Typography.caption)
+                    .brandFont(.caption)
                     .foregroundStyle(Brand.textSecondary)
             }
             Spacer()
@@ -156,23 +156,23 @@ private struct PlayerAdminDetailView: View {
                 VStack(alignment: .leading, spacing: Brand.Spacing.lg) {
                     VStack(alignment: .leading, spacing: Brand.Spacing.xxs) {
                         Text("\(player.firstName) \(player.lastName)")
-                            .font(Brand.Typography.title)
+                            .brandFont(.title)
                             .foregroundStyle(Brand.textPrimary)
                         if let r = player.adultRating, let bucket = NTRPRating(rating: r) {
                             Text("Rating \(bucket.label)")
-                                .font(Brand.Typography.subheadline)
+                                .brandFont(.subheadline)
                                 .foregroundStyle(Brand.textSecondary)
                         }
                         // Decision 0013: "Both". The note at level entry, in the
                         // player's own words, next to the rating here and on the roster.
                         if let n = player.levelNote, !n.isEmpty {
                             Text("“\(n)”")
-                                .font(Brand.Typography.body)
+                                .brandFont(.body)
                                 .foregroundStyle(Brand.textPrimary)
                                 .accessibilityIdentifier("admin.player.levelNote")
                         }
                         Text(player.waiverAccepted == true ? "Waiver signed" : "Waiver not signed")
-                            .font(Brand.Typography.caption)
+                            .brandFont(.caption)
                             .foregroundStyle(player.waiverAccepted == true ? Brand.Status.youreIn.ink : Brand.Status.canceled.ink)
                     }
 
@@ -193,20 +193,20 @@ private struct PlayerAdminDetailView: View {
                             }
                             .frame(minHeight: Brand.Layout.comfortableTapTarget)
                     }
-                    .font(Brand.Typography.body)
+                    .brandFont(.body)
                     .padding(.horizontal, Brand.Spacing.cardPadding)
                     .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
                     .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
 
                     VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
                         Text("Private note")
-                            .font(Brand.Typography.bodyEmphasis)
+                            .brandFont(.bodyEmphasis)
                             .foregroundStyle(Brand.textPrimary)
                         Text("Only you can see this.")
-                            .font(Brand.Typography.caption)
+                            .brandFont(.caption)
                             .foregroundStyle(Brand.textSecondary)
                         TextEditor(text: $note)
-                            .font(Brand.Typography.body)
+                            .brandFont(.body)
                             .frame(minHeight: 120)
                             .padding(Brand.Spacing.xs)
                             .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.sm))
@@ -221,7 +221,7 @@ private struct PlayerAdminDetailView: View {
                             }
                         } label: {
                             Text("Save note")
-                                .font(Brand.Typography.button)
+                                .brandFont(.button)
                                 .frame(maxWidth: .infinity)
                                 .frame(minHeight: Brand.Layout.comfortableTapTarget)
                                 .foregroundStyle(Brand.textOnNavy)
@@ -237,7 +237,7 @@ private struct PlayerAdminDetailView: View {
 
                     if let message {
                         Text(message)
-                            .font(Brand.Typography.caption)
+                            .brandFont(.caption)
                             .foregroundStyle(Brand.textSecondary)
                     }
                 }

@@ -66,13 +66,13 @@ struct ClinicExplainerSheet: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: Brand.Spacing.lg) {
                         Text(clinicName)
-                            .font(Brand.Typography.title)
+                            .brandFont(.title)
                             .foregroundStyle(Brand.textPrimary)
                             .fixedSize(horizontal: false, vertical: true)
 
                         if let description, !description.isEmpty {
                             Text(description)
-                                .font(Brand.Typography.body)
+                                .brandFont(.body)
                                 .foregroundStyle(Brand.textPrimary)
                                 .fixedSize(horizontal: false, vertical: true)
                         } else {
@@ -80,17 +80,17 @@ struct ClinicExplainerSheet: View {
                             // description is a gap for Tara to fill, and making
                             // one up here would be exactly the copy rule broken.
                             Text("No description yet.")
-                                .font(Brand.Typography.body)
+                                .brandFont(.body)
                                 .foregroundStyle(Brand.textSecondary)
                         }
 
                         if mentions105 {
                             VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
                                 Text("What is 105?")
-                                    .font(Brand.Typography.headline)
+                                    .brandFont(.headline)
                                     .foregroundStyle(Brand.navy)
                                 Text(Self.oneOhFive)
-                                    .font(Brand.Typography.body)
+                                    .brandFont(.body)
                                     .foregroundStyle(Brand.textPrimary)
                                     .fixedSize(horizontal: false, vertical: true)
                             }

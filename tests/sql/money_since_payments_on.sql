@@ -21,6 +21,10 @@
 --     keeps it (M5).
 --   * payments has a plain index on refunds_payment_id for refund rows (M2):
 --     every "is this fee refunded" test looks refunds up by the fee's id.
+--   * A LOST DISPUTE NEVER RE-OPENS A CHARGE (20260928200001). The fee stays
+--     'charged' and keeps the player's one-fee slot, so the clinic owes
+--     nothing and Charge clinic answers "already charged" for that player
+--     instead of charging the card the bank just took the money back from.
 --
 -- FIXTURE (New York). payments_enabled on, payments_enabled_at = T0 = 2026-09-01 00:00.
 --   A  ended 2026-08-20 19:00 (before T0): Maria in (card, unpaid), Ken no-show (card).
@@ -30,6 +34,8 @@
 --        Rob   in, card, PAID by Tara, a failed 2300 charge -> settled
 --        Dana  in, no card (deleted account), unpaid, failed 1800 charge -> declined, account_deleted
 --   C  ended exactly T0: Ken in, card, unpaid -> not charged (at-or-after); Rob in, card, PAID, no charge -> settled.
+--   D  ended 2026-09-12 19:00 (after T0): Ken in, card, unpaid, his 1800 clinic fee
+--        succeeded and then LOST a dispute for all 1800.
 --
 -- EXPECTED
 --   A: no admin_money_clinics row; Charge clinic refused clinic_before_payments; 0 payments on A.
@@ -41,6 +47,9 @@
 --      {"already": 0, "charged": 1, "no_card": 0, "not_owed": 1}.
 --   With payments_enabled_at emptied: summary declined 0 and not charged 0, and
 --      Charge clinic on B refused clinic_before_payments.
+--   D: Ken's row is 'charged'; no admin_money_clinics row (owes nothing, net 0);
+--      Charge clinic: {"already": 1, "charged": 0, "no_card": 0, "not_owed": 0};
+--      still exactly one payment on his registration.
 --   Index: one non-unique index on payments(refunds_payment_id) where kind = 'refund'.
 --
 -- Expected: every row reads PASS.
@@ -62,7 +71,7 @@ declare
   DANA_P  constant uuid := 'a0000000-0000-0000-0000-000000000004';
   PRIYA_P constant uuid := 'a0000000-0000-0000-0000-000000000005';
   ny      constant text := 'America/New_York';
-  ca uuid; cb uuid; cc uuid; b_rob uuid; b_dana uuid;
+  ca uuid; cb uuid; cc uuid; cdl uuid; b_rob uuid; b_dana uuid; d_ken uuid;
   v text; n int; j jsonb;
 begin
   -- ------------------------------------------------------------ fixture
@@ -89,6 +98,19 @@ begin
           timestamp '2026-08-31 23:00' at time zone ny, timestamp '2026-09-01 00:00' at time zone ny,
           timestamp '2026-08-27 08:00' at time zone ny, timestamp '2026-08-28 08:00' at time zone ny, 8, 'published', 60)
   returning id into cc;
+
+  insert into public.clinics (name, audience, category, description, starts_at, ends_at,
+      member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
+  values ('Probe disputed and lost', 'coed', 'Clinic', 'probe',
+          timestamp '2026-09-12 18:00' at time zone ny, timestamp '2026-09-12 19:00' at time zone ny,
+          timestamp '2026-09-03 08:00' at time zone ny, timestamp '2026-09-04 08:00' at time zone ny, 8, 'published', 60)
+  returning id into cdl;
+  insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
+  values (cdl, KEN_P, 'in', 'self', 1800, true, 60) returning id into d_ken;
+  -- As stripe-webhook leaves it: the fee went through, then the bank took it back.
+  insert into public.payments (registration_id, account_id, kind, amount_cents, status, stripe_payment_intent_id,
+      stripe_dispute_id, dispute_status, dispute_reason, dispute_amount_cents, dispute_withdrawn_cents, dispute_event_at)
+  values (d_ken, KEN, 'clinic_fee', 1800, 'succeeded', 'pi_probe_lost', 'dp_probe_lost', 'lost', 'fraudulent', 1800, 1800, now());
 
   insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
   values (ca, MARIA_P, 'in', 'self', 1800, true, 60);
@@ -125,6 +147,16 @@ begin
 
   select count(*) into n from public.admin_money_clinics() where clinic_id = ca;
   insert into _probe_result values ('clinic_before_payments_owes_nothing', '0', n::text);
+
+  -- A lost dispute (20260928200001): charged, owes nothing, never charged again.
+  select count(*) into n from public.admin_money_clinics() where clinic_id = cdl;
+  insert into _probe_result values ('lost_dispute_clinic_owes_nothing', '0', n::text);
+  begin
+    j := public.admin_charge_clinic(cdl);
+    insert into _probe_result values ('charge_clinic_never_recharges_a_lost_dispute', '{"already": 1, "charged": 0, "no_card": 0, "not_owed": 0}', j::text);
+  exception when others then
+    insert into _probe_result values ('charge_clinic_never_recharges_a_lost_dispute', '{"already": 1, "charged": 0, "no_card": 0, "not_owed": 0}', sqlerrm);
+  end;
   select coalesce(max(not_charged_count || '|' || not_charged_cents || '|' || chargeable_count || '|' || declined_count), 'NO ROW')
     into v from public.admin_money_clinics() where clinic_id = cb;
   insert into _probe_result values ('clinic_after_payments_owes_paid_is_settled', '2|4100|1|1', v);
@@ -165,6 +197,10 @@ begin
   insert into _probe_result values ('nothing_charged_before_payments', '0', n::text);
   select count(*) into n from public.payments where registration_id = b_rob and status <> 'failed';
   insert into _probe_result values ('paid_by_hand_not_charged', '0', n::text);
+  select coalesce(max(m.state), 'NO ROW') into v from public.money_rows() m where m.registration_id = d_ken;
+  insert into _probe_result values ('lost_dispute_leaves_the_fee_charged', 'charged', v);
+  select count(*) into n from public.payments where registration_id = d_ken;
+  insert into _probe_result values ('still_one_payment_after_a_lost_dispute', '1', n::text);
 
   -- Payments never switched on: nothing owes, nothing is declined, nothing can be charged.
   update public.app_settings set value = '' where key = 'payments_enabled_at';

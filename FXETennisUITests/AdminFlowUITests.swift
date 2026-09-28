@@ -16,6 +16,7 @@ import XCTest
 final class AdminFlowUITests: XCTestCase {
     private let admin = "tara@fxe.test"
     private let member = "maria@fxe.test"
+    private let nonMember = "rob@fxe.test"
     private let seedPassword = "password"
     private var app: XCUIApplication!
 
@@ -218,6 +219,30 @@ final class AdminFlowUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Nobody is in yet."].waitForExistence(timeout: 20),
                       "Roster still shows someone in You're In! after Remove")
         XCTAssertFalse(court.exists, "The removed player's row is still on the roster")
+    }
+
+    /// Out of the Player Pool (2026-09-28): the button, the same
+    /// confirmation as You're In!'s Remove, and the row gone after it. The
+    /// server sends her #6 from this path (tests/sql/notification_copy.sql).
+    /// Rob, a non-member, on Thursday: a non-member always lands in the Pool,
+    /// and no other test touches him there (Maria's Tuesday Pool row is
+    /// moved to You're In! by testAdminB, which broke the first version of
+    /// this test in the full run).
+    func testAdminF_RemovesFromThePoolWithConfirmation() {
+        app.launch()
+        signIn(as: nonMember)
+        ensureRegistered(forClinicContaining: "Thursday Morning")
+        signOut()
+
+        signIn(as: admin)
+        openAdminClinic(containing: "Thursday Morning")
+        let remove = app.buttons["Remove Rob Delgado from the Player Pool"]
+        XCTAssertTrue(remove.waitForExistence(timeout: 20), "No Remove on Rob's Player Pool row")
+        remove.tap()
+        let confirm = app.buttons["Remove"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 10), "No confirmation before removing from the Pool")
+        confirm.tap()
+        XCTAssertTrue(remove.waitForNonExistence(timeout: 20), "Rob is still in the Player Pool after Remove")
     }
 
     // MARK: - helpers (mirrors PlayerFlowUITests; kept local so each file reads alone)

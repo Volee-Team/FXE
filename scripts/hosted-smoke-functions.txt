@@ -9,6 +9,7 @@ admin_delete_template	{"p_id":"00000000-0000-0000-0000-000000000000"}
 admin_mark_late_cancel	{"p_note":"x","p_registration":"00000000-0000-0000-0000-000000000000"}
 admin_money_clinics	{}
 admin_money_declined	{}
+admin_money_disputes	{}
 admin_money_summary	{}
 admin_player_note	{"p_player":"00000000-0000-0000-0000-000000000000"}
 admin_player_note_edited	{"p_player":"00000000-0000-0000-0000-000000000000"}
@@ -75,6 +76,7 @@ service_week_start	{"p_starts_at":"2026-01-01T00:00:00Z"}
 set_paid	{"p_paid":false,"p_registration":"00000000-0000-0000-0000-000000000000"}
 set_player_active	{"p_active":false,"p_player":"00000000-0000-0000-0000-000000000000"}
 stripe_cutover_to_live	{}
+stripe_record_dispute	{"p_amount_cents":1,"p_dispute_id":"x","p_disputed_at":"2026-01-01T00:00:00Z","p_due_by":"2026-01-01T00:00:00Z","p_event_at":"2026-01-01T00:00:00Z","p_payment_id":"00000000-0000-0000-0000-000000000000","p_payment_intent":"x","p_reason":"x","p_status":"x","p_withdrawn_cents":1}
 unregister_device	{"p_token":"x"}
 waiver_accepted	{"p_account":"00000000-0000-0000-0000-000000000000"}
 waiver_version	{}
