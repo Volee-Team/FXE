@@ -83,7 +83,7 @@ We may update this Policy from time to time. Your continued use of our Services 
 
 If you have any concerns or questions about your data, please contact us at:
 
-[CONTACT: Tara's or the LLC's email, to be filled in by Alex]
+fersctennispro@gmail.com
 
 Last updated: [DATE, when approved]
 
