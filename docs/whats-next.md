@@ -10,8 +10,8 @@ where things stand. Updated 2026-09-27; launch target 2026-10-16.
 - **On testers' phones:** TestFlight build 2, from John's account (decision
   0014). **Next:** build 4 (the MVP audit's fixes), once the `mvp-fixes` PR
   merges; John uploads it (checklist C8).
-- **Hosted:** 45 of 45 migrations paired (`supabase migration list --linked`,
-  2026-09-27); every edge function deployed; Stripe's sandbox keys and
+- **Hosted:** 45 of 45 migrations paired as of 2026-09-27 (`supabase migration
+  list --linked`); every edge function deployed; Stripe's sandbox keys and
   webhook secret in place (checklist A1); **payments switched off** until
   Alex says go (A9); a signed-out caller reaches nothing (122 targets closed, with the web admin's functions answering the browser's preflight).
 - **Admin site:** https://fxe-tennis-admin.vercel.app, verified byte for byte
@@ -52,8 +52,8 @@ notes, the Stripe link).
 Missing on the phone by design: creating or editing a clinic (web only),
 News (deferred, decision 0006).
 
-Testing today: 27 Playwright tests, 13 XCUITests (5 on Tara's side), 120 unit
-tests, 32 SQL probes, a 73-check Stripe pipeline and a 48-check push pipeline
+Testing today: 29 Playwright tests, 13 XCUITests (5 on Tara's side), 120 unit
+tests, 33 SQL probes, a 94-check Stripe pipeline and a 48-check push pipeline
 against mocks in CI.
 
 **Answered already, do not re-ask.** Six of the eight closed on 2026-08-27; see

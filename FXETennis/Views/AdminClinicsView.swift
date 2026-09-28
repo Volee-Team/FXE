@@ -33,6 +33,8 @@ final class AdminClinicsModel {
     var paymentsOn = false
     var moneyClinics: [MoneyClinic] = []
     var declines: [MoneyDecline] = []
+    /// Open chargebacks (20260928200001). Tara answers them in Stripe.
+    var disputes: [MoneyDispute] = []
 
     /// Clinics that ended with someone one more Charge clinic would charge.
     /// Only while payments are on: the tap is the resolving action.
@@ -62,6 +64,7 @@ final class AdminClinicsModel {
             moneyClinics = (try? await AdminRepository.moneyClinics()) ?? []
             // A deleted account's decline is nobody's to fix (20260927300001).
             declines = ((try? await AdminRepository.moneyDeclined()) ?? []).filter { $0.accountDeleted != true }
+            disputes = (try? await AdminRepository.moneyDisputes()) ?? []
             error = nil
             await loadCounts()
         } catch {
@@ -179,7 +182,7 @@ struct AdminClinicsView: View {
 
         let asks = model.lateRequests.count
         let news = model.notices.count
-        let money = !model.uncharged.isEmpty || !model.declines.isEmpty
+        let money = !model.uncharged.isEmpty || !model.declines.isEmpty || !model.disputes.isEmpty
 
         return Group {
             if waiting > 0 || unpaid > 0 || pool > 0 || asks > 0 || news > 0 || money {
@@ -202,6 +205,16 @@ struct AdminClinicsView: View {
                                 needRow(Brand.Status.canceled, "\(d.displayName)'s card was declined",
                                         detail: declineDetail(d))
                             }
+                        }
+                        // A dispute is answered in Stripe, so the row opens
+                        // Stripe's dashboard in Safari, like the toolbar link.
+                        ForEach(model.disputes) { d in
+                            Link(destination: URL(string: "https://dashboard.stripe.com")!) {
+                                needRow(Brand.Status.canceled, "\(d.displayName) disputed a charge",
+                                        detail: disputeDetail(d))
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("admin.actionNeeded.dispute")
                         }
                         if asks > 0 { needRow(Brand.Status.responseNeeded, "\(asks) asking to get in after close") }
                         if news > 0 { needRow(Brand.Status.canceled, "\(news) cancellations or replies to see") }
@@ -244,6 +257,14 @@ struct AdminClinicsView: View {
     private func declineDetail(_ d: MoneyDecline) -> String {
         var parts = [d.clinicName, d.clinicStartsAt.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())]
         if let reason = DeclineReason.label(d.failureCode) { parts.append(reason) }
+        return parts.joined(separator: " · ")
+    }
+
+    /// "Tuesday Ladies 3.0+ · Tue, Sep 29 · $18 · Respond by Oct 5".
+    private func disputeDetail(_ d: MoneyDispute) -> String {
+        var parts = [d.clinicName, d.clinicStartsAt.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()),
+                     d.amountCents.centsAsPrice]
+        if let by = d.respondBy { parts.append("Respond by \(by.formatted(.dateTime.month(.abbreviated).day()))") }
         return parts.joined(separator: " · ")
     }
 

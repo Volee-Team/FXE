@@ -29,6 +29,15 @@
 # never produce, is pinned with the SDK's own error objects in
 # tests/stripe/errors.test.ts, run at the end (needs deno).
 #
+# Added 2026-09-28 (Payouts and disputes): stripe-payouts answers an admin
+# with Stripe's balance and payouts, refuses a member and a signed-out caller,
+# and passes on nothing but the four fields of a payout; charge.dispute.*
+# events land on the fee their PaymentIntent names and nowhere else, with
+# what Stripe withdrew read from the dispute's balance transactions, a replay
+# changes nothing, and a late update never reopens a decided dispute. The
+# not-connected answer (503) needs a server with no key, so it is checked by
+# hand and by the browser test's route, not here.
+#
 # The dropped-connection check stops and restarts the mock container
 # ($STRIPE_MOCK_CONTAINER, default stripe-mock, as in CI). Running the mock as
 # the Homebrew binary instead, set STRIPE_MOCK_CONTAINER= (empty) to skip it.
@@ -76,8 +85,13 @@ webhook() { # payload [secret]
   sig=$(printf '%s.%s' "$ts" "$payload" | openssl dgst -sha256 -hmac "$secret" | sed 's/^.* //')
   curl -s -X POST "$API/functions/v1/stripe-webhook" -H "Content-Type: application/json" \
        -H "stripe-signature: t=$ts,v1=$sig" -d "$payload"; }
-event() { # type object-json [livemode, default true: the live path]
-  echo "{\"id\":\"evt_$RANDOM\",\"object\":\"event\",\"api_version\":\"2024-12-18.acacia\",\"livemode\":${3:-true},\"type\":\"$1\",\"data\":{\"object\":$2}}"; }
+event() { # type object-json [livemode, default true: the live path] [created, default now]
+  echo "{\"id\":\"evt_$RANDOM\",\"object\":\"event\",\"api_version\":\"2024-12-18.acacia\",\"created\":${4:-$(date +%s)},\"livemode\":${3:-true},\"type\":\"$1\",\"data\":{\"object\":$2}}"; }
+fncode() { # name jwt-or-empty body -> "<http status> <error or ok>"
+  local out
+  if [ -n "$2" ]; then out=$(curl -s -w '\n%{http_code}' -X POST "$API/functions/v1/$1" -H "Authorization: Bearer $2" -H "apikey: $ANON" -H "Content-Type: application/json" -d "$3")
+  else out=$(curl -s -w '\n%{http_code}' -X POST "$API/functions/v1/$1" -H "apikey: $ANON" -H "Content-Type: application/json" -d "$3"); fi
+  echo "$(echo "$out" | tail -1) $(echo "$out" | sed '$d' | field ".get('error', 'ok')")"; }
 reg() { # clinic player cents member minutes -> a You're In! registration id
   sql "with i as (insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes) values ('$1','$2','in','self',$3,$4,$5) returning id) select id from i"; }
 card() { # account customer-id: a customer and a Visa ending 4242, as the webhook would leave them
@@ -338,6 +352,85 @@ out=$(fn delete-account "$U2_JWT" '{}')
 check "a customer Stripe no longer has counts as removed" "$U2 already_gone NULL" "$(echo "$out" | field "['deleted']") $(echo "$out" | field "['stripe']") $(sql "select coalesce(stripe_customer_id,'NULL') from public.accounts where id='$U2'")"
 out=$(fn delete-account "$U3_JWT" '{}')
 check "no profile yet: nothing to scrub, the sign-in still goes" "$U3 none t" "$(echo "$out" | field "['deleted']") $(echo "$out" | field "['stripe']") $(sql "select deleted_at is not null from auth.users where id='$U3'")"
+
+# ---- 14. Payouts (stripe-payouts, 2026-09-28): what Stripe holds for the club
+#          and what is on its way to Tara's bank. stripe-mock answers one
+#          balance (0 in usd, test mode) and one payout: 1100 in transit,
+#          arrival_date 1234567890, which is 2009-02-13 23:31:30 UTC, so the
+#          bank day is 2009-02-13 (1234567890 = 14288 days of 86400 s + 84690 s).
+out=$(fn stripe-payouts "$TARA_JWT" '{}')
+check "payouts answer an admin with Stripe's balance" "False [{'amount': 0, 'currency': 'usd'}] [{'amount': 0, 'currency': 'usd'}]" \
+  "$(echo "$out" | field "['livemode']") $(echo "$out" | field "['available']") $(echo "$out" | field "['pending']")"
+check "recent payouts carry exactly four fields" "amount,arrival_date,currency,status" "$(echo "$out" | python3 -c "
+import sys,json
+try: print(';'.join(sorted(set(','.join(sorted(p)) for p in json.load(sys.stdin)['recent']))))
+except Exception as e: print('error', e)")"
+check "a payout's bank day is its UTC date" "1100 usd 2009-02-13 in_transit" "$(echo "$out" | python3 -c "
+import sys,json
+try: p=json.load(sys.stdin)['recent'][0]; print(p['amount'], p['currency'], p['arrival_date'], p['status'])
+except Exception as e: print('error', e)")"
+check "the next deposit is the one still in transit" "1100 2009-02-13 in_transit" "$(echo "$out" | python3 -c "
+import sys,json
+try: p=json.load(sys.stdin)['next_payout']; print(p['amount'], p['arrival_date'], p['status'])
+except Exception as e: print('error', e)")"
+check "no bank account, description, id or key leaves the function" "0" "$(echo "$out" | grep -cE 'ba_|destination|po_|STRIPE PAYOUT|statement_descriptor|trace_id|sk_test')"
+check "a member gets 403" "403 not_authorized" "$(fncode stripe-payouts "$MARIA_JWT" '{}')"
+check "a signed-out caller gets 401" "401 not_authenticated" "$(fncode stripe-payouts "$ANON" '{}')"
+check "no JWT at all is stopped at the gateway" "401" "$(fncode stripe-payouts "" '{}' | cut -d' ' -f1)"
+
+# ---- 15. Disputes (charge.dispute.*, 20260928200001). The bank takes a card
+#          payment back. The webhook records it on the fee whose PaymentIntent
+#          it names and on nothing else; Stripe does not deliver in order and
+#          retries for days, so a replay changes nothing and a late update
+#          never reopens a decided dispute. Event times are given explicitly:
+#          the update below was made BEFORE the close but delivered after it.
+#          The dispute carries Stripe's withdrawal as a balance transaction
+#          (amount -1800, Stripe's 1500 fee on top): what a lost dispute
+#          subtracts is the 1800, never the fee.
+REG_X=$(reg "$CLINIC2" "$DANA_P" 1800 true 60); REG_Y=$(reg "$CLINIC2" "$ROB_P" 2300 false 60); REGS="$REGS,'$REG_X','$REG_Y'"
+PI_X="pi_disp_$RANDOM$RANDOM"; PI_Y="pi_disp_$RANDOM$RANDOM"; DP="dp_harness_$RANDOM$RANDOM"
+PAY_X=$(sql "with i as (insert into public.payments (registration_id, account_id, kind, amount_cents, status, stripe_payment_intent_id, livemode) values ('$REG_X','$DANA','clinic_fee',1800,'succeeded','$PI_X',true) returning id) select id from i")
+PAY_Y=$(sql "with i as (insert into public.payments (registration_id, account_id, kind, amount_cents, status, stripe_payment_intent_id, livemode) values ('$REG_Y','$ROB','clinic_fee',2300,'succeeded','$PI_Y',true) returning id) select id from i")
+row() { sql "select md5(p::text) from public.payments p where id='$1'"; }
+dispute_of() { sql "select concat_ws('|', stripe_dispute_id, dispute_status, dispute_reason, dispute_amount_cents, dispute_withdrawn_cents, disputed_at, dispute_due_by, dispute_event_at, status, amount_cents) from public.payments where id='$1'"; }
+Y_BEFORE=$(row "$PAY_Y"); PAID_BEFORE=$(sql "select paid from public.registrations where id='$REG_X'")
+T=$(date +%s)
+OBJ="{\"id\":\"$DP\",\"object\":\"dispute\",\"amount\":1800,\"currency\":\"usd\",\"charge\":\"ch_harness_x\",\"payment_intent\":\"$PI_X\",\"reason\":\"fraudulent\",\"status\":\"needs_response\",\"created\":$((T - 3600)),\"livemode\":true,\"evidence_details\":{\"due_by\":$((T + 7 * 86400)),\"has_evidence\":false,\"past_due\":false,\"submission_count\":0},\"balance_transactions\":[{\"id\":\"txn_harness_w\",\"object\":\"balance_transaction\",\"amount\":-1800,\"fee\":1500,\"net\":-3300,\"currency\":\"usd\",\"type\":\"adjustment\"}]}"
+EV_OPEN=$(event charge.dispute.created "$OBJ" true $((T - 600)))
+check "a signed dispute event is accepted" "True" "$(webhook "$EV_OPEN" | field "['received']")"
+check "the dispute lands on the fee its PaymentIntent names, with what Stripe took" "$DP needs_response fraudulent 1800 took-1800 respond-by-set" \
+  "$(sql "select stripe_dispute_id||' '||dispute_status||' '||dispute_reason||' '||dispute_amount_cents||' took-'||dispute_withdrawn_cents||' '||case when dispute_due_by > now() then 'respond-by-set' else 'no-respond-by' end from public.payments where id='$PAY_X'")"
+check "and on nothing else: the other payment, the fee's status and amount, the Paid flag" "$Y_BEFORE succeeded 1800 $PAID_BEFORE" \
+  "$(row "$PAY_Y") $(sql "select status||' '||amount_cents from public.payments where id='$PAY_X'") $(sql "select paid from public.registrations where id='$REG_X'")"
+check "Tara's open list names the cardholder, the amount and the status" "Dana Okonkwo|1800|needs_response" "$(rpc admin_money_disputes "$TARA_JWT" '{}' | python3 -c "
+import sys,json
+try: print(' ; '.join(f\"{r['first_name']} {r['last_name']}|{r['amount_cents']}|{r['status']}\" for r in json.load(sys.stdin) if r['payment_id']=='$PAY_X'))
+except Exception as e: print('error', e)")"
+check "a member cannot list disputes" "not_authorized" "$(rpc admin_money_disputes "$MARIA_JWT" '{}' | field "['message']")"
+X1=$(dispute_of "$PAY_X")
+webhook "$EV_OPEN" >/dev/null
+check "a replayed event changes nothing" "$X1" "$(dispute_of "$PAY_X")"
+EV_LOST=$(event charge.dispute.closed "${OBJ/needs_response/lost}" true $((T - 60)))
+webhook "$EV_LOST" >/dev/null
+check "charge.dispute.closed records the decision" "lost" "$(sql "select dispute_status from public.payments where id='$PAY_X'")"
+X2=$(dispute_of "$PAY_X")
+EV_LATE=$(event charge.dispute.updated "${OBJ/needs_response/under_review}" true $((T - 300)))
+check "a late update is accepted by the webhook" "True" "$(webhook "$EV_LATE" | field "['received']")"
+check "and never reopens the decided dispute" "$X2" "$(dispute_of "$PAY_X")"
+webhook "$EV_LOST" >/dev/null
+check "a replayed close changes nothing" "$X2" "$(dispute_of "$PAY_X")"
+check "a lost dispute leaves Tara's open list" "0" "$(rpc admin_money_disputes "$TARA_JWT" '{}' | python3 -c "
+import sys,json
+try: print(sum(1 for r in json.load(sys.stdin) if r['payment_id']=='$PAY_X'))
+except Exception as e: print('error', e)")"
+check "the other payment is still untouched" "$Y_BEFORE" "$(row "$PAY_Y")"
+# A dispute on something this app never charged (another sale in Tara's
+# Stripe account), by PaymentIntent, and by a charge with no PaymentIntent
+# (asked of Stripe, which stripe-mock answers with none): nothing recorded.
+NOT_OURS="{\"id\":\"dp_not_ours\",\"object\":\"dispute\",\"amount\":500,\"currency\":\"usd\",\"charge\":\"ch_not_ours\",\"payment_intent\":\"pi_not_ours_$RANDOM\",\"reason\":\"general\",\"status\":\"needs_response\",\"created\":$T,\"livemode\":true}"
+NO_PI="{\"id\":\"dp_no_pi\",\"object\":\"dispute\",\"amount\":500,\"currency\":\"usd\",\"charge\":\"ch_no_pi\",\"payment_intent\":null,\"reason\":\"general\",\"status\":\"needs_response\",\"created\":$T,\"livemode\":true}"
+check "a dispute on a charge this app did not make changes nothing" "True True 0" \
+  "$(webhook "$(event charge.dispute.created "$NOT_OURS")" | field "['received']") $(webhook "$(event charge.dispute.created "$NO_PI")" | field "['received']") $(sql "select count(*) from public.payments where stripe_dispute_id in ('dp_not_ours','dp_no_pi')")"
 
 # ---- 13. The key swap (stripe_cutover_to_live, 20260927200001), end to end
 #          through the API as the lead would run it (service_role; the SQL

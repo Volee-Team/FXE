@@ -415,6 +415,11 @@ verify_jwt = true
 [functions.stripe-charge]
 verify_jwt = true
 
+# Tara's Payouts card on the web admin's Money tab (2026-09-28). The JWT is
+# required and the function also asks is_admin() as the caller. Read-only.
+[functions.stripe-payouts]
+verify_jwt = true
+
 # Tara makes a reset link for a member (decision 0017). The JWT is required
 # and the function also asks is_admin() as the caller.
 [functions.admin-reset-link]

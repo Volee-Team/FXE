@@ -25,6 +25,14 @@
 --      Rob   in  f 2300   P10 fee 2300 S  (the fee was taken, then she canceled)
 --   E  Thu 2026-08-20 09:00
 --      Dana  in  t 1800   no-show; P9 no_show 1805 S (odd on purpose: rounding)
+--   F  Tue 2026-08-25 09:00, everyone a no-show, every fee DISPUTED (20260928200001);
+--      "took" is what Stripe withdrew from the balance for the dispute
+--      Maria in  t 1800   PF1 no_show 1800 S, dispute LOST 1800, took 1800
+--      Ken   in  t 1800   PF2 no_show 1800 S, refunded in full (RF2 1800 S), dispute LOST 1800,
+--                         took 0 (Stripe withdraws nothing for a charge already refunded)
+--      Rob   in  f 2300   PF3 no_show 2300 S, dispute WON 2300, took 0 (taken, then given back)
+--      Priya in  f 2300   PF4 no_show 2300 S, dispute OPEN (needs_response) 2300, took 2300
+--      Dana  in  t 1800   PF5 no_show 1800 S, dispute LOST for part: 600, took 600
 --   B  Mon 2026-08-31 21:00 (= 2026-09-01 01:00 UTC), 90 min
 --      Maria in  t 2200   P5 fee FAILED insufficient_funds; P11 fee 2200 PROCESSING
 --      Priya in  f 2800   P6 fee 2800 S
@@ -41,19 +49,28 @@
 --      (-30m..+30m), "Probe later today" (+2h..+3h); Maria in t 1800 each.
 --   AFTER registering: Rob and Priya flipped to members, Ken to non-member.
 --
+-- THE DISPUTE RULE (20260928200001): a LOST dispute is money that left, so
+-- collected subtracts what Stripe withdrew for it (not the fee, not the
+-- disputed amount: a refunded charge loses nothing more). WON and OPEN
+-- disputes subtract nothing, though Stripe may be holding an open one's
+-- money. F: 10000 in fees - RF2 1800 - lost (1800 + 0 + 600) = 5800. Wrong
+-- rules land elsewhere: the disputed amount instead of what was taken 4000,
+-- the open one's hold subtracted too 3500, no subtraction 8200.
+--
 -- EXPECTED, August:
 --   attended: A Maria t, A Rob f, B Maria t, B Priya f, B Ken t, B Rob f, B Dana null
 --   members 3 (A Maria, B Maria, B Ken); non-members 4 (A Rob, B Priya, B Rob, B Dana)
 --   member players {Maria, Ken} 2; non-member players {Rob, Priya, Dana} 3; clinics {A, B} 2
 --   due = 1800+2300+2200+2800+2200+2800+0 = 14100
 --   collected = P1 1800 + P2 2300 + P3 1800 + P4 1800 + P6 2800 + P9 1805 + P10 2300
---             = 14605, minus R1 2300 = 12305
+--             = 14605, minus R1 2300 = 12305, plus F's 5800 = 18105
 --             (P5 failed, P7 pending, P11 processing, P12 canceled, R2 failed,
 --              R3 pending, P8 July: none count)
---   10% of 12305 = 1230.5, half up 1231; 10% of 14100 = 1410
+--   10% of 18105 = 1810.5, half up 1811; 10% of 14100 = 1410
 --   rows by start: A 1|1|4100|(1800+2300+1800+1800-2300=)5400 ; D 0|0|0|2300 ;
---                  E 0|0|0|1805 ; B 2|3|10000|2800
---   row sums: 3 | 4 | 14100 | 5400+2300+1805+2800 = 12305
+--                  E 0|0|0|1805 ; F 0|0|0|5800 ; B 2|3|10000|2800
+--   row sums: 3 | 4 | 14100 | 5400+2300+1805+5800+2800 = 18105
+--   F alone (Aug 25): 0|0|0|0|5800, 10% 580
 --
 -- THE MONEY TAB (20260927100003), same fixture, all time. THE RULE: charged =
 -- succeeded fees minus their succeeded refunds, every clinic (the board's
@@ -63,7 +80,10 @@
 -- player holds a live fee there), refunded (that exact fee went through and
 -- came back), declined (a charge of it failed) or not charged.
 --   charged = 18205 (the nine succeeded fees, July and January included)
---             - R1 2300 = 15905
+--             - R1 2300 = 15905, plus F's 5800 = 21705
+--   F's rows: Maria, Rob, Priya, Dana charged (a lost dispute leaves the fee
+--     charged: Charge clinic must never charge them again, see
+--     money_since_payments_on.sql); Ken refunded. F owes nothing, took 5800.
 --   owing rows: A Maria charged (R2 failed, R3 pending: nothing came back);
 --     A Rob refunded (P2 back in full by R1); A Ken charged; A Dana charged;
 --     E Dana charged; B Maria charged (P11 processing is live, P5 is history);
@@ -71,14 +91,15 @@
 --     B Dana NOT CHARGED (null price: counts 1, adds 0); C and W Maria
 --     charged; "Probe ended" Maria NOT CHARGED 1800. D is canceled: owes
 --     nothing, but its 2300 was taken. In progress and later today: not over.
---   summary: 15905 | declined 1, 2200 | not charged 2, 1800, 2 clinics
+--   summary: 21705 | declined 1, 2200 | not charged 2, 1800, 2 clinics
 --   clinic rows, newest first, name|canceled|charged|declined|not|not cents|
 --   with a card (Maria's card is added first, Dana has none):
 --     Probe ended|f|0|0|1|1800|1 ; Probe Aug 31 late|f|2800|1|1|0|0 ;
+--     Probe Aug 25 disputes|f|5800|0|0|0|0 ;
 --     Probe Aug 20 all no-show|f|1805|0|0|0|0 ; Probe Aug 15 canceled|t|2300|0|0|0|0 ;
 --     Probe Aug 10|f|5400|0|0|0|0 ; Probe Jul 31 late|f|1800|0|0|0|0 ;
 --     Probe Jan 31 late|f|1800|0|0|0|0
---   row sums: 15905 | 1 | 2 | 1800, the summary's.
+--   row sums: 21705 | 1 | 2 | 1800, the summary's.
 --
 -- Expected: every row reads PASS.
 
@@ -100,7 +121,8 @@ declare
   DANA_P  constant uuid := 'a0000000-0000-0000-0000-000000000004';
   PRIYA_P constant uuid := 'a0000000-0000-0000-0000-000000000005';
   ny      constant text := 'America/New_York';
-  ca uuid; cb uuid; cc uuid; cd uuid; ce uuid; cw uuid; c_end uuid; c_now uuid; c_later uuid;
+  ca uuid; cb uuid; cc uuid; cd uuid; ce uuid; cf uuid; cw uuid; c_end uuid; c_now uuid; c_later uuid;
+  r_fm uuid; r_fk uuid; r_fr uuid; r_fp uuid; r_fd uuid; pf2 uuid;
   r_am uuid; r_ar uuid; r_ak uuid; r_ad uuid; r_ed uuid; r_dr uuid;
   r_bm uuid; r_bp uuid; r_br uuid; r_cm uuid; r_wm uuid; r_bk uuid;
   p1 uuid; p2 uuid; p5 uuid; p9 uuid;
@@ -131,6 +153,12 @@ begin
           timestamp '2026-08-20 09:00' at time zone ny, timestamp '2026-08-20 10:00' at time zone ny,
           timestamp '2026-08-13 08:00' at time zone ny, timestamp '2026-08-14 08:00' at time zone ny, 8, 'published', 60)
   returning id into ce;
+  insert into public.clinics (name, audience, category, description, starts_at, ends_at,
+      member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
+  values ('Probe Aug 25 disputes', 'coed', 'Clinic', 'probe',
+          timestamp '2026-08-25 09:00' at time zone ny, timestamp '2026-08-25 10:00' at time zone ny,
+          timestamp '2026-08-20 08:00' at time zone ny, timestamp '2026-08-21 08:00' at time zone ny, 8, 'published', 60)
+  returning id into cf;
   insert into public.clinics (name, audience, category, description, starts_at, ends_at,
       member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
   values ('Probe Aug 31 late', 'coed', 'Clinic', 'probe',
@@ -182,6 +210,16 @@ begin
   values (cd, ROB_P, 'in', 'self', 2300, false, 60) returning id into r_dr;
   insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes, no_show)
   values (ce, DANA_P, 'in', 'self', 1800, true, 60, true) returning id into r_ed;
+  insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes, no_show)
+  values (cf, MARIA_P, 'in', 'self', 1800, true, 60, true) returning id into r_fm;
+  insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes, no_show)
+  values (cf, KEN_P, 'in', 'self', 1800, true, 60, true) returning id into r_fk;
+  insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes, no_show)
+  values (cf, ROB_P, 'in', 'self', 2300, false, 60, true) returning id into r_fr;
+  insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes, no_show)
+  values (cf, PRIYA_P, 'in', 'self', 2300, false, 60, true) returning id into r_fp;
+  insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes, no_show)
+  values (cf, DANA_P, 'in', 'self', 1800, true, 60, true) returning id into r_fd;
   insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
   values (cb, MARIA_P, 'in', 'self', 2200, true, 90) returning id into r_bm;
   insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
@@ -239,6 +277,25 @@ begin
   values (r_cm, MARIA, 'clinic_fee', 1800, 'succeeded');                                   -- P8
   insert into public.payments (registration_id, account_id, kind, amount_cents, status)
   values (r_wm, MARIA, 'clinic_fee', 1800, 'succeeded');                                   -- PW
+  -- F: each fee disputed, as stripe-webhook records it (stripe_record_dispute).
+  insert into public.payments (registration_id, account_id, kind, amount_cents, status,
+      stripe_dispute_id, dispute_status, dispute_reason, dispute_amount_cents, dispute_withdrawn_cents, dispute_event_at)
+  values (r_fm, MARIA, 'no_show', 1800, 'succeeded', 'dp_probe_f1', 'lost', 'fraudulent', 1800, 1800, now());          -- PF1
+  insert into public.payments (registration_id, account_id, kind, amount_cents, status,
+      stripe_dispute_id, dispute_status, dispute_reason, dispute_amount_cents, dispute_withdrawn_cents, dispute_event_at)
+  values (r_fk, KEN, 'no_show', 1800, 'succeeded', 'dp_probe_f2', 'lost', 'duplicate', 1800, 0, now())
+  returning id into pf2;                                                                                       -- PF2
+  insert into public.payments (registration_id, account_id, kind, amount_cents, status, refunds_payment_id)
+  values (r_fk, KEN, 'refund', 1800, 'succeeded', pf2);                                                         -- RF2
+  insert into public.payments (registration_id, account_id, kind, amount_cents, status,
+      stripe_dispute_id, dispute_status, dispute_reason, dispute_amount_cents, dispute_withdrawn_cents, dispute_event_at)
+  values (r_fr, ROB, 'no_show', 2300, 'succeeded', 'dp_probe_f3', 'won', 'fraudulent', 2300, 0, now());            -- PF3
+  insert into public.payments (registration_id, account_id, kind, amount_cents, status,
+      stripe_dispute_id, dispute_status, dispute_reason, dispute_amount_cents, dispute_withdrawn_cents, dispute_event_at)
+  values (r_fp, PRIYA, 'no_show', 2300, 'succeeded', 'dp_probe_f4', 'needs_response', 'fraudulent', 2300, 2300, now()); -- PF4
+  insert into public.payments (registration_id, account_id, kind, amount_cents, status,
+      stripe_dispute_id, dispute_status, dispute_reason, dispute_amount_cents, dispute_withdrawn_cents, dispute_event_at)
+  values (r_fd, DANA, 'no_show', 1800, 'succeeded', 'dp_probe_f5', 'lost', 'product_unacceptable', 600, 600, now());  -- PF5
 
   -- Tara corrects membership AFTER they registered. A past report must not move.
   update public.players set is_member = true  where id in (ROB_P, PRIYA_P);
@@ -301,21 +358,22 @@ begin
     ('aug_nonmember_players',         '3',     s.nonmember_players::text),
     ('aug_clinics',                   '2',     s.clinics::text),
     ('aug_fees_due_cents',            '14100', s.fees_due_cents::text),
-    ('aug_collected_cents',           '12305', s.collected_cents::text),
-    ('aug_board_share_half_up',       '1231',  s.board_share_cents::text),
+    ('aug_collected_cents',           '18105', s.collected_cents::text),
+    ('aug_board_share_half_up',       '1811',  s.board_share_cents::text),
     ('aug_board_share_of_due',        '1410',  s.board_share_of_due_cents::text);
 
   select string_agg(c.clinic_name || '|' || c.member_attendances || '|' || c.nonmember_attendances
                     || '|' || c.fees_due_cents || '|' || c.collected_cents, ' ; ' order by c.starts_at)
     into v from public.admin_board_report_clinics('2026-08-01', '2026-08-31') c;
   insert into _probe_result values ('aug_clinic_rows',
-    'Probe Aug 10|1|1|4100|5400 ; Probe Aug 15 canceled|0|0|0|2300 ; Probe Aug 20 all no-show|0|0|0|1805 ; Probe Aug 31 late|2|3|10000|2800',
+    'Probe Aug 10|1|1|4100|5400 ; Probe Aug 15 canceled|0|0|0|2300 ; Probe Aug 20 all no-show|0|0|0|1805 ; '
+    || 'Probe Aug 25 disputes|0|0|0|5800 ; Probe Aug 31 late|2|3|10000|2800',
     coalesce(v, 'NO ROWS'));
 
   -- The function's own order is the page's order (by start).
   select string_agg(c.clinic_name, ' ; ') into v from public.admin_board_report_clinics('2026-08-01', '2026-08-31') c;
   insert into _probe_result values ('aug_clinic_rows_in_start_order',
-    'Probe Aug 10 ; Probe Aug 15 canceled ; Probe Aug 20 all no-show ; Probe Aug 31 late', coalesce(v, 'NO ROWS'));
+    'Probe Aug 10 ; Probe Aug 15 canceled ; Probe Aug 20 all no-show ; Probe Aug 25 disputes ; Probe Aug 31 late', coalesce(v, 'NO ROWS'));
 
   -- A alone: P1 1800 + P2 2300 + P3 1800 + P4 1800 - R1 2300 = 5400. The
   -- failed (R2) and pending (R3) refunds of P1 and the canceled fee P12 are
@@ -344,6 +402,14 @@ begin
                     || '|' || c.fees_due_cents || '|' || c.collected_cents, ' ; ')
     into v from public.admin_board_report_clinics('2026-08-15', '2026-08-15') c;
   insert into _probe_result values ('canceled_clinic_fee_gets_its_own_row', 'Probe Aug 15 canceled|0|0|0|2300', coalesce(v, 'NO ROWS'));
+
+  -- F alone (20260928200001): a lost dispute subtracts what Stripe took for
+  -- it (nothing more for a refunded charge); won and open ones subtract
+  -- nothing. Nobody attended (all no-shows): money, no attendance.
+  select * into s from public.admin_board_report('2026-08-25', '2026-08-25');
+  insert into _probe_result values ('aug25_lost_disputes_subtract_what_stripe_took', '0|0|0|0|5800|580',
+    s.member_attendances || '|' || s.nonmember_attendances || '|' || s.clinics || '|' || s.fees_due_cents
+    || '|' || s.collected_cents || '|' || s.board_share_cents);
 
   -- September 1 in New York holds nothing: B is August 31 there.
   select * into s from public.admin_board_report('2026-09-01', '2026-09-01');
@@ -382,7 +448,7 @@ begin
   bad := null;
   for per in
     select * from (values ('2026-08-01'::date, '2026-08-31'::date), ('2026-08-10', '2026-08-10'),
-                          ('2026-08-15', '2026-08-15'), ('2026-08-20', '2026-08-20'),
+                          ('2026-08-15', '2026-08-15'), ('2026-08-20', '2026-08-20'), ('2026-08-25', '2026-08-25'),
                           ('2026-08-31', '2026-08-31'), ('2026-09-01', '2026-09-01'),
                           ('2026-07-01', '2026-07-31'), ('2026-01-01', '2026-01-31'),
                           ('2026-02-01', '2026-02-28'),
@@ -437,26 +503,27 @@ begin
   select m.charged_cents || '|' || m.declined_count || '|' || m.declined_cents || '|' || m.not_charged_count
          || '|' || m.not_charged_cents || '|' || m.not_charged_clinics
     into v from public.admin_money_summary() m;
-  insert into _probe_result values ('money_summary_from_the_ledger', '15905|1|2200|2|1800|2', coalesce(v, 'NO ROW'));
+  insert into _probe_result values ('money_summary_from_the_ledger', '21705|1|2200|2|1800|2', coalesce(v, 'NO ROW'));
 
   -- Charged is the board's collected with no dates: the two cannot disagree.
   select s2.collected_cents || '|' || (select m.charged_cents from public.admin_money_summary() m)
     into v from public.admin_board_report('2000-01-01', '2099-12-31') s2;
-  insert into _probe_result values ('money_charged_equals_board_collected', '15905|15905', v);
+  insert into _probe_result values ('money_charged_equals_board_collected', '21705|21705', v);
 
   select string_agg(c.clinic_name || '|' || case when c.canceled then 't' else 'f' end || '|' || c.charged_cents
                     || '|' || c.declined_count || '|' || c.not_charged_count || '|' || c.not_charged_cents
                     || '|' || c.chargeable_count, ' ; ')
     into v from public.admin_money_clinics() c;
   insert into _probe_result values ('money_clinic_rows_newest_first',
-    'Probe ended|f|0|0|1|1800|1 ; Probe Aug 31 late|f|2800|1|1|0|0 ; Probe Aug 20 all no-show|f|1805|0|0|0|0 ; '
+    'Probe ended|f|0|0|1|1800|1 ; Probe Aug 31 late|f|2800|1|1|0|0 ; Probe Aug 25 disputes|f|5800|0|0|0|0 ; '
+    || 'Probe Aug 20 all no-show|f|1805|0|0|0|0 ; '
     || 'Probe Aug 15 canceled|t|2300|0|0|0|0 ; Probe Aug 10|f|5400|0|0|0|0 ; Probe Jul 31 late|f|1800|0|0|0|0 ; '
     || 'Probe Jan 31 late|f|1800|0|0|0|0',
     coalesce(v, 'NO ROWS'));
 
   select sum(c.charged_cents) || '|' || sum(c.declined_count) || '|' || sum(c.not_charged_count) || '|' || sum(c.not_charged_cents)
     into v from public.admin_money_clinics() c;
-  insert into _probe_result values ('money_clinic_rows_add_up', '15905|1|2|1800', coalesce(v, 'NO ROWS'));
+  insert into _probe_result values ('money_clinic_rows_add_up', '21705|1|2|1800', coalesce(v, 'NO ROWS'));
 
   select string_agg(d.first_name || ' ' || d.last_name || '|' || d.clinic_name || '|' || d.amount_cents
                     || '|' || coalesce(d.failure_code, 'NULL'), ' ; ')
