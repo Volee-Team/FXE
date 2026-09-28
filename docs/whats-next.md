@@ -11,8 +11,9 @@ where things stand. Updated 2026-09-27; launch target 2026-10-16.
   0014). **Next:** build 4 (the MVP audit's fixes), once the `mvp-fixes` PR
   merges; John uploads it (checklist C8).
 - **Hosted:** 45 of 45 migrations paired as of 2026-09-27 (`supabase migration
-  list --linked`); `20260928000001` (Tara's notification words) and
-  `20260928200001` (disputes) go with their PR; every edge function deployed; Stripe's sandbox keys and
+  list --linked`); `20260928000001` (Tara's notification words),
+  `20260928200001` (disputes) and `20260928300001` (no accepting a canceled
+  clinic) go with their PR; every edge function deployed; Stripe's sandbox keys and
   webhook secret in place (checklist A1); **payments switched off** until
   Alex says go (A9); a signed-out caller reaches nothing (122 targets closed, with the web admin's functions answering the browser's preflight).
 - **Admin site:** https://fxe-tennis-admin.vercel.app, verified byte for byte
@@ -23,7 +24,7 @@ where things stand. Updated 2026-09-27; launch target 2026-10-16.
 
 ## The honest state of the iOS app
 
-Works, and tested (probes, unit tests, browser tests in CI; the 13 UI tests
+Works, and tested (probes, unit tests, browser tests in CI; the 18 UI tests
 on the simulator before each TestFlight build): sign up with profile, waiver
 and (once payments are on) a card with the permission box; sign in; the
 front page (your clinics, then what is open to you now); browse by week;
@@ -53,7 +54,7 @@ notes, the Stripe link).
 Missing on the phone by design: creating or editing a clinic (web only),
 News (deferred, decision 0006).
 
-Testing today: 29 Playwright tests, 17 XCUITests (6 on Tara's side, 4 of them
+Testing today: 30 Playwright tests, 18 XCUITests (7 on Tara's side, 4 of them
 the accessibility audit, the status bar and the Return key), 181 unit
 tests, 34 SQL probes, a 94-check Stripe pipeline and a 57-check push pipeline
 against mocks in CI.

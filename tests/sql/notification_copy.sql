@@ -43,8 +43,9 @@
 -- while a late request approved on an earlier day does not silence #1; a
 -- clinic the player cannot see yet (draft), has already started, or is
 -- canceled gets no "You're all set" from Tara's placement; accepting after
--- Tara canceled the clinic gets no "Your spot is confirmed"; and a Pool
--- removal from a draft or a canceled clinic sends no #6.
+-- Tara canceled the clinic is refused outright (20260928300001), so nothing
+-- moves and nobody is told; and a Pool removal from a draft or a canceled
+-- clinic sends no #6.
 --
 -- The payments switch is set off inside the transaction: this probe is about
 -- words, and register_for_clinic's card check would stop it with
@@ -111,7 +112,7 @@ declare
   reg_rob_wash uuid; reg_priya_wash uuid;
   r public.registrations; lr public.late_requests;
   reg_maria_thu uuid; reg_ken_thu uuid; reg_rob_pool uuid; reg_dana_fri uuid; reg_priya_fri uuid;
-  reg_ken_pool uuid; reg_maria_soon uuid; n int; v text;
+  reg_ken_pool uuid; reg_maria_soon uuid; n int; v text; err text;
 begin
   -- ------------------------------------------------------------ fixtures
   -- Thursday: the members' head start is open now, one spot.
@@ -384,9 +385,12 @@ begin
 
   -- ======================================= after Tara cancels the clinic
   -- 24. Tara invites Rob, then cancels the clinic (rain) before he answers;
-  --     the screen he opened from the invitation still has Accept, and the
-  --     accept goes through. Tara hears (#13); Rob is not told "Your spot is
-  --     confirmed", which would be false.
+  --     the invitation's Accept (the clinic page opened from the push, or
+  --     the lock screen's own button) is refused since 20260928300001: a
+  --     canceled clinic has no spots. 24a: the refusal. 24b: nothing moved
+  --     and nobody was told anything (a refused answer writes no row).
+  --     Before that migration the accept went through and Rob sat in
+  --     You're In! of a clinic that was not happening.
   perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
   perform set_config('role', 'authenticated', true);
   perform public.invite_from_pool(reg_rob_wash);
@@ -395,11 +399,17 @@ begin
   perform pg_temp.delta(null);
   perform set_config('request.jwt.claims', json_build_object('sub', ROB)::text, true);
   perform set_config('role', 'authenticated', true);
-  perform public.respond_to_invitation(reg_rob_wash, true);
+  begin
+    perform public.respond_to_invitation(reg_rob_wash, true);
+    err := 'accepted';
+  exception when others then
+    err := sqlerrm;
+  end;
   perform set_config('role', 'postgres', true);
-  insert into _probe_result values ('accept_after_cancel_sends_13_only',
-    'tara:invitation_accepted:registration=ref:Rob Delgado accepted their spot in Probe Copy Washout.',
-    pg_temp.delta(reg_rob_wash));
+  insert into _probe_result values ('accept_after_cancel_is_refused', 'clinic_canceled', err);
+  insert into _probe_result values ('accept_after_cancel_moves_and_sends_nothing',
+    'response_needed|',
+    (select status::text from public.registrations where id = reg_rob_wash) || '|' || pg_temp.delta(reg_rob_wash));
 
   -- 25. Tara then clears Priya out of the canceled clinic's Pool: she was
   --     already told it was canceled, so no #6 on top.

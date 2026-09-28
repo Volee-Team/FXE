@@ -89,15 +89,53 @@ final class AccessibilityAuditUITests: XCTestCase {
         return false
     }
 
+    /// Waits until `element` has stopped moving (two reads of its frame half
+    /// a second apart agree), at most five seconds. A sheet audited while it
+    /// was still sliding up reported its grey captions as low contrast; the
+    /// same captions measure 7.6:1 to 14:1 from the pixels once it has landed
+    /// (the merged run of 2026-09-28).
+    private func settle(_ element: XCUIElement) {
+        var last = element.frame
+        for _ in 0..<10 {
+            usleep(500_000)
+            let now = element.frame
+            if now == last { return }
+            last = now
+        }
+    }
+
     private func isInNavigationBar(_ e: XCUIElement) -> Bool {
         let centre = CGPoint(x: e.frame.midX, y: e.frame.midY)
         return app.navigationBars.allElementsBoundByIndex.contains { $0.frame.contains(centre) }
     }
 
+    private func key(_ issue: XCUIAccessibilityAuditIssue) -> String {
+        "\(issue.auditType.rawValue)|\(issue.element?.identifier ?? "")|\(issue.element?.label ?? "")"
+    }
+
+    /// Two passes, two seconds apart; only a finding seen in both fails the
+    /// test. The same grey captions on Edit details were reported as low
+    /// contrast on one run in two and measured 7.6:1 to 14:1 from the pixels
+    /// of the very screenshot the failure attached (2026-09-28): the audit had
+    /// caught the sheet still settling. A real colour problem is there on
+    /// every pass; a transient one is not.
     private func audit(_ screen: String) {
+        var firstPass = Set<String>()
+        do {
+            try app.performAccessibilityAudit { issue in
+                if !self.isAccepted(issue, screen: screen) { firstPass.insert(self.key(issue)) }
+                return true
+            }
+        } catch {
+            XCTFail("Accessibility audit on \(screen) failed: \(error)")
+            return
+        }
+        if firstPass.isEmpty { return }
+        sleep(2)
         do {
             try app.performAccessibilityAudit { issue in
                 if self.isAccepted(issue, screen: screen) { return true }
+                guard firstPass.contains(self.key(issue)) else { return true }
                 let e = issue.element
                 print("A11Y [\(screen)] \(issue.auditType) :: \(issue.compactDescription) :: \(issue.detailedDescription) :: frame=\(e?.frame ?? .zero) :: id='\(e?.identifier ?? "")' label='\(e?.label ?? "")' type=\(e?.elementType.rawValue ?? 0)")
                 return false
@@ -156,7 +194,8 @@ final class AccessibilityAuditUITests: XCTestCase {
         // Edit details
         let edit = app.buttons["profile.edit"]
         if edit.waitForExistence(timeout: 5) {
-            edit.tap(); sleep(2)
+            edit.tap(); sleep(1)
+            settle(app.buttons["edit.save"])
             audit("edit details")
             app.swipeDown(velocity: .fast)
         }
@@ -166,7 +205,8 @@ final class AccessibilityAuditUITests: XCTestCase {
         home.tap()
         let bell = app.buttons["home.bell"]
         if bell.waitForExistence(timeout: 10) {
-            bell.tap(); sleep(2)
+            bell.tap(); sleep(1)
+            settle(app.buttons["notifications.done"])
             audit("notifications")
             if app.buttons["notifications.done"].exists { app.buttons["notifications.done"].tap() }
         }

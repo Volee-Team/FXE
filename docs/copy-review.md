@@ -35,6 +35,22 @@ plus every "New since" block.
 
 ---
 
+## Tara's Remove, and the polish round's chrome (2026-09-28) — awaiting Alex
+
+Tara could not take anyone out of the Player Pool on any screen, or out of
+a clinic at all on the laptop (decision 0022: her #6 could never be sent).
+Chrome only, on her side; the removed player hears her own #6 words.
+
+| ✓ | String | Where | Why |
+|---|--------|-------|-----|
+| — | Remove | Phone: beside Invite on each Player Pool row. Laptop: on each You're In! row (not on a charged spot) and each Player Pool row | Not new: the phone's confirmation button already says it |
+| ☐ | Really remove? | Laptop: the same button after the first click, for five seconds; the second click removes | New. The "Really cancel? Everyone is told." pattern; not "they are told", because a removal from You're In! sends nothing (question 79) |
+| ☐ | Remove {name} from the Player Pool | VoiceOver's reading of the phone's Remove on a Pool row | New. Says whose row and which list |
+
+Nothing else in this round adds words: the accessibility work, the status
+bar, the titles and the Return key change how existing words look and
+behave, not what they say.
+
 ## Player polish (2026-09-28) — awaiting Alex
 
 Branch `player-wow`: Accept and Decline on the invitation push, Add to

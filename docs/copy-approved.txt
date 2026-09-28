@@ -156,6 +156,7 @@ Rating
 Rating Guide
 Rating \(bucket.label)
 Really cancel? Everyone is told.
+Really remove?
 Recent deposits
 Refresh
 Register
@@ -167,6 +168,7 @@ Remind me
 Remind unpaid (\(model.unpaidCount))
 Reminder set
 Remove
+Remove \(entry.displayName) from the Player Pool
 Remove from clinic
 Response Needed
 Review links

@@ -728,6 +728,9 @@ async function loadLedger(gen = moneySeq) {
     // Open and lost disputes in red: money that is, or was, taken back.
     const dispute = disputeLabel(r.dispute_status);
     const disputeRed = dispute && !["won", "warning_closed"].includes(r.dispute_status);
+    // No Refund once the bank has a dispute on the charge: Stripe refuses a
+    // refund of a disputed charge, and a won or lost one is settled already
+    // (decision 0021; the button stayed until 2026-09-28).
     // The account holder's name, bold on a failed row: that is the
     // "cardholder name" Tara asked for (PaymentSheet does not collect the
     // name printed on the card, so the account name is what we have).
@@ -735,7 +738,7 @@ async function loadLedger(gen = moneySeq) {
       <span class="grow"><span class="name"${failed ? ` style="font-weight:700"` : ""}>${esc(who)}</span> <span class="muted">${KIND[r.kind] || esc(r.kind)}</span><br>
         <span class="muted">${clinic ? esc(clinic.name) + " · " + fmtDate(clinic.starts_at) : ""}</span>${why ? `<span class="muted"${bad}> · ${esc(why)}</span>` : ""}${dispute ? `<span class="muted"${disputeRed ? ` style="color:#992E22"` : ""} data-dispute-status> · ${esc(dispute)}</span>` : ""}</span>
       <span><span class="name">${r.kind === "refund" ? "−" : ""}${money(r.amount_cents)}</span><br><span class="muted"${bad}>${status}</span></span>
-      ${paymentsOn && r.kind !== "refund" && r.status === "succeeded" ? `<button class="small" data-refund="${r.id}">Refund</button>` : ""}
+      ${paymentsOn && r.kind !== "refund" && r.status === "succeeded" && !r.dispute_status ? `<button class="small" data-refund="${r.id}">Refund</button>` : ""}
     </div>${held ? `<div class="row" data-held="${r.id}">
       <span class="grow muted">Check this charge in Stripe.</span>
       <button class="small" data-resolve="${r.id}" data-outcome="succeeded">Went through</button>
@@ -1051,8 +1054,8 @@ async function loadClinics() {
         ${c.status !== "canceled" ? `<button class="small" data-cancelclinic="${c.id}">Cancel clinic</button>` : `<span class="chip canceled">Canceled</span>`}
         ${paymentsOn && c.status !== "canceled" && new Date(c.ends_at) < new Date() && paymentsSince && new Date(c.ends_at) >= paymentsSince ? `<button class="small primary" data-chargeclinic="${c.id}">Charge clinic</button>` : ""}
       </div>
-      ${section("in", r => `${courtSelect(r)}${zelleOn ? `<button class="small" data-paid="${r.id}" data-now="${r.paid}">${r.paid ? "Paid" : "Unpaid"}</button>` : ""}<button class="small${r.no_show ? " danger" : ""}" data-noshow="${r.id}" data-now="${r.no_show}">${r.no_show ? "No-show" : "Came"}</button>${lateOpen && !liveCharge(r) ? `<button class="small" data-latecancel="${r.id}" data-who="${esc(nameOf(r))}">Late cancel</button>` : ""}${chargeState(r)}`)}
-      ${section("pool", r => `<button class="small primary" data-invite="${r.id}">Invite</button>`)}
+      ${section("in", r => `${courtSelect(r)}${zelleOn ? `<button class="small" data-paid="${r.id}" data-now="${r.paid}">${r.paid ? "Paid" : "Unpaid"}</button>` : ""}<button class="small${r.no_show ? " danger" : ""}" data-noshow="${r.id}" data-now="${r.no_show}">${r.no_show ? "No-show" : "Came"}</button>${lateOpen && !liveCharge(r) ? `<button class="small" data-latecancel="${r.id}" data-who="${esc(nameOf(r))}">Late cancel</button>` : ""}${!liveCharge(r) && c.status !== "canceled" ? `<button class="small" data-remove="${r.id}">Remove</button>` : ""}${chargeState(r)}`)}
+      ${section("pool", r => `<button class="small primary" data-invite="${r.id}">Invite</button>${c.status !== "canceled" ? `<button class="small" data-remove="${r.id}">Remove</button>` : ""}`)}
       ${section("response_needed", r => `<button class="small" data-uninvite="${r.id}">Cancel invite</button>`)}
       ${section("canceled", r => r.late_cancel
         ? `<span class="chip canc" title="Canceled inside ${cutoffHours} hours">Late</span><span class="muted">${r.courtesy_used ? "Courtesy" : "Fee applies"}${r.cancel_note ? " · “" + esc(r.cancel_note) + "”" : ""}</span>${r.courtesy_used ? "" : chargeState(r)}`
@@ -1161,6 +1164,19 @@ document.addEventListener("click", async (e) => {
       return;
     }
     return run(() => call("cancel_clinic", { p_clinic: b.dataset.cancelclinic }));
+  }
+  if (b.dataset.remove) {
+    // Out of the clinic, the same RPC the phone's Remove uses; kept as
+    // canceled, never deleted (hard rule 4). From the Player Pool it sends her
+    // #6 (decision 0022). Two clicks, like Cancel clinic: until 2026-09-28 the
+    // laptop could not remove anyone at all. Not on a charged spot: the
+    // server refuses it until the fee is refunded (charged_refund_first).
+    if (b.dataset.armed !== "1") {
+      b.dataset.armed = "1"; b.textContent = "Really remove?"; b.classList.add("danger");
+      setTimeout(() => { if (b.isConnected) { b.dataset.armed = ""; b.textContent = "Remove"; b.classList.remove("danger"); } }, 5000);
+      return;
+    }
+    return run(() => call("cancel_registration", { p_registration: b.dataset.remove }));
   }
   if (b.dataset.remind)   {
     // run() reloads the page state, which clears #msg, so the confirmation is

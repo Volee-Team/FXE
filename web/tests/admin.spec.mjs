@@ -362,6 +362,7 @@ function service(request) {
     insert: async (table, row) => (await go("POST", table, row))[0],
     patch: (path, body) => go("PATCH", path, body),
     del: (path) => go("DELETE", path),
+    get: (path) => go("GET", path),
   };
 }
 const MARIA_P = "a0000000-0000-0000-0000-000000000001";
@@ -378,6 +379,35 @@ const pastClinic = (name, endedDaysAgo) => ({
   starts_at: daysAgo(endedDaysAgo, -1), ends_at: daysAgo(endedDaysAgo),
   member_opens_at: daysAgo(endedDaysAgo + 7), public_opens_at: daysAgo(endedDaysAgo + 6),
   internal_capacity: 8, status: "published", duration_minutes: 60,
+});
+
+// Until 2026-09-28 the laptop could not take anyone out of a clinic, and no
+// screen anywhere could take someone out of the Player Pool, so Tara's own
+// "You've been removed from the Player Pool" (#6, decision 0022) never fired.
+test.describe("remove from a clinic", () => {
+  test("a Player Pool row comes off in two clicks, stays as canceled, and her #6 is sent", async ({ page, request }) => {
+    const db = service(request);
+    const TUESDAY = "d0000000-0000-0000-0000-000000000001";
+    const reg = await db.insert("registrations", { clinic_id: TUESDAY, player_id: ROB_P, status: "pool", source: "self",
+      price_cents_charged: 2300, was_member: false, duration_minutes: 60 });
+    try {
+      await signIn(page, TARA);
+      const card = page.locator("#clinics .card", { hasText: "Tuesday Ladies" });
+      const rob = card.locator(".row", { hasText: "Rob Delgado" });
+      await expect(rob.getByRole("button", { name: "Invite" })).toBeVisible({ timeout: 15_000 });
+      await rob.getByRole("button", { name: "Remove" }).click();
+      await rob.getByRole("button", { name: "Really remove?" }).click();
+      await expect(rob.getByRole("button", { name: "Invite" })).toHaveCount(0, { timeout: 15_000 });
+      const [row] = await db.get(`registrations?id=eq.${reg.id}&select=status`);
+      expect(row.status).toBe("canceled");
+      const sent = await db.get(`notifications?entity_id=eq.${reg.id}&select=body`);
+      expect(sent.map(n => n.body)).toEqual(
+        ["You've been removed from the Player Pool for Tuesday Ladies 3.0+. Hope to see you at another clinic soon!"]);
+    } finally {
+      await db.del(`notifications?entity_id=eq.${reg.id}`);
+      await db.del(`registrations?id=eq.${reg.id}`);
+    }
+  });
 });
 
 test.describe("fix round", () => {

@@ -167,7 +167,7 @@ QUESTIONS = [
  ],
  [
   "When you move someone",
-  "When you take someone out of a clinic, take back an invitation, or put someone in yourself, should the app tell them? Today it doesn't."
+  "Your own messages now go out when you put someone in (\"You're all set...\") and when you take someone out of the Player Pool (\"You've been removed from the Player Pool...\"). When you take someone out of You're In!, or take back an invitation, should they be told too? If we don't hear otherwise: nothing is sent for those two."
  ],
  [
   "Late cancel, then back in",
@@ -188,6 +188,20 @@ QUESTIONS = [
  [
   "Receipts",
   "After you charge a clinic, should each player get an emailed receipt from Stripe? If we don't hear otherwise: no receipts."
+ ],
+ # Appended 2026-09-28 (questions 88 to 90), after every earlier item, so no
+ # saved answer moves position and PAGE_VERSION stays 4.
+ [
+  "The day or the date",
+  "Your \"You're all set\" message names the day: \"on Thursday at 9:00 AM\". For a clinic a week or more away, should it also say the date (\"Thursday, Oct 8\")? If we don't hear otherwise: your words as written."
+ ],
+ [
+  "A bank takes back a fee",
+  "If a player's bank takes back a clinic fee (a chargeback) and the bank sides with the player, should the app take away their Paid mark on your roster? If we don't hear otherwise: Paid stays, and the Money tab shows \"Dispute lost\"."
+ ],
+ [
+  "Approving a late request",
+  "When you approve a late request, the player gets \"You're in for\" and the clinic's name. Should it be your \"You're all set...\" message instead? If we don't hear otherwise: the current line."
  ]
 ]
 

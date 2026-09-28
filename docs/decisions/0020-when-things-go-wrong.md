@@ -1,5 +1,7 @@
 # 0020: The app and the admin site when things go wrong: no signal, stale screens, larger text, a bounded week
 
+> **2026-09-28:** item 5's mechanism (`UIFontMetrics` at the moment a font was made) is superseded by decision 0023: text now follows Larger Text live through `.brandFont(_:)`. The rule is unchanged.
+
 **Date:** 2026-09-27 · **Status:** Active · **Source:** the MVP audit of 2026-09-27 (build-now items 7, 8, 9, 14, 15, 16, 17), branches `ios-resilience`, `web-admin-bounds`, fixed on `fix-ios` and `fix-sql`
 
 ## What we chose

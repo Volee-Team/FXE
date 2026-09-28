@@ -24,7 +24,7 @@ ids = set()
 OWNER = re.compile(r"\[(Alex|Tara|Kat|John|me|Apple|Stripe)\]")
 STATUS = re.compile(r"^\*\*(DONE|OPEN|BLOCKED|DECIDE|LATER)\b")
 for n, line in enumerate(text.splitlines(), 1):
-    m = re.match(r"^\| ([A-H]\d+) \|", line)
+    m = re.match(r"^\| ([A-I]\d+) \|", line)
     if not m:
         continue
     rid = m.group(1)
@@ -55,7 +55,7 @@ else:
 try:
     stext = open(steps, encoding="utf-8").read()
     for n, line in enumerate(stext.splitlines(), 1):
-        for ref in re.findall(r"checklist ([A-H]\d+)", line):
+        for ref in re.findall(r"checklist ([A-I]\d+)", line):
             if ref not in ids:
                 bad.append(f"{steps}:{n} points at checklist {ref}, which is not a row")
 except FileNotFoundError:

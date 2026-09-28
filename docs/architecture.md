@@ -52,10 +52,10 @@ most important thing to understand here, and it is section 5.
 
 | Area | State |
 |---|---|
-| Postgres schema, RLS, narrow views, RPCs | **Built**, 47 migrations. Which of them are on hosted is `supabase migration list --linked`, recorded after each push in `docs/whats-next.md`; `20260928000001_notifications_in_her_words.sql` and `20260928200001_payment_disputes.sql` go with their PR |
+| Postgres schema, RLS, narrow views, RPCs | **Built**, 48 migrations. Which of them are on hosted is `supabase migration list --linked`, recorded after each push in `docs/whats-next.md`; `20260928000001_notifications_in_her_words.sql`, `20260928200001_payment_disputes.sql` and `20260928300001_no_accepting_a_canceled_clinic.sql` go with their PR |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | **Built**, enumerated by probes |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | **Built** |
-| SQL probe suite (33 probes; the suite prints its own total) + concurrency probe, in CI | **Built** |
+| SQL probe suite (34 probes; the suite prints its own total) + concurrency probe, in CI | **Built** |
 | iOS: sign-in, sign-up with profile, password reset, three tabs | **Built** |
 | iOS: browse by week, per-viewer pricing, register / cancel (inside the 3-hour cutoff the full fee applies; the note is optional) / leave pool / respond, closed-clinic "Message Tara", the bell, My Clinics, profile edit, card on file | **Built** |
 | iOS admin tab: rosters, invite, courts, paid, unpaid reminder, message audiences, late requests, Action Needed (open disputes too, since 2026-09-28), player directory | **Built** |
@@ -660,7 +660,7 @@ local stack and are order-dependent on a fresh seed. **They do not run in
 CI**: the macOS runner has no Docker for the stack; a `fxe-ci` Supabase
 project is the ask (`docs/launch-checklist.md` §F).
 
-**Web admin**: 29 Playwright tests (`web/tests/*.spec.mjs`) walk Tara's
+**Web admin**: 30 Playwright tests (`web/tests/*.spec.mjs`) walk Tara's
 side against a fresh seed: sign-in and the non-admin door, prices, walk-up,
 courts, unpaid reminder, a note round-trip, cancel clinic, template archive
 and restore, Money counts, the card-payments ledger, payments off, the
@@ -720,7 +720,7 @@ that finishes it, `web/reset.html`, is the browser suite's "reset page" test.
 `project.yml` change? gates the next job so a docs PR does not wait on Xcode),
 `ios-build-and-test` (XcodeGen, Debug and Release builds, unit tests, app-icon
 gate, simulator chosen at run time), `copy-gate`, `secret-scan`, `hosted-smoke` (read-only: 126 hosted targets, every function taken from `scripts/hosted-smoke-functions.txt`, which `scripts/gen-smoke-functions.sh` writes from the schema and `check-doc-inventory.sh` keeps honest; every table, view, RPC and function must refuse a signed-out caller with 401/403, and the four functions the web admin calls from a browser must answer a preflight from the admin site with a 2xx and its origin; `scripts/hosted-smoke.sh`),
-`migration-immutability`, `ios-ui-tests` (the 13 XCUITests against a
+`migration-immutability`, `ios-ui-tests` (the 18 XCUITests against a
 throwaway CI Supabase project, reset to the seed first; green with a notice
 until that project's secrets exist, see `docs/launch-checklist.md` §F, added
 2026-09-13), and `doc-paths` ("Docs are consistent": `scripts/check-doc-paths.sh`,

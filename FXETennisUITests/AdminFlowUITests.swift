@@ -220,6 +220,28 @@ final class AdminFlowUITests: XCTestCase {
         XCTAssertFalse(court.exists, "The removed player's row is still on the roster")
     }
 
+    /// Out of the Player Pool (2026-09-28): the button, the same
+    /// confirmation as You're In!'s Remove, and an empty Pool after it. The
+    /// server sends her #6 from this path (tests/sql/notification_copy.sql).
+    func testAdminF_RemovesFromThePoolWithConfirmation() {
+        app.launch()
+        signIn(as: member)
+        ensureRegistered(forClinicContaining: "Tuesday Ladies")
+        signOut()
+
+        signIn(as: admin)
+        openAdminClinic(containing: "Tuesday Ladies")
+        let remove = app.buttons["admin.removeFromPool"].firstMatch
+        XCTAssertTrue(remove.waitForExistence(timeout: 20), "No Remove on Maria's Player Pool row")
+        remove.tap()
+        let confirm = app.buttons["Remove"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 10), "No confirmation before removing from the Pool")
+        confirm.tap()
+        XCTAssertTrue(app.staticTexts["The Player Pool is empty."].waitForExistence(timeout: 20),
+                      "The Player Pool still lists someone after Remove")
+        XCTAssertFalse(app.buttons["admin.invite"].firstMatch.exists, "An Invite is left on a removed row")
+    }
+
     // MARK: - helpers (mirrors PlayerFlowUITests; kept local so each file reads alone)
 
     private func signIn(as email: String) {

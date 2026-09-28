@@ -160,7 +160,7 @@ struct AdminClinicDetailView: View {
                         Brand.Status.playerPool, model.pool,
                         empty: "The Player Pool is empty.",
                         numbered: true
-                    ) { entry in AnyView(inviteButton(entry)) }
+                    ) { entry in AnyView(HStack(spacing: Brand.Spacing.xs) { inviteButton(entry); removeFromPoolButton(entry) }) }
 
                     rosterSection(
                         Brand.Status.responseNeeded, model.responseNeeded,
@@ -652,6 +652,25 @@ struct AdminClinicDetailView: View {
         .disabled(model.busy.contains(entry.id))
         .accessibilityIdentifier("admin.invite")
         .accessibilityLabel("Invite \(entry.displayName)")
+    }
+
+    /// Out of the Player Pool, behind the same confirmation as You're In!'s
+    /// Remove. Until 2026-09-28 no screen could do this, so her own "You've
+    /// been removed from the Player Pool" (#6, decision 0022) could never be
+    /// sent; the server sends it from this same cancel_registration.
+    private func removeFromPoolButton(_ entry: RosterEntry) -> some View {
+        Button { removing = entry } label: {
+            Text("Remove")
+                .brandFont(.chip)
+                .foregroundStyle(Brand.Status.canceled.ink)
+                .padding(.horizontal, Brand.Spacing.xs)
+                .frame(minHeight: Brand.Layout.minTapTarget)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(model.busy.contains(entry.id))
+        .accessibilityIdentifier("admin.removeFromPool")
+        .accessibilityLabel("Remove \(entry.displayName) from the Player Pool")
     }
 
     private func cancelInviteButton(_ entry: RosterEntry) -> some View {
