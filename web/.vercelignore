@@ -1,11 +1,7 @@
 # Files that stay out of the public admin site.
 #
-# privacy.html is the privacy policy DRAFT (docs/legal/privacy-policy.md,
-# docs/copy-review.md §G). It is not published until Alex approves the eight
-# changes from Volee's text and fills in the contact line; then delete this
-# line and deploy. Added 2026-09-26 so an unrelated deploy (the board report)
-# cannot publish it by accident.
-privacy.html
+# privacy.html was kept out while it was a draft (2026-09-26 to 09-27);
+# Tara approved it on 2026-09-27 and it is now published.
 
 # Test tooling and dependencies never belong on the site.
 node_modules

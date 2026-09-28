@@ -85,7 +85,7 @@ What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision
 | C3 | Push notifications on the lock screen: sender, trigger and audit columns built and deployed 2026-09-23 (#61); the app's half (banner while open, tap opens the clinic, badge clears) on branch `push-client` | [me] | **OPEN**: decided 2026-09-27, yes, push fully working for launch; steps for John in `docs/for-alex.md` §3. every tester build, and the launch build if C11 is used, is signed by John's team, so an APNs key from **John's** account works now (the LLC's key could never reach those phones). Ask John for one (Keys, +, Apple Push Notifications service), then five function secrets and two vault entries (`docs/for-alex.md` §3). Only if G1 says push is in |
 | C4 | Privacy manifest | [me] | **DONE 2026-09-12** (#37) |
 | C5 | Delete my account in the app, history kept (guideline 5.1.1(v)) | [me] | **DONE 2026-09-21**; `delete-account` deployed the same day |
-| C6 | Privacy policy at a public URL | [Tara] | **OPEN**: Tara is reviewing the draft; contact email set to fersctennispro@gmail.com (her answer, 2026-09-27); on her approval the model sets the date, removes the Draft banner, deploys it as `fxe-tennis-admin.vercel.app/privacy.html` and links it from Profile |
+| C6 | Privacy policy at a public URL | [Tara] | **DONE 2026-09-27**: Tara approved it ("looks good"), contact fersctennispro@gmail.com; published at `https://fxe-tennis-admin.vercel.app/privacy.html` (verified by `deploy-web.sh`) and linked from Profile in the app (build 4) |
 | C7 | App Store listing: name, subtitle, description in Tara's words, screenshots, age rating, support URL, review notes with a test account | [Alex]+[me] | **BLOCKED** on C1, or on C11's path |
 | C8 | TestFlight **build 4** from `main` (build 3 superseded: the MVP-audit round is in 4) | [John] | **OPEN**: after the `mvp-fixes` PR merges; `project.yml` says build 4; John archives per `docs/testflight.md` (`docs/for-alex.md` §4) |
 | C9 | Real-device pass: the two simulator flakes checked on an iPhone | [Alex]/[me] | **BLOCKED** on C8 |
@@ -99,7 +99,7 @@ What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision
 | ID | Item | Owner | Status |
 |---|---|---|---|
 | D0 | "Confirm email" off on hosted (decision 0011) | [Alex] | **DONE**; verified 2026-09-27 through the management API (`mailer_autoconfirm` true). Re-check on any new project |
-| D1 | **A real email sender, so "Forgot password?" reaches members.** Verified 2026-09-27: hosted has no custom SMTP, and Supabase's built-in sender "will refuse to deliver messages to addresses that are not part of the project's team", 2 per hour | [Alex] | **OPEN, launch blocker**: a Gmail account made for the app and its app password as custom SMTP, free, about ten minutes (`docs/for-alex.md` §6). Until then D13 covers any member who is locked out |
+| D1 | **A real email sender, so "Forgot password?" reaches members** | [Alex] | **DONE 2026-09-27**: Gmail `fxetennis.app@gmail.com` with an app password as custom SMTP; read back through the management API (`smtp_host` smtp.gmail.com, port 465, sender "FXE Tennis", `rate_limit_email_sent` 30). One real reset by Alex still to confirm delivery |
 | D2 | Reset page allow-listed as a redirect on hosted | [Alex] | **DONE 2026-09-01**; verified 2026-09-27 (`uri_allow_list` is `https://fxe-tennis-admin.vercel.app/reset.html`) |
 | D3 | Supabase plan: the free tier pauses after a quiet week and has no point-in-time recovery; Pro is $25 a month | [Alex] | **DECIDE** [Alex] before real members |
 | D4 | Restore drill (a backup nobody has restored is not a backup) | [me] | **DONE 2026-09-12**; next due 2026-10-12 |
@@ -109,11 +109,11 @@ What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision
 | D8 | Drop the dead `clinics.price_cents` column | [me] | **LATER** |
 | D9 | Data export for Tara | [me] | **LATER** (v1.1) |
 | D10 | Encrypted nightly backups | [Alex] then [me] | **DONE 2026-09-22** (age key; first encrypted run decrypted and checked) |
-| D11 | Hosted "Site URL" was `http://localhost:3000`, and the reset email used the one-time link that email scanners spend (decision 0017) | [me] | **OPEN**: Site URL set 2026-09-27 through the management API and read back (`https://fxe-tennis-admin.vercel.app`); the template change is refused on the free tier until custom SMTP exists ("Email template modification is not available for free tier projects using the default email provider"), so it follows D1 |
+| D11 | Hosted "Site URL" and the reset email's link (decision 0017) | [me] | **DONE 2026-09-27**: Site URL `https://fxe-tennis-admin.vercel.app`; the reset email now links `{{ .SiteURL }}/reset.html#token_hash=…&type=recovery` (read back through the management API once custom SMTP made templates editable) |
 | D12 | Nightly purge of card consents 90 days after an account is deleted | [me] | **DONE 2026-09-27**: the `retention` job ran on hosted, "Card consents purged ...: 0" |
 | D13 | **Tara can reset any member by hand**: Players tab → Reset link → Copy → text it. One-time, within an hour, no email, every link audited (`admin-reset-link`, decision 0017) | [me] | **DONE 2026-09-27**: PR #73 merged; `supabase db push` applied 20260927000001; `admin-reset-link` deployed; `hosted-smoke.sh` 63 targets, 0 open; live page checked from outside |
 | D14 | Sign-in rate limit on hosted: every phone at the party shares the club Wi-Fi's one address | [me] | **DONE 2026-09-27** through the management API, read back: `rate_limit_verify` 30 → 300, `rate_limit_token_refresh` 150 → 500 per 5 minutes per IP |
-| D15 | Courts are capped at 1 to 5 in the database, the web and the phone. How many courts does the club have? | [Alex] | **OPEN**: one line from Alex; more than 5 is one migration |
+| D15 | How many courts the club has | [Tara] | **DONE 2026-09-27**: 5 (Alex), which is exactly what the app allows (1 to 5); no change needed |
 
 ## E. Testing
 

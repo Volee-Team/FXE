@@ -56,7 +56,6 @@ Disclosure of your information
 Done
 Download CSV
 Draft
-Draft. Not yet in effect.
 Edit details
 FROM TARA
 FXE Tennis
@@ -88,7 +87,7 @@ Keep my account
 Keep my spot
 Keep the clinic
 Label
-Last updated: [DATE, when approved]
+Last updated: September 27, 2026
 Late cancel
 Leave Player Pool
 Length (minutes)

@@ -85,7 +85,7 @@ If you have any concerns or questions about your data, please contact us at:
 
 fersctennispro@gmail.com
 
-Last updated: [DATE, when approved]
+Last updated: September 27, 2026
 
 ---
 

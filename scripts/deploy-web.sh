@@ -30,12 +30,14 @@ md5of() { if command -v md5 >/dev/null; then md5 -q "$1"; else md5sum "$1" | cut
 # as surely as a stale page does.
 check() {
   local f live
-  for f in index.html review.html reset.html *.css *.js vendor/*; do
+  for f in index.html review.html reset.html privacy.html *.css *.js vendor/*; do
     [ -f "$f" ] || continue
     live=$(curl -s "$SITE/$f" -o /tmp/deploy-live-check && md5of /tmp/deploy-live-check)
     if [ "$live" != "$(md5of "$f")" ]; then echo "  live $f differs from the working tree"; return 1; fi
   done
-  for f in privacy.html; do
+  # privacy.html is published since Tara approved it (2026-09-27); it is
+  # compared above like every other page. Test tooling must stay out.
+  for f in tests/admin.spec.mjs playwright.config.mjs; do
     if [ "$(curl -s -o /dev/null -w '%{http_code}' "$SITE/$f")" != "404" ]; then echo "  $f is live but .vercelignore keeps it out"; return 1; fi
   done
 }
@@ -43,7 +45,7 @@ for attempt in 1 2; do
   echo "deploy attempt $attempt"
   npx -y vercel --prod --yes > /tmp/vercel-deploy.log 2>&1
   sleep 8
-  if check; then echo "live site matches the working tree byte for byte (the three pages, every stylesheet and script, web/vendor; privacy draft absent)"; exit 0; fi
+  if check; then echo "live site matches the working tree byte for byte (the four pages incl. the privacy policy, every stylesheet and script, web/vendor; test tooling absent)"; exit 0; fi
   echo "live site does not match yet"
 done
 echo "DEPLOY NOT VERIFIED after two attempts; see /tmp/vercel-deploy.log"; exit 1

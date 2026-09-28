@@ -110,6 +110,14 @@ struct ProfileView: View {
                                 .frame(maxWidth: .infinity)
                         }
 
+                        // Apple requires the privacy policy to be reachable in the app
+                        // (guideline 5.1.1). Tara approved it on 2026-09-27.
+                        Link("Privacy Policy", destination: URL(string: "https://fxe-tennis-admin.vercel.app/privacy.html")!)
+                            .font(Brand.Typography.caption)
+                            .foregroundStyle(Brand.textSecondary)
+                            .frame(maxWidth: .infinity, minHeight: Brand.Layout.minTapTarget)
+                            .accessibilityIdentifier("profile.privacy")
+
                         // Which build is this? The first question in every
                         // "it looks wrong on my phone" text from Tara or a
                         // tester, and TestFlight installs several a week.
