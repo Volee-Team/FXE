@@ -224,6 +224,21 @@ final class AccessibilityAuditUITests: XCTestCase {
         XCTAssertLessThan(clockPixels().darkest, 60, "Profile: the clock should be dark on the light top")
     }
 
+    /// Signing in with the keyboard alone: Return on the email moves to the
+    /// password, Return there signs in (2026-09-28; before, Return did
+    /// nothing and a player had to reach for each field and the button).
+    func testReturnKeyMovesThroughSignIn() {
+        app.launch()
+        let email = app.textFields["auth.email"]
+        XCTAssertTrue(email.waitForExistence(timeout: 20))
+        email.tap()
+        email.typeText(memberEmail + "\n")
+        // Typed into whatever has focus now, which must be the password.
+        app.typeText(seedPassword + "\n")
+        XCTAssertTrue(app.staticTexts["home.greeting"].waitForExistence(timeout: 20),
+                      "Return should have moved to the password and then signed in")
+    }
+
     func testTarasScreensPassTheAudit() {
         app.launch()
         let email = app.textFields["auth.email"]

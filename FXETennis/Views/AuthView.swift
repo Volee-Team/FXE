@@ -17,10 +17,28 @@ struct AuthView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var working = false
+    /// Return on the email moves to the password; Return there signs in.
+    @FocusState private var field: Field?
+    private enum Field { case email, password }
 
     enum Mode { case signIn, signUp
         var cta: String { self == .signIn ? "Sign In" : "Create Account" }
         var toggle: String { self == .signIn ? "Create an account" : "Sign in" }
+    }
+
+    private var canSubmit: Bool { !working && !email.isEmpty && !password.isEmpty }
+
+    private func submit() {
+        guard canSubmit else { return }
+        field = nil
+        Task {
+            working = true
+            switch mode {
+            case .signIn: await session.signIn(email: email, password: password)
+            case .signUp: await session.signUp(email: email, password: password)
+            }
+            working = false
+        }
     }
 
     var body: some View {
@@ -61,6 +79,9 @@ struct AuthView: View {
                             .keyboardType(.emailAddress)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
+                            .focused($field, equals: .email)
+                            .submitLabel(.next)
+                            .onSubmit { field = .password }
                             .padding()
                             .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
                             .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
@@ -76,6 +97,9 @@ struct AuthView: View {
                             .textContentType(AppEnv.isUITesting
                                              ? nil
                                              : (mode == .signIn ? .password : .newPassword))
+                            .focused($field, equals: .password)
+                            .submitLabel(.go)
+                            .onSubmit(submit)
                             .padding()
                             .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
                             .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
@@ -99,16 +123,7 @@ struct AuthView: View {
                         .frame(maxWidth: .infinity, minHeight: 18, alignment: .leading)
                         .opacity(session.authError == nil ? 0 : 1)
 
-                Button {
-                    Task {
-                        working = true
-                        switch mode {
-                        case .signIn: await session.signIn(email: email, password: password)
-                        case .signUp: await session.signUp(email: email, password: password)
-                        }
-                        working = false
-                    }
-                } label: {
+                Button(action: submit) {
                     Group {
                         if working { ProgressView().tint(Brand.textOnNavy) }
                         else { Text(mode.cta).brandFont(.button) }
@@ -119,7 +134,7 @@ struct AuthView: View {
                     .accessibilityIdentifier("auth.submit")
                     .foregroundStyle(Brand.textOnNavy)
                 }
-                .disabled(working || email.isEmpty || password.isEmpty)
+                .disabled(!canSubmit)
 
                 Button(mode.toggle) {
                     mode = (mode == .signIn) ? .signUp : .signIn

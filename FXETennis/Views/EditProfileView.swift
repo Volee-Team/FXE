@@ -23,7 +23,9 @@ struct EditProfileView: View {
     @State private var saving = false
     @State private var error: String?
     @State private var loaded = false
-    @FocusState private var typing: Bool
+    @FocusState private var typing: TypedField?
+    /// Return moves first name to last name to phone, as at sign-up.
+    private enum TypedField { case firstName, lastName, phone }
 
     private var canSave: Bool {
         !firstName.trimmingCharacters(in: .whitespaces).isEmpty
@@ -37,9 +39,12 @@ struct EditProfileView: View {
                 Brand.surfaceGradient.ignoresSafeArea()
                 ScrollView {
                     VStack(alignment: .leading, spacing: Brand.Spacing.lg) {
-                        field("First Name", text: $firstName, content: .givenName, id: "edit.firstName")
-                        field("Last Name", text: $lastName, content: .familyName, id: "edit.lastName")
-                        field("Phone", text: $phone, content: .telephoneNumber, keyboard: .phonePad, id: "edit.phone")
+                        field("First Name", text: $firstName, content: .givenName, id: "edit.firstName",
+                              name: .firstName, next: .lastName)
+                        field("Last Name", text: $lastName, content: .familyName, id: "edit.lastName",
+                              name: .lastName, next: .phone)
+                        field("Phone", text: $phone, content: .telephoneNumber, keyboard: .phonePad, id: "edit.phone",
+                              name: .phone, next: nil)
 
                         VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
                             Text("Note for Tara (optional)")
@@ -63,7 +68,7 @@ struct EditProfileView: View {
                                     ForEach(NTRPRating.displayOrdered) { level in
                                         Button {
                                             rating = (rating == level) ? nil : level
-                                            typing = false
+                                            typing = nil
                                         } label: {
                                             Text(level.label)
                                                 .brandFont(.chip)
@@ -133,13 +138,16 @@ struct EditProfileView: View {
     }
 
     private func field(_ label: String, text: Binding<String>, content: UITextContentType,
-                       keyboard: UIKeyboardType = .default, id: String) -> some View {
+                       keyboard: UIKeyboardType = .default, id: String,
+                       name: TypedField, next: TypedField?) -> some View {
         VStack(alignment: .leading, spacing: Brand.Spacing.xxs) {
             Text(label)
                 .brandFont(.subheadline)
                 .foregroundStyle(Brand.textSecondary)
             TextField("", text: text)
-                .focused($typing)
+                .focused($typing, equals: name)
+                .submitLabel(next == nil ? .done : .next)
+                .onSubmit { typing = next }
                 .brandFont(.body)
                 .foregroundStyle(Brand.textPrimary)
                 .textContentType(content)

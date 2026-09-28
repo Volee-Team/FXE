@@ -42,7 +42,10 @@ struct CompleteProfileView: View {
     /// is the exact experience of a real player. Leaving the text fields, by
     /// answering the membership question or picking a rating, drops the keyboard;
     /// so does dragging the form.
-    @FocusState private var typing: Bool
+    @FocusState private var typing: TypedField?
+    /// Return moves first name to last name to phone (the phone pad has no
+    /// Return key; the membership question below drops the keyboard).
+    private enum TypedField { case firstName, lastName, phone }
 
     /// Both names are required because they are NOT NULL on both tables and are
     /// what Tara reads in her roster. Membership is required because it decides
@@ -67,9 +70,12 @@ struct CompleteProfileView: View {
                 VStack(alignment: .leading, spacing: Brand.Spacing.lg) {
                     header
 
-                    field("First Name", text: $firstName, content: .givenName, id: "profile.firstName")
-                    field("Last Name", text: $lastName, content: .familyName, id: "profile.lastName")
-                    field("Phone", text: $phone, content: .telephoneNumber, keyboard: .phonePad, id: "profile.phone")
+                    field("First Name", text: $firstName, content: .givenName, id: "profile.firstName",
+                          name: .firstName, next: .lastName)
+                    field("Last Name", text: $lastName, content: .familyName, id: "profile.lastName",
+                          name: .lastName, next: .phone)
+                    field("Phone", text: $phone, content: .telephoneNumber, keyboard: .phonePad, id: "profile.phone",
+                          name: .phone, next: nil)
 
                     membershipQuestion
                     ratingPicker
@@ -120,14 +126,18 @@ struct CompleteProfileView: View {
         text: Binding<String>,
         content: UITextContentType,
         keyboard: UIKeyboardType = .default,
-        id: String
+        id: String,
+        name: TypedField,
+        next: TypedField?
     ) -> some View {
         VStack(alignment: .leading, spacing: Brand.Spacing.xxs) {
             Text(label)
                 .brandFont(.subheadline)
                 .foregroundStyle(Brand.textSecondary)
             TextField("", text: text)
-                .focused($typing)
+                .focused($typing, equals: name)
+                .submitLabel(next == nil ? .done : .next)
+                .onSubmit { typing = next }
                 .brandFont(.body)
                 .foregroundStyle(Brand.textPrimary)
                 .textContentType(content)
@@ -159,8 +169,8 @@ struct CompleteProfileView: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             HStack(spacing: Brand.Spacing.sm) {
-                choice("Yes", selected: isMember == true, id: "profile.member.yes") { isMember = true; typing = false }
-                choice("No", selected: isMember == false, id: "profile.member.no") { isMember = false; typing = false }
+                choice("Yes", selected: isMember == true, id: "profile.member.yes") { isMember = true; typing = nil }
+                choice("No", selected: isMember == false, id: "profile.member.no") { isMember = false; typing = nil }
             }
         }
     }
@@ -233,7 +243,7 @@ struct CompleteProfileView: View {
                     ForEach(NTRPRating.displayOrdered) { level in
                         Button {
                             rating = (rating == level) ? nil : level
-                            typing = false
+                            typing = nil
                         } label: {
                             Text(level.label)
                                 .brandFont(.chip)
