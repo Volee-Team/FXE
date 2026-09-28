@@ -200,6 +200,10 @@ QUESTIONS = [
   "If a player's bank takes back a clinic fee (a chargeback) and the bank sides with the player, should the app take away their Paid mark on your roster? If we don't hear otherwise: Paid stays, and the Money tab shows \"Dispute lost\"."
  ],
  [
+  "Accepting after the start",
+  "Someone taps Accept on your invitation after the clinic has already started. Let them in, or say no? If we don't hear otherwise: they can accept until the clinic ends, and after that the app says no."
+ ],
+ [
   "Approving a late request",
   "When you approve a late request, the player gets \"You're in for\" and the clinic's name. Should it be your \"You're all set...\" message instead? If we don't hear otherwise: the current line."
  ]

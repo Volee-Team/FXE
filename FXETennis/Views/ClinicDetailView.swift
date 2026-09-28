@@ -103,6 +103,15 @@ final class ClinicDetailModel {
         if text.contains("back_to_back_105") {
             return FailureOutcome(notice: "Non-members can take one 105 a day until 48 hours before.", reopens: nil)
         }
+        // A canceled clinic has no spots (20260928300001) and a finished one
+        // cannot be joined (20260928400001). Nobody beat anyone to it, so not
+        // the race line: the page's own approved words for each.
+        if text.contains("clinic_canceled") {
+            return FailureOutcome(notice: "This clinic has been canceled.", reopens: nil)
+        }
+        if text.contains("clinic_ended") {
+            return FailureOutcome(notice: "Registration has closed for this clinic.", reopens: nil)
+        }
         let failure = RequestFailure(error)
         switch failure {
         case .unreachable, .rateLimited:

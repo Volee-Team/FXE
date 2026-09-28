@@ -92,6 +92,22 @@ final class InvitationActionTests: XCTestCase {
                        InvitationActionPlan(markRead: true, notice: raceLine, handToApp: false))
     }
 
+    // 20260928300001 and 20260928400001: an Accept on the lock screen for a
+    // clinic Tara canceled, or one that is already over. Nobody beat anyone
+    // to it, so the notice is the page's own approved words, and the row is
+    // read (the answer is final: refusing again tomorrow would change nothing).
+    func testACanceledClinicSaysCanceledNotARace() {
+        let canceled = PostgrestError(code: "P0001", message: "clinic_canceled")
+        XCTAssertEqual(InvitationActions.plan(after: .failed(canceled)),
+                       InvitationActionPlan(markRead: true, notice: "This clinic has been canceled.", handToApp: false))
+    }
+
+    func testAFinishedClinicSaysClosedNotARace() {
+        let ended = PostgrestError(code: "P0001", message: "clinic_ended")
+        XCTAssertEqual(InvitationActions.plan(after: .failed(ended)),
+                       InvitationActionPlan(markRead: true, notice: "Registration has closed for this clinic.", handToApp: false))
+    }
+
     func testAnInvitationThatIsGoneGetsTarasLine() {
         let gone = PostgrestError(code: "P0002", message: "registration_not_found")
         XCTAssertEqual(InvitationActions.plan(after: .failed(gone)),

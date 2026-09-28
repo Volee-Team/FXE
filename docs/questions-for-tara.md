@@ -437,6 +437,9 @@ new and changed words and these questions, nothing else.
 **90. When you approve a late request, the player gets "You're in for {clinic}." Should it be your "You're all set…" message instead?**
 *Default: the current line, one message. Status: open, asked 2026-09-28 (review page, round four).*
 
+**91. Someone taps Accept on your invitation after the clinic has already started. Let them in, or say no?**
+*Default: let them in until the clinic ends; after it ends, the app says no (a finished clinic can't be joined, and they would have been charged for it). Status: open, asked 2026-09-28 (review page, round four).*
+
 ### How 52 to 57 are being sent
 
 Round two of the review page (2026-09-21, later): the Words tab now shows her

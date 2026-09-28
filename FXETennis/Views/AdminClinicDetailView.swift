@@ -160,7 +160,15 @@ struct AdminClinicDetailView: View {
                         Brand.Status.playerPool, model.pool,
                         empty: "The Player Pool is empty.",
                         numbered: true
-                    ) { entry in AnyView(HStack(spacing: Brand.Spacing.xs) { inviteButton(entry); removeFromPoolButton(entry) }) }
+                    ) { entry in
+                        // Nothing to invite into, or take out of, once the
+                        // clinic is canceled (20260928400001 refuses both).
+                        AnyView(Group {
+                            if clinic.status != "canceled" {
+                                HStack(spacing: Brand.Spacing.xs) { inviteButton(entry); removeFromPoolButton(entry) }
+                            }
+                        })
+                    }
 
                     rosterSection(
                         Brand.Status.responseNeeded, model.responseNeeded,
@@ -471,20 +479,24 @@ struct AdminClinicDetailView: View {
                             }
                             .buttonStyle(.plain)
                             .accessibilityIdentifier("admin.lateDecline")
-                            Button {
-                                Task { await model.perform(item.request.id) {
-                                    try await AdminRepository.resolveLateRequest(id: item.request.id, approve: true)
-                                } }
-                            } label: {
-                                Text("Put them in")
-                                    .brandFont(.chip)
-                                    .foregroundStyle(Brand.textOnNavy)
-                                    .padding(.horizontal, Brand.Spacing.sm)
-                                    .frame(minHeight: Brand.Layout.minTapTarget)
-                                    .background(Capsule().fill(Brand.navy))
+                            // Not into a canceled clinic (20260928400001 refuses
+                            // it); No room still clears the request.
+                            if clinic.status != "canceled" {
+                                Button {
+                                    Task { await model.perform(item.request.id) {
+                                        try await AdminRepository.resolveLateRequest(id: item.request.id, approve: true)
+                                    } }
+                                } label: {
+                                    Text("Put them in")
+                                        .brandFont(.chip)
+                                        .foregroundStyle(Brand.textOnNavy)
+                                        .padding(.horizontal, Brand.Spacing.sm)
+                                        .frame(minHeight: Brand.Layout.minTapTarget)
+                                        .background(Capsule().fill(Brand.navy))
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityIdentifier("admin.lateApprove")
                             }
-                            .buttonStyle(.plain)
-                            .accessibilityIdentifier("admin.lateApprove")
                         }
                         .padding(.vertical, Brand.Spacing.xs)
                         .disabled(model.busy.contains(item.request.id))

@@ -573,7 +573,7 @@ async function loadActionNeeded(clinics, byPlayer, owed, stale = () => false) {
       <span class="grow"><span class="name">${esc(p ? p.first_name + " " + p.last_name : "Unknown player")}</span>
         <span class="muted"> asked to join </span><span class="name">${esc(c ? c.name : "a clinic")}</span>
         ${r.message ? `<br><span class="muted">“${esc(r.message)}”</span>` : ""}</span>
-      <button class="small primary" data-approve="${r.id}">Put them in</button>
+      ${c && c.status === "canceled" ? "" : `<button class="small primary" data-approve="${r.id}">Put them in</button>`}
       <button class="small" data-decline="${r.id}">No room</button>
     </div>`;
   }).join("");
@@ -1055,7 +1055,7 @@ async function loadClinics() {
         ${paymentsOn && c.status !== "canceled" && new Date(c.ends_at) < new Date() && paymentsSince && new Date(c.ends_at) >= paymentsSince ? `<button class="small primary" data-chargeclinic="${c.id}">Charge clinic</button>` : ""}
       </div>
       ${section("in", r => `${courtSelect(r)}${zelleOn ? `<button class="small" data-paid="${r.id}" data-now="${r.paid}">${r.paid ? "Paid" : "Unpaid"}</button>` : ""}<button class="small${r.no_show ? " danger" : ""}" data-noshow="${r.id}" data-now="${r.no_show}">${r.no_show ? "No-show" : "Came"}</button>${lateOpen && !liveCharge(r) ? `<button class="small" data-latecancel="${r.id}" data-who="${esc(nameOf(r))}">Late cancel</button>` : ""}${!liveCharge(r) && c.status !== "canceled" ? `<button class="small" data-remove="${r.id}">Remove</button>` : ""}${chargeState(r)}`)}
-      ${section("pool", r => `<button class="small primary" data-invite="${r.id}">Invite</button>${c.status !== "canceled" ? `<button class="small" data-remove="${r.id}">Remove</button>` : ""}`)}
+      ${section("pool", r => c.status !== "canceled" ? `<button class="small primary" data-invite="${r.id}">Invite</button><button class="small" data-remove="${r.id}">Remove</button>` : "")}
       ${section("response_needed", r => `<button class="small" data-uninvite="${r.id}">Cancel invite</button>`)}
       ${section("canceled", r => r.late_cancel
         ? `<span class="chip canc" title="Canceled inside ${cutoffHours} hours">Late</span><span class="muted">${r.courtesy_used ? "Courtesy" : "Fee applies"}${r.cancel_note ? " · “" + esc(r.cancel_note) + "”" : ""}</span>${r.courtesy_used ? "" : chargeState(r)}`

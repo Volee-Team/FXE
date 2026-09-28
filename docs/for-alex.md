@@ -449,15 +449,16 @@ Dependabot alerts are already on (checked 2026-09-27), so nothing to do there.
 | Checklist | Decision | When | The model's recommendation |
 |---|---|---|---|
 | A9 | Switch payments on | After the next build is on testers' phones | Go for testers as soon as the build is out, then run the payment test the same day; not for everyone until live keys (A11) |
-| G1 | Payments and push in the MVP or not (with Kat and Tara) | This week | Payments in; push in only if Apple approves the LLC in time, otherwise launch with in-app notifications |
+| G1 | Payments and push in the MVP or not (with Kat and Tara) | Decided 2026-09-27 | Both in: payments fully live for the party (A11), push fully working (C3) |
 | C11 | Fallback if the LLC is not approved in time: external TestFlight on John's account with a public link | This week (was 10-09; see below) | Yes: prepare it (needs the privacy URL), use it only if needed |
 | C12 | The LLC app's bundle id (the current one is locked to John's account) | Before the first LLC build | Accept a new id such as `com.fxetennis.club`; testers reinstall once |
 | D3 | Supabase Pro ($25 a month): no pause after a quiet week, point-in-time recovery | Before real members | Yes, from launch week |
-| A11 | Cut-off for real money at the party: if Tara's Stripe live activation (A7) is not done by 2026-10-14, payments stay off on 10-16 | With G1 | Yes, 10-14. And never switch "card required" on for everyone while the keys are sandbox: a real card is declined in test mode |
-| C3 | Push with **John's** APNs key now: every tester build is signed by his team, so the LLC's key could never reach those phones | With G1 | Yes if push is in: ask John for a key (developer account, Keys, +, Apple Push Notifications service) |
-| C11 (again) | Upload one build to external beta review **this week**, no testers invited, so Apple's review is done before it matters | This week | Yes |
+| A11 | Cut-off for real money at the party: if Tara's Stripe live activation (A7) is not done by 2026-10-14, payments stay off on 10-16 | Decided 2026-09-27 | Yes, 10-14 (your answer). Never "card required" for everyone while the keys are sandbox: a real card is declined in test mode |
+| C3 | Push with **John's** APNs key now: every tester build is signed by his team, so the LLC's key could never reach those phones | Decided 2026-09-27 | Yes: John makes the key (section 3), you set the secrets |
+| C11 (again) | Upload one build to external beta review **this week**, no testers invited, so Apple's review is done before it matters | Decided 2026-09-27 ("yes prob") | The privacy URL is live now, so build 5 can go to beta review as soon as John uploads it |
 | C13 | Apple's reviewer account: one real account called App Review, made through the app's sign-up with an address you control | Before the first external or App Store submission | Yes; the review notes give Stripe's 4242 test card while keys are sandbox |
-| D14 | Raise the sign-in rate limit from 30 to about 300 per 5 minutes per IP: the party shares one Wi-Fi address | Before the party | Say go and the model sets it through the management API |
+| D14 | Raise the sign-in rate limit for the party's one Wi-Fi address | Done 2026-09-27 | 30 → 300 per 5 minutes, set and read back through the management API |
+| I1 (decision 0022 §5) | **A behaviour change you can veto:** nobody can accept an invitation into a clinic Tara canceled or that has already ended, and Tara's Invite and "Put them in" are gone on a canceled clinic | Built 2026-09-28 | Keep: a stale invitation tapped days later landed a player in a finished clinic and got them charged. Where the Accept cut-off sits (start or end) is Tara's question 91 |
 
 ## 11. Business
 

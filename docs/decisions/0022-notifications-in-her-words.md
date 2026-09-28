@@ -1,6 +1,6 @@
 # 0022: Tara's notification catalogue, wired in her words
 
-**Date:** 2026-09-28 · **Status:** Active, three defaults pending questions 79, 88 and 90 · **Source:** Tara's catalogue (`docs/notifications.md`), Alex 2026-09-27 (*"we want everything 100% functional + even better to wow people on the first opening"*), branch `notif-her-words`, migration `20260928000001_notifications_in_her_words.sql`
+**Date:** 2026-09-28 · **Status:** Active, four defaults pending questions 79, 88, 90 and 91 · **Source:** Tara's catalogue (`docs/notifications.md`), Alex 2026-09-27 (*"we want everything 100% functional + even better to wow people on the first opening"*), branch `notif-her-words`, migration `20260928000001_notifications_in_her_words.sql`
 
 ## What we chose
 
@@ -28,6 +28,17 @@ and a Friday 8:30 PM that is already Saturday in UTC.
 4. The push carries `category: INVITATION` on an invitation, so the lock
    screen offers Accept and Decline (decision 0023), and `thread-id`, the
    clinic's id, so a clinic's messages group together.
+5. **A transition looks at whether the clinic is still happening.** An
+   Accept is refused once the clinic is canceled (`clinic_canceled`,
+   20260928300001) or has ended (`clinic_ended`, 20260928400001); Tara's
+   Invite and late-request Approve are refused once it is canceled. Declines
+   stay possible. Each takes the clinic's lock before the registration's, the
+   order every writer uses; `tests/sql/accept_cancel_race.sh` is red without
+   the lock and with a weaker one. Found by the sql-auditor reviewing the
+   first of the two migrations: with the Accept on the lock screen, a stale
+   invitation tapped days later landed a player in a finished clinic and got
+   them charged. Not Tara's policy, except where the Accept cut-off sits
+   (start or end), which is question 91; a behaviour change Alex can veto.
 
 ## Rejected
 
