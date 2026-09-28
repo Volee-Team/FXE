@@ -45,12 +45,16 @@ struct CourtBackdrop: View {
             return LinearGradient(stops: [
                 .init(color: Brand.surface.opacity(0.93), location: 0.0),
                 .init(color: Brand.surface.opacity(0.86), location: 0.45),
-                .init(color: Brand.surface.opacity(0.55), location: 1.0),
+                // 0.72, was 0.55: the sign-in links sit here and read under
+                // 4.5:1 over the court (accessibility audit, 2026-09-28).
+                .init(color: Brand.surface.opacity(0.72), location: 1.0),
             ], startPoint: .top, endPoint: .bottom)
         case .page:
             return LinearGradient(stops: [
                 .init(color: Brand.surface.opacity(0.94), location: 0.0),
-                .init(color: Brand.surfaceWarm.opacity(0.84), location: 1.0),
+                // 0.90, was 0.84: grey text near the bottom of a list read under
+                // 4.5:1 over the court photo (accessibility audit, 2026-09-28).
+                .init(color: Brand.surfaceWarm.opacity(0.90), location: 1.0),
             ], startPoint: .top, endPoint: .bottom)
         }
     }

@@ -125,7 +125,10 @@ struct AuthView: View {
                     mode = (mode == .signIn) ? .signUp : .signIn
                 }
                 .font(Brand.Typography.caption)
-                .foregroundStyle(Brand.textSecondary)
+                // Navy, not grey: the links sit over the court photo, where
+                // grey read under 4.5:1 (accessibility audit, 2026-09-28).
+                .foregroundStyle(Brand.textPrimary)
+                .buttonStyle(QuietLinkButtonStyle())
                 // Identifier on the Button. The visible label flips between
                 // "Create an account" and "Sign in", so a UI test cannot query
                 // it by text without encoding which mode it is already in.
@@ -137,8 +140,8 @@ struct AuthView: View {
                         Task { resetSent = await session.sendPasswordReset(email: email) }
                     }
                     .font(Brand.Typography.caption)
-                    .foregroundStyle(resetSent ? Brand.Status.youreIn.ink : Brand.textSecondary)
-                    .frame(minHeight: Brand.Layout.minTapTarget)
+                    .foregroundStyle(resetSent ? Brand.Status.youreIn.ink : Brand.textPrimary)
+                    .buttonStyle(QuietLinkButtonStyle())
                     .accessibilityIdentifier("auth.forgot")
                 }
 

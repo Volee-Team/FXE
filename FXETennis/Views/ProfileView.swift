@@ -9,6 +9,7 @@
 import SwiftUI
 
 struct ProfileView: View {
+    @Environment(\.openURL) private var openURL
     @Environment(SessionStore.self) private var session
     @State private var showNTRP = false
     @State private var editing = false
@@ -65,11 +66,10 @@ struct ProfileView: View {
                             Text("Sign Out")
                                 .font(Brand.Typography.body)
                                 .underline()
-                                .foregroundStyle(Brand.textSecondary)
+                                .foregroundStyle(Brand.textPrimary)
                                 .frame(maxWidth: .infinity)
-                                .frame(minHeight: Brand.Layout.minTapTarget)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(QuietLinkButtonStyle())
                         .accessibilityIdentifier("profile.signOut")
 
                         // App Store 5.1.1(v); decision 0013 §5: history stays,
@@ -80,9 +80,9 @@ struct ProfileView: View {
                             Text("Delete my account")
                                 .font(Brand.Typography.caption)
                                 .frame(maxWidth: .infinity)
-                                .frame(minHeight: Brand.Layout.minTapTarget)
                                 .foregroundStyle(Brand.Status.canceled.ink)
                         }
+                        .buttonStyle(QuietLinkButtonStyle())
                         .disabled(deleting || session.account?.isAdmin == true)
                         .accessibilityIdentifier("profile.delete")
                         .confirmationDialog(
@@ -112,11 +112,14 @@ struct ProfileView: View {
 
                         // Apple requires the privacy policy to be reachable in the app
                         // (guideline 5.1.1). Tara approved it on 2026-09-27.
-                        Link("Privacy Policy", destination: URL(string: "https://fxe-tennis-admin.vercel.app/privacy.html")!)
-                            .font(Brand.Typography.caption)
-                            .foregroundStyle(Brand.textSecondary)
-                            .frame(maxWidth: .infinity, minHeight: Brand.Layout.minTapTarget)
-                            .accessibilityIdentifier("profile.privacy")
+                        Button("Privacy Policy") {
+                            openURL(URL(string: "https://fxe-tennis-admin.vercel.app/privacy.html")!)
+                        }
+                        .font(Brand.Typography.caption)
+                        .foregroundStyle(Brand.textSecondary)
+                        .buttonStyle(QuietLinkButtonStyle())
+                        .frame(maxWidth: .infinity)
+                        .accessibilityIdentifier("profile.privacy")
 
                         // Which build is this? The first question in every
                         // "it looks wrong on my phone" text from Tara or a
@@ -180,9 +183,8 @@ struct ProfileView: View {
                             Image(systemName: "questionmark.circle")
                                 .font(.system(size: 15, weight: .regular))
                                 .foregroundStyle(Brand.textSecondary)
-                                .frame(minWidth: 32, minHeight: 28)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(QuietLinkButtonStyle())
                         .accessibilityLabel("What do the ratings mean?")
                         .accessibilityIdentifier("profile.ratingHelp")
                     }

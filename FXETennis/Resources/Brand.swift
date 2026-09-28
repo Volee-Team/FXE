@@ -130,7 +130,7 @@ public enum Brand {
 
     public static let textPrimary = Color(hex: 0x0A1B3D)
     /// Secondary text. #6E6552 warm grey-brown is ~5.0:1 on the cream surface.
-    public static let textSecondary = Color(hex: 0x5C5A55)  // neutral grey, 5.5:1 on the gradient's warm end
+    public static let textSecondary = Color(hex: 0x4A4843)  // neutral grey; darkened from #5C5A55 on 2026-09-28 because the accessibility audit measured it under 4.5:1 where the court photo shows through the wash
     /// On navy: warm cream rather than pure white, so it belongs to this palette.
     public static let textOnNavy = Color(hex: 0xFFFFFF)     // surface-white, reversed
     public static let textOnNavyMuted = Color(hex: 0xC9CCD6)
@@ -566,3 +566,24 @@ private extension Color {
 //  #D5DF24) shipped first and is in git history. Tara chose palette B ("full
 //  country club") on 2026-08-12. If she reverts, the A ratios are in that
 //  file's history.
+
+
+// MARK: - Text links
+
+/// A quiet text link ("Create an account", "Sign Out", "Privacy Policy") with
+/// Apple's full 44-point tap target. Found by the accessibility audit
+/// (2026-09-28): a plain-style Button answers taps only where its glyphs are
+/// drawn, so a frame set around it looks right and still misses the thumb.
+/// The frame and the tap shape have to be inside the button, which a style
+/// guarantees for every link at once.
+struct QuietLinkButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .frame(minWidth: Brand.Layout.minTapTarget, minHeight: Brand.Layout.minTapTarget)
+            .contentShape(Rectangle())
+            // Pressed feedback by colour weight, not opacity: an opacity
+            // modifier on the label made the accessibility audit read navy
+            // text as failing contrast (2026-09-28).
+            .brightness(configuration.isPressed ? 0.25 : 0)
+    }
+}
