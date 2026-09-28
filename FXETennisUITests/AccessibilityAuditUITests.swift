@@ -172,6 +172,58 @@ final class AccessibilityAuditUITests: XCTestCase {
         }
     }
 
+    /// The brightest and darkest pixel (as r+g+b) where the status bar's
+    /// clock sits: the top left of the screen on every iPhone with a
+    /// Dynamic Island.
+    private func clockPixels() -> (brightest: Int, darkest: Int) {
+        guard let cg = XCUIScreen.main.screenshot().image.cgImage else { return (0, 0) }
+        let w = cg.width, h = cg.height
+        var data = [UInt8](repeating: 0, count: w * h * 4)
+        let drew: Void? = data.withUnsafeMutableBytes { buf in
+            CGContext(data: buf.baseAddress, width: w, height: h, bitsPerComponent: 8,
+                      bytesPerRow: w * 4, space: CGColorSpaceCreateDeviceRGB(),
+                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)?
+                .draw(cg, in: CGRect(x: 0, y: 0, width: w, height: h))
+        }
+        guard drew != nil else { return (0, 0) }
+        var hi = 0, lo = 765
+        for y in Int(Double(h) * 0.02)..<Int(Double(h) * 0.05) {
+            for x in Int(Double(w) * 0.10)..<Int(Double(w) * 0.25) {
+                let i = (y * w + x) * 4
+                let sum = Int(data[i]) + Int(data[i + 1]) + Int(data[i + 2])
+                hi = max(hi, sum); lo = min(lo, sum)
+            }
+        }
+        return (hi, lo)
+    }
+
+    /// The clock was black on the navy headers until 2026-09-28: the root
+    /// view's .preferredColorScheme(.light) pinned the status bar dark. Navy
+    /// is at most 98 as r+g+b, so white glyphs are the only way past 600.
+    func testStatusBarIsReadableOverNavy() {
+        app.launch()
+        XCTAssertTrue(app.textFields["auth.email"].waitForExistence(timeout: 20))
+        sleep(1)
+        XCTAssertGreaterThan(clockPixels().brightest, 600, "sign-in: the clock should be white on navy")
+
+        let email = app.textFields["auth.email"]
+        email.tap(); email.typeText(memberEmail)
+        let pw = app.secureTextFields["auth.password"]
+        pw.tap(); pw.typeText(seedPassword)
+        app.buttons["auth.submit"].tap()
+        XCTAssertTrue(app.staticTexts["home.greeting"].waitForExistence(timeout: 20))
+        sleep(1)
+        XCTAssertGreaterThan(clockPixels().brightest, 600, "Home: the clock should be white on navy")
+
+        // And dark again where the top is light, or it would vanish there.
+        let profileTab = app.tabBars.buttons["Profile"].exists ? app.tabBars.buttons["Profile"] : app.buttons["Profile"].firstMatch
+        profileTab.tap()
+        if !app.buttons["profile.signOut"].waitForExistence(timeout: 5) { profileTab.tap() }
+        XCTAssertTrue(app.buttons["profile.signOut"].waitForExistence(timeout: 15))
+        sleep(1)
+        XCTAssertLessThan(clockPixels().darkest, 60, "Profile: the clock should be dark on the light top")
+    }
+
     func testTarasScreensPassTheAudit() {
         app.launch()
         let email = app.textFields["auth.email"]

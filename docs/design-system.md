@@ -17,9 +17,12 @@ whenever either file changes.
 now"). Softer navy, forest green, a brass accent, a cream ground.
 
 **Appearance:** light only. A dark palette would require inventing surface
-colours Tara has not supplied, so the root view sets
-`.preferredColorScheme(.light)`. Dark mode is a flagged open item, not an
-oversight.
+colours Tara has not supplied, so the app is locked to light mode by
+`UIUserInterfaceStyle` in Info.plist (`project.yml`). Until 2026-09-28 the
+lock was `.preferredColorScheme(.light)` on the root view, which also pinned
+the status bar to dark text over the navy headers; screens with a navy top now
+ask for light status bar text with `.lightStatusBar()`. Dark mode is a flagged
+open item, not an oversight.
 
 **The palette is closed.** The `Color(hex:)` initialiser is `private` inside
 `Brand.swift` on purpose: "Kept private so no call site can smuggle in a colour

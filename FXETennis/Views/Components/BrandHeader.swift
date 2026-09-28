@@ -104,3 +104,19 @@ struct NavRowLabel: View {
         .overlay(RoundedRectangle(cornerRadius: Brand.Radius.lg).stroke(navy ? Color.clear : Brand.hairline))
     }
 }
+
+extension View {
+    /// White status bar text over a navy top (sign-in, launch, the load
+    /// failure screen). SwiftUI sets the status bar only through a navigation
+    /// bar's colour scheme, so the screen sits in a NavigationStack whose bar
+    /// stays hidden. Home is already in one and sets the scheme itself. This
+    /// works only because light mode is locked in Info.plist, not by
+    /// `.preferredColorScheme(.light)`, which pinned the clock dark.
+    func lightStatusBar() -> some View {
+        NavigationStack {
+            self
+                .toolbar(.hidden, for: .navigationBar)
+                .toolbarColorScheme(.dark, for: .navigationBar)
+        }
+    }
+}

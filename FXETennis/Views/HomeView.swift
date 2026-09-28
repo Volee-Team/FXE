@@ -154,6 +154,10 @@ struct HomeView: View {
                 }
             }
             .navigationBarHidden(true)
+            // White status bar text over the navy header (the bar stays
+            // hidden; its colour scheme is what sets the status bar). See
+            // lightStatusBar() in BrandHeader.swift.
+            .toolbarColorScheme(.dark, for: .navigationBar)
             .task { await model.load(); await refreshUnread() }
             .refreshable { await model.load(); await refreshUnread() }
             // Opening the app is how a Pool player learns she was invited

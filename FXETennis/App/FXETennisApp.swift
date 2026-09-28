@@ -18,23 +18,27 @@ struct FXETennisApp: App {
             RootView()
                 .environment(session)
                 .tint(Brand.navy)
-                // LOAD-BEARING. docs/design-system.md has said since 2026-08-12
-                // that "the root view sets .preferredColorScheme(.light)", and
-                // until 2026-08-27 that sentence was true only inside a COMMENT
-                // in Brand.swift. Nothing applied it.
+                // LIGHT MODE IS LOAD-BEARING, and it lives in Info.plist now
+                // (project.yml, INFOPLIST_KEY_UIUserInterfaceStyle: Light).
                 //
                 // Every colour in Brand is a hardcoded light-palette value, and
                 // the palette is deliberately closed with no dark tokens (Tara
-                // has not supplied dark surfaces). So under a dark system the
-                // app kept its cream and white grounds while SwiftUI switched
-                // its DEFAULT text and control colours to their dark variants:
-                // white text on a white field. A player with dark mode on could
-                // not read what they were typing on the sign-in screen.
+                // has not supplied dark surfaces). Under a dark system without
+                // the lock, the app kept its cream and white grounds while the
+                // DEFAULT text and control colours went dark-mode: white text on
+                // a white field (2026-08-27, the sign-in screen).
                 //
-                // Do not remove this to "support dark mode". Supporting dark
-                // mode means Tara supplying a dark surface set first; until
-                // then this line is what makes the light palette honest.
-                .preferredColorScheme(.light)
+                // Until 2026-09-28 the lock was `.preferredColorScheme(.light)`
+                // right here. It also pinned the status bar to dark text, so
+                // the clock was black on every navy header and no screen could
+                // ask for light text (tried on the simulator: the navigation
+                // bar's colour scheme had no effect while it was here). The
+                // Info.plist key is Apple's documented opt-out and covers every
+                // window, sheet and UIKit screen (Stripe's card sheet, the
+                // calendar editor) the same way.
+                //
+                // Do not remove the key to "support dark mode". Supporting dark
+                // mode means Tara supplying a dark surface set first.
                 .task { await session.bootstrap() }
         }
     }
@@ -50,9 +54,9 @@ struct RootView: View {
         Group {
             switch session.phase {
             case .loading:
-                LaunchView()
+                LaunchView().lightStatusBar()
             case .signedOut:
-                AuthView()
+                AuthView().lightStatusBar()
             case .needsProfile:
                 // Authenticated but with no profile row. Previously this state sent
                 // the user back to signedOut, which was a dead end: their auth user
@@ -61,7 +65,7 @@ struct RootView: View {
             case .loadFailed:
                 // Authenticated, but the profile could not be loaded (no signal,
                 // a server error). Not the sign-up form: that is for "no row".
-                LoadFailedView()
+                LoadFailedView().lightStatusBar()
             case .signedIn:
                 MainTabView()
                     .pushTapRouting()

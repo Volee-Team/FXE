@@ -71,9 +71,9 @@
 //  ============================================================================
 //
 //  These tokens define the LIGHT appearance only. A dark palette would require
-//  inventing surface colours Tara has not supplied, so the root view should set
-//  .preferredColorScheme(.light) until she signs off on a dark set.
-//  Flagged as an open item, not an oversight.
+//  inventing surface colours Tara has not supplied, so the app is locked to
+//  light mode (Info.plist UIUserInterfaceStyle, set in project.yml) until she
+//  signs off on a dark set. Flagged as an open item, not an oversight.
 //
 
 import SwiftUI
