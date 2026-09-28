@@ -74,15 +74,29 @@ wait
 IN=$(psql -tAc "select count(*) from public.registrations where clinic_id = '$CLINIC' and status = 'in';")
 POOL=$(psql -tAc "select count(*) from public.registrations where clinic_id = '$CLINIC' and status = 'pool';")
 TOTAL=$(psql -tAc "select count(*) from public.registrations where clinic_id = '$CLINIC';")
+# Tara's words follow the status each racer actually ended with (20260928000001):
+# #1 You're In to the one who got in, #5 Added to Player Pool to everyone else,
+# one row each, to their own account, about their own registration.
+NOTES=$(psql -tAc "select count(*) from public.notifications n join public.registrations r on r.id = n.entity_id where r.clinic_id = '$CLINIC';")
+MATCH=$(psql -tAc "
+  select count(*) from public.registrations r
+    join public.players p on p.id = r.player_id
+    join public.notifications n on n.entity_id = r.id and n.account_id = p.account_id
+   where r.clinic_id = '$CLINIC' and n.entity_type = 'registration'
+     and n.type = case r.status when 'in' then 'youre_in' when 'pool' then 'added_to_pool' end;")
 
 echo ""
 echo "  concurrent registrations : $N"
 echo "  status = in              : $IN   (must be exactly 1)"
 echo "  status = pool            : $POOL"
 echo "  total rows               : $TOTAL   (must equal $N: nobody silently lost)"
+echo "  notifications            : $NOTES   (must equal $N: one per racer)"
+echo "  matching their status    : $MATCH   (must equal $N: #1 if in, #5 if pooled)"
 echo ""
 
-# Clean up the probe's own rows only.
+# Clean up the probe's own rows only. The racers' notifications would go with
+# their accounts below; deleted first anyway, so nothing depends on a cascade.
+psql -q -c "delete from public.notifications where entity_id in (select id from public.registrations where clinic_id = '$CLINIC');" >/dev/null
 psql -q -c "delete from public.registrations where clinic_id = '$CLINIC';" >/dev/null
 psql -q -c "delete from public.clinics where id = '$CLINIC';" >/dev/null
 # The racers' waiver signatures first: since 20260927200002 a signature
@@ -95,5 +109,6 @@ rm -rf "$TMP"
 FAIL=0
 [ "$IN" = "1" ]     || { echo "FAIL: capacity 1 clinic ended up with $IN confirmed players"; FAIL=1; }
 [ "$TOTAL" = "$N" ] || { echo "FAIL: expected $N rows, got $TOTAL"; FAIL=1; }
+[ "$NOTES" = "$N" ] && [ "$MATCH" = "$N" ] || { echo "FAIL: $NOTES notifications, $MATCH matching their status, expected $N and $N"; FAIL=1; }
 [ "$FAIL" -eq 0 ] && echo "PASS: exactly one You're In!, everyone else in the Player Pool, nobody lost"
 exit $FAIL

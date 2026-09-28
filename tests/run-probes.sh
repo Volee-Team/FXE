@@ -23,6 +23,8 @@ fi
 # later, by something other than the seed. The window was 60 seconds until
 # 2026-09-21, when the browser suite's rows, written 23 seconds after a
 # reset, slipped inside it and two false failures came back with no warning.
+# Notifications are counted since 2026-09-28: registering now writes one, and
+# an orphan whose registration a script deleted fails notification_targets.
 STRAY=$(docker exec "$DB" psql -U postgres -d postgres -Atc "
   with seed as (select min(created_at) + interval '5 seconds' as t from public.accounts)
   select (select count(*) from public.accounts, seed where created_at > seed.t)
@@ -32,7 +34,8 @@ STRAY=$(docker exec "$DB" psql -U postgres -d postgres -Atc "
        + (select count(*) from public.payments, seed where created_at > seed.t)
        + (select count(*) from public.devices, seed where updated_at > seed.t)
        + (select count(*) from public.card_consents, seed where accepted_at > seed.t)
-       + (select count(*) from public.reset_links_issued, seed where issued_at > seed.t)" 2>/dev/null)
+       + (select count(*) from public.reset_links_issued, seed where issued_at > seed.t)
+       + (select count(*) from public.notifications, seed where created_at > seed.t)" 2>/dev/null)
 if [ -n "$STRAY" ] && [ "$STRAY" != "0" ]; then
   echo "DIRTY DATABASE: $STRAY rows were added after the seed. Failures below may be"
   echo "false. Reset first and rerun:  supabase db reset --yes"
