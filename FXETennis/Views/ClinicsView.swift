@@ -35,7 +35,13 @@ final class ClinicsViewModel {
             async let regs = RegistrationRepository.mine()
             let (fetchedClinics, fetchedRegs) = try await (clinics, regs)
             let live = fetchedRegs.filter { $0.status != .canceled }
-            self.clinics = fetchedClinics
+            // A clinic the player holds a spot in stays on their screens even
+            // past the list's five-week edge: Tara can place anyone early, and
+            // an invitation can be for a clinic weeks out. Found 2026-09-28,
+            // when Home listed one of Maria's two You're In! clinics.
+            let beyond = Self.heldBeyondList(fetchedClinics, held: live.map(\.clinicId))
+            let extra = beyond.isEmpty ? [] : try await ClinicRepository.clinics(ids: beyond)
+            self.clinics = Self.merged(fetchedClinics, extra)
             self.myRegistrationsByClinic = Dictionary(
                 live.map { ($0.clinicId, $0) }, uniquingKeysWith: { a, _ in a }
             )
@@ -48,6 +54,21 @@ final class ClinicsViewModel {
             }
         }
         loading = false
+    }
+
+    /// The held clinics the list did not bring back, in a stable order.
+    nonisolated static func heldBeyondList(_ listed: [ClinicPublic], held: [UUID]) -> [UUID] {
+        let have = Set(listed.map(\.id))
+        var seen = Set<UUID>()
+        return held.filter { !have.contains($0) && seen.insert($0).inserted }
+    }
+
+    /// One list, soonest first, each clinic once.
+    nonisolated static func merged(_ listed: [ClinicPublic], _ extra: [ClinicPublic]) -> [ClinicPublic] {
+        var seen = Set<UUID>()
+        return (listed + extra)
+            .filter { seen.insert($0.id).inserted }
+            .sorted { $0.startsAt < $1.startsAt }
     }
 }
 
@@ -75,6 +96,7 @@ struct ClinicsView: View {
                     }
                 }
             }
+            .crispTopEdge()
             .navigationTitle("Clinics")
             .task { await model.load() }
             // A "Remind me" moves or goes with what this list says (RegistrationReminders).

@@ -69,6 +69,7 @@ struct PlayersDirectoryView: View {
                 .padding(Brand.Spacing.pageMargin)
             }
         }
+        .crispTopEdge()
         .navigationTitle("Players")
         .navigationBarTitleDisplayMode(.inline)
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search by name")
@@ -245,6 +246,7 @@ private struct PlayerAdminDetailView: View {
             }
             .scrollDismissesKeyboard(.interactively)
         }
+        .crispTopEdge()
         .navigationTitle("Player")
         .navigationBarTitleDisplayMode(.inline)
         .task {

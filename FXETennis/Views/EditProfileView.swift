@@ -116,6 +116,7 @@ struct EditProfileView: View {
                 }
                 .scrollDismissesKeyboard(.interactively)
             }
+            .crispTopEdge()
             .navigationTitle("Edit details")
             .sheet(isPresented: $showNTRP) { NTRPExplainerSheet() }
             .navigationBarTitleDisplayMode(.inline)

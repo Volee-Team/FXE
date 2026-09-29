@@ -139,6 +139,7 @@ struct AdminClinicsView: View {
                 }
                 .refreshable { await model.load() }
             }
+            .crispTopEdge()
             .navigationTitle("Clinics")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {

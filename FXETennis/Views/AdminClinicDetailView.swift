@@ -188,6 +188,7 @@ struct AdminClinicDetailView: View {
             }
             .refreshable { await model.load() }
         }
+        .crispTopEdge()
         .navigationTitle(clinic.name)
         .toolbar {
             if clinic.status != "canceled" {
@@ -778,6 +779,7 @@ private struct MessageClinicSheet: View {
                 }
                 .padding(Brand.Spacing.pageMargin)
             }
+            .crispTopEdge()
             .navigationTitle("Message Players")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

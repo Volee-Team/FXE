@@ -95,6 +95,7 @@ struct MyClinicsView: View {
                 .refreshable { await model.load(); await loadPast() }
             }
         }
+        .crispTopEdge()
         .navigationTitle("My Clinics")
         .navigationBarTitleDisplayMode(.inline)
         .task { await model.load() }

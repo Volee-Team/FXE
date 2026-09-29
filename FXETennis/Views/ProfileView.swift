@@ -72,6 +72,32 @@ struct ProfileView: View {
                         .buttonStyle(QuietLinkButtonStyle())
                         .accessibilityIdentifier("profile.signOut")
 
+                        // How a member reaches Tara: question 76, "Yes" on
+                        // 2026-09-28 (decision 0024). Her address, the one the
+                        // privacy policy and the App Store listing show.
+                        Button("Contact Tara") {
+                            openURL(URL(string: "mailto:fersctennispro@gmail.com")!)
+                        }
+                        .brandFont(.caption)
+                        .foregroundStyle(Brand.textPrimary)
+                        .buttonStyle(QuietLinkButtonStyle())
+                        .frame(maxWidth: .infinity)
+                        .accessibilityIdentifier("profile.contactTara")
+
+                        // Apple requires the privacy policy to be reachable in the app
+                        // (guideline 5.1.1). Tara approved it on 2026-09-27.
+                        Button("Privacy Policy") {
+                            openURL(URL(string: "https://fxe-tennis-admin.vercel.app/privacy.html")!)
+                        }
+                        .brandFont(.caption)
+                        .foregroundStyle(Brand.textSecondary)
+                        .buttonStyle(QuietLinkButtonStyle())
+                        .frame(maxWidth: .infinity)
+                        .accessibilityIdentifier("profile.privacy")
+
+                        // Last of the actions, under Contact Tara and Privacy Policy
+                        // (2026-09-28): the destructive one sits at the foot, where
+                        // iOS Settings puts it, not between two everyday links.
                         // App Store 5.1.1(v); decision 0013 §5: history stays,
                         // the person is removed. Two taps, spelled out.
                         Button(role: .destructive) {
@@ -110,29 +136,6 @@ struct ProfileView: View {
                                 .frame(maxWidth: .infinity)
                         }
 
-                        // How a member reaches Tara: question 76, "Yes" on
-                        // 2026-09-28 (decision 0024). Her address, the one the
-                        // privacy policy and the App Store listing show.
-                        Button("Contact Tara") {
-                            openURL(URL(string: "mailto:fersctennispro@gmail.com")!)
-                        }
-                        .brandFont(.caption)
-                        .foregroundStyle(Brand.textPrimary)
-                        .buttonStyle(QuietLinkButtonStyle())
-                        .frame(maxWidth: .infinity)
-                        .accessibilityIdentifier("profile.contactTara")
-
-                        // Apple requires the privacy policy to be reachable in the app
-                        // (guideline 5.1.1). Tara approved it on 2026-09-27.
-                        Button("Privacy Policy") {
-                            openURL(URL(string: "https://fxe-tennis-admin.vercel.app/privacy.html")!)
-                        }
-                        .brandFont(.caption)
-                        .foregroundStyle(Brand.textSecondary)
-                        .buttonStyle(QuietLinkButtonStyle())
-                        .frame(maxWidth: .infinity)
-                        .accessibilityIdentifier("profile.privacy")
-
                         // Which build is this? The first question in every
                         // "it looks wrong on my phone" text from Tara or a
                         // tester, and TestFlight installs several a week.
@@ -144,6 +147,7 @@ struct ProfileView: View {
                     }
                     .padding(Brand.Spacing.pageMargin)
                 }
+                .crispTopEdge()
             }
             .navigationTitle("Profile")
             // Read on every visit, so the switch shows without an app update.
@@ -253,6 +257,7 @@ struct NTRPExplainerSheet: View {
                 .padding(Brand.Spacing.pageMargin)
             }
             .background(Brand.surfaceGradient)
+            .crispTopEdge()
             .navigationTitle("Rating Guide")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
