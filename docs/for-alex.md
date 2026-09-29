@@ -289,28 +289,36 @@ your phone running build 4 to prove it, and reads back whether Apple took it.
 No `APNS_HOST` is needed: TestFlight builds use Apple's production server,
 which is the default.
 
-## 4. John: TestFlight build 5 (checklist C8, C10)
+## 4. John: TestFlight build 6 (checklist C8, C10)
 
-**Build 5 is the tag `v0.1.0-rc5`.** The build number is already 5 in
-`project.yml`. Build 4 was never archived, so nothing is lost. Text John
-something like this:
+**Build 6 is the tag `v0.1.0-rc6`** (made when build-6 merges; the model
+says when). It contains everything in build 5, so if John has not archived
+build 5 yet, he skips it. Text John something like this:
 
-> John, build 5 is ready. `git fetch --tags && git checkout v0.1.0-rc5`,
+> John, build 6 is ready. `git fetch --tags && git checkout v0.1.0-rc6`,
 > `xcodegen generate`, open the project, scheme FXETennis, destination Any
 > iOS Device, Product → Archive, then Distribute App → TestFlight Internal
 > Only → Upload. After it processes, add it to the internal group, then tag
-> it: `git tag -a v0.1.0-tf5 -m "TestFlight build 5, uploaded by John"` and
-> `git push origin v0.1.0-tf5`. Full steps are in `docs/testflight.md`.
+> it: `git tag -a v0.1.0-tf6 -m "TestFlight build 6, uploaded by John"` and
+> `git push origin v0.1.0-tf6`. Full steps are in `docs/testflight.md`.
 
-What testers get in build 5: everything from the MVP audit (bad signal read
-as bad signal, not "no account"; screens that refresh when you come back;
-Register at 8:00 on its own; a way out of every sign-up step), plus the
-night's polish: Accept and Decline right on an invitation's notification (once
-push is live), Add to Calendar on a clinic you're in, Remind me when
-registration opens, text that grows with the iPhone's Larger Text setting,
-a readable clock on the navy screens, Return moving through the sign-in form,
-and on Tara's side a Payouts card and chargeback alerts on the laptop's Money
-tab. Payments stay off until you say go (checklist A9).
+**"What to Test" for TestFlight** (John pastes it; plain words, for your tick
+before it goes, hard rule 13):
+
+> New in build 6: the app opens straight onto your clinics, even with poor
+> signal. Ask Siri "When's my next clinic in FXE Tennis?". Add your clinics
+> to your calendar from Profile (Subscribe in Calendar). Please try signing
+> up for a clinic, canceling it, and turning up Larger Text in Settings, and
+> tell us anything that looks wrong or confusing.
+
+What testers get in build 6, on top of build 5 (Accept and Decline on the
+notification once push is live, Add to Calendar, Remind me, Larger Text, the
+readable clock): instant open, Siri and Spotlight, a subscribed calendar,
+every clinic you hold on Home however far ahead, clean page titles, and a
+declined card that says why. For Tara: pros (a Today screen), Resolved on a
+declined card, her saved messages, and on the laptop a player's history in
+the Pool, Copy to next week, a court sheet to print, and the full player list.
+Payments stay off until you say go (checklist A9).
 
 ## 4b. The QR code's link (checklist I6), one message
 
