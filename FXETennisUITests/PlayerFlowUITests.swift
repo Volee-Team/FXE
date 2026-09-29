@@ -265,6 +265,12 @@ final class PlayerFlowUITests: XCTestCase {
         // full legal name, and the sign button stays disabled until both.
         let agree = app.buttons["waiver.agree"]
         XCTAssertTrue(agree.waitForExistence(timeout: 20), "Waiver never appeared after the profile")
+        // Before the app, not over it (Alex, 2026-09-29): nothing of Home
+        // exists while the waiver is on screen.
+        XCTAssertFalse(app.staticTexts["home.greeting"].exists,
+                       "Home was already there behind the waiver")
+        XCTAssertFalse(app.tabBars.buttons["Clinics"].exists,
+                       "The tab bar was already there behind the waiver")
         let sign = app.buttons["waiver.sign"]
         XCTAssertFalse(sign.isEnabled, "Sign was enabled before the box was ticked and a name typed")
         agree.tap()

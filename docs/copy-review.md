@@ -71,6 +71,17 @@ so the gate cannot see them: they are listed here by hand.
 | ☐ | *Evening Coed* (Response Needed) | An event's title for an invitation still waiting on her answer; a You're In! clinic is its name alone | Tara's locked term, composed with the clinic's own name |
 | — | -//FXE Tennis//Clinic Calendar//EN | The feed's `PRODID`, which calendar apps do not show | A label, not copy |
 
+## The waiver screen's refusals (2026-09-29) — awaiting Alex
+
+The waiver is now its own screen before the app. Two lines replace the
+generic "Couldn't save your signature." when the server says why (chrome,
+mine; the extractor cannot see assignments, so listed by hand).
+
+| ✓ | Words | Where | Why |
+|---|---|---|---|
+| ☐ | The waiver was updated. Read it again and sign. | Under the name field, when Tara published a new waiver while this one was open; the new text loads and the box unticks | Says what happened and the one thing to do |
+| ☐ | Couldn't find your account. Sign out and sign in again. | The same place, when the account is gone (a deleted account, or a reset test database) | The only way out; Sign out is on the same screen |
+
 ## Siri, Spotlight and Shortcuts: Next Clinic (2026-09-28) — awaiting Alex
 
 Ours, all of it: plain chrome, no tone. Siri speaks the answer, so it is data
