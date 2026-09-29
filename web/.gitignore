@@ -1,4 +1,7 @@
 .vercel
-node_modules/
+# No trailing slash: a builder's worktree links node_modules to the main
+# checkout, and `node_modules/` matches only a directory, not a symlink
+# (2026-09-28: one was a `git add -A` away from being committed).
+node_modules
 test-results/
 playwright-report/
