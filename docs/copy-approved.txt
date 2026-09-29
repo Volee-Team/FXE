@@ -130,6 +130,7 @@ No earlier clinics.
 No notifications yet
 No responses yet.
 No room
+No saved messages yet.
 No templates yet.
 No upcoming clinics.
 Nobody by that name yet. They may need to sign up in the app first.
@@ -186,6 +187,8 @@ Response Needed
 Review links
 Save note
 Save password
+Save this message
+Saved
 Saved. You can sign in with it now, on your phone or here.
 Saving\u2026
 Search by name
