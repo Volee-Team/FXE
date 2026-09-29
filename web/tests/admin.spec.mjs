@@ -88,14 +88,31 @@ test.describe("the week", () => {
 });
 
 test.describe("the directory", () => {
+  test("the directory lists everyone before any typing, ratings with their decimal", async ({ page }) => {
+    await signIn(page, TARA);
+    await page.getByRole("tab", { name: "Players" }).click();
+    // Rob's seeded rating is 3.0; before 2026-09-28 the laptop wrote "3".
+    const rob = page.locator("[data-player-row]", { hasText: "Rob Delgado" });
+    await expect(rob).toBeVisible();
+    await expect(rob).toContainText("3.0 · Non-member");
+    await expect(page.locator("[data-player-row]", { hasText: "Maria Alvarez" })).toContainText("3.5 · Member");
+    // Typing still narrows it.
+    await page.getByLabel("Search players by name").fill("Mar");
+    await expect(page.locator("[data-player-row]", { hasText: "Rob Delgado" })).toHaveCount(0);
+    await expect(page.locator("[data-player-row]", { hasText: "Maria Alvarez" })).toBeVisible();
+  });
+
   test("search finds a player and a note round-trips", async ({ page }) => {
     await signIn(page, TARA);
     await page.getByRole("tab", { name: "Players" }).click();
     await page.getByLabel("Search players by name").fill("Mar");
+    // The whole directory shows first (2026-09-28); wait for the search to
+    // narrow it, or the click lands on a row the redraw replaces.
+    await expect(page.locator("[data-player-row]", { hasText: "Rob Delgado" })).toHaveCount(0);
     const row = page.locator("[data-player-row]", { hasText: "Maria Alvarez" });
     await expect(row).toBeVisible();
     await row.getByRole("button", { name: "Note" }).click();
-    const box = page.getByLabel("Private note");
+    const box = page.getByLabel("Private note").filter({ visible: true });
     await expect(box).toBeVisible();
     const stamp = `Playwright ${Date.now()}`;
     await box.fill(stamp);
@@ -105,8 +122,9 @@ test.describe("the directory", () => {
     await page.reload();
     await page.getByRole("tab", { name: "Players" }).click();
     await page.getByLabel("Search players by name").fill("Mar");
+    await expect(page.locator("[data-player-row]", { hasText: "Rob Delgado" })).toHaveCount(0);
     await page.locator("[data-player-row]", { hasText: "Maria Alvarez" }).getByRole("button", { name: "Note" }).click();
-    await expect(page.getByLabel("Private note")).toHaveValue(stamp);
+    await expect(page.getByLabel("Private note").filter({ visible: true })).toHaveValue(stamp);
     // Saving re-lists the players and closes the box, so the stamp is read on
     // reopen: it exists once a note exists, and it is a date, not a slogan.
     await expect(page.locator("[id^=note-]:not(.hide) [data-noteedited]")).toContainText(/Edited .*\d/);

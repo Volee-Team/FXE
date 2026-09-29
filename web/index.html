@@ -411,6 +411,9 @@ const courtSelect = (r) => `<select class="court" data-court="${r.id}" aria-labe
 </select>`;
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, m =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+// NTRP is always written with one decimal ("3.0"), as the phone shows it;
+// PostgREST sends numeric(2,1) as a JSON number, so 3.0 arrived as "3".
+const ntrp = (r) => r == null ? "—" : Number(r).toFixed(1);
 
 // A player's history at a glance (decision 0027 §1), under a name in the
 // Player Pool and on the Players tab. Every number is the database's
@@ -527,6 +530,7 @@ async function showApp() {
   $("who").textContent = `${acct.first_name} ${acct.last_name}`;
   $("signin").classList.add("hide"); $("app").classList.remove("hide"); $("bar").classList.remove("hide");
   await loadClinics();
+  searchPlayers();
   loadReviewResponses();
   if (!$("tab-money").classList.contains("hide")) loadPayouts();
 }
@@ -1081,7 +1085,7 @@ async function loadClinics() {
         ${rows.map((r, i) => {
           const p = byPlayer[r.player_id];
           const who = p ? `${p.first_name} ${p.last_name}` : "Unknown player";
-          const sub = p ? `${p.adult_rating ?? "—"} · ${p.is_member ? "Member" : "Non-member"}` : "";
+          const sub = p ? `${ntrp(p.adult_rating)} · ${p.is_member ? "Member" : "Non-member"}` : "";
           // The Player Pool is where she chooses, so its rows carry the
           // player's history (decision 0027 §1).
           return `<div class="row">
@@ -1397,7 +1401,7 @@ let searchTimer = null;
 let playerTimer;
 const playerRow = (pl, history) => `<div class="row" data-player-row="${pl.id}">
   <span class="grow"><span class="name">${esc(pl.first_name)} ${esc(pl.last_name)}</span>${pl.has_notes ? ' <span class="muted" title="Has a note">✎</span>' : ""}<br>
-    <span class="muted">${pl.adult_rating ?? "—"} · ${pl.is_member ? "Member" : "Non-member"}${pl.is_active ? "" : " · Inactive"}${pl.waiver_accepted ? "" : " · Waiver not signed"}</span>${historyHtml(history)}${pl.level_note ? `<br><span class="muted" title="The player's note at level entry; only you see it">“${esc(pl.level_note)}”</span>` : ""}</span>
+    <span class="muted">${ntrp(pl.adult_rating)} · ${pl.is_member ? "Member" : "Non-member"}${pl.is_active ? "" : " · Inactive"}${pl.waiver_accepted ? "" : " · Waiver not signed"}</span>${historyHtml(history)}${pl.level_note ? `<br><span class="muted" title="The player's note at level entry; only you see it">“${esc(pl.level_note)}”</span>` : ""}</span>
   <button class="small" data-member="${pl.id}" data-now="${pl.is_member}">${pl.is_member ? "Make non-member" : "Make member"}</button>
   <button class="small" data-active="${pl.id}" data-now="${pl.is_active}">${pl.is_active ? "Deactivate" : "Reactivate"}</button>
   <button class="small" data-notes="${pl.id}">Note</button>
@@ -1412,16 +1416,24 @@ const playerRow = (pl, history) => `<div class="row" data-player-row="${pl.id}">
   <div class="row"><span class="muted grow">Only you can see this. <span data-noteedited="${pl.id}"></span></span><button class="small primary" data-savenote="${pl.id}">Save note</button></div>
 </div>`;
 
+let playerSeq = 0;
 async function searchPlayers() {
+  // Everyone by last name until she types; one letter waits for a second
+  // (search_players('') returns the whole directory, 2026-09-28).
   const q = $("p-query").value.trim();
-  if (q.length < 2) { $("p-results").innerHTML = ""; return; }
+  if (q.length === 1) return;
+  // The load-time list and a typed search can be in flight together; only
+  // the latest one may draw, or a slow full list would replace her results.
+  const seq = ++playerSeq;
   const [{ data, error }, history] = await Promise.all([
     sb.rpc("search_players", { p_query: q, p_include_inactive: $("p-inactive").checked }),
     readHistory()]);
+  if (seq !== playerSeq) return;
   if (error) return note($("players-msg"), friendly(error));
   $("p-results").innerHTML = (data || []).length
     ? data.map(pl => playerRow(pl, history[pl.id])).join("")
-    : `<p class="muted">Nobody by that name yet. They may need to sign up in the app first.</p>`;
+    : (q ? `<p class="muted">Nobody by that name yet. They may need to sign up in the app first.</p>`
+         : `<p class="muted">No players yet.</p>`);
 }
 $("p-query").addEventListener("input", () => { clearTimeout(playerTimer); playerTimer = setTimeout(searchPlayers, 250); });
 $("p-inactive").addEventListener("change", searchPlayers);
@@ -1476,7 +1488,7 @@ $("w-query").addEventListener("input", () => {
     $("w-results").innerHTML = (data || []).length
       ? data.map(pl => `<div class="row">
           <span class="grow"><span class="name">${esc(pl.first_name)} ${esc(pl.last_name)}</span><br>
-          <span class="muted">${pl.adult_rating ?? "—"} · ${pl.is_member ? "Member" : "Non-member"}</span></span>
+          <span class="muted">${ntrp(pl.adult_rating)} · ${pl.is_member ? "Member" : "Non-member"}</span></span>
           <button class="small primary" data-place="${pl.id}">Put in clinic</button>
         </div>`).join("")
       : `<p class="muted">Nobody by that name yet. They may need to sign up in the app first.</p>`;
