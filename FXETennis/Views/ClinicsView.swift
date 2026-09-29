@@ -29,6 +29,14 @@ final class ClinicsViewModel {
     /// says why; no signal reads as no signal, not as "no clinics" (MVP audit
     /// item 9).
     func load() async {
+        // Instant open: the last good answer for this person, shown while the
+        // real one loads (Snapshot.swift). Only into an empty model, so a
+        // screen already showing fresh data never steps back.
+        if clinics.isEmpty, !hasLoaded, let cached = Self.cachedForCurrentUser() {
+            clinics = cached.clinics
+            myRegistrationsByClinic = cached.registrations
+            hasLoaded = true
+        }
         loading = true; loadError = nil
         do {
             async let clinics = ClinicRepository.upcoming()
@@ -46,6 +54,10 @@ final class ClinicsViewModel {
                 live.map { ($0.clinicId, $0) }, uniquingKeysWith: { a, _ in a }
             )
             hasLoaded = true
+            if let userId = SnapshotStore.currentUserId {
+                let (shown, held) = (self.clinics, live)
+                SnapshotStore.shared.update(for: userId) { $0.clinics = shown; $0.registrations = held }
+            }
         } catch {
             let failure = RequestFailure(error)
             if failure != .cancelled {
@@ -54,6 +66,17 @@ final class ClinicsViewModel {
             }
         }
         loading = false
+    }
+
+    /// The signed-in person's last list, minus clinics that have ended since.
+    private static func cachedForCurrentUser(now: Date = .now)
+        -> (clinics: [ClinicPublic], registrations: [UUID: MyRegistration])? {
+        guard let userId = SnapshotStore.currentUserId,
+              let snapshot = SnapshotStore.shared.load(for: userId),
+              !snapshot.clinics.isEmpty
+        else { return nil }
+        return (snapshot.clinicsStillAhead(at: now),
+                Dictionary(snapshot.registrations.map { ($0.clinicId, $0) }, uniquingKeysWith: { a, _ in a }))
     }
 
     /// The held clinics the list did not bring back, in a stable order.
@@ -120,6 +143,16 @@ struct ClinicsView: View {
     private var list: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: Brand.Spacing.md) {
+                // Shown over a list the last load did not refresh (no signal,
+                // or the snapshot from the last launch): what is below may be
+                // old. Home says it the same way.
+                if let err = model.loadError {
+                    Text(err)
+                        .brandFont(.subheadline)
+                        .foregroundStyle(Brand.Status.canceled.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("clinics.loadError")
+                }
                 ForEach(weeks, id: \.start) { week in
                     Text(ServiceWeek.label(forWeekStarting: week.start).uppercased())
                         .brandFont(.chip)

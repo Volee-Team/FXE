@@ -63,6 +63,14 @@ struct MyClinicsView: View {
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: Brand.Spacing.md) {
+                        // What is below may be old: the last load failed.
+                        if let loadError = model.loadError {
+                            Text(loadError)
+                                .brandFont(.subheadline)
+                                .foregroundStyle(Brand.Status.canceled.ink)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .accessibilityIdentifier("myClinics.staleLine")
+                        }
                         if mine.isEmpty {
                             Text("You're not registered for any clinics this week")
                                 .brandFont(.body)

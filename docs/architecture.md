@@ -170,6 +170,8 @@ FXETennis/
 │   ├── SupabaseClient.swift     the one client (URL + publishable key, implicit flow)
 │   ├── Repositories.swift       player reads/writes: Clinic, Registration, News, Profile
 │   ├── PaymentsRepository.swift asks stripe-setup-intent for what PaymentSheet needs; that is all
+│   ├── Snapshot.swift           instant open (decision 0028): the last good answer per signed-in person,
+│   │                            shown at launch and refreshed behind; removed at sign-out (unit-tested)
 │   ├── AdminRepository.swift    every admin RPC + the roster/late-request/notice models, the money
 │   │                            models (MoneyClinic, MoneyDecline, MoneyDispute) and Stripe's decline codes in words
 │   └── RequestFailure.swift     what a request met, by URLError code, HTTP status or Postgres code:
@@ -654,8 +656,8 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `one_fee_race.sh` | Two concurrent charges of different kinds for one player in one clinic (the unique index cannot see them): exactly one live fee survives (the per player-and-clinic lock in `admin_charge_registration`, 20260927100001; red without it, 2026-09-27: both went through) |
 | `dispute_race.sh` | Two concurrent deliveries of one dispute (`stripe_record_dispute`, 20260928200001), each holding the row in turn: the newer event's state survives in either commit order. Both statuses are open on purpose, so only the order guard decides; red under a read-then-write version (round 1 ended at the older event), 2026-09-28 |
 
-**Swift**: 186 unit tests (`FXETennisTests`: price formatting, per-viewer
-pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016; since 2026-09-27 the request-failure classifier, a failed load keeping who you are, the waiver and card refusals reopening their steps, the 30-second reload throttle, the redraw moments, and the type scale under Larger Text; since 2026-09-28 the invitation push's Accept and Decline, the Remind me reminder, the calendar entry, and the haptics and chip motion; and a clinic the player holds beyond the list's five-week edge staying on their screens) and 18
+**Swift**: 191 unit tests (`FXETennisTests`: price formatting, per-viewer
+pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016; since 2026-09-27 the request-failure classifier, a failed load keeping who you are, the waiver and card refusals reopening their steps, the 30-second reload throttle, the redraw moments, and the type scale under Larger Text; since 2026-09-28 the invitation push's Accept and Decline, the Remind me reminder, the calendar entry, and the haptics and chip motion; a clinic the player holds beyond the list's five-week edge staying on their screens, and the instant-open snapshot's per-person and ended-clinic rules) and 18
 XCUITests: 8 player flows
 (`PlayerFlowUITests`: sign in / browse / register, undo, sign-up end to end,
 the bell, profile edit, My Clinics, prices, hidden information) and 6 admin

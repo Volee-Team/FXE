@@ -26,6 +26,13 @@
 //  account was deleted), a load that fails or finds no row signs out, rather
 //  than Try again forever or signed in with nobody (`next(after:...)`).
 //
+//  INSTANT OPEN (2026-09-28). The last good answer is kept on the phone for
+//  the person whose session is stored there (`Snapshot`), and a launch shows
+//  it at once while the real load runs. It is the same "keep the last known
+//  identity" rule, extended across launches: a server that ends the session
+//  still signs out (and removes every snapshot), and with no signal the app
+//  stays on what it knew instead of "Couldn't reach the server".
+//
 
 import Foundation
 import Supabase
@@ -124,6 +131,8 @@ final class SessionStore {
         // the auth screen and every test fails with "Sign-in screen never
         // appeared" — which is exactly how this was found.
         if ProcessInfo.processInfo.environment["UITEST_SIGNED_OUT"] == "1" {
+            // A snapshot from an earlier run would show that run's database.
+            SnapshotStore.shared.removeAll()
             try? await supabase.auth.signOut()
             account = nil; players = []; activePlayer = nil
             phase = .signedOut
@@ -140,6 +149,7 @@ final class SessionStore {
     /// Restores the stored session and loads who it belongs to.
     private func restore() async {
         let started = generation
+        showSnapshotIfAny()
         do {
             _ = try await supabase.auth.session
         } catch {
@@ -147,16 +157,20 @@ final class SessionStore {
             // No stored session, or one the server has ended: sign in. But an
             // expired session that could not be REFRESHED for lack of signal is
             // still on this phone, and the sign-in screen would be the wrong
-            // answer; say what happened and let them retry.
+            // answer; say what happened and let them retry, or, when the
+            // snapshot already shows who this is, stay on it.
             let failure = RequestFailure(error)
             if failure.isNoAnswer {
-                fail(failure)
+                if account == nil { fail(failure) }
             } else {
                 // Ended by the server (signed out everywhere, or deleted):
                 // signOut() never runs on this path, so the person's
-                // "Remind me" reminders are cleared here (review, 2026-09-28).
+                // "Remind me" reminders and snapshots are cleared here
+                // (review, 2026-09-28).
                 await RegistrationReminders.removeAll()
+                SnapshotStore.shared.removeAll()
                 guard started == generation else { return }
+                forgetIdentity()
                 phase = .signedOut
             }
             return
@@ -201,6 +215,46 @@ final class SessionStore {
         phase = .loadFailed
     }
 
+    /// Instant open: at launch, with nobody known yet, the snapshot of the
+    /// person whose session is stored on this phone. Only a snapshot with an
+    /// account counts: an unfinished sign-up still goes through the load.
+    private func showSnapshotIfAny() {
+        guard account == nil,
+              let user = supabase.auth.currentUser,
+              let snapshot = SnapshotStore.shared.load(for: user.id),
+              let known = snapshot.account
+        else { return }
+        account = known
+        players = snapshot.players
+        activePlayer = snapshot.players.first
+        waiverAccepted = snapshot.waiverAccepted
+        cardConsent = snapshot.cardConsent
+        cardsRequired = snapshot.cardsRequired
+        phase = .signedIn
+    }
+
+    /// Keeps who this is and the three gates for the next launch.
+    private func saveSnapshot() {
+        guard let user = supabase.auth.currentUser, account != nil else { return }
+        let (known, all, waiver, consent, required) = (account, players, waiverAccepted, cardConsent, cardsRequired)
+        SnapshotStore.shared.update(for: user.id) {
+            $0.account = known
+            $0.players = all
+            $0.waiverAccepted = waiver
+            $0.cardConsent = consent
+            $0.cardsRequired = required
+        }
+    }
+
+    private func forgetIdentity() {
+        account = nil
+        players = []
+        activePlayer = nil
+        waiverAccepted = nil
+        cardConsent = nil
+        cardsRequired = false
+    }
+
     /// Loads the account, its players and the two gates. A failure changes
     /// nothing that was known before it (see the header).
     @discardableResult
@@ -215,6 +269,8 @@ final class SessionStore {
             fetched = .failure(error)
         }
         let result = apply(fetched, from: started)
+        // No account on the server: nothing on this phone should open as one.
+        if result == .noProfile { SnapshotStore.shared.removeAll() }
         guard result == .loaded else { return result }
         // The gates. A check that fails keeps its last known answer rather
         // than switching the gate off; register_for_clinic enforces both
@@ -223,7 +279,9 @@ final class SessionStore {
         if let accepted = try? await ProfileRepository.myWaiverAccepted(), started == generation { waiverAccepted = accepted }
         if let consent = try? await PaymentsRepository.myCardConsent(), started == generation { cardConsent = consent }
         if let required = try? await PaymentsRepository.cardStepRequired(), started == generation { cardsRequired = required }
-        return started == generation ? result : .superseded
+        guard started == generation else { return .superseded }
+        saveSnapshot()
+        return result
     }
 
     /// Applies one fetch of the account and its players. Separate from the
@@ -384,19 +442,16 @@ final class SessionStore {
         // Anything in flight now belongs to the person leaving.
         generation &+= 1
         await PushRegistrar.shared.unregisterForSignOut()
-        // "Remind me" reminders are this person's, like their pushes.
+        // "Remind me" reminders are this person's, like their pushes, and so
+        // is what the app last showed them.
         await RegistrationReminders.removeAll()
+        SnapshotStore.shared.removeAll()
         try? await supabase.auth.signOut()
         // After the session is gone, so a count fetched before it cannot
         // put the number back on the icon.
         PushRegistrar.shared.clearBadge()
         generation &+= 1
-        account = nil
-        players = []
-        activePlayer = nil
-        waiverAccepted = nil
-        cardConsent = nil
-        cardsRequired = false
+        forgetIdentity()
         loadFailureLine = nil
         phase = .signedOut
     }
