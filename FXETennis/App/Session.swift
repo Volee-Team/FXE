@@ -90,16 +90,25 @@ final class SessionStore {
         }
     }
 
-    /// The two gates the server can refuse a registration for (decision 0013
-    /// §4 and 0015 §5). The app reopens the matching step when it does.
-    enum Gate: Equatable { case waiver, card }
+    /// The gates the server can refuse a registration for (decision 0013 §4,
+    /// 0015 §5, and 0024 for a declined card). The app reopens the matching
+    /// step when it does.
+    enum Gate: Equatable { case waiver, card, cardDeclined }
 
     var phase: Phase = .loading {
         // A banner for a push that lands while nobody is signed in would show
         // the previous account's words on a shared phone (PushAppDelegate).
         didSet { NotificationRouter.shared.signedIn = phase == .signedIn }
     }
-    var account: Account?
+    var account: Account? {
+        // A new card cleared the decline (or someone else signed in): the
+        // step asked for after a refusal has done its job, and a decline next
+        // month must not reopen it unasked.
+        // Written only when it changes: an @Observable write invalidates
+        // every view that reads it (the root's card sheet) even when the
+        // value is the same, and profiles load often.
+        didSet { if cardChangeRequested, account?.isCardDeclined != true { cardChangeRequested = false } }
+    }
     /// nil until known; false shows the waiver over the app (decision 0013).
     var waiverAccepted: Bool?
     /// Consent on file for the current card-permission words (decision 0015).
@@ -110,6 +119,18 @@ final class SessionStore {
     /// The onboarding card step is due: cards required, none saved, a player.
     var cardStepDue: Bool {
         cardsRequired && account != nil && account?.hasCard != true && account?.isAdmin != true
+    }
+    /// Register or Accept was refused for a declined card (decision 0024):
+    /// the card step opens so a new card can be saved. Unlike the onboarding
+    /// step it can be closed, and it closes itself once the webhook has
+    /// recorded a new card (the decline is cleared, `account` above).
+    var cardChangeRequested = false
+    /// The card step is up: due at onboarding, or asked for after a decline.
+    /// A declined card alone takes nothing over: browsing, My Clinics and
+    /// cancelling all still work; only Register and Accept are refused.
+    var cardStepShown: Bool {
+        cardStepDue
+            || (cardChangeRequested && account?.isCardDeclined == true && account?.isAdmin != true)
     }
     var players: [PlayerProfile] = []
     var activePlayer: PlayerProfile?
@@ -253,6 +274,7 @@ final class SessionStore {
         waiverAccepted = nil
         cardConsent = nil
         cardsRequired = false
+        cardChangeRequested = false
     }
 
     /// Loads the account, its players and the two gates. A failure changes
@@ -323,6 +345,12 @@ final class SessionStore {
             // Fresh card summary and payments switches; the card step opens if
             // they say a card is due.
             await settle(await loadProfile())
+        case .cardDeclined:
+            // The server just said the card is declined: fresh account (its
+            // code for Profile), then the step, unless the reload shows the
+            // decline already cleared (a card saved meanwhile).
+            await settle(await loadProfile())
+            if account?.isCardDeclined == true { cardChangeRequested = true }
         }
     }
 

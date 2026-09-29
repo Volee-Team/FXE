@@ -118,13 +118,13 @@ observer.
 
 | Layer | Runs where | Count 2026-09-28 | Gap |
 |---|---|---|---|
-| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 1110 checks, 40 probes, plus nine race probes | none known |
+| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 1178 checks, 41 probes, plus ten race probes | none known |
 | Stripe pipeline against stripe-mock | every PR | 94 checks | real Stripe behaviour waits on A2 |
 | Push pipeline against a mock APNs | every PR | 57 checks | real APNs waits on C3 |
-| Web admin browser tests (Playwright, real sign-in) | every PR | 43 | a cold-start flake after a local reset (backlog) |
-| Swift unit tests (pure logic) | every PR | 215 | fine |
+| Web admin browser tests (Playwright, real sign-in) | every PR | 44 | a cold-start flake after a local reset (backlog) |
+| Swift unit tests (pure logic) | every PR | 228 | fine |
 | Hosted signed-out smoke (`scripts/hosted-smoke.sh`) | every PR, read-only against production | 126 targets, including a browser preflight to each function the web admin calls | only the signed-out side |
-| XCUITests, player and admin flows, and Apple's accessibility audit | **local only** (section F) | 21 | run on a laptop before every TestFlight build |
+| XCUITests, player and admin flows, and Apple's accessibility audit | **local only** (section F) | 22 | run on a laptop before every TestFlight build |
 | Copy gate, secret scan (now Stripe keys too), migration immutability, icon gate, doc checks | every PR | – | none |
 | Nightly backup and consent purge | nightly | – | restore drill due 2026-10-12 (D4) |
 
@@ -192,10 +192,10 @@ each checked by an independent reviewer or the sql-auditor, then merged on
 
 ## F. The CI Supabase project (Alex asked 2026-09-12; corrected 2026-09-13; decided 2026-09-18)
 
-**Decided 2026-09-18: option 3.** Alex: *"nahh unless we really need it no more money for now."* No CI project, no Pro plan. The 21 XCUITests run on a laptop before every TestFlight build and the run is pasted into the changelog entry for that build; the `ios-ui-tests` job stays green with its notice until the three settings exist, so switching later is a dashboard visit and two secrets, nothing in the repo. Revisit when the first paying member exists (D3 wants point-in-time recovery then anyway). The rest of this section is kept as the record of why.
+**Decided 2026-09-18: option 3.** Alex: *"nahh unless we really need it no more money for now."* No CI project, no Pro plan. The 22 XCUITests run on a laptop before every TestFlight build and the run is pasted into the changelog entry for that build; the `ios-ui-tests` job stays green with its notice until the three settings exist, so switching later is a dashboard visit and two secrets, nothing in the repo. Revisit when the first paying member exists (D3 wants point-in-time recovery then anyway). The rest of this section is kept as the record of why.
 
 
-Alex gave the go-ahead on 2026-09-13 ("exact steps for me or can you do it all?"); the create was attempted the same day and refused, see below. Would it help a lot? Yes: it is the only way to run the 21 XCUITests on every PR, which is the layer that walks the app like a member does. The macOS runner has no Docker, so it cannot host the local stack; a small hosted project it can reset to the seed is the practical answer. Everything on our side is built and waiting (2026-09-13): the Debug app accepts `FXE_SUPABASE_URL` / `FXE_SUPABASE_ANON_KEY`, the UI tests forward them, and the `ios-ui-tests` job resets the project with `supabase db reset --db-url` and runs the suite with one retry. The job stays green with a notice until the secrets exist.
+Alex gave the go-ahead on 2026-09-13 ("exact steps for me or can you do it all?"); the create was attempted the same day and refused, see below. Would it help a lot? Yes: it is the only way to run the 22 XCUITests on every PR, which is the layer that walks the app like a member does. The macOS runner has no Docker, so it cannot host the local stack; a small hosted project it can reset to the seed is the practical answer. Everything on our side is built and waiting (2026-09-13): the Debug app accepts `FXE_SUPABASE_URL` / `FXE_SUPABASE_ANON_KEY`, the UI tests forward them, and the `ios-ui-tests` job resets the project with `supabase db reset --db-url` and runs the suite with one retry. The job stays green with a notice until the secrets exist.
 
 **Does it use the Volee slot? Yes, and Alex was right.** The 2026-09-12 version of this section said the free plan is two projects per organization. It is two active free projects per *user* across every org they own: `supabase projects create fxe-ci` on 2026-09-13 was refused with "Alex-Epstein (2 project limit)", because Volee and `fxe-tennis` already fill it. Three ways out, cheapest first:
 

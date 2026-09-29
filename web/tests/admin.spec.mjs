@@ -653,3 +653,56 @@ test.describe("payouts and disputes", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// A declined card Tara will not chase (decision 0024, question 83): "Can we
+// have a button that says “resolved” and it clears - for me only to see ofc".
+// The charge is declined the way stripe-webhook leaves it (claimed, then
+// failed with Stripe's code), which also marks Ken's card declined.
+test.describe("a declined card", () => {
+  test("Resolved clears it from Action Needed; the card list keeps it, and Ken's card stays declined", async ({ page, request }) => {
+    const db = service(request);
+    const errors = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await db.patch("app_settings?key=eq.payments_enabled_at", { value: daysAgo(5) });
+    const clinic = await db.insert("clinics", pastClinic("Browser Declined Clinic", 2));
+    try {
+      const ken = await db.insert("registrations", { clinic_id: clinic.id, player_id: KEN_P, status: "in", source: "admin",
+        price_cents_charged: 1800, was_member: true, duration_minutes: 60 });
+      const pay = await db.insert("payments", { registration_id: ken.id, account_id: KEN_ACCT, kind: "clinic_fee",
+        amount_cents: 1800, status: "processing" });
+      await db.patch(`payments?id=eq.${pay.id}`, { status: "failed", failure_code: "insufficient_funds",
+        failure_reason: "Your card has insufficient funds." });
+
+      await signIn(page, TARA);
+      const row = page.locator(`#money-needs [data-declined="${ken.id}"]`);
+      await expect(row).toContainText("Ken Whitfield's card was declined");
+      await expect(row).toContainText("Insufficient funds (NSF)");
+      await row.getByRole("button", { name: "Resolved" }).click();
+      await expect(page.locator(`#money-needs [data-declined="${ken.id}"]`)).toHaveCount(0, { timeout: 15_000 });
+
+      // Gone after a fresh load too: the database cleared it, not the page.
+      await page.reload();
+      await expect(page.getByRole("heading", { name: "This week" })).toBeVisible();
+      await expect(page.locator("#clinics .card").first()).toBeVisible();
+      await expect(page.locator(`#money-needs [data-declined="${ken.id}"]`)).toHaveCount(0);
+
+      // The history keeps the declined charge, marked Resolved.
+      await page.getByRole("tab", { name: "Money" }).click();
+      const ledger = page.locator("#ledger");
+      await expect(ledger).toContainText("Declined: Insufficient funds (NSF)");
+      await expect(ledger.locator("[data-resolved]")).toHaveCount(1);
+
+      // Resolved is not a new card: Ken is still refused a spot.
+      const [acct] = await db.get(`accounts?id=eq.${KEN_ACCT}&select=card_decline_code`);
+      expect(acct.card_decline_code).toBe("insufficient_funds");
+      expect(errors).toEqual([]);
+    } finally {
+      await db.del(`payments?registration_id=in.(${(await db.get(`registrations?clinic_id=eq.${clinic.id}&select=id`)).map(r => r.id).join(",") || "00000000-0000-0000-0000-000000000000"})`);
+      await db.del(`registrations?clinic_id=eq.${clinic.id}`);
+      await db.del(`clinics?id=eq.${clinic.id}`);
+      await db.patch(`accounts?id=eq.${KEN_ACCT}`, { card_declined_at: null, card_decline_code: null });
+      await db.patch("app_settings?key=eq.payments_enabled_at", { value: "" });
+    }
+  });
+});

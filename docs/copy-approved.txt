@@ -36,6 +36,7 @@ Children's privacy
 Choose a new password
 Clinic updates come through the app. Keep notifications on so you don't miss them.
 Clinics
+Close
 Collected by card
 Contact Tara
 Cookies and tracking technologies
@@ -192,6 +193,7 @@ Reminder set
 Remove
 Remove \(entry.displayName) from the Player Pool
 Remove from clinic
+Resolved
 Response Needed
 Review links
 Save note

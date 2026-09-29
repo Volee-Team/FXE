@@ -38,6 +38,15 @@
 # not-connected answer (503) needs a server with no key, so it is checked by
 # hand and by the browser test's route, not here.
 #
+# Added 2026-09-28 (decision 0024, questions 78 and 83; 20260928700001): a
+# card Stripe declines blocks registering until a card is saved again or a
+# later charge goes through, and the path that decides it is this one: the
+# signed webhook's payment_failed and succeeded on the ledger, and its
+# setup_intent.succeeded on the card. Checks in sections 5, 9, 10 and 11 say
+# what is NOT a decline (a hold, a dropped connection, our own refusal);
+# section 16 walks the whole thing, including Tara's Resolved, which clears
+# her list and does not unblock the player.
+#
 # The dropped-connection check stops and restarts the mock container
 # ($STRIPE_MOCK_CONTAINER, default stripe-mock, as in CI). Running the mock as
 # the Homebrew binary instead, set STRIPE_MOCK_CONTAINER= (empty) to skip it.
@@ -51,6 +60,7 @@ API=${FXE_API_URL:-http://127.0.0.1:54321}
 DB=${FXE_DB_CONTAINER:-supabase_db_FXE-Tennis}
 WHSEC=${STRIPE_WEBHOOK_SECRET:-whsec_stripe_mock_only}
 ANON=$(supabase status -o env 2>/dev/null | grep '^ANON_KEY' | cut -d= -f2 | tr -d '"')
+TARA=11111111-1111-1111-1111-111111111111
 MARIA=22222222-2222-2222-2222-222222222222
 MARIA_P=a0000000-0000-0000-0000-000000000001
 KEN=33333333-3333-3333-3333-333333333333;   KEN_P=a0000000-0000-0000-0000-000000000002
@@ -97,6 +107,7 @@ reg() { # clinic player cents member minutes -> a You're In! registration id
 card() { # account customer-id: a customer and a Visa ending 4242, as the webhook would leave them
   sql "update public.accounts set stripe_customer_id='$2', card_brand='visa', card_last4='4242', card_added_at=now() where id='$1'" >/dev/null; }
 REGS=""   # every registration this harness makes, removed at the end
+declined() { sql "select coalesce(card_decline_code,'NULL') from public.accounts where id='$1'"; }
 
 if ! curl -s -o /dev/null "$API/functions/v1/stripe-webhook" -X POST; then
   echo "Edge functions are not being served. Run: bash tests/stripe/make-env.sh > /tmp/mock.env && supabase functions serve --env-file /tmp/mock.env"; exit 1
@@ -109,6 +120,9 @@ echo "════ Stripe pipeline (stripe-mock) ════"
 # a late cancel made by hand on the simulator while it was being looked at.
 CLINIC2=d0000000-0000-0000-0000-000000000001
 sql "delete from public.payments; update public.accounts set stripe_customer_id=null, card_brand=null, card_last4=null, card_added_at=null, deleted_at=null where id in ($HARNESS_PEOPLE); delete from public.registrations where player_id in ('$MARIA_P','$KEN_P','$ROB_P','$DANA_P','$PRIYA_P') and clinic_id in ('$CLINIC','$CLINIC2','$CLINIC3','$CLINIC4'); update public.app_settings set value='false' where key='payments_enabled'; delete from public.app_settings where key='stripe_live_since';" >/dev/null
+# A decline left by an earlier run that stopped halfway (20260928700001). Its
+# own statement: on a schema without the columns it fails alone.
+sql "update public.accounts set card_declined_at=null, card_decline_code=null where id in ($HARNESS_PEOPLE)" >/dev/null 2>&1
 
 MARIA_JWT=$(jwt maria@fxe.test); TARA_JWT=$(jwt tara@fxe.test)
 check "signed in as Maria and Tara" "2" "$([ -n "$MARIA_JWT" ] && [ -n "$TARA_JWT" ] && echo 2)"
@@ -182,16 +196,19 @@ PAY2=$(rpc admin_charge_registration "$TARA_JWT" "$BODY" | field "['id']")
 fn stripe-charge "$TARA_JWT" '{}' >/dev/null
 PI2=$(sql "select stripe_payment_intent_id from public.payments where id='$PAY2'")
 # Stripe's shape for an NSF decline: code card_declined, decline_code the bank's reason.
-OBJ="{\"id\":\"$PI2\",\"object\":\"payment_intent\",\"status\":\"requires_payment_method\",\"last_payment_error\":{\"code\":\"card_declined\",\"decline_code\":\"insufficient_funds\",\"message\":\"Your card was declined.\"}}"
+OBJ="{\"id\":\"$PI2\",\"object\":\"payment_intent\",\"status\":\"requires_payment_method\",\"last_payment_error\":{\"type\":\"card_error\",\"code\":\"card_declined\",\"decline_code\":\"insufficient_funds\",\"message\":\"Your card was declined.\"}}"
 webhook "$(event payment_intent.payment_failed "$OBJ")" >/dev/null
 check "payment_failed -> failed with Stripe's reason" "failed Your card was declined." "$(sql "select status||' '||failure_reason from public.payments where id='$PAY2'")"
 # 20260926000010: decline_code wins over code, so Tara reads "Insufficient funds (NSF)", not "Card declined".
 check "payment_failed records the decline code" "insufficient_funds" "$(sql "select coalesce(failure_code,'NULL') from public.payments where id='$PAY2'")"
+# 20260928700001: and marks the card on the account declined (decision 0024).
+check "Stripe's decline marks the account's card declined" "insufficient_funds" "$(declined "$MARIA")"
 # A PaymentIntent that failed and later went through (the cardholder fixed
 # the card) must stop reading "Declined" on the Money tab.
 OBJ="{\"id\":\"$PI2\",\"object\":\"payment_intent\",\"status\":\"succeeded\"}"
 webhook "$(event payment_intent.succeeded "$OBJ")" >/dev/null
 check "a later success clears the decline" "succeeded NULL" "$(sql "select status||' '||coalesce(failure_code,'NULL') from public.payments where id='$PAY2'")"
+check "and unblocks the account" "NULL" "$(declined "$MARIA")"
 # Put the fixture back to failed so the retry below has something to retry.
 sql "update public.payments set status='failed' where id='$PAY2'" >/dev/null
 check "a failed fee can be charged again" "pending" "$(rpc admin_charge_registration "$TARA_JWT" "$BODY" | field "['status']")"
@@ -237,7 +254,7 @@ OBJ="{\"id\":\"$PI_E1\",\"object\":\"payment_intent\",\"status\":\"succeeded\",\
 webhook "$(event payment_intent.succeeded "$OBJ")" >/dev/null
 check "an early success lands on the row its metadata names" "succeeded $PI_E1 true" "$(sql "select status||' '||coalesce(stripe_payment_intent_id,'NULL')||' '||coalesce(livemode::text,'NULL') from public.payments where id='$PAY_E1'")"
 check "and marks that registration paid" "t" "$(sql "select paid from public.registrations where id='$REG_E1'")"
-OBJ="{\"id\":\"$PI_E2\",\"object\":\"payment_intent\",\"status\":\"requires_payment_method\",\"last_payment_error\":{\"code\":\"card_declined\",\"decline_code\":\"expired_card\",\"message\":\"Your card has expired.\"},\"metadata\":{\"fxe_payment_id\":\"$PAY_E2\"}}"
+OBJ="{\"id\":\"$PI_E2\",\"object\":\"payment_intent\",\"status\":\"requires_payment_method\",\"last_payment_error\":{\"type\":\"card_error\",\"code\":\"card_declined\",\"decline_code\":\"expired_card\",\"message\":\"Your card has expired.\"},\"metadata\":{\"fxe_payment_id\":\"$PAY_E2\"}}"
 webhook "$(event payment_intent.payment_failed "$OBJ")" >/dev/null
 check "an early decline lands on its row with the reason" "failed $PI_E2 expired_card" "$(sql "select status||' '||coalesce(stripe_payment_intent_id,'NULL')||' '||coalesce(failure_code,'NULL') from public.payments where id='$PAY_E2'")"
 OBJ="{\"id\":\"pi_other_$RANDOM\",\"object\":\"payment_intent\",\"status\":\"succeeded\",\"metadata\":{\"fxe_payment_id\":\"$PAY_E2\"}}"
@@ -260,6 +277,7 @@ PAY_S3=$(sql "with i as (insert into public.payments (registration_id, account_i
 fn stripe-charge "$TARA_JWT" '{}' >/dev/null
 check "a stuck charge is retried as the same row" "processing pi_ 1" "$(sql "select status||' '||coalesce(left(stripe_payment_intent_id,3),'NULL')||' '||(select count(*) from public.payments where registration_id='$REG_S1') from public.payments where id='$PAY_S1'")"
 check "one stuck past the key's lifetime is held for a person" "processing retry_window_passed NULL" "$(sql "select status||' '||coalesce(failure_reason,'NULL')||' '||coalesce(stripe_payment_intent_id,'NULL') from public.payments where id='$PAY_S2'")"
+check "a held charge is not a declined card" "NULL" "$(declined "$DANA")"
 # The same for a refund row, whose Stripe id is the Refund's (a second app
 # refund of $PAY: REF carries its Stripe id, so the one-live-app-refund index allows it).
 PAY_S4=$(sql "with i as (insert into public.payments (registration_id, account_id, kind, amount_cents, status, refunds_payment_id, created_at, updated_at) values ('$REG','$MARIA','refund',100,'processing','$PAY', now() - interval '10 minutes', now() - interval '10 minutes') returning id) select id from i")
@@ -292,6 +310,7 @@ if [ -n "$MOCK" ]; then
   if docker stop "$MOCK" >/dev/null 2>&1; then
     fn stripe-charge "$TARA_JWT" '{}' >/dev/null
     check "a dropped connection puts the charge back to pending, not failed" "pending NULL NULL" "$(sql "select status||' '||coalesce(stripe_payment_intent_id,'NULL')||' '||coalesce(failure_reason,'NULL') from public.payments where id='$PAY_C'")"
+    check "a dropped connection is not a declined card" "NULL" "$(declined "$ROB")"
     docker start "$MOCK" >/dev/null
     for i in $(seq 1 20); do
       fn stripe-charge "$TARA_JWT" '{}' >/dev/null
@@ -321,6 +340,7 @@ REG_G=$(reg "$CLINIC2" "$KEN_P" 1800 true 60); REGS="$REGS,'$REG_G'"
 PAY_G=$(rpc admin_charge_registration "$TARA_JWT" "{\"p_registration\":\"$REG_G\",\"p_kind\":\"clinic_fee\"}" | field "['id']")
 fn stripe-charge "$TARA_JWT" '{}' >/dev/null
 check "a charge on a customer Stripe does not have fails as no card" "failed no_card_on_file" "$(sql "select status||' '||coalesce(failure_reason,'NULL') from public.payments where id='$PAY_G'")"
+check "our own refusal is not a declined card" "NULL" "$(declined "$KEN")"
 check "and the member is asked for a card again" "NULL NULL" "$(sql "select coalesce(stripe_customer_id,'NULL')||' '||coalesce(card_last4,'NULL') from public.accounts where id='$KEN'")"
 
 # ---- 12. Deleted accounts (audit item 11). Nothing is charged on the way
@@ -432,6 +452,59 @@ NO_PI="{\"id\":\"dp_no_pi\",\"object\":\"dispute\",\"amount\":500,\"currency\":\
 check "a dispute on a charge this app did not make changes nothing" "True True 0" \
   "$(webhook "$(event charge.dispute.created "$NOT_OURS")" | field "['received']") $(webhook "$(event charge.dispute.created "$NO_PI")" | field "['received']") $(sql "select count(*) from public.payments where stripe_dispute_id in ('dp_not_ours','dp_no_pi')")"
 
+# ---- 16. A declined card, end to end (decision 0024; 20260928700001). Tara:
+#          "Cannot sign up without proper, transactional card. App needs to
+#          tell them why their card isn’t working." A card saved by the signed
+#          webhook, a charge Stripe declines, the refusal the app reads (its
+#          code in the HINT), nothing moved, the player unable to clear it,
+#          Tara's Resolved (hers alone, and it does not unblock), then a new
+#          card saved by the webhook, which does. Before the key swap: after
+#          it, stripe-mock's test-mode events are no longer money.
+clinic() { # name starts-in-hours
+  sql "with i as (insert into public.clinics (name, audience, category, description, starts_at, ends_at, member_opens_at, public_opens_at, internal_capacity, status, duration_minutes) values ('$1', 'coed', 'Clinic', 'harness', now() + interval '$2 hours', now() + interval '$2 hours' + interval '1 hour', now() - interval '9 days', now() - interval '8 days', 8, 'published', 60) returning id) select id from i"; }
+DC_PLAYED=$(clinic "Harness Declined Played" -26); DC_OPEN=$(clinic "Harness Declined Open" 72)
+CUS16=$(sql "select stripe_customer_id from public.accounts where id='$MARIA'")
+SI16="{\"id\":\"seti_16a\",\"object\":\"setup_intent\",\"customer\":\"$CUS16\",\"payment_method\":\"pm_card_visa\",\"status\":\"succeeded\"}"
+webhook "$(event setup_intent.succeeded "$SI16")" >/dev/null
+check "her card is saved through the webhook" "4242 NULL" "$(sql "select coalesce(card_last4,'NULL') from public.accounts where id='$MARIA'") $(declined "$MARIA")"
+REG16=$(reg "$DC_PLAYED" "$MARIA_P" 1800 true 60); REGS="$REGS,'$REG16'"
+PAY16=$(rpc admin_charge_registration "$TARA_JWT" "{\"p_registration\":\"$REG16\",\"p_kind\":\"clinic_fee\"}" | field "['id']")
+fn stripe-charge "$TARA_JWT" '{}' >/dev/null
+PI16=$(sql "select stripe_payment_intent_id from public.payments where id='$PAY16'")
+OBJ="{\"id\":\"$PI16\",\"object\":\"payment_intent\",\"status\":\"requires_payment_method\",\"last_payment_error\":{\"type\":\"card_error\",\"code\":\"card_declined\",\"decline_code\":\"insufficient_funds\",\"message\":\"Your card has insufficient funds.\"},\"metadata\":{\"fxe_payment_id\":\"$PAY16\"}}"
+webhook "$(event payment_intent.payment_failed "$OBJ")" >/dev/null
+check "Stripe declines Tara's charge" "failed insufficient_funds" "$(sql "select status||' '||coalesce(failure_code,'NULL') from public.payments where id='$PAY16'")"
+check "her card is declined" "insufficient_funds" "$(declined "$MARIA")"
+check "she reads her own decline" "insufficient_funds" "$(curl -s "$API/rest/v1/accounts?id=eq.$MARIA&select=card_decline_code" -H "apikey: $ANON" -H "Authorization: Bearer $MARIA_JWT" | field "[0]['card_decline_code']")"
+check "and nobody else's" "0" "$(curl -s "$API/rest/v1/accounts?id=eq.$KEN&select=card_decline_code" -H "apikey: $ANON" -H "Authorization: Bearer $MARIA_JWT" | python3 -c "import sys,json; print(len(json.load(sys.stdin)))")"
+BODY16="{\"p_clinic\":\"$DC_OPEN\",\"p_player\":\"$MARIA_P\"}"
+out=$(rpc register_for_clinic "$MARIA_JWT" "$BODY16")
+check "registering is refused, and the answer says why" "card_declined insufficient_funds" "$(echo "$out" | field "['message']") $(echo "$out" | field "['hint']")"
+check "and nothing moved" "0" "$(sql "select count(*) from public.registrations where clinic_id='$DC_OPEN'")"
+curl -s -o /dev/null -X PATCH "$API/rest/v1/accounts?id=eq.$MARIA" -H "apikey: $ANON" -H "Authorization: Bearer $MARIA_JWT" \
+  -H "Content-Type: application/json" -d '{"card_declined_at":null,"card_decline_code":null}'
+check "she cannot clear it herself" "insufficient_funds" "$(declined "$MARIA")"
+check "a member cannot press Resolved" "not_authorized" "$(rpc admin_resolve_decline "$MARIA_JWT" "{\"p_payment\":\"$PAY16\"}" | field "['message']")"
+rpc admin_resolve_decline "$TARA_JWT" "{\"p_payment\":\"$PAY16\"}" >/dev/null
+check "Tara presses Resolved: stamped with who, the decline kept" "true failed insufficient_funds" "$(sql "select (resolved_at is not null and resolved_by='$TARA')::text||' '||status||' '||failure_code from public.payments where id='$PAY16'")"
+check "a second press is refused" "decline_not_open" "$(rpc admin_resolve_decline "$TARA_JWT" "{\"p_payment\":\"$PAY16\"}" | field "['message']")"
+check "Resolved does not unblock her" "card_declined" "$(rpc register_for_clinic "$MARIA_JWT" "$BODY16" | field "['message']")"
+SI16B="{\"id\":\"seti_16b\",\"object\":\"setup_intent\",\"customer\":\"$CUS16\",\"payment_method\":\"pm_card_mastercard\",\"status\":\"succeeded\"}"
+webhook "$(event setup_intent.succeeded "$SI16B")" >/dev/null
+check "a new card saved through the webhook clears it" "NULL" "$(declined "$MARIA")"
+check "and she registers" "$DC_OPEN" "$(rpc register_for_clinic "$MARIA_JWT" "$BODY16" | field "['clinic_id']")"
+# A request Stripe refused (our parameters: nothing reached the bank) is not a
+# declined card: the row keeps Stripe's sentence and no code, and nobody is
+# blocked (sql-auditor, 2026-09-28). Real events always carry the error's type.
+REG16X=$(reg "$DC_PLAYED" "$DANA_P" 1800 true 60); REGS="$REGS,'$REG16X'"
+PI16X="pi_refused_$RANDOM$RANDOM"
+PAY16X=$(sql "with i as (insert into public.payments (registration_id, account_id, kind, amount_cents, status, stripe_payment_intent_id, first_attempted_at) values ('$REG16X','$DANA','clinic_fee',1800,'processing','$PI16X', now()) returning id) select id from i")
+OBJ="{\"id\":\"$PI16X\",\"object\":\"payment_intent\",\"status\":\"requires_payment_method\",\"last_payment_error\":{\"type\":\"invalid_request_error\",\"code\":\"resource_missing\",\"message\":\"No such PaymentMethod: pm_gone\"}}"
+webhook "$(event payment_intent.payment_failed "$OBJ")" >/dev/null
+check "a request Stripe refused is failed, with its sentence and no decline code" "failed No such PaymentMethod: pm_gone NULL" "$(sql "select status||' '||failure_reason||' '||coalesce(failure_code,'NULL') from public.payments where id='$PAY16X'")"
+check "and blocks nobody" "NULL" "$(declined "$DANA")"
+sql "delete from public.notifications where entity_id in (select id from public.registrations where clinic_id='$DC_OPEN'); delete from public.registrations where clinic_id='$DC_OPEN'" >/dev/null
+
 # ---- 13. The key swap (stripe_cutover_to_live, 20260927200001), end to end
 #          through the API as the lead would run it (service_role; the SQL
 #          editor as postgres is the other way). It refuses while live money
@@ -465,7 +538,8 @@ BODY="{\"p_registration\":\"$REG\",\"p_kind\":\"no_show\"}"
 check "payments_disabled once the switch is off" "payments_disabled" "$(rpc admin_charge_registration "$TARA_JWT" "$BODY" | field "['message']")"
 
 # Restore the seed state this touched.
-sql "delete from public.card_consents where account_id='$MARIA'; delete from public.payments; delete from public.registrations where id in ('$REG','$REG2'$REGS); update public.accounts set stripe_customer_id=null, card_brand=null, card_last4=null, card_added_at=null, deleted_at=null where id in ($HARNESS_PEOPLE); delete from auth.users where id in (${SIGNED:-'00000000-0000-0000-0000-000000000000'}); delete from public.app_settings where key='stripe_live_since';" >/dev/null
+sql "delete from public.card_consents where account_id='$MARIA'; delete from public.payments; delete from public.registrations where id in ('$REG','$REG2'$REGS); update public.accounts set stripe_customer_id=null, card_brand=null, card_last4=null, card_added_at=null, deleted_at=null where id in ($HARNESS_PEOPLE); delete from auth.users where id in (${SIGNED:-'00000000-0000-0000-0000-000000000000'}); delete from public.app_settings where key='stripe_live_since'; delete from public.clinics where id in ('${DC_PLAYED:-00000000-0000-0000-0000-000000000000}','${DC_OPEN:-00000000-0000-0000-0000-000000000000}');" >/dev/null
+sql "update public.accounts set card_declined_at=null, card_decline_code=null where id in ($HARNESS_PEOPLE)" >/dev/null 2>&1
 
 # ---- E. The error rule stripe-mock cannot exercise, with the Stripe SDK's
 #         own error objects (tests/stripe/errors.test.ts).

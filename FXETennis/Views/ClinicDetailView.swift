@@ -28,6 +28,7 @@
 //
 
 import SwiftUI
+import Supabase
 
 @MainActor
 @Observable
@@ -91,6 +92,15 @@ final class ClinicDetailModel {
         // (decision 0012). The card step reopens with fresh switches.
         if text.contains("card_required") {
             return FailureOutcome(notice: "Add a card on your Profile to register.", reopens: .card)
+        }
+        // Decision 0024, Tara's question 78: a card whose last charge was
+        // declined holds no spot, and "App needs to tell them why their card
+        // isn't working". Stripe's code rides in the refusal's hint
+        // (20260928700001), in her approved words (CardDecline). The card
+        // step opens so a new card can be saved. Not a race.
+        if text.contains("card_declined") {
+            return FailureOutcome(notice: CardDecline.line((error as? PostgrestError)?.hint),
+                                  reopens: .cardDeclined)
         }
         // A new waiver version, or a check that failed at launch: the sheet
         // reopens (decision 0013 §4). The words stay, under the sheet.

@@ -519,6 +519,81 @@ final class PlayerFlowUITests: XCTestCase {
         }
     }
 
+    // MARK: - a declined card (decision 0024)
+
+    /// Tara, question 78: "Cannot sign up without proper, transactional card.
+    /// App needs to tell them why their card isn’t working." Dana's card is
+    /// on file and its last charge was declined for insufficient funds.
+    /// Profile says why, under the card; Register is refused with the same
+    /// words, nothing is registered, and the card step opens (closable,
+    /// because a card is on file and the rest of the app works).
+    func testADeclinedCardSaysWhyAndHoldsNoSpot() throws {
+        let stack = try declinedCardFixture()
+        app.launch()
+        signIn(as: "dana@fxe.test")
+        XCTAssertTrue(app.staticTexts["home.greeting"].waitForExistence(timeout: 20), "Home never appeared")
+
+        // Profile: the card, and why it is not working, in Tara's words.
+        openProfileTab()
+        let decline = app.staticTexts["profile.cardDecline"]
+        XCTAssertTrue(decline.waitForExistence(timeout: 15), "No decline under the card on Profile")
+        XCTAssertEqual(decline.label, "Declined: Insufficient funds (NSF)")
+        XCTAssertEqual(app.staticTexts["profile.cardLabel"].label, "•••• 4242")
+        XCTAssertTrue(app.buttons["profile.addCard"].exists, "Change card sits beside it")
+        XCTAssertEqual(app.buttons["profile.addCard"].label, "Change card")
+
+        // Register is refused, says why, and opens the card step.
+        openClinicsTab()
+        let card = app.buttons.matching(identifier: "clinic.card").firstMatch
+        XCTAssertTrue(tapWhenReady(card), "Clinic card never became tappable")
+        let register = app.buttons["clinic.primaryAction"]
+        XCTAssertTrue(register.waitForExistence(timeout: 15))
+        XCTAssertEqual(register.label, "Register")
+        XCTAssertTrue(tapWhenReady(register))
+        let close = app.buttons["cardStep.close"]
+        XCTAssertTrue(close.waitForExistence(timeout: 15), "The card step did not open after the refusal")
+        XCTAssertEqual(app.staticTexts["profile.cardDecline"].firstMatch.label, "Declined: Insufficient funds (NSF)",
+                       "the step shows the card and why it was declined")
+        close.tap()
+        XCTAssertFalse(close.waitForExistence(timeout: 2) && close.isHittable, "Close did not close the step")
+
+        // The clinic page kept the reason, and nothing moved.
+        XCTAssertTrue(app.staticTexts["Declined: Insufficient funds (NSF)"].waitForExistence(timeout: 10),
+                      "The refusal did not say why")
+        XCTAssertEqual(app.buttons["clinic.primaryAction"].label, "Register", "A refusal must not register")
+        XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "clinic.statusChip").firstMatch.exists)
+        XCTAssertEqual(try stack.count("registrations?player_id=eq.a0000000-0000-0000-0000-000000000004&status=neq.canceled"), 0,
+                       "the database agrees: no registration for Dana")
+    }
+
+    /// Payments on, a card on Dana's account and a decline on it, through
+    /// the local stack's REST API as service_role: no client may write any
+    /// of the three (hard rule 8), which is the point of the feature. Put
+    /// back afterwards. Needs TEST_RUNNER_FXE_SUPABASE_SERVICE_KEY (the local
+    /// stack's key from `supabase status`); skipped without it, as on CI,
+    /// whose UI job has no stack.
+    private func declinedCardFixture() throws -> ServiceRest {
+        guard let key = ProcessInfo.processInfo.environment["FXE_SUPABASE_SERVICE_KEY"], !key.isEmpty else {
+            throw XCTSkip("Needs the local stack's service key (TEST_RUNNER_FXE_SUPABASE_SERVICE_KEY)")
+        }
+        let stack = ServiceRest(base: ProcessInfo.processInfo.environment["FXE_SUPABASE_URL"] ?? "http://localhost:54321", key: key)
+        let dana = "accounts?id=eq.66666666-6666-6666-6666-666666666666"
+        let restore: () -> Void = {
+            try? stack.patch("app_settings?key=eq.payments_enabled", ["value": "false"])
+            try? stack.patch(dana, ["stripe_customer_id": nil, "card_brand": nil, "card_last4": nil, "card_added_at": nil])
+            try? stack.patch(dana, ["card_declined_at": nil, "card_decline_code": nil])
+        }
+        addTeardownBlock(restore)
+        try stack.patch("app_settings?key=eq.payments_enabled", ["value": "true"])
+        // The card first (saving one clears a decline), then the decline, as
+        // the webhook would leave them after a charge Stripe declined.
+        try stack.patch(dana, ["stripe_customer_id": "cus_uitest_dana", "card_brand": "visa", "card_last4": "4242",
+                               "card_added_at": ISO8601DateFormatter().string(from: Date())])
+        try stack.patch(dana, ["card_declined_at": ISO8601DateFormatter().string(from: Date()),
+                               "card_decline_code": "insufficient_funds"])
+        return stack
+    }
+
     // MARK: - helpers
 
     private func signIn(as email: String) {
@@ -591,5 +666,42 @@ final class PlayerFlowUITests: XCTestCase {
         let price = app.staticTexts.matching(identifier: "clinic.price").firstMatch
         guard price.waitForExistence(timeout: 20) else { return nil }
         return price.label
+    }
+}
+
+/// PostgREST as service_role, synchronously, for UI-test fixtures only.
+struct ServiceRest {
+    let base: String
+    let key: String
+
+    private func send(_ method: String, _ path: String, _ body: Data?) throws -> Data {
+        var request = URLRequest(url: URL(string: "\(base)/rest/v1/\(path)")!)
+        request.httpMethod = method
+        request.setValue(key, forHTTPHeaderField: "apikey")
+        request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = body
+        var result: Result<Data, Error> = .failure(URLError(.timedOut))
+        let done = DispatchSemaphore(value: 0)
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error { result = .failure(error) }
+            else if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+                result = .failure(NSError(domain: "ServiceRest", code: http.statusCode,
+                                          userInfo: [NSLocalizedDescriptionKey: String(data: data ?? Data(), encoding: .utf8) ?? ""]))
+            } else { result = .success(data ?? Data()) }
+            done.signal()
+        }.resume()
+        _ = done.wait(timeout: .now() + 20)
+        return try result.get()
+    }
+
+    func patch(_ path: String, _ fields: [String: String?]) throws {
+        let json = fields.mapValues { $0.map { $0 as Any } ?? NSNull() }
+        _ = try send("PATCH", path, try JSONSerialization.data(withJSONObject: json))
+    }
+
+    func count(_ path: String) throws -> Int {
+        let rows = try JSONSerialization.jsonObject(with: try send("GET", path + "&select=id", nil)) as? [Any]
+        return rows?.count ?? -1
     }
 }

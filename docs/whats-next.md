@@ -24,7 +24,7 @@ where things stand. Updated 2026-09-28; launch target 2026-11-06 (Tara moved the
 
 ## The honest state of the iOS app
 
-Works, and tested (probes, unit tests, browser tests in CI; the 21 UI tests
+Works, and tested (probes, unit tests, browser tests in CI; the 22 UI tests
 on the simulator before each TestFlight build): sign up with profile, waiver
 and (once payments are on) a card with the permission box; sign in; the
 front page (your clinics, then what is open to you now); browse by week;
@@ -57,11 +57,14 @@ admin's Players tab.
 Missing on the phone by design: creating or editing a clinic (web only),
 News (deferred, decision 0006).
 
-Testing today: 43 Playwright tests, 21 XCUITests (8 player flows, 6 on
+Testing today: 44 Playwright tests, 22 XCUITests (8 player flows, 6 on
 Tara's side, 2 on a pro's, and 5 accessibility checks: Apple's audit on the
 player's, Tara's and the pro's screens, the status bar and the Return key),
-215 unit tests, 40 SQL probes, a 94-check Stripe pipeline and a 57-check push pipeline
+228 unit tests, 41 SQL probes, a 94-check Stripe pipeline and a 57-check push pipeline
 against mocks in CI.
+Since 2026-09-28 (decision 0026): a card
+Stripe declines holds no spot until a card is saved again, and says why in
+Tara's words; her Resolved clears a decline from her lists.
 
 **Answered already, do not re-ask.** Six of the eight closed on 2026-08-27; see
 `docs/decisions/0007`.

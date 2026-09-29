@@ -19,10 +19,20 @@
 //  While payments are off (today, until Stripe is connected) the step never
 //  appears, because register_for_clinic does not require a card then either.
 //
+//  The same step opens after Register or Accept is refused for a declined
+//  card (decision 0024, SessionStore.cardChangeRequested), showing the card,
+//  its decline and Change card. That one has a Close: the player still has
+//  a card on file and the rest of the app works; only a spot needs a new
+//  card. It closes itself once the webhook has recorded one.
+//
 
 import SwiftUI
 
 struct CardStepView: View {
+    /// Opened for a declined card rather than a missing one: it can be closed.
+    var canClose = false
+    @Environment(SessionStore.self) private var session
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -38,8 +48,16 @@ struct CardStepView: View {
             .crispTopEdge()
             .navigationTitle("Add a card")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                if canClose {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Close") { session.cardChangeRequested = false }
+                            .accessibilityIdentifier("cardStep.close")
+                    }
+                }
+            }
         }
-        .interactiveDismissDisabled()
+        .interactiveDismissDisabled(!canClose)
     }
 }
 
@@ -50,9 +68,10 @@ private struct CardGate: ViewModifier {
     func body(content: Content) -> some View {
         content
             .sheet(isPresented: Binding(
-                get: { session.waiverAccepted == true && session.cardStepDue },
-                set: { _ in }
-            )) { CardStepView() }
+                get: { session.waiverAccepted == true && session.cardStepShown },
+                // Only the declined-card step can be swiped away (canClose).
+                set: { if !$0 { session.cardChangeRequested = false } }
+            )) { CardStepView(canClose: !session.cardStepDue) }
     }
 }
 
