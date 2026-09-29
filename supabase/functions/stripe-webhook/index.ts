@@ -10,7 +10,8 @@
 // Events handled:
 //   setup_intent.succeeded          -> accounts.card_brand / card_last4 / card_added_at
 //   payment_intent.succeeded        -> payments.status = succeeded
-//   payment_intent.payment_failed   -> payments.status = failed, failure_reason, failure_code
+//   payment_intent.payment_failed   -> payments.status = failed, failure_reason, and
+//                                      failure_code for a card_error only (20260928700001)
 //   charge.refunded / refund.updated -> refund row succeeded (when it clears)
 //   charge.dispute.created / .updated / .closed
 //                                   -> the dispute columns on the disputed fee
@@ -77,10 +78,16 @@ async function handle(req: Request): Promise<Response> {
       // when the bank gave one (insufficient_funds, expired_card, ...), else
       // the error code (card_declined, incorrect_cvc, ...). The web admin turns
       // it into words; failure_reason keeps Stripe's own sentence.
+      // Only for a card_error (20260928700001): a code means Stripe said no to
+      // the CARD, and the database then blocks the player's next registration
+      // (decision 0026). A request Stripe refused (invalid_request_error: our
+      // parameters, nothing reached the bank) keeps only its sentence, as
+      // stripe-charge's _shared/stripe-errors.ts does for the same error.
+      const err = pi.last_payment_error;
       await recordPaymentOutcome(pi, {
         status: "failed",
-        failure_reason: pi.last_payment_error?.message ?? pi.last_payment_error?.code ?? "declined",
-        failure_code: pi.last_payment_error?.decline_code ?? pi.last_payment_error?.code ?? null,
+        failure_reason: err?.message ?? err?.code ?? "declined",
+        failure_code: err?.type === "card_error" ? (err.decline_code ?? err.code ?? null) : null,
         ...mode(event),
       });
       break;

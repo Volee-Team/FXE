@@ -14,6 +14,7 @@ admin_money_summary	{}
 admin_player_note	{"p_player":"00000000-0000-0000-0000-000000000000"}
 admin_player_note_edited	{"p_player":"00000000-0000-0000-0000-000000000000"}
 admin_refund_payment	{"p_payment":"00000000-0000-0000-0000-000000000000"}
+admin_resolve_decline	{"p_payment":"00000000-0000-0000-0000-000000000000"}
 admin_resolve_held_payment	{"p_outcome":"x","p_payment":"00000000-0000-0000-0000-000000000000"}
 admin_review_responses	{}
 admin_set_membership	{"p_is_member":false,"p_player":"00000000-0000-0000-0000-000000000000"}

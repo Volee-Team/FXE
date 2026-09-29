@@ -8,7 +8,10 @@
 //     is failed, with the bank's reason, and Tara decides what next.
 //   * Stripe refused the request itself (invalid_request_error, 400/404):
 //     nothing was charged, and the same request can never succeed, so the row
-//     is failed rather than retried forever.
+//     is failed rather than retried forever. With NO code: failure_code means
+//     Stripe said no to the card, and a declined card blocks the player's next
+//     registration (20260928700001, decision 0026). Our parameters being
+//     refused is not the card's fault; Stripe's sentence stays in the reason.
 //   * Our own refusals, raised before any call that could move money
 //     (no_card_on_file, account_deleted, original_has_no_payment_intent):
 //     failed.
@@ -64,7 +67,7 @@ export function classifyChargeError(e: unknown, rowAgeHours = 0): ChargeOutcome 
   // SDK turns those into StripeAuthenticationError and StripeRateLimitError,
   // which must be retried, not failed. (Found by errors.test.ts.)
   if (x.type === "StripeInvalidRequestError") {
-    return { kind: "failed", code: x.code ?? null, reason: message };
+    return { kind: "failed", code: null, reason: message };
   }
   if (OWN_REFUSALS.includes(message)) {
     return { kind: "failed", code: null, reason: message };
