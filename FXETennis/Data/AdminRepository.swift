@@ -483,6 +483,47 @@ enum AdminRepository {
             .execute()
             .value
     }
+
+    // MARK: - Player history (20260928800001, decision 0027 §1)
+    //
+    // Admin only in Postgres: require_admin() is the first line of
+    // admin_player_history, so a member gets not_authorized, never a count.
+
+    /// The history of several players in ONE call: the Player Pool of one
+    /// clinic. The function answers for every player; the filter on its
+    /// result keeps the answer to the people on screen, far under
+    /// PostgREST's row cap.
+    static func playerHistory(players ids: [UUID]) async throws -> [PlayerHistory] {
+        guard !ids.isEmpty else { return [] }
+        return try await supabase
+            .rpc("admin_player_history", params: HistoryParams(p_player: nil))
+            .in("player_id", values: ids)
+            .execute()
+            .value
+    }
+
+    /// One player's history, for their page. Nil only for an id that is no player.
+    static func playerHistory(player: UUID) async throws -> PlayerHistory? {
+        let rows: [PlayerHistory] = try await supabase
+            .rpc("admin_player_history", params: HistoryParams(p_player: player))
+            .execute()
+            .value
+        return rows.first
+    }
+}
+
+/// `p_player` is sent as an explicit JSON null for "every player", never an
+/// omitted key: PostgREST picks the function by argument names (see
+/// AssignCourtParams above).
+private struct HistoryParams: Encodable {
+    let p_player: UUID?
+
+    enum CodingKeys: String, CodingKey { case p_player }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        if let p = p_player { try c.encode(p, forKey: .p_player) } else { try c.encodeNil(forKey: .p_player) }
+    }
 }
 
 /// A player's "can I still get in?" ask, waiting on Tara (20260827000002).

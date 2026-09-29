@@ -35,11 +35,15 @@ test.describe("scripts", () => {
     // The admin site, signed in: supabase-js has to work, not just load.
     await signIn(page, TARA);
     await expect(page.locator("#clinics .card").first()).toBeVisible();
-    // The reset page with no link in the URL, and the review page.
+    // The reset page with no link in the URL, the review page, and the court
+    // sheet (decision 0027 §3) naming no clinic, signed in as Tara.
     await page.goto("/reset.html");
     await page.waitForLoadState("networkidle");
     await page.goto("/review.html");
     await page.waitForLoadState("networkidle");
+    await page.goto("/sheet.html");
+    await page.waitForLoadState("networkidle");
+    await expect(page.locator("#msg")).toHaveText("Couldn't load this clinic.");
 
     expect(foreign).toEqual([]);
     expect(broken).toEqual([]);

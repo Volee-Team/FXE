@@ -30,7 +30,7 @@ md5of() { if command -v md5 >/dev/null; then md5 -q "$1"; else md5sum "$1" | cut
 # as surely as a stale page does.
 check() {
   local f live
-  for f in index.html review.html reset.html privacy.html qr.html app/index.html app/*.js *.css *.js *.svg *.png vendor/*; do
+  for f in index.html review.html reset.html privacy.html qr.html sheet.html app/index.html app/*.js *.css *.js *.svg *.png vendor/*; do
     [ -f "$f" ] || continue
     live=$(curl -s "$SITE/$f" -o /tmp/deploy-live-check && md5of /tmp/deploy-live-check)
     if [ "$live" != "$(md5of "$f")" ]; then echo "  live $f differs from the working tree"; return 1; fi
@@ -48,7 +48,7 @@ for attempt in 1 2; do
   echo "deploy attempt $attempt"
   npx -y vercel --prod --yes > /tmp/vercel-deploy.log 2>&1
   sleep 8
-  if check; then echo "live site matches the working tree byte for byte (every page incl. the privacy policy, the QR card and /app, every stylesheet, script and image, web/vendor; test tooling absent)"; exit 0; fi
+  if check; then echo "live site matches the working tree byte for byte (every page incl. the privacy policy, the QR card, the court sheet and /app, every stylesheet, script and image, web/vendor; test tooling absent)"; exit 0; fi
   echo "live site does not match yet"
 done
 echo "DEPLOY NOT VERIFIED after two attempts; see /tmp/vercel-deploy.log"; exit 1

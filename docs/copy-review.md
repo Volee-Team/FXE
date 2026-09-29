@@ -35,6 +35,34 @@ plus every "New since" block.
 
 ---
 
+## Tara's laptop tools (2026-09-28, decision 0027) — awaiting Alex
+
+Chrome only, mine, on Tara's side (the web admin, and two lines on the phone's
+Manage tab). No player sees any of it. Five of these are in the snapshot
+(`docs/copy-approved.txt`); the rest are built in code (ternaries, template
+strings, a title attribute, Swift string values) where the extractor cannot
+see them, so they are listed here by hand.
+
+| ☐ | String | Where | Why |
+|---|---|---|---|
+| ☐ | Copy to next week | This week tab, the button beside New clinic | Copies this service week's clinics, canceled ones aside, to next week as drafts |
+| ☐ | Copied 5 clinics to next week as drafts. | The line after a copy; the number is the server's `created` | One sentence, no exclamation mark. Not seen by the extractor |
+| ☐ | Copied 1 clinic to next week as a draft. | The same, for one clinic | Not seen by the extractor |
+| ☐ | Nothing new to copy. | After a copy that made nothing: a second click, or a week with no clinics | Not seen by the extractor |
+| ☐ | Court sheet | A link on every clinic card that is not canceled; opens the sheet in a new tab | Not seen by the extractor (short link text) |
+| ☐ | FXE Tennis · Court sheet | The court sheet's browser title until the clinic loads; then "{clinic name} · Court sheet", which is what the browser prints in its header | In the snapshot |
+| ☐ | Print | The sheet's one button; the printout leaves it out | The board report's word |
+| ☐ | Court 1, Court 2, … | Headings on the sheet, in order | The court dropdown's words |
+| ☐ | No court yet | Heading over the You're In! players without a court, last | The brief's words |
+| ☐ | Thursday, Oct 1 · 8:10 PM to 9:10 PM | Under the clinic's name on the sheet, New York time | A format: the phone roster's date line |
+| ☐ | Nobody is in yet. | The sheet, when nobody is You're In! | The phone roster's empty line; in the snapshot for the first time because the extractor now sees it on the web |
+| ☐ | Couldn't load this clinic. | The sheet, when the clinic cannot be read: a member, a wrong link, no connection | In the snapshot |
+| ☐ | Sign in on the admin page first. | The sheet opened with no sign-in; the line is a link to the admin page | In the snapshot |
+| ☐ | Canceled | A chip beside a canceled clinic's name on the sheet (reached only by typing its address; the card offers no link) | Locked term |
+| ☐ | 12 played · 1 no-show · 2 late cancels | Under every name in a Player Pool (web and phone), on every Players-tab row, and on the phone's player page. After "played", only the parts that are not zero; "1 no-show", "2 no-shows", "1 late cancel", "2 late cancels" | The brief's form. Not seen by the extractor |
+| ☐ | New | The same places, for a player with no history | The brief's word |
+| ☐ | Last played Sep 13, 2026 | On hover over the web line, and a line on the phone's player page; the New York date | Not seen by the extractor |
+
 ## The QR code and its link (2026-09-28) — awaiting Alex
 
 Question 75 (decision 0024). The printed card carries no sentence on purpose:

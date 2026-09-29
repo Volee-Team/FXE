@@ -50,6 +50,9 @@ final class AdminClinicModel {
     var zelleAllowed = false
     /// app_settings.cancel_cutoff_hours (3, decision 0013), for Late cancel.
     var cutoffHours = 3
+    /// Each Player Pool player's history (decision 0027 §1), by player id:
+    /// the line under the name that makes choosing who to invite one look.
+    var history: [UUID: PlayerHistory] = [:]
 
     /// Late cancel (20260927100002) is offered on a You're In! row inside the
     /// cutoff or later, on a clinic that is not canceled, while the row holds
@@ -72,6 +75,11 @@ final class AdminClinicModel {
             let people = (try? await AdminRepository.players(ids: asks.map(\.playerId))) ?? []
             let byId = Dictionary(uniqueKeysWithValues: people.map { ($0.id, $0) })
             lateRequests = asks.map { ($0, byId[$0.playerId]) }
+            // One call for the whole Pool. Read leniently: without it a row
+            // simply shows no history line, and the roster still works.
+            let poolIds = Array(Set(pool.map(\.registration.playerId)))
+            let rows = (try? await AdminRepository.playerHistory(players: poolIds)) ?? []
+            history = Dictionary(rows.map { ($0.playerId, $0) }, uniquingKeysWith: { first, _ in first })
             error = nil
         } catch {
             self.error = "Couldn't load the roster. Pull to refresh."
@@ -159,7 +167,8 @@ struct AdminClinicDetailView: View {
                     rosterSection(
                         Brand.Status.playerPool, model.pool,
                         empty: "The Player Pool is empty.",
-                        numbered: true
+                        numbered: true,
+                        showsHistory: true
                     ) { entry in
                         // Nothing to invite into, or take out of, once the
                         // clinic is canceled (20260928400001 refuses both).
@@ -385,6 +394,7 @@ struct AdminClinicDetailView: View {
         _ entries: [RosterEntry],
         empty: String,
         numbered: Bool = false,
+        showsHistory: Bool = false,
         @ViewBuilder trailing: @escaping (RosterEntry) -> AnyView
     ) -> some View {
         VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
@@ -405,17 +415,20 @@ struct AdminClinicDetailView: View {
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
+                        // The Player Pool's rows carry the player's history
+                        // (decision 0027 §1); the other lists do not.
+                        let history = showsHistory ? model.history[entry.registration.playerId]?.line : nil
                         // One line when the name and its controls fit side by
                         // side; two when they do not (a long name, court plus
                         // paid, a 4.7-inch phone). ViewThatFits picks per row.
                         ViewThatFits(in: .horizontal) {
                             HStack(spacing: Brand.Spacing.sm) {
-                                rosterIdentity(entry, index: numbered ? index + 1 : nil)
+                                rosterIdentity(entry, index: numbered ? index + 1 : nil, history: history)
                                 Spacer(minLength: Brand.Spacing.xs)
                                 trailing(entry)
                             }
                             VStack(alignment: .leading, spacing: Brand.Spacing.xxs) {
-                                rosterIdentity(entry, index: numbered ? index + 1 : nil)
+                                rosterIdentity(entry, index: numbered ? index + 1 : nil, history: history)
                                 HStack(spacing: Brand.Spacing.sm) {
                                     Spacer(minLength: 0)
                                     trailing(entry)
@@ -515,7 +528,7 @@ struct AdminClinicDetailView: View {
     /// Name and subtitle, with the Player Pool's queue number when asked for:
     /// the guide requires registration order to be visible, and it is what
     /// makes the queue legible to Tara.
-    private func rosterIdentity(_ entry: RosterEntry, index: Int?) -> some View {
+    private func rosterIdentity(_ entry: RosterEntry, index: Int?, history: String? = nil) -> some View {
         HStack(spacing: Brand.Spacing.sm) {
             if let index {
                 Text("\(index)")
@@ -531,6 +544,13 @@ struct AdminClinicDetailView: View {
                 Text(entry.subtitle)
                     .brandFont(.caption)
                     .foregroundStyle(Brand.textSecondary)
+                // "12 played · 1 no-show · 2 late cancels", or "New".
+                if let history {
+                    Text(history)
+                        .brandFont(.caption)
+                        .foregroundStyle(Brand.textSecondary)
+                        .accessibilityIdentifier("admin.poolHistory")
+                }
                 // The note left with a late cancel, the player's or Tara's.
                 if let note = entry.lateNote {
                     Text(note)

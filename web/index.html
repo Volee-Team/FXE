@@ -44,6 +44,12 @@
                    border-color: var(--fxe-navy); }
   button.small { min-height: 38px; padding: 6px 12px; font-size: 14px; }
   button:disabled { opacity: .5; cursor: not-allowed; }
+  /* A link that sits among the card's buttons (Court sheet opens a page, so
+     it is a real link: a new tab, middle-click, the address to share). */
+  a.button { display: inline-flex; align-items: center; font-weight: 600; border-radius: 10px;
+    border: 1px solid var(--fxe-border); background: var(--fxe-surface-raised);
+    color: var(--fxe-text-primary); text-decoration: none; white-space: nowrap; }
+  a.button.small { min-height: 38px; padding: 6px 12px; font-size: 14px; }
   input, select, textarea {
     font: inherit; width: 100%; padding: 10px; border-radius: 10px;
     border: 1.5px solid var(--fxe-border); background: var(--fxe-surface-raised);
@@ -141,6 +147,10 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
       <h2 style="margin:0" class="grow">This week</h2>
       <label class="muted" style="white-space:nowrap;display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="show-earlier" style="width:auto;margin:0"> Show earlier</label>
       <label class="muted" style="white-space:nowrap;display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="show-canceled" style="width:auto;margin:0"> Show canceled</label>
+      <!-- Weekly setup in one click (decision 0027 §2): every clinic of this
+           service week, canceled ones aside, copied seven days later as
+           drafts. Players see nothing until she publishes each one. -->
+      <button id="copy-week">Copy to next week</button>
       <button class="primary" id="new-clinic">New clinic</button>
     </div>
     <div id="action" class="hide">
@@ -401,6 +411,41 @@ const courtSelect = (r) => `<select class="court" data-court="${r.id}" aria-labe
 </select>`;
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, m =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+
+// A player's history at a glance (decision 0027 §1), under a name in the
+// Player Pool and on the Players tab. Every number is the database's
+// (admin_player_history, 20260928800001); this only words it: "New" when
+// there is nothing yet, and after "played" only the parts that are not zero.
+// PHONE: PlayerHistory.line in FXETennis/Models/PlayerHistory.swift says the same.
+const plural = (n, one) => `${n} ${one}${n === 1 ? "" : "s"}`;
+function historyLine(h) {
+  if (!h) return "";
+  if (!h.played && !h.no_shows && !h.late_cancels) return "New";
+  const parts = [`${h.played} played`];
+  if (h.no_shows) parts.push(plural(h.no_shows, "no-show"));
+  if (h.late_cancels) parts.push(plural(h.late_cancels, "late cancel"));
+  return parts.join(" · ");
+}
+const lastPlayed = (h) => h && h.last_played_at
+  ? "Last played " + new Date(h.last_played_at).toLocaleDateString(undefined,
+      { timeZone: "America/New_York", month: "short", day: "numeric", year: "numeric" })
+  : "";
+// The line, with the last clinic played on hover. Nothing at all when the
+// history could not be read.
+const historyHtml = (h) => {
+  const line = historyLine(h);
+  if (!line) return "";
+  const tip = lastPlayed(h);
+  return `<br><span class="muted" data-history${tip ? ` title="${esc(tip)}"` : ""}>${esc(line)}</span>`;
+};
+// One call per render, every player, a page at a time past PostgREST's row
+// cap. Read leniently, like the disputes list: an unreadable history shows no
+// line rather than blanking the week (the page can reach Vercel before its
+// migration reaches hosted).
+async function readHistory() {
+  const { data, error } = await readAll(() => sb.rpc("admin_player_history").order("player_id"));
+  return error ? {} : Object.fromEntries((data || []).map(h => [h.player_id, h]));
+}
 
 function note(el, text, ok = false) {
   el.innerHTML = text ? `<div class="${ok ? "ok" : "err"}">${esc(text)}</div>` : "";
@@ -994,9 +1039,10 @@ async function loadClinics() {
   // (the Player Pool's numbers are Tara's priority order). Players are read
   // whole because Action Needed names people who are not on a roster yet.
   const onScreen = [...visible, ...visibleEarlier].map(c => c.id);
-  const [{ data: regs, error: regsError }, { data: players, error: playersError }] = await Promise.all([
+  const [{ data: regs, error: regsError }, { data: players, error: playersError }, history] = await Promise.all([
     readByIds(onScreen, (part) => sb.from("registrations_admin").select("*").in("clinic_id", part).order("registered_at").order("id")),
     readAll(() => sb.from("players").select("id,first_name,last_name,is_member,adult_rating,level_note").order("id")),
+    readHistory(),
   ]);
   if (stale()) return;
   if (regsError || playersError) {
@@ -1036,9 +1082,11 @@ async function loadClinics() {
           const p = byPlayer[r.player_id];
           const who = p ? `${p.first_name} ${p.last_name}` : "Unknown player";
           const sub = p ? `${p.adult_rating ?? "—"} · ${p.is_member ? "Member" : "Non-member"}` : "";
+          // The Player Pool is where she chooses, so its rows carry the
+          // player's history (decision 0027 §1).
           return `<div class="row">
             ${s === "pool" ? `<span class="muted" style="width:18px;text-align:right">${i + 1}</span>` : ""}
-            <span class="grow"><span class="name">${esc(who)}</span><br><span class="muted">${esc(sub)}</span></span>
+            <span class="grow"><span class="name">${esc(who)}</span><br><span class="muted">${esc(sub)}</span>${s === "pool" ? historyHtml(history[r.player_id]) : ""}</span>
             ${extra(r)}
           </div>`;
         }).join("")}
@@ -1053,6 +1101,7 @@ async function loadClinics() {
         <button class="small" data-edit="${c.id}">Edit</button>
         <button class="small" data-message="${c.id}">Message</button>
         <button class="small" data-walkup="${c.id}">Add player</button>
+        ${c.status !== "canceled" ? `<a class="button small" href="sheet.html?clinic=${c.id}" target="_blank" rel="noopener">Court sheet</a>` : ""}
         ${zelleOn && unpaidIn(c).length ? `<button class="small" data-remind="${c.id}" data-n="${unpaidIn(c).length}">Remind unpaid (${unpaidIn(c).length})</button>` : ""}
         ${c.status === "draft" ? `<button class="small primary" data-publish="${c.id}">Publish</button>` : ""}
         ${c.status !== "canceled" ? `<button class="small" data-cancelclinic="${c.id}">Cancel clinic</button>` : `<span class="chip canceled">Canceled</span>`}
@@ -1293,6 +1342,29 @@ $("f-template").onchange = () => {
 };
 
 $("new-clinic").onclick = () => openEdit(null);
+
+// Copy to next week (admin_copy_week, 20260928800002; decision 0027 §2). The
+// week is this service week, named by its New York Sunday, the same week the
+// tab starts at. Every copy is a draft, and the server skips a clinic already
+// copied, so a second click only says there is nothing new. The count is the
+// server's answer, never the page's own.
+$("copy-week").addEventListener("click", async () => {
+  const btn = $("copy-week"); btn.disabled = true;
+  let result = null;
+  try {
+    const p = nyParts(serviceWeekStart());
+    const { data, error } = await sb.rpc("admin_copy_week", { p_week_start: `${p.year}-${p.month}-${p.day}` });
+    if (error) throw error;
+    const n = (data && data[0] && data[0].created) || 0;
+    result = n === 0 ? "Nothing new to copy."
+      : n === 1 ? "Copied 1 clinic to next week as a draft."
+      : `Copied ${n} clinics to next week as drafts.`;
+    await loadClinics();
+  } catch (err) { note($("msg"), friendly(err)); }
+  finally { btn.disabled = false; }
+  // loadClinics() clears the message line, so the result is written after it.
+  if (result) note($("msg"), result, true);
+});
 $("edit-cancel").onclick = () => $("edit").close();
 $("message-cancel").onclick = () => $("message").close();
 $("walkup-cancel").onclick = () => $("walkup").close();
@@ -1323,9 +1395,9 @@ let searchTimer = null;
 // (information_hiding.sql check 7); they are read and written only through
 // admin-only RPCs added in 20260902000002.
 let playerTimer;
-const playerRow = (pl) => `<div class="row" data-player-row="${pl.id}">
+const playerRow = (pl, history) => `<div class="row" data-player-row="${pl.id}">
   <span class="grow"><span class="name">${esc(pl.first_name)} ${esc(pl.last_name)}</span>${pl.has_notes ? ' <span class="muted" title="Has a note">✎</span>' : ""}<br>
-    <span class="muted">${pl.adult_rating ?? "—"} · ${pl.is_member ? "Member" : "Non-member"}${pl.is_active ? "" : " · Inactive"}${pl.waiver_accepted ? "" : " · Waiver not signed"}</span>${pl.level_note ? `<br><span class="muted" title="The player's note at level entry; only you see it">“${esc(pl.level_note)}”</span>` : ""}</span>
+    <span class="muted">${pl.adult_rating ?? "—"} · ${pl.is_member ? "Member" : "Non-member"}${pl.is_active ? "" : " · Inactive"}${pl.waiver_accepted ? "" : " · Waiver not signed"}</span>${historyHtml(history)}${pl.level_note ? `<br><span class="muted" title="The player's note at level entry; only you see it">“${esc(pl.level_note)}”</span>` : ""}</span>
   <button class="small" data-member="${pl.id}" data-now="${pl.is_member}">${pl.is_member ? "Make non-member" : "Make member"}</button>
   <button class="small" data-active="${pl.id}" data-now="${pl.is_active}">${pl.is_active ? "Deactivate" : "Reactivate"}</button>
   <button class="small" data-notes="${pl.id}">Note</button>
@@ -1343,10 +1415,12 @@ const playerRow = (pl) => `<div class="row" data-player-row="${pl.id}">
 async function searchPlayers() {
   const q = $("p-query").value.trim();
   if (q.length < 2) { $("p-results").innerHTML = ""; return; }
-  const { data, error } = await sb.rpc("search_players", { p_query: q, p_include_inactive: $("p-inactive").checked });
+  const [{ data, error }, history] = await Promise.all([
+    sb.rpc("search_players", { p_query: q, p_include_inactive: $("p-inactive").checked }),
+    readHistory()]);
   if (error) return note($("players-msg"), friendly(error));
   $("p-results").innerHTML = (data || []).length
-    ? data.map(playerRow).join("")
+    ? data.map(pl => playerRow(pl, history[pl.id])).join("")
     : `<p class="muted">Nobody by that name yet. They may need to sign up in the app first.</p>`;
 }
 $("p-query").addEventListener("input", () => { clearTimeout(playerTimer); playerTimer = setTimeout(searchPlayers, 250); });
