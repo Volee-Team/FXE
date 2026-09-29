@@ -139,6 +139,11 @@ Earned on 2026-08-02, when the registration window rule turned out to be wrong a
 
 Then **prove the probe can fail.** Reinstall the old broken behaviour, run the probe, confirm it goes red on the rows you predicted, and only then restore. A probe that has never failed has not been tested either.
 
+**Break one thing at a time.** Two breaks in one run can hide each other: on
+2026-09-28 a sort flipped to "latest first" happened to pick the right clinic
+and masked a removed filter, so the filter's test passed while broken. Each
+rule gets its own red run.
+
 That exercise is what exposed a defect in the probe harness itself: the pass condition used `actual LIKE '%' || expected || '%'`, under which an actual count of **105 passed against an expected 0**, because "105" contains "0". Substring matching now applies only when the expected value contains a letter, which is the case it existed for (a server error message wrapping an expected error name). **Do not loosen it back.** If a new check needs fuzzy matching, normalise the actual value instead of widening the comparison.
 
 ---

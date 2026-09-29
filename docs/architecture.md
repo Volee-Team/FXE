@@ -744,7 +744,9 @@ every backtick-quoted repo path named in a Markdown file must exist, added
 detect and the most expensive to obey; and `scripts/check-doc-claims.sh`,
 added 2026-09-13: every probe, test and migration count in the current-state
 docs equals the derived number, every decision is indexed, every Tara question
-carries a status, and the human docs audit is not older than 45 days). The
+carries a status, and the human docs audit is not older than 45 days; since
+2026-09-28 also `scripts/check-title-edge.sh`: every `.navigationTitle` has
+`.crispTopEdge()`, or iOS 26 shows scrolled text through the title). The
 `sql-probes` job also runs `scripts/check-doc-inventory.sh`: every table,
 view, enum, client RPC, edge function, probe, CI job and Swift file that
 exists must be named in this file. Monthly and opt-in (`docs-audit.yml`): a

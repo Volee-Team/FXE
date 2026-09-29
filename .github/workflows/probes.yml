@@ -399,7 +399,7 @@ jobs:
   # references to 15 files that had been renamed or never existed, one of them
   # in an agent definition that told the model to read a folder that is not
   # there. Cheapest rot to detect, most expensive to obey.
-  # The 13 XCUITests walk the app the way a member and Tara do. The macOS
+  # The XCUITests walk the app the way a member and Tara do. The macOS
   # runner has no Docker, so it cannot host the local stack; instead the Debug
   # app is pointed at a throwaway hosted project (never production: CLAUDE.md,
   # "no test fixtures in hosted") that this job resets to the seed first.
@@ -502,6 +502,10 @@ jobs:
       # file points only at real rows, and the list was re-derived within 21 days.
       - name: Launch checklist is trustworthy
         run: bash scripts/check-launch-checklist.sh
+      # Every navigation title sits on a solid edge (crispTopEdge), or iOS 26
+      # shows scrolled text through it. 2026-09-28.
+      - name: Every titled screen has a solid top edge
+        run: bash scripts/check-title-edge.sh
 
   copy-gate:
     name: No unapproved copy
