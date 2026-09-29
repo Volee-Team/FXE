@@ -32,7 +32,7 @@ SWIFT = [
     r'Text\(\s*"([^"]{2,})"',
     r'Label\(\s*"([^"]{2,})"',
     r'Button\(\s*"([^"]{2,})"',
-    r'\.navigationTitle\(\s*"([^"]{2,})"',
+    r'\.(?:navigationTitle|navyTitle|bannerTitle)\(\s*"([^"]{2,})"',  # the last two: decision 0033
     r'EmptyLine\(\s*"([^"]{2,})"',
     r'SectionBlock\(\s*title:\s*"([^"]{2,})"',
     r'OutlinedButtonLabel\(\s*"([^"]{2,})"',
