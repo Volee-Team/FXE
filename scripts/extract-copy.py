@@ -39,6 +39,15 @@ SWIFT = [
     r'FilledButtonLabel\(\s*"([^"]{2,})"',
     r'\.accessibilityLabel\(\s*"([^"]{2,})"',
     r'\.accessibilityHint\(\s*"([^"]{2,})"',
+    # Siri, Spotlight and the Shortcuts app read these (NextClinicIntent,
+    # 2026-09-28). The first run of the gate after that intent was written
+    # said "Copy unchanged" with five new strings in the diff: a blind spot,
+    # like the web page in 2026-08-27's note above.
+    r'LocalizedStringResource\s*=\s*"([^"]{2,})"',
+    r'IntentDescription\(\s*"([^"]{2,})"',
+    r'shortTitle:\s*"([^"]{2,})"',
+    r'"([^"]*\\\(\.applicationName\)[^"]*)"',   # App Shortcut phrases
+    r'static let \w*Line\s*=\s*"([^"]{2,})"',     # sentences kept as constants
 ]
 # Web: prose in HTML text nodes, plus strings that are clearly sentences in JS.
 WEB = [

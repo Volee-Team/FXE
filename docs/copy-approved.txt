@@ -113,7 +113,10 @@ Message Tara
 Message players
 More
 My Clinics
+My next \(.applicationName) clinic
 New password
+Next Clinic
+Next clinic in \(.applicationName)
 Next deposit
 No card on file for that player.
 No card payments yet.
@@ -127,6 +130,7 @@ No notifications yet
 No responses yet.
 No room
 No templates yet.
+No upcoming clinics.
 Nobody by that name yet. They may need to sign up in the app first.
 Non-members attended
 Non-members, 60 min
@@ -143,6 +147,7 @@ Only Tara sees this.
 Only a You're In! player can be a no-show.
 Only a paid charge can be refunded.
 Only you can see this.
+Open FXE Tennis and sign in first.
 Open for Registration
 Our hosting provider stores the Services' data on servers in the United States.
 Payment method
@@ -254,6 +259,7 @@ What do the ratings mean?
 What happened? Anything odd?
 What is 105?
 When we believe it is necessary to disclose personal information to investigate, prevent, or take action regarding illegal activities, suspected fraud, potential threats to anyone's physical safety, or as otherwise required by law.
+When's my next clinic in \(.applicationName)
 Write a message first.
 Write it the way you'd say it
 You can still ask Tara to fit you in.
@@ -262,5 +268,6 @@ Your answer
 Your answers as text
 Your card will only be charged after a clinic you attended, a late cancellation or no-show. Cancel at least 3 hours before clinic and you will not be charged.
 Your changes from September 22 are in the app. This is only what is new or changed since then, and the questions still open. Tap Keep, or Change and write it your way. Your answers save as you go.
+Your next FXE Tennis clinic and your status in it.
 Your tennis rating
 asking to get in

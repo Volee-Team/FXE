@@ -35,6 +35,25 @@ plus every "New since" block.
 
 ---
 
+## Siri, Spotlight and Shortcuts: Next Clinic (2026-09-28) — awaiting Alex
+
+Ours, all of it: plain chrome, no tone. Siri speaks the answer, so it is data
+and Tara's locked status words only. Where: "Hey Siri, when's my next clinic
+in FXE Tennis?", the FXE Tennis section of the Shortcuts app, and Spotlight.
+
+| ✓ | Words | Where | Why this wording |
+|---|---|---|---|
+| ☐ | Next Clinic | The shortcut's name in Shortcuts and Spotlight | Two words, says what it answers |
+| ☐ | Your next FXE Tennis clinic and your status in it. | The shortcut's description in the Shortcuts app | What it tells you, nothing more |
+| ☐ | When's my next clinic in FXE Tennis / My next FXE Tennis clinic / Next clinic in FXE Tennis | What you can say to Siri (Apple requires the app's name in each) | The three ways people ask |
+| ☐ | *Saturday Members Only, Sunday, Oct 4 at 4:49 PM. You're In!* | The answer: the clinic's name, its day and time in club time, and You're In!, Player Pool or Response Needed | Composed, not a literal: nothing about where, ever (decision 10) |
+| ☐ | No upcoming clinics. | The answer when you hold no spot | Says the fact |
+| ☐ | Open FXE Tennis and sign in first. | The answer when nobody is signed in on the phone | The one next step there is |
+
+The gate could not see any of these on the first run ("Copy unchanged"):
+`scripts/extract-copy.py` now reads App Intents titles, descriptions, short
+titles and phrases, and `static let …Line` constants.
+
 ## The QR code and its link (2026-09-28) — awaiting Alex
 
 Question 75 (decision 0024). The printed card carries no sentence on purpose:
