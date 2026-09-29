@@ -127,6 +127,7 @@ struct AdminClinicDetailView: View {
     let onChanged: () async -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var confirmCancelClinic = false
     @State private var confirmCharge = false
     @State private var chargeNote: String?
@@ -419,22 +420,23 @@ struct AdminClinicDetailView: View {
                         // The Player Pool's rows carry the player's history
                         // (decision 0027 §1); the other lists do not.
                         let history = showsHistory ? model.history[entry.registration.playerId]?.line : nil
-                        // One line when the name and its controls fit side by
-                        // side; two when they do not (a long name, court plus
-                        // paid, a 4.7-inch phone). ViewThatFits picks per row.
-                        ViewThatFits(in: .horizontal) {
-                            HStack(spacing: Brand.Spacing.sm) {
-                                rosterIdentity(entry, index: numbered ? index + 1 : nil, history: history)
-                                Spacer(minLength: Brand.Spacing.xs)
-                                trailing(entry)
-                            }
-                            VStack(alignment: .leading, spacing: Brand.Spacing.xxs) {
-                                rosterIdentity(entry, index: numbered ? index + 1 : nil, history: history)
-                                HStack(spacing: Brand.Spacing.sm) {
-                                    Spacer(minLength: 0)
-                                    trailing(entry)
-                                }
-                            }
+                        // Side by side at the usual text sizes, stacked at the
+                        // accessibility sizes, as ONE layout whose parts keep
+                        // their identity when it changes; a long name wraps.
+                        // This was ViewThatFits, which builds two copies of
+                        // the row and swaps them as the text grows: Apple's
+                        // audit lost each text part way up the sizes and
+                        // reported "Dynamic Type partially unsupported" on
+                        // every name, court and toggle, found 2026-09-28 the
+                        // first time a seeded roster had rows in it (the pro's
+                        // Today Drill). The pro's Today tab has the same fix.
+                        let layout = typeSize.isAccessibilitySize
+                            ? AnyLayout(VStackLayout(alignment: .leading, spacing: Brand.Spacing.xxs))
+                            : AnyLayout(HStackLayout(alignment: .center, spacing: Brand.Spacing.sm))
+                        layout {
+                            rosterIdentity(entry, index: numbered ? index + 1 : nil, history: history)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            trailing(entry)
                         }
                         .padding(.vertical, Brand.Spacing.xs)
                         .frame(minHeight: Brand.Layout.comfortableTapTarget)
@@ -541,7 +543,7 @@ struct AdminClinicDetailView: View {
                 Text(entry.displayName)
                     .brandFont(.bodyEmphasis)
                     .foregroundStyle(Brand.textPrimary)
-                    .lineLimit(1)
+                    .fixedSize(horizontal: false, vertical: true)
                 Text(entry.subtitle)
                     .brandFont(.caption)
                     .foregroundStyle(Brand.textSecondary)
@@ -642,6 +644,10 @@ struct AdminClinicDetailView: View {
                 .brandFont(.chip)
                 .foregroundStyle(noShow ? Brand.Status.canceled.ink : Brand.textSecondary)
                 .frame(minHeight: Brand.Layout.minTapTarget)
+                // The whole 44-point frame is the button, not just the text:
+                // a plain button hit-tests its visible pixels, and the audit
+                // measured this one at 15 points tall (2026-09-28).
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .disabled(model.busy.contains(entry.id))

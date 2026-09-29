@@ -41,6 +41,7 @@ Contact Tara
 Cookies and tracking technologies
 Copy my answers
 Copy to next week
+Couldn't find that account.
 Couldn't load card payments.
 Couldn't load saved answers, still on this phone
 Couldn't load the numbers.
@@ -48,6 +49,7 @@ Couldn't load this clinic.
 Couldn't reach the server. Check your connection.
 Couldn't save, still on this phone
 Court
+Court \(court)
 Court \(n)
 Data retention
 Date &amp; time
@@ -97,6 +99,7 @@ Keep the clinic
 Label
 Last updated: September 27, 2026
 Late cancel
+Late cancel \(player.name)
 Leave Player Pool
 Length (minutes)
 Length must be more than 0 minutes.
@@ -126,6 +129,7 @@ No card on file for that player.
 No card payments yet.
 No clinics currently open for registration
 No clinics this week or later. Use “New clinic” to add one.
+No clinics today.
 No court
 No deposits yet.
 No description yet.
@@ -212,7 +216,9 @@ Stripe, Inc. processes card payments. Your card details go to Stripe directly an
 Tara has your message.
 Tara, only what's new
 Text this to them. It works once, within an hour.
+That account is an administrator.
 That account is not an administrator.
+That account was deleted.
 That charge is no longer held.
 That clinic ended before card payments were on.
 That clinic is already canceled.
@@ -220,6 +226,8 @@ That clinic is canceled.
 That clinic is full now.
 That didn’t save. Try again.
 That email or password didn't work.
+That is your own account.
+That just changed. Here's the latest.
 That one is already charged.
 That one is already refunded.
 That player has no card on file.
@@ -243,6 +251,7 @@ To
 To contact you: by notification in the app, email, telephone, or other equivalent forms of electronic communication, about clinics and the Services.
 To manage your requests: to attend to and manage your requests to us. Messages sent through the Services are stored on our servers.
 To provide and maintain our Services, including to monitor the usage of our Services.
+Today
 Too many attempts. Try again in a minute.
 Try again
 Turn on notifications

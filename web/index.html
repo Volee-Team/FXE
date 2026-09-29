@@ -510,6 +510,13 @@ function friendly(e) {
   if (m.includes("not_refundable")) return "Only a paid charge can be refunded.";
   if (m.includes("stripe_not_configured")) return "Stripe isn't connected yet.";
   if (m.includes("label_required")) return "Give the link a label.";
+  // 20260928600001: admin_set_pro. The page only offers the box where it
+  // would work, so these are a stale page or a second tab.
+  if (m.includes("cannot_change_an_admin")) return "That account is an administrator.";
+  if (m.includes("cannot_change_own_role")) return "That is your own account.";
+  if (m.includes("account_deleted")) return "That account was deleted.";
+  if (m.includes("account_not_found")) return "Couldn't find that account.";
+  if (m.includes("account_changed")) return "That just changed. Here's the latest.";
   if (m.includes("failed to fetch")) return "Couldn't reach the server. Check your connection.";
   return e?.message || "Something went wrong.";
 }
@@ -1411,11 +1418,18 @@ let searchTimer = null;
 // (information_hiding.sql check 7); they are read and written only through
 // admin-only RPCs added in 20260902000002.
 let playerTimer;
-const playerRow = (pl, history) => `<div class="row" data-player-row="${pl.id}">
+// `who` is the player's account and its role (playerRoles below). The Pro box
+// is shown for a live member or pro account only: admin_set_pro refuses an
+// admin, a deleted account and Tara's own, and the page does not offer what
+// the database would refuse.
+const playerRow = (pl, history, who) => `<div class="row" data-player-row="${pl.id}">
   <span class="grow"><span class="name">${esc(pl.first_name)} ${esc(pl.last_name)}</span>${pl.has_notes ? ' <span class="muted" title="Has a note">✎</span>' : ""}<br>
     <span class="muted">${ntrp(pl.adult_rating)} · ${pl.is_member ? "Member" : "Non-member"}${pl.is_active ? "" : " · Inactive"}${pl.waiver_accepted ? "" : " · Waiver not signed"}</span>${historyHtml(history)}${pl.level_note ? `<br><span class="muted" title="The player's note at level entry; only you see it">“${esc(pl.level_note)}”</span>` : ""}</span>
   <button class="small" data-member="${pl.id}" data-now="${pl.is_member}">${pl.is_member ? "Make non-member" : "Make member"}</button>
   <button class="small" data-active="${pl.id}" data-now="${pl.is_active}">${pl.is_active ? "Deactivate" : "Reactivate"}</button>
+  ${who && !who.deleted && (who.role === "member" || who.role === "pro")
+    ? `<label class="muted" style="white-space:nowrap;display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" data-pro="${who.account}"${who.role === "pro" ? " checked" : ""} style="width:auto;margin:0"> Pro</label>`
+    : ""}
   <button class="small" data-notes="${pl.id}">Note</button>
   <button class="small" data-resetlink="${pl.id}">Reset link</button>
 </div>
@@ -1442,11 +1456,36 @@ async function searchPlayers() {
     readHistory()]);
   if (seq !== playerSeq) return;
   if (error) return note($("players-msg"), friendly(error));
+  const roles = await playerRoles((data || []).map(pl => pl.id));
+  if (seq !== playerSeq) return;
   $("p-results").innerHTML = (data || []).length
-    ? data.map(pl => playerRow(pl, history[pl.id])).join("")
+    ? data.map(pl => playerRow(pl, history[pl.id], roles.get(pl.id))).join("")
     : (q ? `<p class="muted">Nobody by that name yet. They may need to sign up in the app first.</p>`
          : `<p class="muted">No players yet.</p>`);
 }
+// Each player's account and its role, for the Pro box (decision 0025). Tara
+// reads players and accounts under their is_admin() policies; nobody else
+// gets past this page's door. A failed read leaves the box off, never wrong.
+async function playerRoles(ids) {
+  const out = new Map();
+  if (!ids.length) return out;
+  const { data, error } = await sb.from("players").select("id,account_id,accounts(role,deleted_at)").in("id", ids);
+  if (error) return out;
+  for (const r of data || []) out.set(r.id, { account: r.account_id, role: r.accounts?.role, deleted: !!r.accounts?.deleted_at });
+  return out;
+}
+// Tara's switch, member <-> pro (admin_set_pro). The list is read again after
+// every change, so the box always shows what the database holds.
+document.addEventListener("change", async (e) => {
+  const box = e.target.closest("input[data-pro]"); if (!box) return;
+  box.disabled = true;
+  try {
+    const { error } = await sb.rpc("admin_set_pro", { p_account: box.dataset.pro, p_pro: box.checked });
+    if (error) throw error;
+    note($("players-msg"), "");
+  } catch (err) { note($("players-msg"), friendly(err)); }
+  await searchPlayers();
+});
 $("p-query").addEventListener("input", () => { clearTimeout(playerTimer); playerTimer = setTimeout(searchPlayers, 250); });
 $("p-inactive").addEventListener("change", searchPlayers);
 

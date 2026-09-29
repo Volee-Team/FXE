@@ -217,6 +217,10 @@ struct Account: Codable, Identifiable, Sendable {
     }
 
     var isAdmin: Bool { role == "admin" }
+    /// A pro (decision 0025): the Today tab and nothing else of Tara's. The
+    /// tab is not the control; pro_today() and the two pro RPCs ask is_pro()
+    /// in the database, and every admin RPC still refuses a pro.
+    var isPro: Bool { role == "pro" }
     var hasCard: Bool { cardLast4 != nil }
     /// "•••• 4242", or nil. Final Updates p.2 item 2: "If a card is on file,
     /// only show the last 4 digits of the card in the U/I." The brand is
