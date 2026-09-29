@@ -3,6 +3,7 @@ admin_account_ids	{}
 admin_archive_message_template	{"p_id":"00000000-0000-0000-0000-000000000000"}
 admin_board_report	{"p_from":"2026-01-01","p_to":"2026-01-01"}
 admin_board_report_clinics	{"p_from":"2026-01-01","p_to":"2026-01-01"}
+admin_board_share_percent	{}
 admin_charge_clinic	{"p_clinic":"00000000-0000-0000-0000-000000000000"}
 admin_charge_registration	{"p_amount_cents":1,"p_kind":"x","p_registration":"00000000-0000-0000-0000-000000000000"}
 admin_copy_week	{"p_week_start":"2026-01-01"}
@@ -22,6 +23,7 @@ admin_resolve_decline	{"p_payment":"00000000-0000-0000-0000-000000000000"}
 admin_resolve_held_payment	{"p_outcome":"x","p_payment":"00000000-0000-0000-0000-000000000000"}
 admin_review_responses	{}
 admin_save_message_template	{"p_body":"x"}
+admin_set_board_share_percent	{"p_percent":1}
 admin_set_membership	{"p_is_member":false,"p_player":"00000000-0000-0000-0000-000000000000"}
 admin_set_no_show	{"p_no_show":false,"p_registration":"00000000-0000-0000-0000-000000000000"}
 admin_set_player_note	{"p_body":"x","p_player":"00000000-0000-0000-0000-000000000000"}
@@ -31,6 +33,7 @@ admin_upsert_clinic	{"p_audience":"x","p_category":"x","p_closes_at":"2026-01-01
 admin_upsert_template	{"p_audience":"x","p_category":"x","p_description":"x","p_duration_minutes":1,"p_id":"00000000-0000-0000-0000-000000000000","p_internal_capacity":1,"p_name":"x"}
 assign_court	{"p_court":1,"p_registration":"00000000-0000-0000-0000-000000000000"}
 back_to_back_105_opens_at	{"p_a":"2026-01-01T00:00:00Z","p_b":"2026-01-01T00:00:00Z"}
+board_share_percent	{}
 calendar_feed_events	{"p_token":"x"}
 cancel_clinic	{"p_clinic":"00000000-0000-0000-0000-000000000000"}
 cancel_cutoff_hours	{}

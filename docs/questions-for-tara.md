@@ -473,6 +473,13 @@ The pro login is built as you described: pros see who is coming to that day's cl
 **100. If someone disputes a No-show, do you need to know whether you or a pro marked it?**
 *Default: not recorded today (it would take a small change to keep). Status: open, asked 2026-09-28.*
 
+## S. Foxcroft's share (added 2026-09-29)
+
+Tara, 2026-09-29: *"Sorry I pay Foxcroft 10% of revenue. But asking I pay them 8% revenue instead since stripe will take 2.9% of every transaction. So when the app records how much I owe them I'm hoping it's 7 or 8% and not 10%"*
+
+**101. When Foxcroft agrees a number, what is it? You can also set it yourself: Money tab, Board report, "Foxcroft share %", then Save.**
+*Default: 10 until you change it (built 2026-09-29, `20260929000004`; only you can see or change it). Status: open, asked 2026-09-29.*
+
 ### How 52 to 57 are being sent
 
 Round two of the review page (2026-09-21, later): the Words tab now shows her

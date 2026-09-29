@@ -71,6 +71,14 @@ so the gate cannot see them: they are listed here by hand.
 | ☐ | *Evening Coed* (Response Needed) | An event's title for an invitation still waiting on her answer; a You're In! clinic is its name alone | Tara's locked term, composed with the clinic's own name |
 | — | -//FXE Tennis//Clinic Calendar//EN | The feed's `PRODID`, which calendar apps do not show | A label, not copy |
 
+## Foxcroft's share on the board report (2026-09-29) — awaiting Alex
+
+| ✓ | Words | Where | Why |
+|---|---|---|---|
+| ☐ | Foxcroft share % | Money tab, Board report, the label on her rate field | Names the rate she is negotiating (her word, Foxcroft) |
+| ☐ | 8% of collected / 8% of fees | The report's two lines, with her rate in place of 10 | The same lines, now showing her number |
+| ☐ | Use a number from 0 to 25, in steps of 0.1. | If the rate is refused | What the field accepts |
+
 ## The waiver screen's refusals (2026-09-29) — awaiting Alex
 
 The waiver is now its own screen before the app. Two lines replace the

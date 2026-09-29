@@ -254,6 +254,13 @@ test.describe("board report", () => {
     await expect(report.locator("tr", { hasText: "Members attended" }).first()).toContainText(/\d+ \(\d+\)/);
     await expect(report.locator("tr", { hasText: "Collected by card" }).first()).toContainText(/\$\d[\d,]*\.\d{2}/);
     await expect(report.locator("tr", { hasText: "10% of fees" })).toContainText(/\$\d[\d,]*\.\d{2}/);
+    // The rate is hers (20260929000004): set 8 and the lines say 8%.
+    await page.getByLabel("Foxcroft share %").fill("8");
+    await page.locator("#br-rate-save").click();
+    await expect(report.locator("tr", { hasText: "8% of collected" })).toBeVisible();
+    await page.getByLabel("Foxcroft share %").fill("10");
+    await page.locator("#br-rate-save").click();
+    await expect(report.locator("tr", { hasText: "10% of collected" })).toBeVisible();
     await expect(report.locator("tr.total")).toContainText("Total");
     await expect(board.getByRole("button", { name: "Download CSV" })).toBeVisible();
     await expect(board.getByRole("button", { name: "Print" })).toBeVisible();

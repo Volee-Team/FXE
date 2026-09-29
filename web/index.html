@@ -208,6 +208,11 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
       </div>
       <div class="row br-controls" style="margin-top:10px">
         <button class="small primary" id="br-run">Run</button>
+        <!-- Foxcroft's share is Tara's rate (20260929000004): 10 until she
+             sets what the club agreed. Admin-only, never readable by members. -->
+        <label for="br-rate" class="muted" style="margin:0 0 0 auto">Foxcroft share %</label>
+        <input id="br-rate" type="number" min="0" max="25" step="0.5" style="width:5.5em">
+        <button class="small" id="br-rate-save">Save</button>
       </div>
       <div id="br-msg"></div>
       <div id="br-report" class="hide"></div>
@@ -567,6 +572,7 @@ async function showApp() {
   searchPlayers();
   loadReviewResponses();
   if (!$("tab-money").classList.contains("hide")) loadPayouts();
+  loadBoardRate();
 }
 
 async function loadTemplates() {
@@ -913,6 +919,20 @@ function previousMonth() {
 { const d = previousMonth(); $("br-from").value = d.from; $("br-to").value = d.to; }
 
 let boardRun = null;   // { from, to, sum, rows } of the last successful run
+let boardRate = 10;
+async function loadBoardRate() {
+  const { data, error } = await sb.rpc("admin_board_share_percent");
+  if (!error && data != null) { boardRate = Number(data); $("br-rate").value = boardRate; }
+}
+$("br-rate-save").addEventListener("click", async () => {
+  const v = Number($("br-rate").value);
+  const { data, error } = await sb.rpc("admin_set_board_share_percent", { p_percent: v });
+  if (error) return note($("br-msg"), (error.message || "").includes("percent_out_of_range")
+    ? "Use a number from 0 to 25, in steps of 0.1." : friendly(error));
+  boardRate = Number(data);
+  note($("br-msg"), "Saved.", true);
+  if (boardRun) runBoardReport();
+});
 async function runBoardReport() {
   const from = $("br-from").value, to = $("br-to").value;
   note($("br-msg"), "");
@@ -934,8 +954,8 @@ async function runBoardReport() {
         ${line("Clinics", t.clinics)}
         ${line("Fees at clinic prices", usd(t.fees_due_cents))}
         ${line("Collected by card", usd(t.collected_cents))}
-        ${line("10% of collected", usd(t.board_share_cents))}
-        ${line("10% of fees", usd(t.board_share_of_due_cents))}
+        ${line(`${boardRate}% of collected`, usd(t.board_share_cents))}
+        ${line(`${boardRate}% of fees`, usd(t.board_share_of_due_cents))}
       </table>
       <table>
         <tr><th>Clinic</th><th>Date</th><th class="num">Members attended</th><th class="num">Non-members attended</th>

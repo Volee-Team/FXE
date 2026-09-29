@@ -118,7 +118,7 @@ observer.
 
 | Layer | Runs where | Count 2026-09-28 | Gap |
 |---|---|---|---|
-| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 1219 checks, 42 probes, plus eleven race probes | none known |
+| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 1231 checks, 42 probes, plus eleven race probes | none known |
 | Stripe pipeline against stripe-mock | every PR | 94 checks | real Stripe behaviour waits on A2 |
 | Push pipeline against a mock APNs | every PR | 57 checks | real APNs waits on C3 |
 | Web admin browser tests (Playwright, real sign-in) | every PR | 44 | a cold-start flake after a local reset (backlog) |
