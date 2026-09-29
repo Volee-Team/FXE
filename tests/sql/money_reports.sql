@@ -128,6 +128,13 @@ declare
   p1 uuid; p2 uuid; p5 uuid; p9 uuid;
   s record; v text; n int; n2 int; x text; per record; bad text;
 begin
+  -- The seed's Today Drill (the pro's Today tab, decision 0025) is an ENDED
+  -- clinic with two You're In! rows. Every number in this probe is worked out
+  -- by hand over its own fixture, on a seed that had no You're In! row at
+  -- all, so that clinic leaves this probe's universe here, inside the
+  -- transaction that rolls back. Taken out, not added in: the arithmetic
+  -- stays the rule's, not the seed's.
+  delete from public.clinics where id = 'd0000000-0000-0000-0000-000000000006';
   -- Card payments were switched on before every clinic below (20260927300001:
   -- only clinics ending at or after payments_enabled_at owe anything).
   insert into public.app_settings (key, value)
