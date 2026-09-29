@@ -80,7 +80,7 @@ final class PlayerFlowUITests: XCTestCase {
 
         // Open the first clinic on the browse list.
         openClinicsTab()
-        let card = app.buttons.matching(identifier: "clinic.card").firstMatch
+        let card = openClinicCard()
         XCTAssertTrue(card.waitForExistence(timeout: 20), "No clinic cards rendered")
         XCTAssertTrue(tapWhenReady(card), "Clinic card never became tappable")
 
@@ -130,7 +130,7 @@ final class PlayerFlowUITests: XCTestCase {
         signIn(as: memberEmail)
         openClinicsTab()
 
-        let card = app.buttons.matching(identifier: "clinic.card").firstMatch
+        let card = openClinicCard()
         XCTAssertTrue(card.waitForExistence(timeout: 20))
         XCTAssertTrue(tapWhenReady(card))
 
@@ -434,7 +434,7 @@ final class PlayerFlowUITests: XCTestCase {
         signIn(as: memberEmail)
         openClinicsTab()
 
-        let card = app.buttons.matching(identifier: "clinic.card").firstMatch
+        let card = openClinicCard()
         XCTAssertTrue(card.waitForExistence(timeout: 20))
         XCTAssertTrue(tapWhenReady(card))
         XCTAssertTrue(app.buttons["clinic.primaryAction"].waitForExistence(timeout: 10))
@@ -544,7 +544,7 @@ final class PlayerFlowUITests: XCTestCase {
 
         // Register is refused, says why, and opens the card step.
         openClinicsTab()
-        let card = app.buttons.matching(identifier: "clinic.card").firstMatch
+        let card = openClinicCard()
         XCTAssertTrue(tapWhenReady(card), "Clinic card never became tappable")
         let register = app.buttons["clinic.primaryAction"]
         XCTAssertTrue(register.waitForExistence(timeout: 15))
@@ -667,6 +667,16 @@ final class PlayerFlowUITests: XCTestCase {
         guard price.waitForExistence(timeout: 20) else { return nil }
         return price.label
     }
+
+    /// The seeded clinic that is open to a member, by name, not "the first
+    /// card": the pro's seeded Today Drill runs 00:30 to 01:30 New York and
+    /// heads the list while it runs, which failed three tests when the suite
+    /// ran at 00:49 (2026-09-29). A test must not depend on the clock.
+    func openClinicCard() -> XCUIElement {
+        app.buttons.matching(identifier: "clinic.card")
+            .matching(NSPredicate(format: "label CONTAINS[c] %@", "Tuesday Ladies")).firstMatch
+    }
+
 }
 
 /// PostgREST as service_role, synchronously, for UI-test fixtures only.
@@ -704,4 +714,5 @@ struct ServiceRest {
         let rows = try JSONSerialization.jsonObject(with: try send("GET", path + "&select=id", nil)) as? [Any]
         return rows?.count ?? -1
     }
+
 }
