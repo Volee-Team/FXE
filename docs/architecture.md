@@ -600,7 +600,7 @@ on the cancellation rule is open except her policy block's wording (Q56).
 `review.html`, `privacy.html`, the member QR code's pages (`web/app/index.html`,
 the one link the code says, forwarding to the install link in `web/app/target.js`;
 `web/qr.html`, Tara's printable card; `web/app-qr.svg` and `web/app-qr.png`, drawn and
-decode-checked by `scripts/make-qr.swift`; `web/gator.png`, the mark), `web/sheet.html`
+decode-checked by `scripts/make-qr.swift`; `web/gator.png`, the mark on navy, and `web/gator-tile.png`, on light pages, both written with the app icon and the in-app mark by `scripts/make-logo-assets.py` from `docs/brand/gator-2026-09-29.webp`, decision 0032), `web/sheet.html`
 (a clinic's court sheet to print, decision 0027 §3), `config.js` (which picks local vs hosted by hostname), `tokens.css`,
 three small modules the admin page imports (`week.js`: the service week and which
 clinics This week lists; `read.js`: reads that page past PostgREST's 1000-row

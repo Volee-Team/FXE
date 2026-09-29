@@ -426,7 +426,7 @@ What replaces it is app behaviour, and it is a real requirement, not a nicety:
 | 19 | **Adults only, confirmed again.** Juniors return in the fall. The wireframe's child-profile screen is not v1 |
 | 20 | **Clinic messaging.** Her ask was three audiences (You're In!, Player Pool, Both; `docs/decisions/0005`). **Built with five**, matching `message_audience`: Everyone, You're In!, Player Pool, Response Needed, Unpaid, on web and iOS; Unpaid is hidden while `zelle_allowed` is false. Decision 0005 records the three; the extra two are the enum's, kept (hard rule 4) |
 | 21 | **Three tabs, no Community tab.** Home, Clinics, Profile for players. An admin account also gets a Manage tab (Alex, 2026-08-15; `MainTabView.swift`) |
-| 22 | **The gator-with-crossed-racquets mark**, not the tennis-ball one. Gets redrawn in whichever palette she picks |
+| 22 | **The gator-with-crossed-racquets mark**, not the tennis-ball one. Gets redrawn in whichever palette she picks. **In colour since 2026-09-29 (decision 0032)**: one source file, every copy made by `scripts/make-logo-assets.py` |
 | 23 | **Palette: racquet club / country club.** Her `#6dbe45` green kept but restrained; navy warms; cream ground. Three options sent for her to choose |
 
 **On the wireframe mockups:** treat them as a *style guide*, not a spec. Alex,
