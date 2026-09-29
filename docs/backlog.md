@@ -9,6 +9,7 @@ Priority: 🔴 blocks a person · 🟡 should fix · 🟢 whenever
 
 | | Item | Found | Note |
 |---|---|---|---|
+| 🟢 | **Tara can put someone in a clinic she never published, and message them about it** | 2026-09-28 | sql-auditor on 20260929000001: `place_player` and `send_clinic_message` accept a draft. Since 20260929000002 nobody is told when such a clinic is canceled and it never shows in Past, but a message to it still arrives, and someone she places there is never told they are in (publish notifies nobody). Refusing drafts touches decision 3 (capacity and placement are hers), so it is Alex's call; `docs/for-alex.md` §10 |
 | 🟢 | **The roster reads Paid after a lost dispute** | 2026-09-28 | By design until Tara answers question 89 (the default leaves Paid alone and the Money tab says "Dispute lost"). If she says clear it, one line in `stripe_record_dispute` |
 | 🟢 | **A Remind me reminder is corrected only when a list loads** | 2026-09-28 | Local notifications are moved or dropped on every Home and Clinics load (decision 0023). If Tara changes a clinic's opening and the player never opens the app, the old reminder can still fire; its tap opens the clinic, which shows the truth. A server push at the opening moment would fix it and needs Tara's say on who gets it |
 | 🟡 | **The phone's Manage list is not bounded to this week** (MVP audit item 14, iOS half) | 2026-09-27 | The web admin got the service-week bound and Show earlier; `AdminRepository.allClinics` still reads every clinic. Same rule, plus an Earlier escape |

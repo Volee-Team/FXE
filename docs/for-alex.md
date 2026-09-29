@@ -460,6 +460,7 @@ Dependabot alerts are already on (checked 2026-09-27), so nothing to do there.
 
 | Checklist | Decision | When | The model's recommendation |
 |---|---|---|---|
+| Backlog, 2026-09-28 | **Should the app refuse to put someone in, or message, a clinic Tara has not published yet?** Today it allows both (a draft looks like any card on her laptop) | Any time; nothing waits on it | Keep allowing: it is her tool, and nothing reaches a player about a never-published clinic that gets canceled (20260929000002). Refuse if she ever sets up next week and forgets to publish |
 | A9 | Switch payments on | After the next build is on testers' phones | Go for testers as soon as the build is out, then run the payment test the same day; not for everyone until live keys (A11) |
 | G1 | Payments and push in the MVP or not (with Kat and Tara) | Decided 2026-09-27 | Both in: payments fully live for the party (A11), push fully working (C3) |
 | C11 | Fallback if the LLC is not approved in time: external TestFlight on John's account with a public link | This week (was 10-09; see below) | Yes: prepare it (needs the privacy URL), use it only if needed |

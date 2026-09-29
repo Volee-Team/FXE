@@ -454,6 +454,25 @@ new and changed words and these questions, nothing else.
 **95. Every player signs your waiver in the app before they can sign up. A guest a member brings, who never installs the app, never signs it. Should the member sign for their guest, should the guest sign a paper waiver at the club, or can a guest not play until they have signed?**
 *Default: the guest feature is not built until you answer (`docs/guests.md`). Status: open, asked 2026-09-28.*
 
+## R. Your pros (added 2026-09-28, decision 0025)
+
+The pro login is built as you described: pros see who is coming to that day's clinics and mark Came, No-show or a late cancellation, and nothing about money. Five small things it had to decide; each has the answer we built, so "yes" is enough.
+
+**96. Do your pros sign your waiver and add a card, like any member, when they sign up?**
+*Default: yes, a pro is a member who also has the Today screen. Status: open, asked 2026-09-28.*
+
+**97. When a pro marks someone No-show or a late cancellation, do you want a notification?**
+*Default: no, you see it on the roster and it is charged when you tap Charge clinic. Status: open, asked 2026-09-28.*
+
+**98. Can a pro add a short note when they mark a late cancellation (only you read it)?**
+*Default: yes, optional, the same as your own note. Status: open, asked 2026-09-28.*
+
+**99. After you have charged a clinic, can a pro still change who came or who canceled late?**
+*Default: no, only you can then; the pro sees that it is locked. Status: open, asked 2026-09-28.*
+
+**100. If someone disputes a No-show, do you need to know whether you or a pro marked it?**
+*Default: not recorded today (it would take a small change to keep). Status: open, asked 2026-09-28.*
+
 ### How 52 to 57 are being sent
 
 Round two of the review page (2026-09-21, later): the Words tab now shows her
