@@ -285,6 +285,13 @@ enum ProfileRepository {
         _ = try await supabase.functions.invoke("delete-account")
     }
 
+    /// This account's calendar-feed token (decision 0029), made on first use
+    /// and the same every time after. The account is auth.uid() on the
+    /// server, never a parameter.
+    static func calendarFeedToken() async throws -> String {
+        try await supabase.rpc("my_calendar_feed_token").execute().value
+    }
+
 
     /// The players this account owns. For an adult that is one row (themselves).
     ///

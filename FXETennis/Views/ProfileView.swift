@@ -20,6 +20,9 @@ struct ProfileView: View {
     /// (decision 0016: "Let's only do if stripe is connected"). Starts false,
     /// so the section never flashes up and away.
     @State private var paymentsOn = false
+    /// Subscribe in Calendar (decision 0029): asking the server for the link.
+    @State private var subscribing = false
+    @State private var calendarError: String?
 
     var body: some View {
         NavigationStack {
@@ -36,6 +39,26 @@ struct ProfileView: View {
                         }
                         .buttonStyle(.plain)
                         .accessibilityIdentifier("profile.myClinics")
+                        // Every clinic she holds, kept up to date by the phone
+                        // itself (decision 0029). Not for an account with no
+                        // player row: its calendar would always be empty.
+                        if session.activePlayer != nil {
+                            Button {
+                                Task { await subscribeInCalendar() }
+                            } label: {
+                                OutlinedButtonLabel("Subscribe in Calendar", icon: "calendar.badge.plus")
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(subscribing)
+                            .accessibilityIdentifier("profile.subscribeCalendar")
+                            if let calendarError {
+                                Text(calendarError)
+                                    .brandFont(.caption)
+                                    .foregroundStyle(Brand.Status.canceled.ink)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .accessibilityIdentifier("profile.subscribeCalendarError")
+                            }
+                        }
                         if paymentsOn {
                             CardOnFileView()
                         }
@@ -155,6 +178,29 @@ struct ProfileView: View {
             .task { if let on = try? await PaymentsRepository.paymentsEnabled() { paymentsOn = on } }
             .sheet(isPresented: $showNTRP) { NTRPExplainerSheet() }
             .sheet(isPresented: $editing) { EditProfileView() }
+        }
+    }
+
+    /// Asks the server for this account's feed token and hands the webcal
+    /// link to iOS, which shows its own "Subscribe to calendar?" and does the
+    /// rest in Calendar. Tapping again later gives the same link.
+    private func subscribeInCalendar() async {
+        subscribing = true
+        defer { subscribing = false }
+        calendarError = nil
+        do {
+            let token = try await ProfileRepository.calendarFeedToken()
+            guard let url = CalendarFeed.webcalURL(
+                functionURL: CalendarFeed.functionURL(projectURL: supabaseProjectURL), token: token)
+            else {
+                calendarError = CalendarFeed.failedLine
+                return
+            }
+            openURL(url)
+        } catch {
+            let failure = RequestFailure(error)
+            if failure == .cancelled { return }
+            calendarError = failure.line ?? CalendarFeed.failedLine
         }
     }
 
