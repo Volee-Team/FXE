@@ -153,10 +153,17 @@ extension View {
 
 private struct CrispTopEdge: ViewModifier {
     func body(content: Content) -> some View {
+        // The API exists only in the iOS 26 SDK (Xcode 26, Swift 6.2). CI's
+        // runner built with an older Xcode and failed on the symbol itself, so
+        // the compile-time guard comes first and #available second.
+        #if compiler(>=6.2)
         if #available(iOS 26.0, *) {
             content.scrollEdgeEffectStyle(.hard, for: .top)
         } else {
             content
         }
+        #else
+        content
+        #endif
     }
 }
