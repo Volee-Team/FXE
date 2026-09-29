@@ -341,7 +341,9 @@ private struct PushTapRouting: ViewModifier {
                             ToolbarItem(placement: .cancellationAction) {
                                 Button("Done") { destination = nil }
                                     .accessibilityIdentifier("push.done")
+                                .tint(Brand.textOnNavy)
                             }
+                            .onNavy()
                         }
                 }
                 .onAppear {

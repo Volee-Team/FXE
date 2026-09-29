@@ -74,7 +74,7 @@ struct HomeView: View {
                     CourtBackdrop(strength: .front)
 
                     VStack(spacing: 0) {
-                        BrandHeader(height: geo.safeAreaInsets.top + 58) {
+                        BrandHeader(height: geo.safeAreaInsets.top + 76) {
                             HStack(alignment: .center) {
                                 Wordmark(compact: true)
                                 Spacer()

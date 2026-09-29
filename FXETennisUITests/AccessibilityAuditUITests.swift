@@ -55,8 +55,11 @@ final class AccessibilityAuditUITests: XCTestCase {
         // scripts/measure-contrast.py (navy glyphs against the median
         // background inside the frame): Create an account 11.8:1, Forgot
         // password? 11.5:1, Sign Out 12.7:1. The minimum is 4.5:1.
+        // Mark all read joined them on 2026-09-29 when it left the bar for a
+        // 44-point frame over the list: navy on porcelain, 14.77:1, measured
+        // from the simulator's pixels inside the exact frame the audit named.
         if issue.auditType == .contrast,
-           ["auth.toggleMode", "auth.forgot", "profile.signOut"].contains(e.identifier) { return true }
+           ["auth.toggleMode", "auth.forgot", "profile.signOut", "notifications.markAllRead"].contains(e.identifier) { return true }
         // The logo keeps its size under Larger Text on purpose: it sits in a
         // header of fixed height (Brand.Typography.Role.wordmarkCompact). The
         // audit reaches its "TENNIS" text even inside the one logo element.
@@ -255,13 +258,15 @@ final class AccessibilityAuditUITests: XCTestCase {
         sleep(1)
         XCTAssertGreaterThan(clockPixels().brightest, 600, "Home: the clock should be white on navy")
 
-        // And dark again where the top is light, or it would vanish there.
+        // A page under the navy banner: white too.
         let profileTab = app.tabBars.buttons["Profile"].exists ? app.tabBars.buttons["Profile"] : app.buttons["Profile"].firstMatch
         profileTab.tap()
         if !app.buttons["profile.signOut"].waitForExistence(timeout: 5) { profileTab.tap() }
         XCTAssertTrue(app.buttons["profile.signOut"].waitForExistence(timeout: 15))
         sleep(1)
-        XCTAssertLessThan(clockPixels().darkest, 60, "Profile: the clock should be dark on the light top")
+        // Since 2026-09-29 Profile's top is the navy banner too (decision
+        // 0033), so its clock is white like everywhere else.
+        XCTAssertGreaterThan(clockPixels().brightest, 600, "Profile: the clock should be white on the navy banner")
     }
 
     /// Signing in with the keyboard alone: Return on the email moves to the

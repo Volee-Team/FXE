@@ -105,7 +105,7 @@ struct MyClinicsView: View {
             }
         }
         .crispTopEdge()
-        .navigationTitle("My Clinics")
+        .navyTitle("My Clinics")
         .navigationBarTitleDisplayMode(.inline)
         .task { await model.load() }
         .task { await loadPast() }

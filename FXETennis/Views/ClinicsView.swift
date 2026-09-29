@@ -121,7 +121,7 @@ struct ClinicsView: View {
                 }
             }
             .crispTopEdge()
-            .navigationTitle("Clinics")
+            .bannerTitle("Clinics")
             .task { await model.load() }
             // A "Remind me" moves or goes with what this list says (RegistrationReminders).
             .reconcilesReminders(clinics: model.clinics, registered: Set(model.myRegistrationsByClinic.keys),

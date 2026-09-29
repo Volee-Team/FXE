@@ -172,7 +172,7 @@ struct ProfileView: View {
                 }
                 .crispTopEdge()
             }
-            .navigationTitle("Profile")
+            .bannerTitle("Profile")
             // Read on every visit, so the switch shows without an app update.
             // A failed read (bad signal) keeps what was last known.
             .task { if let on = try? await PaymentsRepository.paymentsEnabled() { paymentsOn = on } }
@@ -304,12 +304,14 @@ struct NTRPExplainerSheet: View {
             }
             .background(Brand.surfaceGradient)
             .crispTopEdge()
-            .navigationTitle("Rating Guide")
+            .navyTitle("Rating Guide")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
+                    .tint(Brand.textOnNavy)
                 }
+                .onNavy()
             }
         }
     }

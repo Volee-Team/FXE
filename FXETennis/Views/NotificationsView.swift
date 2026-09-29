@@ -53,55 +53,80 @@ struct NotificationsView: View {
                     .padding(Brand.Spacing.pageMargin)
                     .accessibilityIdentifier("notifications.empty")
                 } else {
-                    ScrollView {
-                        VStack(spacing: 0) {
-                            ForEach(items) { item in
-                                Button {
-                                    Task { await open(item) }
-                                } label: {
-                                    row(item)
-                                }
-                                .buttonStyle(.plain)
-                                .accessibilityIdentifier("notifications.row")
-                                .accessibilityLabel("\(item.isUnread ? "Unread. " : "")\(item.body)")
-                                if item.id != items.last?.id {
-                                    Divider().background(Brand.hairline)
+                    VStack(spacing: 0) {
+                        // Only while something is unread: a greyed-out button
+                        // failed the contrast audit, and a button with nothing to
+                        // do has no reason to be there. Above the list, not in it:
+                        // at the top of a scroll view the audit measured it against
+                        // the bar's hard edge, navy on navy (2026-09-29).
+                        if items.contains(where: \.isUnread) {
+                            HStack {
+                                Spacer()
+                                Button("Mark all read") { Task { await markAllRead() } }
+                                    .brandFont(.bodyEmphasis)
+                                    .foregroundStyle(Brand.navy)
+                                    // 44 points tall: Apple's minimum tap target
+                                    // (the audit, 2026-09-29, once it left the bar).
+                                    .frame(minHeight: 44)
+                                    .contentShape(Rectangle())
+                                    .accessibilityIdentifier("notifications.markAllRead")
+                            }
+                            .padding(.horizontal, Brand.Spacing.pageMargin)
+                            .padding(.top, Brand.Spacing.md)
+                        }
+                        ScrollView {
+                            VStack(spacing: 0) {
+                                ForEach(items) { item in
+                                    Button {
+                                        Task { await open(item) }
+                                    } label: {
+                                        row(item)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityIdentifier("notifications.row")
+                                    .accessibilityLabel("\(item.isUnread ? "Unread. " : "")\(item.body)")
+                                    if item.id != items.last?.id {
+                                        Divider().background(Brand.hairline)
+                                    }
                                 }
                             }
-                        }
-                        .padding(.horizontal, Brand.Spacing.cardPadding)
-                        .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
-                        .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
-                        .padding(Brand.Spacing.pageMargin)
+                            .padding(.horizontal, Brand.Spacing.cardPadding)
+                            .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
+                            .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
+                            .padding(.horizontal, Brand.Spacing.pageMargin)
+                            .padding(.top, Brand.Spacing.xs)
+                            .padding(.bottom, Brand.Spacing.pageMargin)
 
-                        if let error {
-                            Text(error)
-                                .brandFont(.subheadline)
-                                .foregroundStyle(Brand.Status.canceled.ink)
-                                .padding(.horizontal, Brand.Spacing.pageMargin)
+                            if let error {
+                                Text(error)
+                                    .brandFont(.subheadline)
+                                    .foregroundStyle(Brand.Status.canceled.ink)
+                                    .padding(.horizontal, Brand.Spacing.pageMargin)
+                            }
                         }
+                        .refreshable { await load() }
                     }
-                    .refreshable { await load() }
                 }
             }
             .crispTopEdge()
-            .navigationTitle("Notifications")
-            // Large, not inline: between Done and Mark all read an inline
-            // title is clipped at larger text sizes (audit, 2026-09-28).
-            .navigationBarTitleDisplayMode(.large)
+            .bannerTitle("Notifications")
+            // The page name on the navy banner, not a centred inline title:
+            // between Done and Mark all read an inline title is clipped at
+            // larger text sizes (audit, 2026-09-28).
             .navigationDestination(item: $destination) { shown in
                 NotificationDestinationView(destination: shown)
             }
+            // Done alone in the bar, on the trailing edge: with the page name
+            // at the leading edge, Done and Mark all read together were
+            // folded into a "…" menu, hiding Done (2026-09-29). Mark all
+            // read sits over the list instead.
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
+                ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
                         .accessibilityIdentifier("notifications.done")
+                    .tint(Brand.textOnNavy)
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Mark all read") { Task { await markAllRead() } }
-                        .disabled(!items.contains(where: \.isUnread))
-                        .accessibilityIdentifier("notifications.markAllRead")
-                }
+                .onNavy()
             }
         }
         .task { await load() }

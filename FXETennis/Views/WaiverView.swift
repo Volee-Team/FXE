@@ -92,7 +92,7 @@ struct WaiverView: View {
             }
             .background(Brand.surfaceGradient)
             .crispTopEdge()
-            .navigationTitle("Waiver")
+            .navyTitle("Waiver")
             .navigationBarTitleDisplayMode(.inline)
             .task { await load() }
         }

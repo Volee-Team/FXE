@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Merged into the generated Info.plist (project.yml, INFOPLIST_FILE).
+	     Only keys Xcode cannot generate from an INFOPLIST_KEY_ setting belong
+	     here. This one lets UIStatusBarStyle (white, project.yml) apply
+	     app-wide instead of per screen (2026-09-29). -->
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
+</dict>
+</plist>

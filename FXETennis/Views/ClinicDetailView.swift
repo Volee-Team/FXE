@@ -251,6 +251,7 @@ struct ClinicDetailView: View {
         .background(CourtBackdrop())
         .crispTopEdge()
         .navigationTitle(clinic.name)
+        .navyBanner()
         .navigationBarTitleDisplayMode(.inline)
         // The page opens with the name as its own serif heading; drawn in
         // the bar too, it read twice (2026-09-28). Kept for VoiceOver.
@@ -710,12 +711,14 @@ private struct LateCancelSheet: View {
             .padding(Brand.Spacing.pageMargin)
             .background(Brand.surfaceGradient)
             .crispTopEdge()
-            .navigationTitle("Cancel Registration")
+            .navyTitle("Cancel Registration")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Keep my spot") { dismiss() }
+                    .tint(Brand.textOnNavy)
                 }
+                .onNavy()
             }
             .onAppear { focused = true }
         }

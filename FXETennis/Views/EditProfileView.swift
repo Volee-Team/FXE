@@ -117,19 +117,23 @@ struct EditProfileView: View {
                 .scrollDismissesKeyboard(.interactively)
             }
             .crispTopEdge()
-            .navigationTitle("Edit details")
+            .navyTitle("Edit details")
             .sheet(isPresented: $showNTRP) { NTRPExplainerSheet() }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                         .accessibilityIdentifier("edit.cancel")
+                    .tint(Brand.textOnNavy)
                 }
+                .onNavy()
                 ToolbarItem(placement: .confirmationAction) {
                     Button(saving ? "Saving…" : "Save") { save() }
                         .disabled(!canSave)
                         .accessibilityIdentifier("edit.save")
+                    .tint(Brand.textOnNavy)
                 }
+                .onNavy()
             }
             .task {
                 guard !loaded else { return }

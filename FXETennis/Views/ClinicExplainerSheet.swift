@@ -110,12 +110,14 @@ struct ClinicExplainerSheet: View {
                 }
             }
             .crispTopEdge()
-            .navigationTitle("About this clinic")
+            .navyTitle("About this clinic")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
+                    .tint(Brand.textOnNavy)
                 }
+                .onNavy()
             }
         }
     }

@@ -199,7 +199,7 @@ struct AdminClinicDetailView: View {
             .refreshable { await model.load() }
         }
         .crispTopEdge()
-        .navigationTitle(clinic.name)
+        .navyTitle(clinic.name)
         .toolbar {
             if clinic.status != "canceled" {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -218,7 +218,9 @@ struct AdminClinicDetailView: View {
                             .brandFont(.button)
                     }
                     .accessibilityIdentifier("admin.more")
+                    .tint(Brand.textOnNavy)
                 }
+                .onNavy()
             }
         }
         .confirmationDialog(
@@ -812,18 +814,22 @@ private struct MessageClinicSheet: View {
                 .padding(Brand.Spacing.pageMargin)
             }
             .crispTopEdge()
-            .navigationTitle("Message Players")
+            .navyTitle("Message Players")
             .navigationBarTitleDisplayMode(.inline)
             .task { await saved.load() }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
+                    .tint(Brand.textOnNavy)
                 }
+                .onNavy()
                 ToolbarItem(placement: .confirmationAction) {
                     Button(sending ? "Sending…" : "Send") { send() }
                         .disabled(sending || body_.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         .accessibilityIdentifier("admin.sendMessage")
+                    .tint(Brand.textOnNavy)
                 }
+                .onNavy()
             }
         }
     }
