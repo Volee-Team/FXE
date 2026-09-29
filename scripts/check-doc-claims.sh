@@ -51,6 +51,14 @@ TMP=$(mktemp); trap 'rm -f "$TMP"' EXIT
 for f in $DOCS; do [ -f "$f" ] && awk -v F="$f" '{print F ":" NR ":" $0}' "$f"; done > "$TMP"
 # CLAUDE.md above the changelog only
 awk '/^## Changelog/{exit} {print "CLAUDE.md:" NR ":" $0}' CLAUDE.md >> "$TMP"
+# A count broken across two lines ("... and 13" / "XCUITests: 8 player
+# flows") is invisible to a line-by-line grep: architecture.md said 13
+# XCUITests while the repo had 18, and this script passed (2026-09-28). So
+# every line that ends in a number is also checked joined to the start of the
+# next line, keeping the end of the first line so "was 13" still excuses it.
+for f in $DOCS; do [ -f "$f" ] && awk -v F="$f" '
+  prev ~ /[0-9]+[[:space:]]*$/ { print F ":" NR-1 ":" substr(prev, length(prev) - 40) " " substr($0, 1, 60) }
+  { prev = $0 }' "$f"; done >> "$TMP"
 
 check_count() { # label regex expected
   local label=$1 re=$2 want=$3

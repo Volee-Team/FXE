@@ -128,10 +128,10 @@ struct HomeView: View {
                                 if !model.hasLoaded {
                                     // The first load is still out: nothing
                                     // below would be true yet.
-                                    ProgressView()
-                                        .tint(Brand.navy)
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, Brand.Spacing.lg)
+                                    // The shape of the list, not a spinner:
+                                    // first sign-in only (decision 0028).
+                                    PlaceholderRows()
+                                        .padding(.vertical, Brand.Spacing.md)
                                         .accessibilityIdentifier("home.loading")
                                 } else if showsOpenList {
                                     TimelineView(.explicit(openListRedraws)) { _ in
@@ -236,10 +236,14 @@ struct BellButton: View {
     let onBell: () -> Void
     var body: some View {
         Button(action: onBell) {
+            // Palette colours go to the symbol's layers in order: on
+            // "bell.badge" the first is the dot, but "bell" has one layer and
+            // took the dot's green, so the bell turned green whenever
+            // everything was read (seen offline, 2026-09-28).
             Image(systemName: unread > 0 ? "bell.badge" : "bell")
                 .font(.system(size: 20, weight: .regular))
                 .symbolRenderingMode(.palette)
-                .foregroundStyle(Brand.court, Brand.textOnNavy)
+                .foregroundStyle(unread > 0 ? Brand.court : Brand.textOnNavy, Brand.textOnNavy)
                 .frame(minWidth: Brand.Layout.minTapTarget, minHeight: Brand.Layout.minTapTarget)
                 // A plain button is only the drawn glyph without this; the
                 // audit measured the bell at 19 by 20 points (2026-09-28).
@@ -278,9 +282,8 @@ struct NavyHeaderBar: View {
                     ZStack(alignment: .topTrailing) {
                         Image(systemName: unread > 0 ? "bell.badge" : "bell")
                             .font(.system(size: 17, weight: .medium))
-                            .foregroundStyle(Brand.textOnNavy)
                             .symbolRenderingMode(.palette)
-                            .foregroundStyle(Brand.accent, Brand.textOnNavy)
+                            .foregroundStyle(unread > 0 ? Brand.accent : Brand.textOnNavy, Brand.textOnNavy)
                     }
                     .frame(minWidth: Brand.Layout.minTapTarget, minHeight: Brand.Layout.minTapTarget)
                     .contentShape(Rectangle())

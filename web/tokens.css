@@ -48,7 +48,7 @@
 
   /* ---- Text ---- */
   --fxe-text-primary: #0A1B3D;  /* Brand.textPrimary, 13.50:1 on surface */
-  --fxe-text-secondary: #5C5A55;  /* Brand.textSecondary, 5.24:1 on surface */
+  --fxe-text-secondary: #4A4843;  /* Brand.textSecondary, 8.02:1 on surface (darkened 2026-09-28 with Brand.swift) */
   --fxe-text-on-navy: #FFFFFF;  /* Brand.textOnNavy */
   --fxe-text-on-navy-muted: #C9CCD6;  /* Brand.textOnNavyMuted */
   --fxe-text-on-court: #FFFFFF;  /* Brand.textOnCourt, 4.98:1 on court */

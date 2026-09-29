@@ -84,6 +84,7 @@ struct NotificationsView: View {
                     .refreshable { await load() }
                 }
             }
+            .crispTopEdge()
             .navigationTitle("Notifications")
             // Large, not inline: between Done and Mark all read an inline
             // title is clipped at larger text sizes (audit, 2026-09-28).

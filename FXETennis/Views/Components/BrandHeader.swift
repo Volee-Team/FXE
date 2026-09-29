@@ -120,3 +120,50 @@ extension View {
         }
     }
 }
+
+extension View {
+    /// iOS 26 fades content softly under a navigation bar. Under a large
+    /// serif name that fade reads as a ghost behind the inline title (Profile,
+    /// scrolled, seen 2026-09-28). A hard edge gives the bar a solid ground
+    /// once content scrolls under it; earlier iOS versions already do this.
+    func crispTopEdge() -> some View {
+        modifier(CrispTopEdge())
+    }
+
+    /// Porcelain behind the status bar, fading into the page, for a screen
+    /// that scrolls but has no navigation bar to cover the clock: without it
+    /// the sign-up form's fields slid up under "9:41" (seen on the simulator,
+    /// 2026-09-28). Decoration only: no taps, nothing for VoiceOver.
+    func statusBarScrim() -> some View {
+        overlay(alignment: .top) {
+            GeometryReader { geo in
+                VStack(spacing: 0) {
+                    Brand.surface.frame(height: geo.safeAreaInsets.top)
+                    LinearGradient(colors: [Brand.surface, Brand.surface.opacity(0)],
+                                   startPoint: .top, endPoint: .bottom)
+                        .frame(height: Brand.Spacing.md)
+                }
+                .ignoresSafeArea(edges: .top)
+            }
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+        }
+    }
+}
+
+private struct CrispTopEdge: ViewModifier {
+    func body(content: Content) -> some View {
+        // The API exists only in the iOS 26 SDK (Xcode 26, Swift 6.2). CI's
+        // runner built with an older Xcode and failed on the symbol itself, so
+        // the compile-time guard comes first and #available second.
+        #if compiler(>=6.2)
+        if #available(iOS 26.0, *) {
+            content.scrollEdgeEffectStyle(.hard, for: .top)
+        } else {
+            content
+        }
+        #else
+        content
+        #endif
+    }
+}

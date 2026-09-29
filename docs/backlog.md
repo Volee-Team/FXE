@@ -9,6 +9,9 @@ Priority: 🔴 blocks a person · 🟡 should fix · 🟢 whenever
 
 | | Item | Found | Note |
 |---|---|---|---|
+| 🟡 | **Web admin: ratings read "3" where the phone reads "3.0"** | 2026-09-28 | Walking the laptop as Tara: Rob Delgado "3 · Non-member" on a Pool row. NTRP is always written with one decimal; format with one place wherever `adult_rating` shows. Fix after the builders' branches merge (they edit the same rows) |
+| 🟡 | **Web admin: the Players tab is empty until she types two letters** | 2026-09-28 | `search_players('')` already returns everyone by last name; the page only calls it for two letters or more. List everyone by default, search narrows. Same merge note |
+| 🟢 | **Web admin: "This week" runs to November with no week headings** | 2026-09-28 | The tab bounds the start (decision 0020 §6), not the end, so a published season reads as one list. Group by service week as the phone does (This week, Next week, Week of …) |
 | 🟢 | **The roster reads Paid after a lost dispute** | 2026-09-28 | By design until Tara answers question 89 (the default leaves Paid alone and the Money tab says "Dispute lost"). If she says clear it, one line in `stripe_record_dispute` |
 | 🟢 | **A Remind me reminder is corrected only when a list loads** | 2026-09-28 | Local notifications are moved or dropped on every Home and Clinics load (decision 0023). If Tara changes a clinic's opening and the player never opens the app, the old reminder can still fire; its tap opens the clinic, which shows the truth. A server push at the opening moment would fix it and needs Tara's say on who gets it |
 | 🟡 | **The phone's Manage list is not bounded to this week** (MVP audit item 14, iOS half) | 2026-09-27 | The web admin got the service-week bound and Show earlier; `AdminRepository.allClinics` still reads every clinic. Same rule, plus an Earlier escape |

@@ -97,3 +97,38 @@ test.describe("sign-in", () => {
     await expect(page.locator("#signin-msg")).toHaveText("email rate limit exceeded");
   });
 });
+
+// The QR code's link (question 75, decision 0024). The code Tara prints says
+// /app, and /app forwards to wherever the app installs from. The forwarding is
+// tested before the real link exists: a test that waited for it would be
+// testing nothing tonight and failing silently at the party.
+test.describe("the QR code's link", () => {
+  test("/app says the app is not available yet while no install link is set", async ({ page }) => {
+    await page.goto("/app/");
+    await expect(page.getByRole("heading", { name: "FXE Tennis" })).toBeVisible();
+    await expect(page.getByText("Not available yet.")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Get the app" })).toBeHidden();
+  });
+
+  test("once an install link is set, /app forwards to it", async ({ page }) => {
+    await page.route("**/app/target.js", (route) => route.fulfill({
+      contentType: "application/javascript",
+      body: 'export const INSTALL_URL = "https://install.example/join/ABC123";',
+    }));
+    await page.route("https://install.example/**", (route) => route.fulfill({ contentType: "text/html", body: "<title>arrived</title>" }));
+    await page.goto("/app/");
+    await page.waitForURL("https://install.example/join/ABC123");
+  });
+
+  test("the QR card shows the code, the link written out, Print and the PNG", async ({ page, request }) => {
+    await page.goto("/qr.html");
+    await expect(page.getByRole("img", { name: /QR code for fxe-tennis-admin\.vercel\.app\/app/ })).toBeVisible();
+    await expect(page.getByText("fxe-tennis-admin.vercel.app/app")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Print" })).toBeVisible();
+    const png = page.getByRole("link", { name: "Download for email" });
+    await expect(png).toHaveAttribute("href", "app-qr.png");
+    const res = await request.get("/app-qr.png");
+    expect(res.status()).toBe(200);
+    expect(res.headers()["content-type"]).toContain("image/png");
+  });
+});

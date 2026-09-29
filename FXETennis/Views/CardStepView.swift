@@ -35,6 +35,7 @@ struct CardStepView: View {
                     .padding(Brand.Spacing.pageMargin)
                 }
             }
+            .crispTopEdge()
             .navigationTitle("Add a card")
             .navigationBarTitleDisplayMode(.inline)
         }

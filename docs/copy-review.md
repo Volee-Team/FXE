@@ -35,6 +35,52 @@ plus every "New since" block.
 
 ---
 
+## Siri, Spotlight and Shortcuts: Next Clinic (2026-09-28) — awaiting Alex
+
+Ours, all of it: plain chrome, no tone. Siri speaks the answer, so it is data
+and Tara's locked status words only. Where: "Hey Siri, when's my next clinic
+in FXE Tennis?", the FXE Tennis section of the Shortcuts app, and Spotlight.
+
+| ✓ | Words | Where | Why this wording |
+|---|---|---|---|
+| ☐ | Next Clinic | The shortcut's name in Shortcuts and Spotlight | Two words, says what it answers |
+| ☐ | Your next FXE Tennis clinic and your status in it. | The shortcut's description in the Shortcuts app | What it tells you, nothing more |
+| ☐ | When's my next clinic in FXE Tennis / My next FXE Tennis clinic / Next clinic in FXE Tennis | What you can say to Siri (Apple requires the app's name in each) | The three ways people ask |
+| ☐ | *Saturday Members Only, Sunday, Oct 4 at 4:49 PM. You're In!* | The answer: the clinic's name, its day and time in club time, and You're In!, Player Pool or Response Needed | Composed, not a literal: nothing about where, ever (decision 10) |
+| ☐ | No upcoming clinics. | The answer when you hold no spot | Says the fact |
+| ☐ | Open FXE Tennis and sign in first. | The answer when nobody is signed in on the phone | The one next step there is |
+| ☐ | Loading | VoiceOver, on the grey placeholder shapes shown while a list first loads (Home, Clinics, My Clinics) | One word for what the shapes mean |
+
+The gate could not see any of these on the first run ("Copy unchanged"):
+`scripts/extract-copy.py` now reads App Intents titles, descriptions, short
+titles and phrases, and `static let …Line` constants.
+
+## The QR code and its link (2026-09-28) — awaiting Alex
+
+Question 75 (decision 0024). The printed card carries no sentence on purpose:
+her email and the party supply the words.
+
+| ✓ | String | Where | Why |
+|---|--------|-------|-----|
+| ☐ | Not available yet. | `/app`, the page the QR code opens, until the install link exists | Plain state; what someone who scans early sees |
+| ☐ | Get the app | `/app`, a fallback button once the link is set (the page forwards on its own) | Two words |
+| ☐ | QR code for the app | Tara's Players tab, a link to the printable card | Says what it opens |
+| ☐ | Print / Download for email | The card's two buttons, for Tara | Says what each does |
+| — | FXE Tennis QR code / QR code for fxe-tennis-admin.vercel.app/app / FXE-Tennis-QR.png | The card's page title, the image's spoken description, the downloaded file's name | Labels, not copy |
+
+## Tara's round four, applied (2026-09-28) — hers, nothing to tick
+
+Decision 0024. Every line below is Tara's own answer; listed so the diff has
+a home.
+
+| ✓ | String | Where | Why |
+|---|--------|-------|-----|
+| — | Check the box to continue | The card step, if Add a card is tapped before the permission box is checked | **Tara's words**, replacing "Tick the box to continue."; no full stop, as she typed it |
+| — | Contact Tara | Profile, above Privacy Policy; opens an email to fersctennispro@gmail.com | Question 76: she said "Yes" to exactly this link |
+| — | (removed) Only Tara can change this. | Was under membership on Edit details | **Tara**: "Remove “set my Tara” from view by user." |
+| — | Rating Guide | Now the "?" right beside "Your tennis rating" (sign-up and Edit details), read aloud as "Rating Guide" | **Tara**: "Correct. Words do not change. Tool tip next to “rating” language" |
+| — | The levels didn’t line up for this clinic, so we’ve released your spot. We keep each court close in level so everyone gets a great practice. We’ll catch you at the next clinic! | The notification when she takes an invitation back | **Tara's words**, question 79, verbatim with her curly apostrophes |
+
 ## Tara's Remove, and the polish round's chrome (2026-09-28) — awaiting Alex
 
 Tara could not take anyone out of the Player Pool on any screen, or out of

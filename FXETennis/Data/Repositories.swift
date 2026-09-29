@@ -55,6 +55,20 @@ enum ClinicRepository {
         return rows.first
     }
 
+    /// Particular clinics by id: the ones a player holds a spot in beyond
+    /// `upcoming()`'s five-week edge. `clinics_public` still decides what a
+    /// player may see; asking by id reveals nothing it would not list.
+    static func clinics(ids: [UUID]) async throws -> [ClinicPublic] {
+        guard !ids.isEmpty else { return [] }
+        return try await supabase
+            .from("clinics_public")
+            .select()
+            .in("id", values: ids)
+            .order("starts_at", ascending: true)
+            .execute()
+            .value
+    }
+
     static func upcoming() async throws -> [ClinicPublic] {
         let horizon = Calendar.current.date(byAdding: .day, value: 35, to: .now) ?? .now
         return try await supabase

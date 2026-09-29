@@ -91,6 +91,7 @@ struct WaiverView: View {
                 .padding(Brand.Spacing.pageMargin)
             }
             .background(Brand.surfaceGradient)
+            .crispTopEdge()
             .navigationTitle("Waiver")
             .navigationBarTitleDisplayMode(.inline)
             .task { await load() }

@@ -39,7 +39,8 @@
 -- (finding (e)); a decline and a withdrawn invitation send no #5 (finding
 -- (i)); Tara placing someone into the Pool sends nothing; a player's own
 -- cancel sends no #6; Tara's removal from You're In! sends nothing (there are
--- no words for it); an approved late request still sends one row, its own,
+-- no words for it, question 92); taking an invitation back sends her uninvite
+-- words and nothing else; an approved late request still sends one row, its own,
 -- while a late request approved on an earlier day does not silence #1; a
 -- clinic the player cannot see yet (draft), has already started, or is
 -- canceled gets no "You're all set" from Tara's placement; accepting after
@@ -107,6 +108,8 @@ declare
   ACCEPTED     constant text := 'Awesome! Your spot is confirmed. See you soon!';
   POOLED       constant text := 'Thanks for registering! I personally create each clinic based on playing levels and will send confirmations once lineups are set ASAP';
   REMOVED_FRI  constant text := 'You''ve been removed from the Player Pool for Probe Copy Friday. Hope to see you at another clinic soon!';
+  -- Her question-79 answer, 2026-09-28, typed on her phone: curly apostrophes.
+  UNINVITED    constant text := 'The levels didn’t line up for this clinic, so we’ve released your spot. We keep each court close in level so everyone gets a great practice. We’ll catch you at the next clinic!';
   monday timestamp := date_trunc('week', now() at time zone 'America/New_York');
   thu uuid; pool_c uuid; fri uuid; soon uuid; draft_c uuid; started uuid; rained uuid; washout uuid;
   reg_rob_wash uuid; reg_priya_wash uuid;
@@ -284,7 +287,8 @@ begin
   select count(*) into n from public.notifications where entity_id = reg_priya_fri and type = 'added_to_pool';
   insert into _probe_result values ('decline_sends_no_5', '0', n::text);
 
-  -- 12. Tara invites Priya again, then 13. takes the invitation back: no #5.
+  -- 12. Tara invites Priya again, then 13. takes the invitation back: her
+  --     uninvite words to Priya (20260928500001, decision 0024), and no #5.
   perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
   perform set_config('role', 'authenticated', true);
   perform public.invite_from_pool(reg_priya_fri);
@@ -293,7 +297,8 @@ begin
   perform set_config('role', 'authenticated', true);
   perform public.cancel_invitation(reg_priya_fri);
   perform set_config('role', 'postgres', true);
-  insert into _probe_result values ('withdrawn_invitation_sends_nothing', '', pg_temp.delta(reg_priya_fri));
+  insert into _probe_result values ('withdrawn_invitation_sends_her_uninvite_words',
+    'priya:invitation_withdrawn:registration=ref:' || UNINVITED, pg_temp.delta(reg_priya_fri));
   select count(*) into n from public.notifications where entity_id = reg_priya_fri and type = 'added_to_pool';
   insert into _probe_result values ('withdrawn_invitation_sends_no_5', '0', n::text);
 

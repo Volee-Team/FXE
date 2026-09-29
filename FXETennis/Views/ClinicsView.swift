@@ -29,17 +29,35 @@ final class ClinicsViewModel {
     /// says why; no signal reads as no signal, not as "no clinics" (MVP audit
     /// item 9).
     func load() async {
+        // Instant open: the last good answer for this person, shown while the
+        // real one loads (Snapshot.swift). Only into an empty model, so a
+        // screen already showing fresh data never steps back.
+        if clinics.isEmpty, !hasLoaded, let cached = Self.cachedForCurrentUser() {
+            clinics = cached.clinics
+            myRegistrationsByClinic = cached.registrations
+            hasLoaded = true
+        }
         loading = true; loadError = nil
         do {
             async let clinics = ClinicRepository.upcoming()
             async let regs = RegistrationRepository.mine()
             let (fetchedClinics, fetchedRegs) = try await (clinics, regs)
             let live = fetchedRegs.filter { $0.status != .canceled }
-            self.clinics = fetchedClinics
+            // A clinic the player holds a spot in stays on their screens even
+            // past the list's five-week edge: Tara can place anyone early, and
+            // an invitation can be for a clinic weeks out. Found 2026-09-28,
+            // when Home listed one of Maria's two You're In! clinics.
+            let beyond = Self.heldBeyondList(fetchedClinics, held: live.map(\.clinicId))
+            let extra = beyond.isEmpty ? [] : try await ClinicRepository.clinics(ids: beyond)
+            self.clinics = Self.merged(fetchedClinics, extra)
             self.myRegistrationsByClinic = Dictionary(
                 live.map { ($0.clinicId, $0) }, uniquingKeysWith: { a, _ in a }
             )
             hasLoaded = true
+            if let userId = SnapshotStore.currentUserId {
+                let (shown, held) = (self.clinics, live)
+                SnapshotStore.shared.update(for: userId) { $0.clinics = shown; $0.registrations = held }
+            }
         } catch {
             let failure = RequestFailure(error)
             if failure != .cancelled {
@@ -48,6 +66,32 @@ final class ClinicsViewModel {
             }
         }
         loading = false
+    }
+
+    /// The signed-in person's last list, minus clinics that have ended since.
+    private static func cachedForCurrentUser(now: Date = .now)
+        -> (clinics: [ClinicPublic], registrations: [UUID: MyRegistration])? {
+        guard let userId = SnapshotStore.currentUserId,
+              let snapshot = SnapshotStore.shared.load(for: userId),
+              !snapshot.clinics.isEmpty
+        else { return nil }
+        return (snapshot.clinicsStillAhead(at: now),
+                Dictionary(snapshot.registrations.map { ($0.clinicId, $0) }, uniquingKeysWith: { a, _ in a }))
+    }
+
+    /// The held clinics the list did not bring back, in a stable order.
+    nonisolated static func heldBeyondList(_ listed: [ClinicPublic], held: [UUID]) -> [UUID] {
+        let have = Set(listed.map(\.id))
+        var seen = Set<UUID>()
+        return held.filter { !have.contains($0) && seen.insert($0).inserted }
+    }
+
+    /// One list, soonest first, each clinic once.
+    nonisolated static func merged(_ listed: [ClinicPublic], _ extra: [ClinicPublic]) -> [ClinicPublic] {
+        var seen = Set<UUID>()
+        return (listed + extra)
+            .filter { seen.insert($0.id).inserted }
+            .sorted { $0.startsAt < $1.startsAt }
     }
 }
 
@@ -65,7 +109,8 @@ struct ClinicsView: View {
                 CourtBackdrop()
                 Group {
                     if model.loading && model.clinics.isEmpty {
-                        ProgressView().tint(Brand.navy)
+                        ScrollView { PlaceholderClinicCards().padding(Brand.Spacing.pageMargin) }
+                            .scrollDisabled(true)
                     } else if let err = model.loadError, model.clinics.isEmpty {
                         emptyState(err)
                     } else if model.clinics.isEmpty {
@@ -75,6 +120,7 @@ struct ClinicsView: View {
                     }
                 }
             }
+            .crispTopEdge()
             .navigationTitle("Clinics")
             .task { await model.load() }
             // A "Remind me" moves or goes with what this list says (RegistrationReminders).
@@ -98,6 +144,16 @@ struct ClinicsView: View {
     private var list: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: Brand.Spacing.md) {
+                // Shown over a list the last load did not refresh (no signal,
+                // or the snapshot from the last launch): what is below may be
+                // old. Home says it the same way.
+                if let err = model.loadError {
+                    Text(err)
+                        .brandFont(.subheadline)
+                        .foregroundStyle(Brand.Status.canceled.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("clinics.loadError")
+                }
                 ForEach(weeks, id: \.start) { week in
                     Text(ServiceWeek.label(forWeekStarting: week.start).uppercased())
                         .brandFont(.chip)

@@ -109,6 +109,7 @@ struct ClinicExplainerSheet: View {
                     .padding(Brand.Spacing.pageMargin)
                 }
             }
+            .crispTopEdge()
             .navigationTitle("About this clinic")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

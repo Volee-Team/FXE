@@ -3,7 +3,7 @@
 **This file holds no tasks.** Everything left to do before launch, with its
 owner and status, is in `docs/launch-checklist.md`, the one list (Alex,
 2026-09-27: *"i like having one thing to totally trust"*). This page says
-where things stand. Updated 2026-09-27; launch target 2026-10-16.
+where things stand. Updated 2026-09-28; launch target 2026-11-06 (Tara moved the party, decision 0024).
 
 ## Where things stand, 2026-09-27
 
@@ -54,7 +54,7 @@ notes, the Stripe link).
 Missing on the phone by design: creating or editing a clinic (web only),
 News (deferred, decision 0006).
 
-Testing today: 30 Playwright tests, 18 XCUITests (7 on Tara's side, 4 of them
+Testing today: 33 Playwright tests, 18 XCUITests (7 on Tara's side, 4 of them
 the accessibility audit, the status bar and the Return key), 183 unit
 tests, 35 SQL probes, a 94-check Stripe pipeline and a 57-check push pipeline
 against mocks in CI.

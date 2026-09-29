@@ -139,6 +139,11 @@ Earned on 2026-08-02, when the registration window rule turned out to be wrong a
 
 Then **prove the probe can fail.** Reinstall the old broken behaviour, run the probe, confirm it goes red on the rows you predicted, and only then restore. A probe that has never failed has not been tested either.
 
+**Break one thing at a time.** Two breaks in one run can hide each other: on
+2026-09-28 a sort flipped to "latest first" happened to pick the right clinic
+and masked a removed filter, so the filter's test passed while broken. Each
+rule gets its own red run.
+
 That exercise is what exposed a defect in the probe harness itself: the pass condition used `actual LIKE '%' || expected || '%'`, under which an actual count of **105 passed against an expected 0**, because "105" contains "0". Substring matching now applies only when the expected value contains a letter, which is the case it existed for (a server error message wrapping an expected error name). **Do not loosen it back.** If a new check needs fuzzy matching, normalise the actual value instead of widening the comparison.
 
 ---
@@ -508,7 +513,7 @@ The local Supabase dev image segfaults the Postgres backend when a role without 
 
 ## What this project is FOR (read this before optimising for speed)
 
-**Timeline (Alex, 2026-09-22):** TestFlight fixes tonight; then Tara, Kat and Alex define what is CRITICAL for an MVP (`docs/mvp.md` is the draft to argue with); then a testing group; full launch hoped for the **launch party on 2026-10-16**. Kat (product manager, ex big-tech PM) is on the team; John uploads TestFlight builds (decision 0014).
+**Timeline (Alex, 2026-09-22):** TestFlight fixes tonight; then Tara, Kat and Alex define what is CRITICAL for an MVP (`docs/mvp.md` is the draft to argue with); then a testing group; full launch hoped for the **launch party, moved by Tara to 2026-11-06** (2026-09-28, decision 0024: *"Party is changing to Nov 6"*; she would go earlier if the app is ready). Kat (product manager, ex big-tech PM) is on the team; John uploads TestFlight builds (decision 0014).
 
 Alex, 2026-08-13: *"the goal of this whole project is developing this app the
 first time, using iteration and asking me and tara questions, double and triple
@@ -673,7 +678,7 @@ matters and it is not in the repo, it is gone.
 | `CLAUDE.md` changelog | One entry per session. The diary |
 | `docs/questions-for-tara.md` | Every question for Tara, numbered, with the default we would pick and the decision that answered it |
 | `docs/whats-next.md` | The state of the app today. **No tasks**: those are in the launch checklist |
-| `docs/launch-checklist.md` | **The one list of what is left** (Alex, 2026-09-27: *"one thing to totally trust"*): every row with an owner and a status word, a critical path to 2026-10-16 at the top, re-derived by command at least every 21 days, format enforced by `scripts/check-launch-checklist.sh` in CI. `docs/for-alex.md` is only the how-to for Alex's rows |
+| `docs/launch-checklist.md` | **The one list of what is left** (Alex, 2026-09-27: *"one thing to totally trust"*): every row with an owner and a status word, a critical path to 2026-11-06 at the top, re-derived by command at least every 21 days, format enforced by `scripts/check-launch-checklist.sh` in CI. `docs/for-alex.md` is only the how-to for Alex's rows |
 | `docs/copy.md` / `docs/copy-review.md` / `docs/copy-approved.txt` | Her words verbatim / ours awaiting Alex's tick / the CI snapshot |
 | `docs/notifications.md` | Her notification drafts and what fires today |
 | `docs/prompt-log/` | Every prompt and reply, written by hooks |

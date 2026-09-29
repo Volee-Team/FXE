@@ -31,7 +31,8 @@ struct MyClinicsView: View {
         ZStack {
             CourtBackdrop()
             if model.loading && model.clinics.isEmpty {
-                ProgressView().tint(Brand.navy)
+                ScrollView { PlaceholderClinicCards(count: 2).padding(Brand.Spacing.pageMargin) }
+                    .scrollDisabled(true)
             } else if let loadError = model.loadError, model.clinics.isEmpty {
                 // Nothing loaded. "You're not registered" would be a claim
                 // about her spots the app cannot make (MVP audit item 9).
@@ -63,6 +64,14 @@ struct MyClinicsView: View {
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: Brand.Spacing.md) {
+                        // What is below may be old: the last load failed.
+                        if let loadError = model.loadError {
+                            Text(loadError)
+                                .brandFont(.subheadline)
+                                .foregroundStyle(Brand.Status.canceled.ink)
+                                .fixedSize(horizontal: false, vertical: true)
+                                .accessibilityIdentifier("myClinics.staleLine")
+                        }
                         if mine.isEmpty {
                             Text("You're not registered for any clinics this week")
                                 .brandFont(.body)
@@ -95,6 +104,7 @@ struct MyClinicsView: View {
                 .refreshable { await model.load(); await loadPast() }
             }
         }
+        .crispTopEdge()
         .navigationTitle("My Clinics")
         .navigationBarTitleDisplayMode(.inline)
         .task { await model.load() }

@@ -374,54 +374,54 @@ new and changed words and these questions, nothing else.
 *Default: "Only Tara can change this." Status: open, asked 2026-09-27 (Words tab; Alex also raises it with her).*
 
 **71. You and the pros. You wrote that only you charge people and see the money, and the pros can see the clinic list and mark no-show and late cancellation. Who are the pros who need a login, and can they also: set courts, message a clinic, invite from the Player Pool, add a walk-up, see your private notes on players?**
-*Default until she answers: pros see every clinic's list, mark Came / No-show and late cancellation, and set courts; everything else (charging, Money, the board report, private notes, creating clinics, messaging, invites) stays yours alone. Status: open, asked 2026-09-27.*
+*ANSWERED 2026-09-28 (decision 0024): only she sees everything; pros see who is coming to that day's clinics, mark Came / No-show and late cancellations, never invite from the Pool, never see anything financial. Four pros named (kept on hosted, not here: the repo is public). "Eventually I will have [one pro] see more and [another pro] see more" (the two names are on hosted with the rest).*
 
 **72. Guests who don't have the app. You wrote the member who brings them gets charged. Proposed: you (or a pro) add the guest to the clinic from the laptop, pick which member brought them, and after the clinic that member's card is charged the guest's fee. Which price does the guest pay, member or non-member? Do they take a spot like anyone else?**
-*Default: the non-member price, and yes, they take a spot. Status: open, asked 2026-09-27.*
+*HALF ANSWERED 2026-09-28 (decision 0024): the guest always pays the non-member price, billed to the member who brings them, through an "Invite a friend" button that shares the app or asks her to add the friend by name. Flow in `docs/guests.md`; the sentence telling the member they will be charged is question 93.*
 
 **73. The board's 10% (was 58, 67, 68). The report shows 10% of what players actually paid by card that month, late-cancel and no-show fees included, before Stripe's fee, and a refund comes off the month of the clinic. Right?**
 *Default: as stated, which is what is built. Status: open, asked 2026-09-27.*
 
 **74. Back-to-back 105s (was 60 to 63). As built: a non-member who holds any spot in a 105 that day (Player Pool included) cannot take a second 105 that day until 48 hours before the first one starts, clock time; only 105s count; they see "Non-members can take one 105 a day until 48 hours before." Right, and are those the words?**
-*Default: as built. Status: open, asked 2026-09-27.*
+*ANSWERED 2026-09-28 (decision 0024): "Correct." As built.*
 
 **75. How do members find out about the app, and from which week do you stop taking sign-ups by text?**
-*Default: your weekly email announces it in your words, we make a one-page card with a QR code and three steps for the party, the first full week after the party is app-only, and your weekly email keeps saying registration opens Thursday 8 AM for members (the app sends no "registration is open" message yet). Blocks launch. Status: open, asked 2026-09-27 (MVP audit).*
+*ANSWERED 2026-09-28 (decision 0024): all sign-ups by email now; she wants a QR code and will email the membership about the app. "If the app is ready before the party - let’s do it." The party moves to 2026-11-06.*
 
 **76. When a member is stuck or has a question about a charge, how should the app tell them to reach you?**
-*Default: a small "Contact Tara" link on Profile and under sign-in that opens an email to fersctennispro@gmail.com; the same address becomes the App Store support contact and the privacy policy contact. Status: open, asked 2026-09-27 (MVP audit).*
+*ANSWERED 2026-09-28 (decision 0024): "Yes": a Contact Tara link on Profile, emailing fersctennispro@gmail.com.*
 
 **77. When someone deletes their account, we keep their signed waiver (typed name, email and date) as the club's record in case of an injury claim, and the privacy policy will say so. OK?**
-*Default: yes. Status: open, asked 2026-09-27, with the privacy policy she is reviewing.*
+*ANSWERED 2026-09-28 (decision 0024): "Yes". As built.*
 
 **78. If a player's card is declined after a clinic, should the app tell them to update their card, and can they keep signing up meanwhile?**
-*Default: until you answer, only you see declines, with the player's name and the reason, on Money; nothing is sent to the player and they can keep signing up. Status: open, asked 2026-09-27 (MVP audit).*
+*ANSWERED 2026-09-28 (decision 0024), changing the default: "Cannot sign up without proper, transactional card. App needs to tell them why their card isn’t working, yes." After a decline the player cannot register until they save a card again, and the app shows the reason.*
 
 **79. When you take someone out of a clinic, take back an invitation, or put someone in yourself, should the app tell them?**
-*Default: until you answer, nothing is sent (today's behaviour). If yes, your own lines from your notification drafts would be used. Status: open, asked 2026-09-27 (MVP audit). **Narrowed 2026-09-28 (decision 0022):** your catalogue already has words for two of these, so they are sent: putting someone in sends your "You're all set…" (#1), and taking someone out of the Player Pool sends your "You've been removed from the Player Pool…" (#6). Still open: taking someone out of You're In!, and taking back an invitation, send nothing until you say.*
+*ANSWERED 2026-09-28 (decision 0024) for taking back an invitation, with her words: "The levels didn’t line up for this clinic, so we’ve released your spot. We keep each court close in level so everyone gets a great practice. We’ll catch you at the next clinic!" Taking someone out of You're In! is question 92.*
 
 ## O. From the money fixes (added 2026-09-27, decisions 0018 and 0019)
 
 **80. Someone cancels late and you then put them back in the same clinic: do they pay once or twice?**
-*Default: once. One fee per player per clinic, whatever happened (decision 0018). Status: open, asked 2026-09-27 (review page).*
+*ANSWERED 2026-09-28 (decision 0024): "Once always". As built.*
 
 **81. When a player texts you inside 3 hours that they can't come and you tap Late cancel, the full fee applies, the same as a late cancel in the app, and a plain Remove stays free. Right?**
 *Default: yes, as built (her own words, 2026-09-22: pros "can label them as no show, late cancellation"). Status: open, asked 2026-09-27 (not on the page: confirms her own words).*
 
 **82. If you cancel a clinic (say for rain), should anyone who had already canceled late for it still be charged?**
-*Default: no, a canceled clinic is never charged. Status: open, asked 2026-09-27 (review page).*
+*ANSWERED 2026-09-28 (decision 0024): "Never charged". As built.*
 
 **83. A card is declined and you decide not to chase it: how do you want to clear it from your list?**
-*Default until she answers: it stays in Action Needed until a later charge goes through; declines of deleted accounts are not shown there. Status: open, asked 2026-09-27 (review page).*
+*ANSWERED 2026-09-28 (decision 0024): a Resolved button that clears the row, for her only. The payment's history keeps the decline.*
 
 **84. Someone plays a clinic, then deletes their account before you tap Charge: charge that clinic first, or let it go?**
-*Default: let it go; their card is removed from Stripe when they delete. Status: open, asked 2026-09-27 (review page).*
+*ANSWERED 2026-09-28 (decision 0024): "Let it go." As built.*
 
 **85. Clinics charged during the test weeks, before real money is switched on: charged again for real after the switch?**
 *Default: no, test charges stay as they are. Status: open, asked 2026-09-27 (not on the page: nobody is charged in the test weeks unless she chooses to).*
 
 **86. After you charge a clinic, should Stripe email each player a receipt?**
-*Default: no receipt until she says so (Stripe setting, one switch). Status: open, asked 2026-09-27 (review page).*
+*ANSWERED 2026-09-28 (decision 0024): "No receipts".*
 
 **87. On the laptop, This week starts fresh every Sunday; last week's clinics move under Show earlier, except one you still need to charge. Right, or keep last week visible through Monday?**
 *Default: as built. Status: open, asked 2026-09-27 (not on the page).*
@@ -429,16 +429,30 @@ new and changed words and these questions, nothing else.
 ## P. From wiring her notification words and the Payouts card (added 2026-09-28, decisions 0021 and 0022)
 
 **88. Your "You're all set" message names the day ("on Thursday at 9:00 AM"). For a clinic a week or more away, should it also say the date ("on Thursday, Oct 8 at 9:00 AM")?**
-*Default: your words as written, the day only. Status: open, asked 2026-09-28 (review page, round four).*
+*ANSWERED 2026-09-28 (decision 0024): not relevant, nobody can sign up that far ahead. The day only.*
 
 **89. If a player's bank takes back a clinic fee (a chargeback) and the bank sides with the player, should the app un-mark them as Paid on your roster?**
-*Default: Paid stays as it was; the Money tab shows "Dispute lost" and that money comes off Charged. Status: open, asked 2026-09-28 (review page, round four).*
+*ANSWERED 2026-09-28 (decision 0024): "What you said yes". Paid stays.*
 
 **90. When you approve a late request, the player gets "You're in for {clinic}." Should it be your "You're all set…" message instead?**
-*Default: the current line, one message. Status: open, asked 2026-09-28 (review page, round four).*
+*ANSWERED 2026-09-28 (decision 0024): "You’re in for". The current line.*
 
 **91. Someone taps Accept on your invitation after the clinic has already started. Let them in, or say no?**
-*Default: let them in until the clinic ends; after it ends, the app says no (a finished clinic can't be joined, and they would have been charged for it). Status: open, asked 2026-09-28 (review page, round four).*
+*ANSWERED 2026-09-28 (decision 0024): "Correct". An Accept works until the clinic ends.*
+
+## Q. After round four (added 2026-09-28, decision 0024)
+
+**92. When you take someone out of You're In! yourself, should they get a message? Your "released your spot" words fit an invitation you take back, but not someone who asked you to drop them.**
+*Default: nothing is sent for a removal from You're In! until you give the words. Status: open, asked 2026-09-28.*
+
+**93. When a member brings a guest, what should the app tell the member about being charged? You wrote that they should be told they "will be charged for their guest".**
+*Default: nothing is built until you give the sentence (the guest feature waits on it). Status: open, asked 2026-09-28.*
+
+**94. When you take an invitation back, the player now gets your words ("…so we’ve released your spot… We’ll catch you at the next clinic!"). Today they also go back into the Player Pool for that clinic. Should they come off the clinic altogether instead?**
+*Default: back into the Player Pool, as Cancel Invite has always done, until you say. Status: open, asked 2026-09-28.*
+
+**95. Every player signs your waiver in the app before they can sign up. A guest a member brings, who never installs the app, never signs it. Should the member sign for their guest, should the guest sign a paper waiver at the club, or can a guest not play until they have signed?**
+*Default: the guest feature is not built until you answer (`docs/guests.md`). Status: open, asked 2026-09-28.*
 
 ### How 52 to 57 are being sent
 

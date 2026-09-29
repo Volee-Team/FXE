@@ -1,7 +1,6 @@
 # Launch checklist: the single source of truth for what is left
 
-**Launch target: the launch party, Friday 2026-10-16.** Nineteen days from the
-last full check (Sunday 2026-09-27).
+**Launch target: the launch party, Friday 2026-11-06** (moved from 2026-10-16 by Tara on 2026-09-28, decision 0024; she would go earlier if the app is ready).
 
 How this file works, so it can be trusted:
 
@@ -25,7 +24,7 @@ How this file works, so it can be trusted:
 
 ---
 
-## 0. The critical path to 2026-10-16
+## 0. The critical path to 2026-11-06
 
 What must be true on the day, in the order it has to happen. Each item is a
 row below; this list adds nothing of its own. Re-derived 2026-09-28.
@@ -33,7 +32,7 @@ row below; this list adds nothing of its own. Re-derived 2026-09-28.
 1. **Build 5 is on the testers' phones** (C8): tag `v0.1.0-rc5`, everything
    below in section I plus the MVP-audit fixes. [John]
 2. **Payments on, then tested, then live in Tara's name** (A9, A2, A7, A10,
-   A12): on after build 5 is on phones; Tara's live activation by 2026-10-14
+   A12): on after build 5 is on phones; Tara's live activation by 2026-11-04
    is the gate (A11). [Alex, Tara, me]
 3. **Push on the lock screen** (C3): John makes the key, Alex sets five
    secrets; the Accept and Decline buttons and her words are already built.
@@ -64,7 +63,7 @@ row below; this list adds nothing of its own. Re-derived 2026-09-28.
 | A12 | Three more webhook events for chargebacks (`charge.dispute.created`, `.updated`, `.closed`), on the test endpoint now and the live one later (decision 0021) | [Alex] | **OPEN**: two minutes in Stripe, `docs/for-alex.md` §1; until then no dispute reaches Action Needed |
 | A9 | Switch payments on (`payments_enabled` true **and `payments_enabled_at` = now(), in the same migration**, decision 0018: nothing ends-before that moment is ever owed or charged). From that moment nobody registers without a saved card | [me] | **DECIDE** [Alex]: say go once build 4 is on the testers' phones. **Not for everyone while the keys are sandbox**: a real card is declined in test mode (MVP audit 2026-09-27) |
 | A10 | Live keys: a restricted key with only the permissions our code uses, a live webhook, the three secrets swapped, and at the same moment the cutover that forgets every sandbox card so everyone adds a real one (built on branch `stripe-robustness`, MVP audit 2026-09-27) | [me]+[Alex] | **OPEN if payments are in at the party**, after A7; otherwise LATER |
-| A11 | **Real money at the party**: payments fully live on 2026-10-16 (Alex, 2026-09-27: *"yes we want it fully done"*; promo codes "prob not"). The fallback if Tara's live activation (A7) is not done by **2026-10-14**: payments stay off for the party | [Alex]+[Tara] | **OPEN**: decided 2026-09-27, target live; A7 by 10-14 is the gate |
+| A11 | **Real money at the party**: payments fully live at the party (2026-11-06; it was 2026-10-16 until Tara moved it) (Alex, 2026-09-27: *"yes we want it fully done"*; promo codes "prob not"). The fallback if Tara's live activation (A7) is not done by **2026-11-04**: payments stay off for the party | [Alex]+[Tara] | **OPEN**: decided 2026-09-27, target live; A7 by 11-04 is the gate (moved with the party from 10-14; Alex to confirm) |
 
 ## B. Stripe steps
 
@@ -122,8 +121,8 @@ observer.
 | SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 866 checks, 35 probes, plus six race probes | none known |
 | Stripe pipeline against stripe-mock | every PR | 94 checks | real Stripe behaviour waits on A2 |
 | Push pipeline against a mock APNs | every PR | 57 checks | real APNs waits on C3 |
-| Web admin browser tests (Playwright, real sign-in) | every PR | 30 | a cold-start flake after a local reset (backlog) |
-| Swift unit tests (pure logic) | every PR | 183 | fine |
+| Web admin browser tests (Playwright, real sign-in) | every PR | 33 | a cold-start flake after a local reset (backlog) |
+| Swift unit tests (pure logic) | every PR | 195 | fine |
 | Hosted signed-out smoke (`scripts/hosted-smoke.sh`) | every PR, read-only against production | 126 targets, including a browser preflight to each function the web admin calls | only the signed-out side |
 | XCUITests, player and admin flows, and Apple's accessibility audit | **local only** (section F) | 18 | run on a laptop before every TestFlight build |
 | Copy gate, secret scan (now Stripe keys too), migration immutability, icon gate, doc checks | every PR | – | none |
@@ -171,7 +170,7 @@ launch" items are in `docs/backlog.md`.
 | H4 | Web admin: This week bounded to this week (plus ended, uncharged clinics), no silent loss past 1000 rows, supabase-js vendored at an exact version (branch `web-admin-bounds`) | [me] | **DONE 2026-09-27** (PR #75, `997cc65`) |
 | H5 | Push, the app's half: banner while open, a tap opens the clinic, the badge clears (branch `push-client`) | [me] | **DONE 2026-09-27** (PR #75, `997cc65`) |
 | H6 | Password reset without email (D13) and the scanner-proof reset page (branch `admin-reset-link`) | [me] | **DONE 2026-09-27** (PR #73) |
-| H7 | **Payouts on the Money tab** (the balance, the next deposit and its date; Tara's "when will $ be in my account") and dispute alerts in Action Needed, so Tara never needs the Stripe dashboard day to day | [me] | **OPEN**: built and verified 2026-09-28 (branch `payouts-disputes`, decision 0021); done when it is on hosted |
+| H7 | **Payouts on the Money tab** (the balance, the next deposit and its date; Tara's "when will $ be in my account") and dispute alerts in Action Needed, so Tara never needs the Stripe dashboard day to day | [me] | **DONE 2026-09-28.** On hosted: `supabase migration list --linked` pairs `20260928200001`; `supabase functions list` shows `stripe-payouts` v1 and `stripe-webhook` v8 ACTIVE; the live `index.html` carries the Payouts card (`curl ... | grep -c Payouts`: 5) |
 | H8 | Walk on a real phone what the simulator could not: a push tapped with the app in the background, the Home spinner on a slow connection, Accept and Decline on the lock screen, a haptic | [Alex]/[me] | **OPEN**: with build 5 |
 
 ## I. Polish for the party (2026-09-28)
@@ -184,11 +183,12 @@ each checked by an independent reviewer or the sql-auditor, then merged on
 
 | ID | Item | Owner | Status |
 |---|---|---|---|
-| I1 | Tara's notification catalogue in her words, from the database (#1, #3, #5, #6, #13 to #15), one message per event under a double tap (decision 0022) | [me] | **OPEN**: built and verified; done when `20260928000001` is on hosted and `push` redeployed |
+| I1 | Tara's notification catalogue in her words, from the database (#1, #3, #5, #6, #13 to #15), one message per event under a double tap (decision 0022) | [me] | **DONE 2026-09-28.** `supabase migration list --linked` pairs `20260928000001`; `push` v5 ACTIVE. Her uninvite message (decision 0024) is `20260928500001`, local only until the next push |
 | I2 | Accept and Decline on the invitation push; Add to Calendar (nothing about where); Remind me at the player's own opening; haptics and the chip's change (decision 0023) | [me] | **OPEN**: in build 5; the buttons appear once push is live (C3) |
 | I3 | Text anyone can read: Larger Text followed live, Apple's accessibility audit as a UI test on every main screen, the clock readable on navy, Return through the forms, page titles in the guide's serif, outlined tab icons (decision 0023) | [me] | **OPEN**: in build 5 |
-| I4 | Payouts and chargebacks on the Money tab (H7, decision 0021); the Action Needed crash on the first declined card fixed | [me] | **OPEN**: done with H7 |
-| I5 | Tara's questions from this round: 79 narrowed, 88 to 90 new | [Tara] | **OPEN**: on the next review page |
+| I4 | Payouts and chargebacks on the Money tab (H7, decision 0021); the Action Needed crash on the first declined card fixed | [me] | **DONE 2026-09-28**, with H7 |
+| I5 | Tara's questions from this round: 79 narrowed, 88 to 90 new | [Tara] | **DONE 2026-09-28**: answered in round four (decision 0024); 92 to 95 are the next round's |
+| I6 | The QR code for members (question 75): it points at `/app` on the admin site, which forwards to the install link, so the printed card never changes; Tara's printable card under Players → QR code for the app | [me]/[Alex] | **OPEN**: built 2026-09-28 (two decoders read the code back; a browser test proves the forward); live once the TestFlight public link exists: Alex sends it, the model sets `web/app/target.js` and deploys (`docs/for-alex.md` §4b) |
 
 ## F. The CI Supabase project (Alex asked 2026-09-12; corrected 2026-09-13; decided 2026-09-18)
 

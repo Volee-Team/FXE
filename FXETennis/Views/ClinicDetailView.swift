@@ -239,6 +239,7 @@ struct ClinicDetailView: View {
             .padding(Brand.Spacing.pageMargin)
         }
         .background(CourtBackdrop())
+        .crispTopEdge()
         .navigationTitle(clinic.name)
         .navigationBarTitleDisplayMode(.inline)
         // The page opens with the name as its own serif heading; drawn in
@@ -698,6 +699,7 @@ private struct LateCancelSheet: View {
             }
             .padding(Brand.Spacing.pageMargin)
             .background(Brand.surfaceGradient)
+            .crispTopEdge()
             .navigationTitle("Cancel Registration")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
