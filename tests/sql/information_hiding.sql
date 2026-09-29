@@ -243,7 +243,7 @@ begin
       or value ~* '(https?://|maps\.|directions)';
   insert into _probe_result values ('app_settings_carries_no_location', '0', n::text);
 
-  -- 16. The calendar feed (20260928700001, decision 0029) is player-facing and
+  -- 16. The calendar feed (20260929000003, decision 0029) is player-facing and
   --     lives OUTSIDE the app: the calendar-feed edge function turns the rows
   --     of calendar_feed_events into a calendar that syncs to other devices
   --     and other people's calendars. No column of it may be location-shaped

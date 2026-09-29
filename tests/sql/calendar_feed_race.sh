@@ -1,7 +1,7 @@
 #!/bin/bash
 # calendar_feed_race.sh
 #
-# 20260928700001 (decision 0029): my_calendar_feed_token() makes the
+# 20260929000003 (decision 0029): my_calendar_feed_token() makes the
 # account's token on first use. Two first calls at once (a double tap, or
 # Subscribe on the phone and on an iPad in the same second) must end with ONE
 # row and the SAME token handed to both, or one device subscribes to a link

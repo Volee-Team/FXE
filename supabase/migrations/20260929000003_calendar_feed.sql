@@ -1,4 +1,4 @@
--- 20260928700001_calendar_feed.sql
+-- 20260929000003_calendar_feed.sql
 --
 -- A player's clinics as a subscribed calendar (decision 0029; the roadmap's
 -- "Your clinics in your calendar, automatically"). Add to Calendar (decision

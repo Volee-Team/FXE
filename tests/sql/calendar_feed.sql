@@ -1,6 +1,6 @@
 -- calendar_feed.sql
 --
--- Covers 20260928700001 (decision 0029): a player's clinics as a subscribed
+-- Covers 20260929000003 (decision 0029): a player's clinics as a subscribed
 -- calendar. Written from the rule, not from the code:
 --
 --   * the token is the credential, so no client role touches the table, the

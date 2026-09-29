@@ -254,7 +254,7 @@ where p.prokind = 'f'
 
 -- 3. Internal helpers stay internal: they only run inside other SECURITY
 --    DEFINER functions, as the owner, and a client has no business calling them.
---    (calendar_feed_events, 20260928700001, is the calendar-feed edge
+--    (calendar_feed_events, 20260929000003, is the calendar-feed edge
 --    function's read, service_role only, like stripe_record_dispute.)
 insert into _probe_result
 select 'internal_helpers_not_callable_by_clients', '',
