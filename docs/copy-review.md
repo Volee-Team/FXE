@@ -619,6 +619,37 @@ Chrome only, from the adversarial review's fixes (branch `fix-sql`). No player s
 | ☐ | Card changed between attempts | Web Money tab, the reason on a row with `idempotency_error` | Was the raw code |
 | ☐ | Account deleted | Web Money tab, the reason on a row with `account_deleted` | Was the raw code |
 
+## The pro role (2026-09-28) — awaiting Alex
+
+Decision 0025. Chrome only; no sentence with tone was needed, so there is no
+placeholder. A pro reads the first group on the phone's Today tab; the
+second group is Tara's web admin. Most of the pro's words are Tara's roster's
+words reused, so the two screens say the same thing. Deliberately **absent**
+for a pro: "The fee applies." under the late-cancel alert (a pro is told
+nothing about money), and "Already charged: refund it first." (a charged row
+reaches a pro as "Only Tara can change this.").
+
+| ☐ | String | Where | Why |
+|---|---|---|---|
+| ☐ | Today | iOS, a pro's fourth tab and its title | The pro's one extra tab, in place of Tara's Manage |
+| ☐ | No clinics today. | iOS Today tab, no clinic today | The words Tara's Manage tab already uses for its Today section (never visible to the extractor there) |
+| ☐ | Nobody is in yet. | iOS Today tab, a clinic nobody is You're In! for | Tara's roster's words, reused |
+| ☐ | Court 1 … Court 5 (`Court \(court)`) | iOS Today tab, under a name, only when Tara has set a court | Pros coach on those courts; read-only, no menu |
+| ☐ | Came / No-show | iOS Today tab, the toggle on each row | Tara's roster's toggle (a ternary, invisible to the extractor) |
+| ☐ | Late cancel | iOS Today tab, the button on each row, inside the cutoff or after the start | Tara's word, already approved |
+| ☐ | Late cancel Lena Brooks? (`Late cancel \(name)?`) | iOS Today tab, the alert title | Tara's alert's title (an `.alert` title, invisible to the extractor) |
+| ☐ | Note (optional), Late cancel, Keep | iOS Today tab, the alert's field and buttons | Tara's alert's, already approved; the note reaches only Tara |
+| ☐ | Couldn't load clinics. | iOS Today tab, pro_today() failed | CLAUDE.md's own example of an error line |
+| ☐ | Only Tara can change this. | iOS Today tab, any row of a clinic Tara has charged (`clinic_locked`), or an account no longer a pro | Already approved; chosen because it does not say "charged", and the same on every row so it says nothing about one player |
+| ☐ | Not late yet. / That clinic is canceled. / That just changed. Here's the latest. / That didn't go through. Check your connection and try again. | iOS Today tab, the server's other refusals | Tara's roster's words for the same refusals |
+| ☐ | VoiceOver: "Lena Brooks, came" / "Lena Brooks, no-show"; "Late cancel Lena Brooks" | iOS Today tab, the two controls' accessibility labels | Tara's toggle has only "Came"; with several rows, VoiceOver needs the name |
+| ☐ | Pro | Web admin, the checkbox on a Players row (live member or pro accounts only) | Tara's switch, admin_set_pro |
+| ☐ | That account is an administrator. | Web admin, admin_set_pro refused `cannot_change_an_admin` | A stale page or second tab; the box is not offered on an admin |
+| ☐ | That is your own account. | Web admin, `cannot_change_own_role` | The same: Tara has no player row, so the box never shows for her |
+| ☐ | That account was deleted. | Web admin, `account_deleted` | Deleted between the search and the tick |
+| ☐ | Couldn't find that account. | Web admin, `account_not_found` | Never the raw code |
+| ☐ | That just changed. Here's the latest. | Web admin, `account_changed`; the list is read again | The iOS roster's words since 2026-09-02 |
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148

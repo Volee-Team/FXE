@@ -32,6 +32,7 @@ The history of what we believed is part of the record.
 | [0021](0021-payouts-and-chargebacks.md) | Payouts read from Stripe at the moment, never stored; chargebacks recorded on the fee from Stripe's webhooks; a lost one subtracts what Stripe withdrew and never makes the player owe again | 2026-09-28 | Active, default pending question 89 |
 | [0022](0022-notifications-in-her-words.md) | Tara's notification catalogue wired verbatim from the database functions: when each message is sent and when it is not; one message per event under a double tap; no accepting, inviting or approving into a clinic that is canceled or over | 2026-09-28 | Active, defaults pending questions 79, 88, 90, 91 |
 | [0023](0023-first-open-polish.md) | Accept and Decline from the lock screen; Add to Calendar with nothing about where; Remind me at this player's opening; text that follows Larger Text live; a readable clock on navy; the guide's type for page titles | 2026-09-28 | Active |
+| [0025](0025-pro-role.md) | The pro role: Tara stays the only admin; a pro reads today's clinics and who is You're In! (names and courts only) and marks Came / No-show and a late cancellation on today's clinics, through three functions and nothing else; only Tara makes a pro, member <-> pro only | 2026-09-28 | Active, five defaults pending Tara |
 | [0011](0011-no-email-verification-v1.md) | No email verification in v1; hosted "Confirm email" is OFF by hand, and every new project needs the same flip | 2026-08-16 | Active |
 
 Tara's own numbered decisions (1–23, calls of 2026-08-02 and 2026-08-12) are
