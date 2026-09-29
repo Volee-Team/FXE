@@ -157,7 +157,7 @@ Alex, 2026-08-19: *"we're not in a big rush, I can do it as an org from the star
 | 🔨 | **Stripe, card on file** (decision 0009, 2026-09-12). Built: schema (Stripe customer + card summary on accounts, a `payments` ledger with RLS), `admin_charge_registration` / `admin_refund_payment`, the ledger-drives-Paid trigger, policy as `app_settings`, 21-check probe. `payments_enabled` is false until Alex's Stripe test keys exist (Q27–Q37 are all answered: decisions 0010, 0012, 0013). Also built: the three edge functions, the card screen on Profile (PaymentSheet), `payments_ledger` and its read-only list on the Money tab, the 3-hour honor-system cancel (decisions 0010, 0013), Charge/Refund as Tara's tap on the web (hidden while the switch is off), and the stripe-mock harness in CI. Next, once Alex adds Stripe test keys: end-to-end with test cards. Once Tara answers: Charge and Refund buttons on the roster and Money tab, refunds on her cancel, her card-entry sentence. Target October 1 |
 | ⬜ | **Juniors.** Deferred by Tara to November or the spring session (decision 0007 §6). Enum values already in the schema so this is UI work, not a migration |
 | ⬜ | Parent accounts managing children, junior age groups |
-| ⬜ | Duplicate an entire week and adjust dates |
+| 🔨 | Duplicate an entire week and adjust dates: Copy this week to next week, as drafts (2026-09-28, Tara's tools below) |
 | ✅ | Add to Calendar (2026-09-28, decision 0023: nothing about where goes into the entry) |
 | ⬜ | Attendance check-in |
 
@@ -182,19 +182,49 @@ TestFlight build; ideas are not scheduled until Alex picks them.
 | ✅ | A readable clock over the navy screens; page titles in the club's serif; outlined icons |
 | ✅ | Return moves through sign-in and the profile form |
 
-**Ideas, not built** (each says what it waits on):
+**Found and fixed walking the app for the build 5 demo (2026-09-28)**: a
+clinic you hold more than five weeks out was on no screen at all; titles
+scrolled under ghosted content on iOS 26 (a solid edge now); Delete my
+account moved to the foot of Profile.
+
+**Ideas, not built** (each says what it waits on). The full list with
+reasons is the build 5 demo page Alex was sent on 2026-09-28; "Next" means
+started or starting now.
 
 | Idea | Waits on |
 |---|---|
+| "Hey Siri, when's my next clinic?", and your next clinic in Spotlight (App Intents) | Next. Nothing; the answer is data plus the locked status words, listed for Alex's tick |
+| Instant open: the last load shown at once and refreshed behind it, so the app also works with no signal at the courts | Next. Nothing; the cache is per account and wiped at sign-out |
+| Your clinics in your calendar automatically (a subscribed feed that adds and removes on its own; times only, never where) | A private link per player, which is a credential: design and an sql-auditor pass first |
 | A Home Screen widget: your next clinic and its time | The LLC's bundle id (checklist C12): a widget needs an App Group, tied to the id |
 | Sign in with Apple: one tap, no password to forget | The LLC's Apple account (a Services ID) and Supabase's Apple provider |
 | Saved passwords offered for the club's site and app together | The LLC's team id in a file on the admin site (associated domains) |
 | Clinic day on the Lock Screen (a Live Activity: "Tonight 7:00, You're In!") | After launch; needs push live |
-| Placeholders shaped like the list while it loads, instead of a spinner | Nothing; small |
+| Placeholders shaped like the list while it loads, instead of a spinner | Nothing; small (folds into Instant open) |
+| Invite a friend: send the app, or ask Tara to write a guest in (her idea, question 72) | The install link (checklist I6) and Tara's questions 93 and 95 (`docs/guests.md`) |
+| Your season on Profile: clinics played, from the Past list | The words are Tara's |
+| The forecast for the hour you play | Tara first: it names the club's town |
 | Share a clinic with a friend | Tara: she hides FXE from non-members, so this is her call first |
 
-**Tara-facing, waiting on her answers:** pro logins (question 71), guests
-billed to a member (72), a Contact Tara link (76), Stripe receipts (86).
+## Tara's tools: the laptop list (2026-09-28)
+
+The app organizes; she decides. Each of these saves her time without making
+a decision for her.
+
+| | |
+|---|---|
+| 🔨 | **Pros** (question 71, decision 0024): her pros see that day's clinics and who is in them, mark Came, No-show and late cancels; never anything financial, never an invitation. Only she makes someone a pro |
+| 🔨 | **A declined card blocks sign-up until a new card is saved** (question 78), and **Resolved** on a declined card she won't chase (question 83) |
+| 🔨 | **A court sheet to print**, in place of the handwritten one |
+| 🔨 | **A player's history at a glance** (clinics played, no-shows, late cancels) on her directory and beside each name in the Player Pool |
+| 🔨 | **Copy this week to next week**, as drafts she checks and publishes (the v1.1 row "Duplicate an entire week") |
+| ⬜ | Her saved messages: sentences she sends often, kept in her words, sent in one tap |
+| ⬜ | A Sunday-night email: next week's sign-ups, cards to chase, requests waiting on her (needs the club's mail sender) |
+| ⬜ | More for two of her pros, when she asks ("Eventually", question 71) |
+| ⬜ | Guests billed to the member (question 72): designed in `docs/guests.md`, waits on questions 93 and 95 |
+
+**Answered in round four and built:** a Contact Tara link (76), no Stripe
+receipts (86: "No receipts").
 
 ---
 
