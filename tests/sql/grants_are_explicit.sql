@@ -254,12 +254,14 @@ where p.prokind = 'f'
 
 -- 3. Internal helpers stay internal: they only run inside other SECURITY
 --    DEFINER functions, as the owner, and a client has no business calling them.
+--    (calendar_feed_events, 20260928700001, is the calendar-feed edge
+--    function's read, service_role only, like stripe_record_dispute.)
 insert into _probe_result
 select 'internal_helpers_not_callable_by_clients', '',
        coalesce(string_agg(p.proname, ', ' order by p.proname), '')
 from pg_proc p
 join pg_namespace n on n.oid = p.pronamespace and n.nspname = 'public'
-where p.proname in ('admin_account_ids', 'notify_account', 'courtesy_available', 'courtesy_cancel_days', 'card_required', 'waiver_accepted', 'purge_expired_card_consents', 'is_105', 'back_to_back_105_opens_at', 'registration_has_live_fee', 'player_has_live_fee', 'money_rows', 'stripe_cutover_to_live', 'stripe_record_dispute', 'payments_enabled_at', 'payment_is_real')
+where p.proname in ('admin_account_ids', 'notify_account', 'courtesy_available', 'courtesy_cancel_days', 'card_required', 'waiver_accepted', 'purge_expired_card_consents', 'is_105', 'back_to_back_105_opens_at', 'registration_has_live_fee', 'player_has_live_fee', 'money_rows', 'stripe_cutover_to_live', 'stripe_record_dispute', 'payments_enabled_at', 'payment_is_real', 'calendar_feed_events')
   and has_function_privilege('authenticated', p.oid, 'EXECUTE');
 
 -- 4. TOO NARROW, the other direction: every function a signed-in client may
@@ -271,7 +273,7 @@ from pg_proc p
 join pg_namespace n on n.oid = p.pronamespace and n.nspname = 'public'
 where p.prokind = 'f'
   and p.prorettype <> 'trigger'::regtype
-  and p.proname not in ('admin_account_ids', 'notify_account', 'courtesy_available', 'courtesy_cancel_days', 'card_required', 'waiver_accepted', 'purge_expired_card_consents', 'is_105', 'back_to_back_105_opens_at', 'registration_has_live_fee', 'player_has_live_fee', 'money_rows', 'stripe_cutover_to_live', 'stripe_record_dispute', 'payments_enabled_at', 'payment_is_real')
+  and p.proname not in ('admin_account_ids', 'notify_account', 'courtesy_available', 'courtesy_cancel_days', 'card_required', 'waiver_accepted', 'purge_expired_card_consents', 'is_105', 'back_to_back_105_opens_at', 'registration_has_live_fee', 'player_has_live_fee', 'money_rows', 'stripe_cutover_to_live', 'stripe_record_dispute', 'payments_enabled_at', 'payment_is_real', 'calendar_feed_events')
   and not has_function_privilege('authenticated', p.oid, 'EXECUTE');
 
 select

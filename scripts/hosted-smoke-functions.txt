@@ -24,6 +24,7 @@ admin_upsert_clinic	{"p_audience":"x","p_category":"x","p_closes_at":"2026-01-01
 admin_upsert_template	{"p_audience":"x","p_category":"x","p_description":"x","p_duration_minutes":1,"p_id":"00000000-0000-0000-0000-000000000000","p_internal_capacity":1,"p_name":"x"}
 assign_court	{"p_court":1,"p_registration":"00000000-0000-0000-0000-000000000000"}
 back_to_back_105_opens_at	{"p_a":"2026-01-01T00:00:00Z","p_b":"2026-01-01T00:00:00Z"}
+calendar_feed_events	{"p_token":"x"}
 cancel_clinic	{"p_clinic":"00000000-0000-0000-0000-000000000000"}
 cancel_cutoff_hours	{}
 cancel_invitation	{"p_registration":"00000000-0000-0000-0000-000000000000"}
@@ -45,6 +46,7 @@ leave_pool	{"p_registration":"00000000-0000-0000-0000-000000000000"}
 mark_news_read	{"p_news":"00000000-0000-0000-0000-000000000000"}
 member_opens_at	{"p_starts_at":"2026-01-01T00:00:00Z"}
 money_rows	{}
+my_calendar_feed_token	{}
 my_card_consent	{}
 my_courtesy_available	{"p_player":"00000000-0000-0000-0000-000000000000"}
 my_waiver_accepted	{}
@@ -67,6 +69,7 @@ register_for_clinic	{"p_clinic":"00000000-0000-0000-0000-000000000000","p_player
 registration_has_live_fee	{"p_registration":"00000000-0000-0000-0000-000000000000"}
 request_late_spot	{"p_clinic":"00000000-0000-0000-0000-000000000000","p_message":"x","p_player":"00000000-0000-0000-0000-000000000000"}
 require_admin	{}
+reset_my_calendar_feed	{}
 resolve_late_request	{"p_approve":false,"p_request":"00000000-0000-0000-0000-000000000000"}
 respond_to_invitation	{"p_accept":false,"p_registration":"00000000-0000-0000-0000-000000000000"}
 revenue_summary	{"p_from":"2026-01-01T00:00:00Z","p_to":"2026-01-01T00:00:00Z"}
