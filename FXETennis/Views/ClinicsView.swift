@@ -109,7 +109,8 @@ struct ClinicsView: View {
                 CourtBackdrop()
                 Group {
                     if model.loading && model.clinics.isEmpty {
-                        ProgressView().tint(Brand.navy)
+                        ScrollView { PlaceholderClinicCards().padding(Brand.Spacing.pageMargin) }
+                            .scrollDisabled(true)
                     } else if let err = model.loadError, model.clinics.isEmpty {
                         emptyState(err)
                     } else if model.clinics.isEmpty {

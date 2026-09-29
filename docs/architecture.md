@@ -232,6 +232,8 @@ FXETennis/
     │                            ClinicCalendarEvent; runs outside the app, so no calendar permission
     ├── Components/StatusChipMotion.swift the status chip changes over 0.35 s, a crossfade only under
     │                            Reduce Motion, and leaves at once when it goes (unit-tested)
+    ├── Components/LoadingPlaceholders.swift the list's shape instead of a spinner on a first load (cards on
+    │                            Clinics and My Clinics, rows on Home); a slow fade, none under Reduce Motion
     ├── LoadFailedView.swift     signed in but the profile could not load: the connection line, Try again, Sign out
     ├── WaiverView.swift         Tara's waiver, her checkbox sentence, the typed legal name; gates the app until signed;
     │                            Try again when it fails to load, Sign out / Delete at the foot

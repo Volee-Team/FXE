@@ -128,10 +128,10 @@ struct HomeView: View {
                                 if !model.hasLoaded {
                                     // The first load is still out: nothing
                                     // below would be true yet.
-                                    ProgressView()
-                                        .tint(Brand.navy)
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, Brand.Spacing.lg)
+                                    // The shape of the list, not a spinner:
+                                    // first sign-in only (decision 0028).
+                                    PlaceholderRows()
+                                        .padding(.vertical, Brand.Spacing.md)
                                         .accessibilityIdentifier("home.loading")
                                 } else if showsOpenList {
                                     TimelineView(.explicit(openListRedraws)) { _ in

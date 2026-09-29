@@ -31,7 +31,8 @@ struct MyClinicsView: View {
         ZStack {
             CourtBackdrop()
             if model.loading && model.clinics.isEmpty {
-                ProgressView().tint(Brand.navy)
+                ScrollView { PlaceholderClinicCards(count: 2).padding(Brand.Spacing.pageMargin) }
+                    .scrollDisabled(true)
             } else if let loadError = model.loadError, model.clinics.isEmpty {
                 // Nothing loaded. "You're not registered" would be a claim
                 // about her spots the app cannot make (MVP audit item 9).
