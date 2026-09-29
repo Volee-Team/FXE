@@ -72,6 +72,25 @@ final class AdminClinicsModel {
         }
     }
 
+    /// Tara's Resolved on a declined card (decision 0024, question 83): one
+    /// tap, no confirmation, because it moves no money, tells nobody and
+    /// leaves the player's card declined; the row goes and the ledger keeps
+    /// the charge. The list is read again either way; if the charge changed
+    /// meanwhile, hard rule 3's line says so after the reload.
+    func resolve(_ decline: MoneyDecline) async {
+        guard let payment = decline.paymentId else { return }
+        var line: String?
+        do {
+            try await AdminRepository.resolveDecline(payment: payment)
+        } catch {
+            line = String(describing: error).contains("decline_not_open")
+                ? AdminClinicModel.changedUnderYou
+                : (RequestFailure(error).line ?? "That didn't go through. Check your connection and try again.")
+        }
+        await load()
+        if let line { self.error = line }
+    }
+
     /// Counts for the clinics Tara is most likely to act on. Deliberately NOT
     /// every clinic: a full roster fetch per row would be one round trip each,
     /// and the past ones are not decisions she is making today.
@@ -201,9 +220,26 @@ struct AdminClinicsView: View {
                             }
                         }
                         ForEach(model.declines) { d in
-                            clinicLink(d.clinicId) {
-                                needRow(Brand.Status.canceled, "\(d.displayName)'s card was declined",
-                                        detail: declineDetail(d))
+                            HStack(spacing: Brand.Spacing.xs) {
+                                clinicLink(d.clinicId) {
+                                    needRow(Brand.Status.canceled, "\(d.displayName)'s card was declined",
+                                            detail: declineDetail(d))
+                                }
+                                Spacer(minLength: 0)
+                                // Her word (question 83). Beside the row, not
+                                // inside its link, so the tap is only this.
+                                if d.paymentId != nil {
+                                    Button {
+                                        Task { await model.resolve(d) }
+                                    } label: {
+                                        Text("Resolved")
+                                            .brandFont(.chip)
+                                            .foregroundStyle(Brand.navy)
+                                            .frame(minHeight: Brand.Layout.minTapTarget)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityIdentifier("admin.actionNeeded.resolved")
+                                }
                             }
                         }
                         // A dispute is answered in Stripe, so the row opens

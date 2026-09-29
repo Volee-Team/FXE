@@ -206,6 +206,13 @@ struct Account: Codable, Identifiable, Sendable {
     /// the app. Nil until a card has been added (decision 0009).
     let cardBrand: String?
     let cardLast4: String?
+    /// A charge on this card was declined and nothing has cleared it: no card
+    /// saved since, no later charge through (decision 0024, Tara's question
+    /// 78). The database writes both from Stripe's answer; the app only reads
+    /// them (20260928700001). Defaults so an account made in code needs neither.
+    var cardDeclinedAt: Date? = nil
+    /// Stripe's reason code for that decline (insufficient_funds, ...).
+    var cardDeclineCode: String? = nil
 
     enum CodingKeys: String, CodingKey {
         case id, email, phone, role
@@ -214,10 +221,15 @@ struct Account: Codable, Identifiable, Sendable {
         case accountType = "account_type"
         case cardBrand = "card_brand"
         case cardLast4 = "card_last4"
+        case cardDeclinedAt = "card_declined_at"
+        case cardDeclineCode = "card_decline_code"
     }
 
     var isAdmin: Bool { role == "admin" }
     var hasCard: Bool { cardLast4 != nil }
+    /// The card on file was declined: Register and Accept are refused until a
+    /// card is saved again or a later charge goes through.
+    var isCardDeclined: Bool { cardDeclinedAt != nil }
     /// "•••• 4242", or nil. Final Updates p.2 item 2: "If a card is on file,
     /// only show the last 4 digits of the card in the U/I." The brand is
     /// still stored (the webhook writes it) and simply not shown.

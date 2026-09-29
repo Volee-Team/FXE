@@ -435,6 +435,9 @@ function friendly(e) {
   // 20260927300001/3: nothing before card payments; a held charge resolved once.
   if (m.includes("clinic_before_payments")) return "That clinic ended before card payments were on.";
   if (m.includes("payment_not_held")) return "That charge is no longer held.";
+  // 20260928700001: Resolved on a decline that went through, or was already
+  // resolved, meanwhile. CLAUDE.md's own line for hard rule 3.
+  if (m.includes("decline_not_open")) return "That just changed. Here's the latest.";
   if (m.includes("not_late_yet")) return "Not late yet.";
   if (m.includes("payments_disabled")) return "Payments are switched off.";
   if (m.includes("no_card_on_file")) return "No card on file for that player.";
@@ -547,10 +550,15 @@ async function loadActionNeeded(clinics, byPlayer, owed, stale = () => false) {
       <span class="grow">${esc(r.clinic_name)} ended, not charged yet<br><span class="muted">${fmtDate(r.starts_at)}</span></span>
       <button class="small primary" data-chargeclinic="${r.clinic_id}">Charge clinic</button>
     </div>`),
+    // Resolved (Tara, question 83, decision 0024): "a button that says
+    // “resolved” and it clears - for me only to see". One click, no second:
+    // it moves no money, tells nobody, and leaves the player's card declined
+    // (admin_resolve_decline, 20260928700001). The ledger keeps the charge.
     ...declined.map(d => `<div class="row" data-declined="${d.registration_id}">
       <span class="grow">${esc(d.first_name + " " + d.last_name)}'s card was declined<br>
         <span class="muted">${esc(d.clinic_name)} · ${fmtDate(d.clinic_starts_at)}${d.failure_code ? " · " + esc(declineLabel(d.failure_code)) : ""}</span></span>
       <span class="name">${money(d.amount_cents)}</span>
+      ${d.payment_id ? `<button class="small" data-resolvedecline="${d.payment_id}">Resolved</button>` : ""}
     </div>`),
     ...disputes.map(d => `<div class="row" data-dispute="${d.payment_id}">
       <span class="grow">${esc(d.first_name + " " + d.last_name)} disputed a charge<br>
@@ -724,6 +732,8 @@ async function loadLedger(gen = moneySeq) {
     // Decline reason (20260926000010): Stripe's code in words when there is
     // one, else Stripe's own sentence as before.
     const why = failed && r.failure_code ? "Declined: " + declineLabel(r.failure_code) : reasonLabel(r.failure_reason);
+    // Tara marked the decline Resolved (20260928700001): still here, as history.
+    const resolved = failed && r.resolved_at;
     const held = r.status === "processing" && HELD.includes(r.failure_reason);
     // Open and lost disputes in red: money that is, or was, taken back.
     const dispute = disputeLabel(r.dispute_status);
@@ -736,7 +746,7 @@ async function loadLedger(gen = moneySeq) {
     // name printed on the card, so the account name is what we have).
     return `<div class="row">
       <span class="grow"><span class="name"${failed ? ` style="font-weight:700"` : ""}>${esc(who)}</span> <span class="muted">${KIND[r.kind] || esc(r.kind)}</span><br>
-        <span class="muted">${clinic ? esc(clinic.name) + " · " + fmtDate(clinic.starts_at) : ""}</span>${why ? `<span class="muted"${bad}> · ${esc(why)}</span>` : ""}${dispute ? `<span class="muted"${disputeRed ? ` style="color:#992E22"` : ""} data-dispute-status> · ${esc(dispute)}</span>` : ""}</span>
+        <span class="muted">${clinic ? esc(clinic.name) + " · " + fmtDate(clinic.starts_at) : ""}</span>${why ? `<span class="muted"${bad}> · ${esc(why)}</span>` : ""}${resolved ? `<span class="muted" data-resolved> · Resolved</span>` : ""}${dispute ? `<span class="muted"${disputeRed ? ` style="color:#992E22"` : ""} data-dispute-status> · ${esc(dispute)}</span>` : ""}</span>
       <span><span class="name">${r.kind === "refund" ? "−" : ""}${money(r.amount_cents)}</span><br><span class="muted"${bad}>${status}</span></span>
       ${paymentsOn && r.kind !== "refund" && r.status === "succeeded" && !r.dispute_status ? `<button class="small" data-refund="${r.id}">Refund</button>` : ""}
     </div>${held ? `<div class="row" data-held="${r.id}">
@@ -1151,6 +1161,22 @@ document.addEventListener("click", async (e) => {
     await call("admin_resolve_held_payment", { p_payment: b.dataset.resolve, p_outcome: b.dataset.outcome });
     await loadMoney();
   });
+  if (b.dataset.resolvedecline) {
+    // Resolved on a decline that went through, or that was resolved, in the
+    // meantime (hard rule 3): the latest state first, then the sentence,
+    // because a reload clears the message line (as Late cancel does).
+    b.disabled = true;
+    try {
+      const { error } = await sb.rpc("admin_resolve_decline", { p_payment: b.dataset.resolvedecline });
+      const raced = !!error && (error.message || "").toLowerCase().includes("decline_not_open");
+      if (error && !raced) throw error;
+      await loadClinics();
+      await loadMoney();
+      if (raced) note($("msg"), "That just changed. Here's the latest.");
+    } catch (err) { note($("msg"), friendly(err)); }
+    finally { b.disabled = false; }
+    return;
+  }
   if (b.dataset.publish)  return run(() => call("publish_clinic",     { p_clinic: b.dataset.publish }));
   if (b.dataset.archivetpl) return run(() => call("admin_set_template_archived", { p_id: b.dataset.archivetpl, p_archived: true }));
   if (b.dataset.restoretpl) return run(() => call("admin_set_template_archived", { p_id: b.dataset.restoretpl, p_archived: false }));

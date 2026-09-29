@@ -65,10 +65,22 @@ struct CardOnFileView: View {
             .accessibilityIdentifier("card.permission")
 
             HStack {
-                Text(session.account?.cardLabel ?? "No card on file")
-                    .brandFont(.body)
-                    .foregroundStyle(session.account?.hasCard == true ? Brand.textPrimary : Brand.textSecondary)
-                    .accessibilityIdentifier("profile.cardLabel")
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(session.account?.cardLabel ?? "No card on file")
+                        .brandFont(.body)
+                        .foregroundStyle(session.account?.hasCard == true ? Brand.textPrimary : Brand.textSecondary)
+                        .accessibilityIdentifier("profile.cardLabel")
+                    // Decision 0024, Tara's question 78: why the card is not
+                    // working, in her words, under the card it is about. Set
+                    // by the database from Stripe's answer; gone once a card
+                    // is saved again or a later charge goes through.
+                    if let account = session.account, account.hasCard, account.isCardDeclined {
+                        Text(CardDecline.line(account.cardDeclineCode))
+                            .brandFont(.caption)
+                            .foregroundStyle(Brand.Status.canceled.ink)
+                            .accessibilityIdentifier("profile.cardDecline")
+                    }
+                }
                 Spacer()
                 Button {
                     Task { await startAddingCard() }
@@ -173,10 +185,13 @@ struct CardOnFileView: View {
     /// Re-reads the account row alone and swaps it in only on success.
     /// loadProfile() blanks the whole session on any failed read, and one
     /// bar of signal at the courts is exactly when this runs.
+    /// A declined card is already "a card", so after Change card the wait is
+    /// for the decline to clear: the webhook clears it when it records the
+    /// new card (20260928700001).
     private func refreshAccount() async throws -> Bool {
         guard let fresh = try await ProfileRepository.myAccount() else { return false }
         session.account = fresh
-        return fresh.hasCard
+        return fresh.hasCard && !fresh.isCardDeclined
     }
 }
 
