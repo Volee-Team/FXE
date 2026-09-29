@@ -39,6 +39,7 @@ The history of what we believed is part of the record.
 | [0028](0028-instant-open.md) | Instant open: the last good answer kept on the phone per person, shown at launch and refreshed behind it; with no signal it stays with the connection line; removed at sign-out, a server-ended session and deletion; nothing hidden is ever in it | 2026-09-28 | Active |
 | [0029](0029-calendar-feed.md) | A player's clinics as a subscribed calendar: Subscribe in Calendar on Profile, You're In! and Response Needed only, nothing about where or which court, the token as the credential, removed at deletion | 2026-09-28 | Active |
 | [0030](0030-saved-messages.md) | Tara's saved messages: her own text kept and offered back in the Message dialog and Message Players, never written by the app; kept once by a unique index over live rows; Remove archives; admin only, pros refused too | 2026-09-28 | Active |
+| [0031](0031-app-link-visits.md) | Opens of the app link counted per day as QR or link, nothing about the person; Tara sees the totals by the QR link; downloads by date are Apple's (App Store Connect) | 2026-09-29 | Active |
 | [0011](0011-no-email-verification-v1.md) | No email verification in v1; hosted "Confirm email" is OFF by hand, and every new project needs the same flip | 2026-08-16 | Active |
 
 Tara's own numbered decisions (1–23, calls of 2026-08-02 and 2026-08-12) are

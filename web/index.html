@@ -190,7 +190,7 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
     <!-- The QR code for members (question 75, decision 0024): a card to print
          or drop into her email. It points at /app, which forwards to wherever
          the app installs from, so it never needs reprinting. -->
-    <p class="muted" style="margin-top:14px"><a href="qr.html" target="_blank" rel="noopener" id="open-qr">QR code for the app</a></p>
+    <p class="muted" style="margin-top:14px"><a href="qr.html" target="_blank" rel="noopener" id="open-qr">QR code for the app</a> <span class="muted" id="qr-visits"></span></p>
 
     </div>
 
@@ -573,6 +573,7 @@ async function showApp() {
   loadReviewResponses();
   if (!$("tab-money").classList.contains("hide")) loadPayouts();
   loadBoardRate();
+  loadAppLinkVisits();
 }
 
 async function loadTemplates() {
@@ -933,6 +934,15 @@ $("br-rate-save").addEventListener("click", async () => {
   note($("br-msg"), "Saved.", true);
   if (boardRun) runBoardReport();
 });
+// How many opened the app link, and how many by scanning the code (Kat,
+// 2026-09-29; decision 0031). Counts only, per New York day.
+async function loadAppLinkVisits() {
+  const { data, error } = await sb.rpc("admin_app_link_visits");
+  if (error || !data) return;
+  const total = data.reduce((n, r) => n + r.visits, 0);
+  const qr = data.filter(r => r.via === "qr").reduce((n, r) => n + r.visits, 0);
+  $("qr-visits").textContent = total ? `· opened ${total} ${total === 1 ? "time" : "times"}, ${qr} by scanning` : "· not opened yet";
+}
 async function runBoardReport() {
   const from = $("br-from").value, to = $("br-to").value;
   note($("br-msg"), "");

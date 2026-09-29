@@ -25,7 +25,7 @@ URL="${SUPABASE_URL:-https://amnaxvznkadkgzdxzegw.supabase.co}"
 KEY="${SUPABASE_ANON_KEY:-$(grep -o 'sb_publishable_[A-Za-z0-9_-]*' "$(dirname "$0")/../web/config.js" | head -1)}"
 [ -n "$KEY" ] || { echo "no publishable key found"; exit 2; }
 
-RELATIONS="clinics registrations players accounts player_notes clinic_templates payments devices notifications app_settings waivers waiver_acceptances card_consents review_links review_responses reset_links_issued calendar_feeds late_requests clinic_messages clinic_message_recipients news_posts news_reads clinics_public my_registrations my_clinic_messages my_news my_past_clinics clinics_admin templates_admin registrations_admin payments_ledger revenue_by_clinic"
+RELATIONS="clinics registrations players accounts player_notes clinic_templates payments devices notifications app_settings waivers waiver_acceptances card_consents review_links review_responses reset_links_issued calendar_feeds app_link_visits admin_settings late_requests clinic_messages clinic_message_recipients news_posts news_reads clinics_public my_registrations my_clinic_messages my_news my_past_clinics clinics_admin templates_admin registrations_admin payments_ledger revenue_by_clinic"
 EDGE="delete-account stripe-charge stripe-setup-intent push admin-reset-link stripe-payouts"
 # Edge functions that take no JWT on purpose, each with its own credential and
 # a refusal that is not 401: review-submit (the link token; 400/404 without
@@ -33,7 +33,7 @@ EDGE="delete-account stripe-charge stripe-setup-intent push admin-reset-link str
 # closedness is checked by their own harnesses. check-doc-inventory.sh
 # requires every function directory to be in EDGE or here. calendar-feed
 # (decision 0029) has no JWT either: its check is its own block below.
-EDGE_EXEMPT="review-submit stripe-webhook calendar-feed"
+EDGE_EXEMPT="review-submit stripe-webhook calendar-feed app-visit"
 # Called from the web admin in a browser, so they need CORS (_shared/cors.ts).
 BROWSER_EDGE="review-submit stripe-charge admin-reset-link stripe-payouts"
 
@@ -84,6 +84,20 @@ else
   printf 'OPEN   %-12s %-28s %s (a made-up token must be 404)\n' edge calendar-feed "$code"; bad=$((bad+1))
 fi
 rm -f "$feed_body"
+# app-visit (decision 0031): public on purpose, it counts an open of the app
+# link and returns nothing. A GET must be refused by the function itself
+# (405, empty body); the gateway's 404 for an undeployed function has a body.
+n=$((n+1))
+visit_body=$(mktemp)
+code=$(curl -s -o "$visit_body" -w '%{http_code}' "$URL/functions/v1/app-visit")
+if [ "$code" = "405" ] && [ ! -s "$visit_body" ]; then
+  printf 'closed %-12s %-28s %s\n' edge app-visit "405 (counts only by POST, returns nothing)"
+elif [ "$code" = "404" ]; then
+  printf 'MISSING %-11s %-28s %s (not deployed)\n' edge app-visit "$code"; bad=$((bad+1))
+else
+  printf 'ODD    %-12s %-28s %s (a GET must be 405 with no body)\n' edge app-visit "$code"; bad=$((bad+1))
+fi
+rm -f "$visit_body"
 # pg_net's schema (20260923000001). Its queue holds each push request's
 # X-Push-Secret header until sent and grants PUBLIC everything; a migration
 # cannot revoke that (supabase_admin owns it), so what keeps it closed is the

@@ -1,5 +1,6 @@
 accept_waiver	{"p_app_version":"x","p_legal_name":"x","p_version":"x"}
 admin_account_ids	{}
+admin_app_link_visits	{}
 admin_archive_message_template	{"p_id":"00000000-0000-0000-0000-000000000000"}
 admin_board_report	{"p_from":"2026-01-01","p_to":"2026-01-01"}
 admin_board_report_clinics	{"p_from":"2026-01-01","p_to":"2026-01-01"}
@@ -79,6 +80,7 @@ public_opens_at	{"p_starts_at":"2026-01-01T00:00:00Z"}
 publish_clinic	{"p_clinic":"00000000-0000-0000-0000-000000000000"}
 publish_news	{"p_news":"00000000-0000-0000-0000-000000000000"}
 purge_expired_card_consents	{}
+record_app_link_visit	{"p_via":"x"}
 record_card_consent	{"p_app_version":"x"}
 register_device	{"p_platform":"x","p_token":"x"}
 register_for_clinic	{"p_clinic":"00000000-0000-0000-0000-000000000000","p_player":"00000000-0000-0000-0000-000000000000"}

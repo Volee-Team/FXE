@@ -43,6 +43,16 @@
   // touching this page, and so the browser test can prove the forwarding
   // works before the real link exists (web/tests/pages.spec.mjs).
   import { INSTALL_URL } from "./target.js";
+  import { CONFIG } from "../config.js";
+  // Count this open (Kat, 2026-09-29: "track # of scans"): only whether it
+  // came from the QR code (?via=qr) or a plain link, never who. A beacon, so
+  // it goes even as the page forwards; text/plain, so the browser sends it
+  // cross-origin without a preflight. The function reads the JSON anyway.
+  try {
+    const via = new URLSearchParams(location.search).get("via") === "qr" ? "qr" : "link";
+    navigator.sendBeacon(`${CONFIG.url}/functions/v1/app-visit`,
+      new Blob([JSON.stringify({ via })], { type: "text/plain" }));
+  } catch { /* counting must never stop the forward */ }
   if (INSTALL_URL) {
     document.getElementById("soon").hidden = true;
     const go = document.getElementById("go");

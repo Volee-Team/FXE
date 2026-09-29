@@ -71,6 +71,13 @@ so the gate cannot see them: they are listed here by hand.
 | ☐ | *Evening Coed* (Response Needed) | An event's title for an invitation still waiting on her answer; a You're In! clinic is its name alone | Tara's locked term, composed with the clinic's own name |
 | — | -//FXE Tennis//Clinic Calendar//EN | The feed's `PRODID`, which calendar apps do not show | A label, not copy |
 
+## The app link's open count (2026-09-29, decision 0031) — awaiting Alex
+
+| ✓ | Words | Where | Why |
+|---|---|---|---|
+| ☐ | · opened 12 times, 9 by scanning | Tara's Players tab, beside "QR code for the app" | The two numbers Kat asked for, in one line |
+| ☐ | · not opened yet | The same place before anyone has opened it | Says the fact |
+
 ## Foxcroft's share on the board report (2026-09-29) — awaiting Alex
 
 | ✓ | Words | Where | Why |

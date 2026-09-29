@@ -443,3 +443,7 @@ verify_jwt = false
 # against calendar_feeds through calendar_feed_events.
 [functions.calendar-feed]
 verify_jwt = false
+
+# A scan of the app link comes from a phone with no account (decision 0031).
+[functions.app-visit]
+verify_jwt = false
