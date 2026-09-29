@@ -356,7 +356,7 @@ public extension Brand {
                 case .greeting: return 34
                 case .greetingAccent: return 23
                 case .wordmarkInitial: return 56
-                case .wordmarkLockup: return 22
+                case .wordmarkLockup: return 15
                 case .navRowLabel: return 19
                 case .tabBarLabel: return 12
                 case .body: return 15
@@ -366,7 +366,7 @@ public extension Brand {
                 case .subheadline: return 13
                 case .caption: return 12
                 case .chip: return 12
-                case .wordmarkCompact: return 12
+                case .wordmarkCompact: return 9
                 }
             }
 
@@ -627,18 +627,29 @@ extension Brand {
     /// family") in a colour it does not use for headlines (navy-900). A page
     /// title names the page, so it takes the serif (2026-09-28). Called once
     /// at launch; the appearance proxy covers every bar after that.
+    ///
+    /// Since 2026-09-29 the titles are white: every bar is the navy banner
+    /// (`navyBanner()`), so a navy title would vanish into it.
     @MainActor static func styleNavigationTitles() {
         Fonts.register()
-        let navy = UIColor(Brand.navy)
+        let white = UIColor(Brand.textOnNavy)
         let bar = UINavigationBar.appearance()
         bar.largeTitleTextAttributes = [
             .font: Fonts.uiFont(.playfair, size: 34, weight: 700, textStyle: .largeTitle),
-            .foregroundColor: navy,
+            .foregroundColor: white,
         ]
         bar.titleTextAttributes = [
             .font: Fonts.uiFont(.playfair, size: 18, weight: 700, textStyle: .headline),
-            .foregroundColor: navy,
+            .foregroundColor: white,
         ]
+        // The back chevron and bar buttons. Earlier iOS draws them bare on
+        // the navy, so white. iOS 26 sets each in a glass bubble that turns
+        // light or dark by itself, and picks its own glyph colour to match;
+        // a fixed tint fought it (navy "Done" on a dark bubble, 2026-09-29),
+        // so there it is left to the system.
+        if #unavailable(iOS 26.0) {
+            bar.tintColor = white
+        }
     }
 }
 

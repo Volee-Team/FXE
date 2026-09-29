@@ -100,7 +100,7 @@ struct ProTodayView: View {
                 .refreshable { await model.load() }
             }
             .crispTopEdge()
-            .navigationTitle("Today")
+            .bannerTitle("Today")
         }
         // Late cancel: a player told the pro inside the cutoff. Tara's alert,
         // with her optional note, and without "The fee applies.": a pro is

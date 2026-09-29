@@ -316,14 +316,14 @@ final class PlayerFlowUITests: XCTestCase {
         XCTAssertGreaterThanOrEqual(rows.count, 2)
 
         let markAll = app.buttons["notifications.markAllRead"]
-        XCTAssertTrue(markAll.waitForExistence(timeout: 10))
-        if markAll.isEnabled {
-            markAll.tap()
-            // Disabled once nothing is unread: the database said so, not the view.
-            let cleared = NSPredicate(format: "isEnabled == false")
-            expectation(for: cleared, evaluatedWith: markAll)
-            waitForExpectations(timeout: 10)
-        }
+        XCTAssertTrue(markAll.waitForExistence(timeout: 10), "The seed has unread rows for Maria")
+        markAll.tap()
+        // Gone once nothing is unread (2026-09-29; it was disabled until then,
+        // and a greyed button failed the contrast audit): the database said
+        // so, not the view.
+        let cleared = NSPredicate(format: "exists == false")
+        expectation(for: cleared, evaluatedWith: markAll)
+        waitForExpectations(timeout: 10)
 
         app.buttons["notifications.done"].tap()
         XCTAssertTrue(bell.waitForExistence(timeout: 10))

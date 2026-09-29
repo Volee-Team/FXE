@@ -70,7 +70,7 @@ struct PlayersDirectoryView: View {
             }
         }
         .crispTopEdge()
-        .navigationTitle("Players")
+        .navyTitle("Players")
         .navigationBarTitleDisplayMode(.inline)
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search by name")
         .onChange(of: query) { _, _ in search() }
@@ -264,7 +264,7 @@ private struct PlayerAdminDetailView: View {
             .scrollDismissesKeyboard(.interactively)
         }
         .crispTopEdge()
-        .navigationTitle("Player")
+        .navyTitle("Player")
         .navigationBarTitleDisplayMode(.inline)
         .task {
             history = (try? await AdminRepository.playerHistory(player: player.id)) ?? history

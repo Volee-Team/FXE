@@ -39,20 +39,22 @@ struct BrandHeader<Content: View>: View {
 
 /// The wordmark, reversed to surface-white: the gator (whose artwork already
 /// carries the flanking F and E, so no letters are set beside it) over the
-/// "TENNIS" lockup, wordmark-lockup with 6pt tracking.
+/// "TENNIS" lockup. Tara, 2026-09-29: *"Can 'tennis' be smaller, logo bit
+/// larger. So other way around"*, so the mark leads and the word sits small
+/// under it (was 34/104 points of mark over 12/22 point type).
 struct Wordmark: View {
     var compact = false
 
     var body: some View {
-        VStack(spacing: compact ? 0 : Brand.Spacing.xs) {
+        VStack(spacing: compact ? 0 : Brand.Spacing.xxs) {
             Image("gator-x")
                 .resizable().scaledToFit()
-                .frame(width: compact ? 34 : 104, height: compact ? 34 : 104)
+                .frame(width: compact ? 50 : 150, height: compact ? 50 : 150)
             // Logo styles, which keep their size under Larger Text: the
             // header this sits in has a fixed height (Brand.swift, Typography).
             Text("TENNIS")
                 .font(compact ? Brand.Typography.wordmarkCompact : Brand.Typography.wordmarkLockup)
-                .tracking(compact ? 2.5 : 6)
+                .tracking(compact ? 2 : 4)
         }
         .foregroundStyle(Brand.textOnNavy)
         // One element read as the logo it is. `.combine` still let the audit
@@ -122,6 +124,146 @@ extension View {
 }
 
 extension View {
+    /// The navy banner Kat kept asking for (2026-09-29: "dont forget the blue
+    /// banner!"): the bar on navy with the gator-green line under it, the same
+    /// ground and line as Home's header. The status bar is white app-wide
+    /// (project.yml), not per screen: `toolbarColorScheme(.dark)` here turned
+    /// iOS 26's back-button bubble pale blue under a white chevron (1.78:1).
+    /// For a pushed screen or a sheet, whose title stays small and centred.
+    ///
+    /// SwiftUI's own toolbar modifiers, because iOS 26 drew a UIKit
+    /// appearance's navy but not the large title on it (tried first, seen on
+    /// the simulator). `scripts/check-title-edge.sh` fails the build on a
+    /// titled screen without this or `bannerTitle`.
+    func navyBanner() -> some View {
+        self
+            .safeAreaInset(edge: .top, spacing: 0) {
+                Brand.court.frame(height: 4).accessibilityHidden(true)
+            }
+            .toolbarBackground(Brand.navy, for: .navigationBar)
+            .toolbarBackground(.visible, for: .navigationBar)
+    }
+
+    /// A top-level page's title (Profile, Clinics, Today): the page name at
+    /// the leading edge of the navy banner in the guide's serif, as in Kat's
+    /// mockup. iOS 26 does not draw a large title under a solid bar, and its
+    /// "inline large" title ignores the serif, so the name is a toolbar item
+    /// and the system title is kept only for VoiceOver and the back button.
+    /// On iOS 17, where the system title cannot be removed, the small centred
+    /// title shows instead.
+    func bannerTitle(_ title: String) -> some View {
+        self
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .hidesBarTitle()
+            .toolbar { BannerTitle(title: title) }
+            .navyBanner()
+    }
+
+    /// A pushed screen's or a sheet's title: small and centred on the navy
+    /// banner, white in the serif. Drawn as the bar's principal item because
+    /// under SwiftUI's navy bar the system title ignored the appearance proxy
+    /// and drew black (My Clinics, 2026-09-29).
+    func navyTitle(_ title: String) -> some View {
+        self
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar { InlineBannerTitle(title: title) }
+            .navyBanner()
+    }
+}
+
+extension ToolbarContent {
+    /// A bar button on the navy banner: white text (`.tint(Brand.textOnNavy)`
+    /// on the button inside) and, on iOS 26, no glass bubble. The bubble turns
+    /// light or dark by itself, so no one text colour read on both: navy
+    /// "Done" vanished on a dark one, white on a light one (2026-09-29).
+    /// Bare white on navy is what iOS 17 and 18 draw anyway.
+    /// `scripts/check-title-edge.sh` fails on a ToolbarItem without it.
+    @ToolbarContentBuilder func onNavy() -> some ToolbarContent {
+        #if compiler(>=6.2)
+        if #available(iOS 26.0, *) {
+            self.sharedBackgroundVisibility(.hidden)
+        } else {
+            self
+        }
+        #else
+        self
+        #endif
+    }
+}
+
+/// A banner title in the serif that grows with Larger Text as the setting
+/// changes: the size is read from the environment, as `.brandFont` does,
+/// because a `Font(UIFont)` stays at the size it was made (the audit failed
+/// the first version of these titles on every screen, 2026-09-29).
+private struct BannerTitleText: View {
+    let title: String
+    let size: CGFloat
+    let textStyle: UIFont.TextStyle
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    var body: some View {
+        Text(title)
+            .font(Font(Brand.Fonts.uiFont(.playfair, size: size, weight: 700, textStyle: textStyle,
+                                          traits: UITraitCollection(preferredContentSizeCategory: UIContentSizeCategory(typeSize)))))
+            .foregroundStyle(Brand.textOnNavy)
+            .minimumScaleFactor(0.6)
+            .accessibilityAddTraits(.isHeader)
+    }
+}
+
+private struct InlineBannerTitle: ToolbarContent {
+    let title: String
+
+    var body: some ToolbarContent {
+        #if compiler(>=6.2)
+        if #available(iOS 26.0, *) {
+            item.sharedBackgroundVisibility(.hidden)
+        } else {
+            item
+        }
+        #else
+        item
+        #endif
+    }
+
+    private var item: some ToolbarContent {
+        ToolbarItem(placement: .principal) {
+            BannerTitleText(title: title, size: 18, textStyle: .headline)
+                .lineLimit(1)
+        }
+    }
+}
+
+private struct BannerTitle: ToolbarContent {
+    let title: String
+
+    var body: some ToolbarContent {
+        if #available(iOS 18.0, *) {
+            #if compiler(>=6.2)
+            if #available(iOS 26.0, *) {
+                // No glass capsule behind a title (iOS 26 gives every bar
+                // item one).
+                item.sharedBackgroundVisibility(.hidden)
+            } else {
+                item
+            }
+            #else
+            item
+            #endif
+        }
+    }
+
+    private var item: some ToolbarContent {
+        ToolbarItem(placement: .topBarLeading) {
+            BannerTitleText(title: title, size: 30, textStyle: .largeTitle)
+                .fixedSize()
+        }
+    }
+}
+
+extension View {
     /// iOS 26 fades content softly under a navigation bar. Under a large
     /// serif name that fade reads as a ghost behind the inline title (Profile,
     /// scrolled, seen 2026-09-28). A hard edge gives the bar a solid ground
@@ -130,19 +272,15 @@ extension View {
         modifier(CrispTopEdge())
     }
 
-    /// Porcelain behind the status bar, fading into the page, for a screen
-    /// that scrolls but has no navigation bar to cover the clock: without it
-    /// the sign-up form's fields slid up under "9:41" (seen on the simulator,
-    /// 2026-09-28). Decoration only: no taps, nothing for VoiceOver.
+    /// Navy behind the status bar, for a screen that scrolls but has no
+    /// navigation bar to cover the clock: without it the sign-up form's fields
+    /// slid up under "9:41" (seen on the simulator, 2026-09-28). Navy, not the
+    /// porcelain it was, since the clock is white app-wide (2026-09-29).
+    /// Decoration only: no taps, nothing for VoiceOver.
     func statusBarScrim() -> some View {
         overlay(alignment: .top) {
             GeometryReader { geo in
-                VStack(spacing: 0) {
-                    Brand.surface.frame(height: geo.safeAreaInsets.top)
-                    LinearGradient(colors: [Brand.surface, Brand.surface.opacity(0)],
-                                   startPoint: .top, endPoint: .bottom)
-                        .frame(height: Brand.Spacing.md)
-                }
+                Brand.navy.frame(height: geo.safeAreaInsets.top)
                 .ignoresSafeArea(edges: .top)
             }
             .allowsHitTesting(false)

@@ -159,7 +159,7 @@ struct AdminClinicsView: View {
                 .refreshable { await model.load() }
             }
             .crispTopEdge()
-            .navigationTitle("Clinics")
+            .bannerTitle("Clinics")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink {
@@ -172,18 +172,24 @@ struct AdminClinicsView: View {
                             .brandFont(.button)
                     }
                     .accessibilityIdentifier("admin.players")
+                    .tint(Brand.textOnNavy)
                 }
+                .onNavy()
                 // Final Updates p.2, Admin Panel item 1: "Add Stripe Admin link
                 // in the U/I." The web admin's Money tab has had it since
                 // 09-22; Tara's courtside surface gets it too. Opens Stripe's
                 // own dashboard in Safari, where refunds, disputes and payouts live.
-                ToolbarItem(placement: .topBarLeading) {
+                // Trailing since 2026-09-29: the leading edge holds the page
+                // name on the navy banner.
+                ToolbarItem(placement: .topBarTrailing) {
                     Link(destination: URL(string: "https://dashboard.stripe.com")!) {
                         Text("Stripe")
                             .brandFont(.button)
                     }
                     .accessibilityIdentifier("admin.stripe")
+                    .tint(Brand.textOnNavy)
                 }
+                .onNavy()
             }
         }
         .task { await model.load() }

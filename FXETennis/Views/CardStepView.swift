@@ -46,14 +46,16 @@ struct CardStepView: View {
                 }
             }
             .crispTopEdge()
-            .navigationTitle("Add a card")
+            .navyTitle("Add a card")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 if canClose {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("Close") { session.cardChangeRequested = false }
                             .accessibilityIdentifier("cardStep.close")
+                        .tint(Brand.textOnNavy)
                     }
+                    .onNavy()
                 }
             }
         }

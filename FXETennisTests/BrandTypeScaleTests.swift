@@ -33,10 +33,13 @@ final class BrandTypeScaleTests: XCTestCase {
     }
 
     func testKatsSizesAtTheDefaultSetting() {
+        // Kat's guide, except the two wordmark lockups: Tara, 2026-09-29,
+        // "Can 'tennis' be smaller, logo bit larger" (decision 0033; were 22
+        // and 12).
         let kat: [Role: CGFloat] = [
-            .greeting: 34, .greetingAccent: 23, .wordmarkInitial: 56, .wordmarkLockup: 22,
+            .greeting: 34, .greetingAccent: 23, .wordmarkInitial: 56, .wordmarkLockup: 15,
             .navRowLabel: 19, .tabBarLabel: 12, .body: 15, .title: 22, .headline: 17,
-            .bodyEmphasis: 15, .subheadline: 13, .caption: 12, .chip: 12, .wordmarkCompact: 12,
+            .bodyEmphasis: 15, .subheadline: 13, .caption: 12, .chip: 12, .wordmarkCompact: 9,
         ]
         XCTAssertEqual(Set(kat.keys), Set(Role.allCases), "Every style in the scale has a stated size")
         for role in Role.allCases {

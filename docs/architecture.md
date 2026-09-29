@@ -854,7 +854,7 @@ added 2026-09-13: every probe, test and migration count in the current-state
 docs equals the derived number, every decision is indexed, every Tara question
 carries a status, and the human docs audit is not older than 45 days; since
 2026-09-28 also `scripts/check-title-edge.sh`: every `.navigationTitle` has
-`.crispTopEdge()`, or iOS 26 shows scrolled text through the title); `scripts/check-migration-versions.sh`: no two migrations share a version, since Supabase records one by its version string; `scripts/fix-doc-counts.py` rewrites the counts that check flags, run by hand after a merge). The
+`.crispTopEdge()`, or iOS 26 shows scrolled text through the title, and since 2026-09-29 the navy banner, and every `ToolbarItem` `.onNavy()`, decision 0033); `scripts/check-migration-versions.sh`: no two migrations share a version, since Supabase records one by its version string; `scripts/fix-doc-counts.py` rewrites the counts that check flags, run by hand after a merge). The
 `sql-probes` job also runs `scripts/check-doc-inventory.sh`: every table,
 view, enum, client RPC, edge function, probe, CI job and Swift file that
 exists must be named in this file. Monthly and opt-in (`docs-audit.yml`): a

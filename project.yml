@@ -59,6 +59,14 @@ targets:
         # set. Here rather than .preferredColorScheme(.light), which pinned the
         # status bar to dark text over the navy headers (2026-09-28).
         INFOPLIST_KEY_UIUserInterfaceStyle: Light
+        # White status bar everywhere (2026-09-29). Every screen's top is navy
+        # now (the banner on every titled page, Home's header, sign-in), and
+        # the per-screen route, toolbarColorScheme(.dark), also turned iOS 26's
+        # back-button bubble pale blue under a white chevron at 1.78:1.
+        INFOPLIST_KEY_UIStatusBarStyle: UIStatusBarStyleLightContent
+        # UIViewControllerBasedStatusBarAppearance has no INFOPLIST_KEY_ form,
+        # so it lives in a small plist merged with the generated one.
+        INFOPLIST_FILE: FXETennis/Resources/Info.plist
         # Apple rejected TestFlight build 1 (ITMS-90683, 2026-09-21): a dependency
         # references the camera API, so the purpose string is required. The
         # dependency is Stripe's card sheet, which offers "Scan card" through
