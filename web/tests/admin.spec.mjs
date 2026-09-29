@@ -9,6 +9,8 @@ import { execSync } from "node:child_process";
 
 const TARA = { email: "tara@fxe.test", password: "password" };
 const MARIA = { email: "maria@fxe.test", password: "password" };
+// The seeded pro (decision 0025): made a pro by admin_set_pro in the seed.
+const PRO = { email: "pro@fxe.test", password: "password" };
 
 async function signIn(page, who) {
   await page.goto("/index.html");
@@ -110,6 +112,51 @@ test.describe("the directory", () => {
     // Saving re-lists the players and closes the box, so the stamp is read on
     // reopen: it exists once a note exists, and it is a date, not a slogan.
     await expect(page.locator("[id^=note-]:not(.hide) [data-noteedited]")).toContainText(/Edited .*\d/);
+  });
+});
+
+// Decision 0025. Tara makes an account a pro on the Players tab; a pro gets
+// the phone's Today tab and nothing here. Lena, because no other browser test
+// touches her; she ends as the member the seed made her, so a second run
+// starts where the first did.
+test.describe("pros", () => {
+  const lenaBox = (page) => page.locator("[data-player-row]", { hasText: "Lena Brooks" })
+    .getByRole("checkbox", { name: "Pro" });
+  const findLena = async (page) => {
+    await page.getByRole("tab", { name: "Players" }).click();
+    await page.getByLabel("Search players by name").fill("Lena");
+    await expect(page.locator("[data-player-row]", { hasText: "Lena Brooks" })).toBeVisible();
+  };
+
+  test("Tara makes a player a pro and a member again; the box shows what the database holds", async ({ page }) => {
+    await signIn(page, TARA);
+    await findLena(page);
+    await expect(lenaBox(page)).not.toBeChecked();
+    await lenaBox(page).click();
+    // The list is read again after the change; the box comes back checked.
+    await expect(lenaBox(page)).toBeChecked({ timeout: 15_000 });
+    // Reload and read it back: the database has it, not the page.
+    await page.reload();
+    await findLena(page);
+    await expect(lenaBox(page)).toBeChecked({ timeout: 15_000 });
+
+    await lenaBox(page).click();
+    await expect(lenaBox(page)).not.toBeChecked({ timeout: 15_000 });
+    await page.reload();
+    await findLena(page);
+    await expect(lenaBox(page)).not.toBeChecked({ timeout: 15_000 });
+    await expect(page.locator("#players-msg")).not.toContainText(/./);
+  });
+
+  test("a pro is told this is not their door", async ({ page }) => {
+    // The same gate as a member's: the page asks the database for the role
+    // and anything but admin is signed out again.
+    // Scoped to the sign-in message: a door that let a pro in would also
+    // print "not an administrator" from every admin call that refused them,
+    // and an unscoped match would fail on that for the wrong reason.
+    await signIn(page, PRO);
+    await expect(page.locator("#signin-msg")).toContainText("not an administrator");
+    await expect(page.getByRole("tab", { name: "Players" })).toBeHidden();
   });
 });
 
