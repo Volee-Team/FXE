@@ -356,7 +356,7 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
 <script type="module">
 import { createClient } from "./vendor/supabase-js.js";
 import { CONFIG, ENV } from "./config.js";
-import { serviceWeekStart, splitThisWeek } from "./week.js";
+import { serviceWeekStart, splitThisWeek, weekLabel } from "./week.js";
 import { readAll, readByIds } from "./read.js";
 
 // implicit flow: a reset started on one device (the phone) must finish on
@@ -409,6 +409,18 @@ const courtSelect = (r) => `<select class="court" data-court="${r.id}" aria-labe
   <option value=""${r.court_number == null ? " selected" : ""}>No court</option>
   ${COURTS.map(n => `<option value="${n}"${r.court_number === n ? " selected" : ""}>Court ${n}</option>`).join("")}
 </select>`;
+// Consecutive clinics (the list is in time order) folded under their service
+// week, so a published season reads in weeks the way the phone shows it.
+const byWeek = (clinics) => {
+  const groups = [];
+  for (const c of clinics) {
+    const start = serviceWeekStart(new Date(c.starts_at));
+    const last = groups[groups.length - 1];
+    if (last && last.start.getTime() === start.getTime()) last.items.push(c);
+    else groups.push({ start, items: [c] });
+  }
+  return groups;
+};
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, m =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
 // NTRP is always written with one decimal ("3.0"), as the phone shows it;
@@ -1122,7 +1134,7 @@ async function loadClinics() {
 
   $("clinics").innerHTML = (hiddenCount && !showCanceled
     ? `<p class="muted">${hiddenCount} canceled ${hiddenCount === 1 ? "clinic" : "clinics"} hidden.</p>` : "")
-    + (visible.length ? visible.map(renderCard).join("")
+    + (visible.length ? byWeek(visible).map(g => (g.start.getTime() === weekStart.getTime() ? "" : `<h2 class="week-head">${weekLabel(g.start, weekStart)}</h2>`) + g.items.map(renderCard).join("")).join("")
       : `<div class="card muted">No clinics this week or later. Use “New clinic” to add one.</div>`)
     + (showEarlier ? `<h2>Earlier</h2>` + (visibleEarlier.length ? visibleEarlier.map(renderCard).join("")
       : `<p class="muted">No earlier clinics.</p>`) : "");

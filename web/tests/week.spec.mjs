@@ -54,6 +54,24 @@ test.describe("the rule", () => {
     }
   });
 
+  test("week headings read This week, Next week, then Week of the Sunday, across the time change", async ({ browser, baseURL }) => {
+    // This week began Sunday 2026-10-25 00:00 EDT (04:00Z). Worked by hand:
+    // Nov 1 is the fall-back Sunday (midnight still EDT), Nov 8 is in EST.
+    const cases = [
+      ["2026-10-25T04:00:00Z", "This week"],
+      ["2026-11-01T04:00:00Z", "Next week"],   // 168 hours later
+      ["2026-11-08T05:00:00Z", "Week of Nov 8"], // 337 hours later: two weeks, not 2.006
+      ["2026-12-27T05:00:00Z", "Week of Dec 27"],
+    ];
+    for (const zone of ["America/New_York", "UTC", "Asia/Tokyo"]) {
+      const got = await inBrowser(browser, baseURL, zone, async (starts) => {
+        const { weekLabel } = await import("/week.js");
+        return starts.map(s => weekLabel(new Date(s), new Date("2026-10-25T04:00:00Z")));
+      }, cases.map(c => c[0]));
+      expect(got).toEqual(cases.map(c => c[1]));
+    }
+  });
+
   test("the tab lists what ends after the week began, plus uncharged clinics while payments are on", async ({ browser, baseURL }) => {
     // The week that began Sunday 2026-09-27 00:00 EDT.
     const clinics = [

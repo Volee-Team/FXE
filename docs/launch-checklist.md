@@ -121,7 +121,7 @@ observer.
 | SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 921 checks, 38 probes, plus seven race probes | none known |
 | Stripe pipeline against stripe-mock | every PR | 94 checks | real Stripe behaviour waits on A2 |
 | Push pipeline against a mock APNs | every PR | 57 checks | real APNs waits on C3 |
-| Web admin browser tests (Playwright, real sign-in) | every PR | 38 | a cold-start flake after a local reset (backlog) |
+| Web admin browser tests (Playwright, real sign-in) | every PR | 39 | a cold-start flake after a local reset (backlog) |
 | Swift unit tests (pure logic) | every PR | 197 | fine |
 | Hosted signed-out smoke (`scripts/hosted-smoke.sh`) | every PR, read-only against production | 126 targets, including a browser preflight to each function the web admin calls | only the signed-out side |
 | XCUITests, player and admin flows, and Apple's accessibility audit | **local only** (section F) | 18 | run on a laptop before every TestFlight build |

@@ -49,6 +49,7 @@ in FXE Tennis?", the FXE Tennis section of the Shortcuts app, and Spotlight.
 | ☐ | *Saturday Members Only, Sunday, Oct 4 at 4:49 PM. You're In!* | The answer: the clinic's name, its day and time in club time, and You're In!, Player Pool or Response Needed | Composed, not a literal: nothing about where, ever (decision 10) |
 | ☐ | No upcoming clinics. | The answer when you hold no spot | Says the fact |
 | ☐ | Open FXE Tennis and sign in first. | The answer when nobody is signed in on the phone | The one next step there is |
+| ☐ | Next week / Week of Nov 8 | Headings between the weeks on the laptop's This week tab | The phone's own words for the same weeks (`ServiceWeek.label`); too short or built from a date, so the extractor cannot see them |
 | ☐ | No players yet. | Tara's Players tab on the laptop, only before anyone has signed up | Says the fact (the directory now lists everyone at load) |
 | ☐ | Loading | VoiceOver, on the grey placeholder shapes shown while a list first loads (Home, Clinics, My Clinics) | One word for what the shapes mean |
 

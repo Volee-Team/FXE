@@ -70,3 +70,17 @@ export function splitThisWeek(clinics, { weekStart, paymentsOn = false, owed = n
   earlier.sort((a, b) => byTime(b, a));
   return { current, earlier };
 }
+
+// The heading over a week's clinics on the tab, in the phone's words
+// (FXETennis/Models/ServiceWeek.swift): "This week", "Next week", else
+// "Week of Nov 8" (the Sunday, New York). Both arguments are Sunday 00:00
+// New York instants from serviceWeekStart; a week across a daylight-saving
+// change is 167 or 169 hours, so weeks are counted by rounding, not dividing.
+export function weekLabel(weekStart, thisWeekStart) {
+  const weeks = Math.round((weekStart.getTime() - thisWeekStart.getTime()) / (7 * 86_400_000));
+  if (weeks === 0) return "This week";
+  if (weeks === 1) return "Next week";
+  const day = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", month: "short", day: "numeric" })
+    .format(weekStart);
+  return `Week of ${day}`;
+}
