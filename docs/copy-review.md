@@ -35,6 +35,26 @@ plus every "New since" block.
 
 ---
 
+## Tara's saved messages (2026-09-28) — awaiting Alex
+
+Decision 0030, branch `saved-messages`. Chrome only, the four words the spec
+named. The saved messages themselves are Tara's own text, typed by her and
+shown back unchanged; nothing in the app writes or suggests one (hard rule 13).
+Where: the web admin's Message dialog on a clinic card, and Message Players on
+the phone's roster.
+
+| ✓ | String | Where | Why |
+|---|--------|-------|-----|
+| ☐ | Saved | Web: the heading over her saved messages in the Message dialog. Phone: the menu button above the message box | One word for the list |
+| ☐ | Save this message | Under the message box, on both | Says what it does; off while the box is empty or over 1000 characters |
+| ☐ | No saved messages yet. | Web: the list with nothing in it. Phone: the menu's only line | Says the fact |
+| — | Remove | Web: beside each saved message. Phone: a submenu naming each one | Not new: already approved (the roster's Remove) |
+| — | That didn't save. Check your connection and try again. / Couldn't reach the server. Check your connection. | Phone: a save or Remove that failed | Not new: the lines the directory and the roster already use |
+
+Nothing says why Save this message is off for a message over 1000
+characters (about 170 words; hers are one or two sentences). A sentence for
+it would be new chrome; left out until someone asks.
+
 ## Siri, Spotlight and Shortcuts: Next Clinic (2026-09-28) — awaiting Alex
 
 Ours, all of it: plain chrome, no tone. Siri speaks the answer, so it is data

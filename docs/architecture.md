@@ -52,10 +52,10 @@ most important thing to understand here, and it is section 5.
 
 | Area | State |
 |---|---|
-| Postgres schema, RLS, narrow views, RPCs | **Built**, 55 migrations. Which of them are on hosted is `supabase migration list --linked`, recorded after each push in `docs/whats-next.md` (49 of 49 paired on 2026-09-28); `20260928500001_uninvite_message.sql` goes with its PR, and `20260928800001_player_history.sql` and `20260928800002_copy_week.sql` with theirs (decision 0027), `20260929000001_canceled_drafts_stay_hidden.sql` and `20260929000002_unpublished_clinics_stay_quiet.sql` (a clinic never published is never shown or mentioned to a player) |
+| Postgres schema, RLS, narrow views, RPCs | **Built**, 56 migrations. Which of them are on hosted is `supabase migration list --linked`, recorded after each push in `docs/whats-next.md` (49 of 49 paired on 2026-09-28); `20260928500001_uninvite_message.sql` goes with its PR, and `20260928800001_player_history.sql` and `20260928800002_copy_week.sql` with theirs (decision 0027), `20260929000001_canceled_drafts_stay_hidden.sql` and `20260929000002_unpublished_clinics_stay_quiet.sql` (a clinic never published is never shown or mentioned to a player) |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | **Built**, enumerated by probes |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | **Built** |
-| SQL probe suite (39 probes; the suite prints its own total) + concurrency probe, in CI | **Built** |
+| SQL probe suite (40 probes; the suite prints its own total) + concurrency probe, in CI | **Built** |
 | iOS: sign-in, sign-up with profile, password reset, three tabs | **Built** |
 | iOS: browse by week, per-viewer pricing, register / cancel (inside the 3-hour cutoff the full fee applies; the note is optional) / leave pool / respond, closed-clinic "Message Tara", the bell, My Clinics, profile edit, card on file | **Built** |
 | iOS admin tab: rosters, invite, courts, paid, unpaid reminder, message audiences, late requests, Action Needed (open disputes too, since 2026-09-28), player directory | **Built** |
@@ -174,6 +174,8 @@ FXETennis/
 │   ├── PaymentsRepository.swift asks stripe-setup-intent for what PaymentSheet needs; that is all
 │   ├── Snapshot.swift           instant open (decision 0028): the last good answer per signed-in person,
 │   │                            shown at launch and refreshed behind; removed at sign-out (unit-tested)
+│   ├── SavedMessagesRepository.swift Tara's saved messages (decision 0030): list, save, remove,
+│   │                            three admin-only RPCs
 │   ├── AdminRepository.swift    every admin RPC + the roster/late-request/notice models, the money
 │   │                            models (MoneyClinic, MoneyDecline, MoneyDispute) and Stripe's decline codes in words
 │   ├── ProRepository.swift      a pro's three calls (decision 0025): pro_today, pro_set_no_show,
@@ -188,6 +190,8 @@ FXETennis/
 │   ├── ClinicCalendarEvent.swift "Add to Calendar": offered while You're In! before the start; the
 │   │                            name and times in America/New_York, and nothing in location, URL
 │   │                            or notes, hard rule 1 (pure, unit-tested)
+│   ├── SavedMessage.swift       one saved message, and when Save this message is on: 1 to 1000
+│   │                            characters after trimming, counted as Postgres counts (pure, unit-tested)
 │   ├── NTRPRating.swift         the USTA scale for the "?" explainer
 │   ├── NotificationCopy.swift   Tara's notification catalogue, verbatim
 │   ├── PlayerHistory.swift      decision 0027: admin_player_history's row and its line, "12 played ·
@@ -240,6 +244,8 @@ FXETennis/
     │                            ClinicCalendarEvent; runs outside the app, so no calendar permission
     ├── Components/StatusChipMotion.swift the status chip changes over 0.35 s, a crossfade only under
     │                            Reduce Motion, and leaves at once when it goes (unit-tested)
+    ├── Components/SavedMessagesControls.swift Message Players' Saved menu (choose fills the box; a
+    │                            Remove submenu) and Save this message, with SavedMessagesModel (decision 0030)
     ├── Components/LoadingPlaceholders.swift the list's shape instead of a spinner on a first load (cards on
     │                            Clinics and My Clinics, rows on Home); a slow fade, none under Reduce Motion
     ├── LoadFailedView.swift     signed in but the profile could not load: the connection line, Try again, Sign out
@@ -250,7 +256,7 @@ FXETennis/
     │                            "N unpaid" only while zelle_allowed),
     │                            Today, Upcoming, Past; toolbar → Players
     ├── AdminClinicDetailView.swift roster: courts, Came/No-show, Late cancel (inside the cutoff), invite,
-    │                            cancel invite, late requests, Message Players, Charge clinic and its summary
+    │                            cancel invite, late requests, Message Players (with her saved messages), Charge clinic and its summary
     │                            from Stripe's answer (ChargeSummary, ChargeOutcome); late cancels on the
     │                            Canceled list with their note (Paid and Remind unpaid only while zelle_allowed)
     ├── PlayersDirectoryView.swift search, member / active switches, private note
@@ -400,6 +406,7 @@ future code path can demote Tara or promote anyone to admin
 | `card_consents` | One row per card permission (decision 0015 §7): the server's copy of the words, their version, the time, the app build. Written only by `record_card_consent`; read by `my_card_consent` and by `stripe-setup-intent`, which refuses a card setup without one; kept while the account exists and 90 days after `deleted_at`, then removed by `purge_expired_card_consents()` from the nightly `retention` job. No client privilege |
 | `waivers` + `waiver_acceptances` | Tara's Adult Tennis Participation Waiver, one row per version, and each electronic signature (typed legal name, account email, time, app build). Reached only through `current_waiver`, `my_waiver_accepted`, `accept_waiver` (decision 0013). A signature RESTRICTs a hard delete of its account (20260927200002), as a card consent does: nothing deletes a signature. |
 | `payments` | The money ledger (decision 0009): one row per clinic fee, late cancel, no show or refund, with Stripe ids and a status only the edge functions or admin RPCs change. On a decline, `failure_reason` is Stripe's sentence and `failure_code` its machine code (`decline_code`, else `code`: `insufficient_funds`, `expired_card`, ..., 20260926000010), both written only by the Stripe edge functions. `livemode` is Stripe's own flag for the row's PaymentIntent or Refund (20260927200001): false (test mode) is never money, so the board report skips it and it never moves the Paid flag; since 20260927300001 it also stops counting as a charge anywhere once the club has switched to live (`payment_is_real`), and the one-charge unique indexes skip it. `first_attempted_at` (20260927300003) is stamped by `stripe-charge` at a row's first claim and measures the retry window; no client role can read or write it, so players read their own rows through a column-level SELECT of every other column. Chargebacks (20260928200001): `stripe_dispute_id`, `dispute_status` (Stripe's word), `dispute_reason`, `dispute_amount_cents` (what the bank disputes), `dispute_withdrawn_cents` (what Stripe actually took from the balance for it, from the dispute's balance transactions: nothing for an inquiry, a won dispute, or a charge already refunded), `disputed_at`, `dispute_due_by` (Stripe's respond-by) and `dispute_event_at` (the event that last wrote them), written only by `stripe-webhook` through `stripe_record_dispute`; not in the column list, so no client reads them, not even the payer (who can see `updated_at` move); a check constraint refuses a status without its id, amounts and event time. One dispute per payment. |
+| `message_templates` | Tara's saved messages (decision 0030): her own text, trimmed at its two ends, 1 to 1000 characters, `archived_at` for Remove. One live copy of any text, by a unique index on `md5(body)` over live rows. RLS on, no policy, no client privilege; reached only through the three `admin_*message_template*` RPCs. Nothing seeds it and nothing writes to it but her. |
 | `app_settings` | Small admin-editable strings, e.g. Tara's payment line, and the payment policy keys (`payments_enabled`, `cancel_cutoff_hours`, …). `stripe_live_since` appears only when `stripe_cutover_to_live()` has run. Never anything hidden. |
 | `review_links` | One row per link to Tara's review page (`web/review.html?t=<token>`, 20260921000010). The token is the credential: 24 random bytes, URL-safe, minted by `admin_create_review_link`; `revoked_at` retires a link without deleting what it collected. No client role holds anything on it. |
 | `reset_links_issued` | One row per password-reset link Tara makes for a member (decision 0017): whose account, who made it, when. Written by the `admin-reset-link` edge function as `service_role` before the link exists; no client privilege. Audit only: a reset link signs whoever opens it in as the member |
@@ -449,6 +456,7 @@ card was declined). `new_york_date` is the date helper both use.
 | `resolve_late_request` | Put a late asker in, or say no room. |
 | `place_player` | Walk-up placement; ignores window and capacity by design; still snapshots the price. Since 20260928000001 it sends the player Tara's #1 when this placement is what put them in: not when they were already in, not for a draft, canceled or already-started clinic, and not when it is `resolve_late_request` placing an approved late asker (that answer is its own row). It reads the clinic row `FOR UPDATE`, the lock `register_for_clinic` takes, and the player's live row `FOR UPDATE`, so "already in" is exact under a double tap or a simultaneous Accept. |
 | `set_paid`, `assign_court` | The court sheet. `assign_court` is the one unconditional update in the schema: a court is a value, not a transition. |
+| `admin_message_templates`, `admin_save_message_template`, `admin_archive_message_template` | Her saved messages (20260928900001, decision 0030): the live ones newest first; save (trimmed, 1 to 1000 characters, `message_empty` / `message_too_long`) returning the new row or the live one already holding the text; Remove stamps `archived_at` once and answers false if it was already removed. A pro is refused like a member. |
 | `send_clinic_message` | Audiences `everyone` / `in` / `pool` / `response_needed` / `unpaid`, resolved server-side. The one-tap unpaid reminder is this with a fixed body. |
 | `search_players`, `admin_player_note`, `admin_player_note_edited`, `admin_set_player_note`, `admin_set_membership`, `set_player_active` | The directory. `search_players` returns `has_notes`, never the note; `admin_player_note_edited` returns the note's `updated_at` or null (20260912000004). |
 | `admin_player_history` | A player's history at a glance (decision 0027 §1; 20260928800001): per player, clinics played (the board report's attended: You're In!, not a no-show, clinic ended and not canceled), no-shows (the same rows, flagged), late cancellations (in a clinic not canceled, counted when they happen) and the start of the last clinic played. Every player with no argument, one player with `p_player`; a row of zeros is "New". Nothing in a canceled clinic counts. |
@@ -579,9 +587,9 @@ the one link the code says, forwarding to the install link in `web/app/target.js
 `web/qr.html`, Tara's printable card; `web/app-qr.svg` and `web/app-qr.png`, drawn and
 decode-checked by `scripts/make-qr.swift`; `web/gator.png`, the mark), `web/sheet.html`
 (a clinic's court sheet to print, decision 0027 §3), `config.js` (which picks local vs hosted by hostname), `tokens.css`,
-two small modules the admin page imports (`week.js`: the service week and which
+three small modules the admin page imports (`week.js`: the service week and which
 clinics This week lists; `read.js`: reads that page past PostgREST's 1000-row
-cap), and `vendor/supabase-js.js`, plus the Playwright tooling (`package.json`,
+cap; `saved-messages.js`: Tara's saved messages in the Message dialog), and `vendor/supabase-js.js`, plus the Playwright tooling (`package.json`,
 `playwright.config.mjs`, `tests/`). **supabase-js is vendored**, never loaded
 from a CDN (MVP audit 2026-09-27, item 17; it came from esm.sh at a floating
 `@2` until then): the npm package's own browser bundle at the exact version
@@ -658,6 +666,11 @@ players by court with their ratings, then No court yet, and a Print button the
 printout leaves out. The sheet reads `clinics_admin`, `registrations_admin`
 and `players` with the admin page's own session; a member reads nothing there.
 
+Added 2026-09-28 (decision 0030): **Saved** in the Message dialog, her own
+messages newest first, read fresh each time the dialog opens; choosing one
+fills the box, **Save this message** keeps the box's text, **Remove** archives
+one. `web/saved-messages.js` holds all of it.
+
 Added 2026-09-21: **Tara's review page lives here too.** `web/review.html`
 is the second target of `scripts/build-tara-review.py` (the first is the
 claude.ai artifact in `docs/tara-review/`, unchanged): the same three tabs,
@@ -706,6 +719,7 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `after_the_fact` | 20260928300001 and 20260928400001: no Accept into a canceled or finished clinic, no Invite or late-request Approve into a canceled one, and each refusal moves nothing and tells nobody; Declines still work; sanity rows prove the same calls work on a live clinic (red on the six predicted rows against the old functions) |
 | `push_devices` | `register_device` / `unregister_device`, attacked: nobody but the owner sees a token, the account is never a parameter, re-registering is idempotent |
 | `push_delivery` | 20260923000001: the audit columns exist and `authenticated` holds nothing on them (Maria's own `select delivery_error` is refused) while the app's eight columns still read; the AFTER INSERT trigger exists and no client can execute its function; with no vault secrets (or only one) an insert succeeds and queues nothing, with both (and an unreachable URL) it queues exactly one request carrying the row id and the secret header; and when the vault read itself raises (the trigger function handed to `anon` inside the rolled-back transaction) the insert still succeeds |
+| `message_templates` | 20260928900001 from the rule: only Tara lists, saves or removes a saved message; a member and every other non-admin role (read from `account_role`, so the pro too) is refused all three and changes nothing; no client role holds anything on the table, anon and PUBLIC execute none; the same text is one live row whatever whitespace is at its ends, a different case another; Remove keeps the row stamped, a second Remove answers false and keeps the first stamp, the same words again are a new row; 1 to 1000 characters (1000 accented kept, 1001 refused), empty, blank and null refused and nothing written; the table refuses a newline or untrimmed body and a second live copy; newest first. Red first under eleven mutants (decision 0030). 46 checks |
 | `template_archive` | Only Tara archives or restores; the stamp survives a repeat; archived rows show to her and to nobody else; a clinic can still be built from an archived template |
 | `payments_foundation` | Nobody charges anyone while payments are off; a player cannot write the ledger or forge a card; a double tap is one fee, and a second fee of another kind on the same row is refused (it asserted the opposite until 2026-09-27); the ledger, not a checkbox, marks a registration paid |
 | `payments_ledger` | The gate on the owner-run view: Tara sees the row with names on it, Maria sees nothing, nobody writes through it |
@@ -725,9 +739,10 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `back_to_back_105_race.sh` | Two concurrent registrations by one non-member for two same-day 105s: exactly one survives (the per-player lock in `register_for_clinic`; red without it, 2026-09-26) |
 | `one_fee_race.sh` | Two concurrent charges of different kinds for one player in one clinic (the unique index cannot see them): exactly one live fee survives (the per player-and-clinic lock in `admin_charge_registration`, 20260927100001; red without it, 2026-09-27: both went through) |
 | `copy_week_race.sh` | Two simultaneous Copy to next week calls for one week (`admin_copy_week`, 20260928800002): the first holds its transaction open, the second waits on the advisory lock, then creates nothing; one draft per clinic (red without the lock, 2026-09-28: six drafts of a three-clinic week, one clinic copied twice) |
+| `message_template_race.sh` | Two saves of one text at the same moment (decision 0030), the first held open: one live row and both get its id. Red with a check-then-insert and no unique index (two rows) and with the index but no ON CONFLICT (a unique violation), 2026-09-28 |
 | `dispute_race.sh` | Two concurrent deliveries of one dispute (`stripe_record_dispute`, 20260928200001), each holding the row in turn: the newer event's state survives in either commit order. Both statuses are open on purpose, so only the order guard decides; red under a read-then-write version (round 1 ended at the older event), 2026-09-28 |
 
-**Swift**: 210 unit tests (`FXETennisTests`: price formatting, per-viewer
+**Swift**: 215 unit tests (`FXETennisTests`: price formatting, per-viewer
 pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016; since 2026-09-27 the request-failure classifier, a failed load keeping who you are, the waiver and card refusals reopening their steps, the 30-second reload throttle, the redraw moments, and the type scale under Larger Text; since 2026-09-28 the invitation push's Accept and Decline, the Remind me reminder, the calendar entry, and the haptics and chip motion; a clinic the player holds beyond the list's five-week edge staying on their screens, the instant-open snapshot's per-person and ended-clinic rules, Siri's next-clinic answer, and the Player Pool's history line) and 21
 XCUITests: 8 player flows
 (`PlayerFlowUITests`: sign in / browse / register, undo, sign-up end to end,
@@ -741,14 +756,14 @@ local stack and are order-dependent on a fresh seed. **They do not run in
 CI**: the macOS runner has no Docker for the stack; a `fxe-ci` Supabase
 project is the ask (`docs/launch-checklist.md` §F).
 
-**Web admin**: 41 Playwright tests (`web/tests/*.spec.mjs`) walk Tara's
+**Web admin**: 43 Playwright tests (`web/tests/*.spec.mjs`) walk Tara's
 side against a fresh seed: sign-in and the non-admin door, prices, walk-up,
 courts, unpaid reminder, a note round-trip, cancel clinic, template archive
 and restore, Money counts, the card-payments ledger, payments off, the
 Payouts card (not connected, then Stripe's numbers, in a New York browser) and
 an open dispute beside a declined card in Action Needed, and the Pro box
 round-tripping through a reload while a pro is turned away at the door
-(`admin.spec.mjs`); every script served from the site itself and the
+(`admin.spec.mjs`); a saved message kept, read back after a reload, chosen into the box and removed (archived), and the empty list (`saved-messages.spec.mjs`); every script served from the site itself and the
 rate-limit line (`pages.spec.mjs`); the service week at hand-worked instants in
 three laptop time zones, the This week split, a read past a 1000-row cap, and
 a past clinic kept off the tab until Show earlier (`week.spec.mjs`); Copy to
@@ -817,7 +832,7 @@ added 2026-09-13: every probe, test and migration count in the current-state
 docs equals the derived number, every decision is indexed, every Tara question
 carries a status, and the human docs audit is not older than 45 days; since
 2026-09-28 also `scripts/check-title-edge.sh`: every `.navigationTitle` has
-`.crispTopEdge()`, or iOS 26 shows scrolled text through the title). The
+`.crispTopEdge()`, or iOS 26 shows scrolled text through the title); `scripts/fix-doc-counts.py` rewrites the counts that check flags, run by hand after a merge). The
 `sql-probes` job also runs `scripts/check-doc-inventory.sh`: every table,
 view, enum, client RPC, edge function, probe, CI job and Swift file that
 exists must be named in this file. Monthly and opt-in (`docs-audit.yml`): a

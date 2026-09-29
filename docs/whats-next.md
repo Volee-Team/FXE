@@ -57,10 +57,10 @@ admin's Players tab.
 Missing on the phone by design: creating or editing a clinic (web only),
 News (deferred, decision 0006).
 
-Testing today: 41 Playwright tests, 21 XCUITests (8 player flows, 6 on
+Testing today: 43 Playwright tests, 21 XCUITests (8 player flows, 6 on
 Tara's side, 2 on a pro's, and 5 accessibility checks: Apple's audit on the
 player's, Tara's and the pro's screens, the status bar and the Return key),
-210 unit tests, 39 SQL probes, a 94-check Stripe pipeline and a 57-check push pipeline
+215 unit tests, 40 SQL probes, a 94-check Stripe pipeline and a 57-check push pipeline
 against mocks in CI.
 
 **Answered already, do not re-ask.** Six of the eight closed on 2026-08-27; see

@@ -760,6 +760,8 @@ private struct MessageClinicSheet: View {
     @State private var body_ = ""
     @State private var sending = false
     @State private var error: String?
+    /// Her saved messages (decision 0030): the Saved menu and Save this message.
+    @State private var saved = SavedMessagesModel()
 
     var body: some View {
         NavigationStack {
@@ -786,6 +788,8 @@ private struct MessageClinicSheet: View {
                             .foregroundStyle(Brand.textSecondary)
                     }
 
+                    SavedMessagesMenu(model: saved, text: $body_)
+
                     TextEditor(text: $body_)
                         .brandFont(.body)
                         .frame(minHeight: 140)
@@ -795,7 +799,9 @@ private struct MessageClinicSheet: View {
                         .accessibilityIdentifier("admin.messageBody")
                         .accessibilityLabel("Message")
 
-                    if let error {
+                    SaveMessageButton(model: saved, text: body_)
+
+                    if let error = error ?? saved.error {
                         Text(error)
                             .brandFont(.subheadline)
                             .foregroundStyle(Brand.Status.canceled.ink)
@@ -808,6 +814,7 @@ private struct MessageClinicSheet: View {
             .crispTopEdge()
             .navigationTitle("Message Players")
             .navigationBarTitleDisplayMode(.inline)
+            .task { await saved.load() }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

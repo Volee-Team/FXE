@@ -70,6 +70,12 @@
   dialog { border: none; border-radius: 16px; padding: 20px; max-width: 520px; width: 92%;
            background: var(--fxe-surface); color: var(--fxe-text-primary); }
   dialog::backdrop { background: rgba(22,38,76,.45); }
+  /* Saved messages in the Message dialog (decision 0030). */
+  .saved-list { max-height: 190px; overflow-y: auto; }
+  .saved-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .saved-use { flex: 1; min-width: 0; text-align: left; font-weight: 400; white-space: pre-line;
+               overflow-wrap: anywhere; }
+  .saved-empty { margin: 4px 0; }
   .hide { display: none !important; }
   .signin { max-width: 380px; margin: 12vh auto; }
 select.court { width: auto; flex: 0 0 auto; margin: 0; font: inherit; font-size: 13px; padding: 4px 6px; border: 1px solid var(--border, #d8d3c7); border-radius: 6px; background: #fff; color: inherit; }
@@ -313,8 +319,13 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
     <option value="response_needed">Response Needed</option>
     <option value="unpaid">Unpaid</option>
   </select>
+  <!-- Saved messages (decision 0030): her own words, kept to fill the box
+       again. saved-messages.js reads them each time the dialog opens. -->
+  <p id="m-saved-label" class="muted" style="margin:10px 0 4px">Saved</p>
+  <div id="m-saved" class="saved-list" role="group" aria-labelledby="m-saved-label"></div>
   <label for="m-body">Message</label>
   <textarea id="m-body" rows="5"></textarea>
+  <button type="button" class="small" id="m-save" style="margin-top:8px">Save this message</button>
   <div id="message-msg"></div>
   <div class="row" style="margin-top:14px">
     <span class="grow"></span>
@@ -358,6 +369,7 @@ import { createClient } from "./vendor/supabase-js.js";
 import { CONFIG, ENV } from "./config.js";
 import { serviceWeekStart, splitThisWeek, weekLabel } from "./week.js";
 import { readAll, readByIds } from "./read.js";
+import { wireSavedMessages } from "./saved-messages.js";
 
 // implicit flow: a reset started on one device (the phone) must finish on
 // another (this page). PKCE ties the emailed code to the device that asked.
@@ -1585,6 +1597,11 @@ $("message-send").onclick = async () => {
   } catch (err) { note($("message-msg"), friendly(err)); }
   finally { btn.disabled = false; }
 };
+
+wireSavedMessages(sb, {
+  dialog: $("message"), box: $("m-body"), list: $("m-saved"), save: $("m-save"),
+  say: (text) => note($("message-msg"), text), friendly,
+});
 
 $("forgot").onclick = async () => {
   const email = $("email").value.trim();
