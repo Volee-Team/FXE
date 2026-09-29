@@ -5,7 +5,10 @@
 //  Three tabs for a player. Tara, 2026-08-12: "no community tab rn, just 3 tabs
 //  i guess." Home, Clinics, Profile. See docs/decisions/0006.
 //
-//  A FOURTH tab appears for an administrator only. That comment used to read
+//  A FOURTH tab appears for an administrator (Manage) or a pro (Today,
+//  decision 0025), never both: Tara is the only admin and is not a pro.
+//
+//  For the administrator, that comment used to read
 //  "Admin is a separate web surface, not a tab here", and the web surface is
 //  still the plan for the laptop-heavy work (creating a week of clinics, court
 //  drag-and-drop). But a 2026-08-13 audit walked Tara's weekly workflow and
@@ -50,7 +53,15 @@ struct MainTabView: View {
                     .tint(Brand.navy)
                     .tabItem { Label("Manage", systemImage: "list.clipboard").environment(\.symbolVariants, .none) }
                     .accessibilityIdentifier("tab.admin")
-                }
+            } else if session.account?.isPro == true {
+                // A pro's one extra tab (decision 0025): today's clinics, who
+                // is coming, Came / No-show and Late cancel. Tara does not
+                // get it; Manage already holds all of it and more.
+                ProTodayView()
+                    .tint(Brand.navy)
+                    .tabItem { Label("Today", systemImage: "calendar").environment(\.symbolVariants, .none) }
+                    .accessibilityIdentifier("tab.today")
+            }
 
             ProfileView()
                 .tint(Brand.navy)

@@ -50,6 +50,9 @@ final class AdminClinicModel {
     var zelleAllowed = false
     /// app_settings.cancel_cutoff_hours (3, decision 0013), for Late cancel.
     var cutoffHours = 3
+    /// Each Player Pool player's history (decision 0027 §1), by player id:
+    /// the line under the name that makes choosing who to invite one look.
+    var history: [UUID: PlayerHistory] = [:]
 
     /// Late cancel (20260927100002) is offered on a You're In! row inside the
     /// cutoff or later, on a clinic that is not canceled, while the row holds
@@ -72,6 +75,11 @@ final class AdminClinicModel {
             let people = (try? await AdminRepository.players(ids: asks.map(\.playerId))) ?? []
             let byId = Dictionary(uniqueKeysWithValues: people.map { ($0.id, $0) })
             lateRequests = asks.map { ($0, byId[$0.playerId]) }
+            // One call for the whole Pool. Read leniently: without it a row
+            // simply shows no history line, and the roster still works.
+            let poolIds = Array(Set(pool.map(\.registration.playerId)))
+            let rows = (try? await AdminRepository.playerHistory(players: poolIds)) ?? []
+            history = Dictionary(rows.map { ($0.playerId, $0) }, uniquingKeysWith: { first, _ in first })
             error = nil
         } catch {
             self.error = "Couldn't load the roster. Pull to refresh."
@@ -119,6 +127,7 @@ struct AdminClinicDetailView: View {
     let onChanged: () async -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var typeSize
     @State private var confirmCancelClinic = false
     @State private var confirmCharge = false
     @State private var chargeNote: String?
@@ -159,7 +168,8 @@ struct AdminClinicDetailView: View {
                     rosterSection(
                         Brand.Status.playerPool, model.pool,
                         empty: "The Player Pool is empty.",
-                        numbered: true
+                        numbered: true,
+                        showsHistory: true
                     ) { entry in
                         // Nothing to invite into, or take out of, once the
                         // clinic is canceled (20260928400001 refuses both).
@@ -386,6 +396,7 @@ struct AdminClinicDetailView: View {
         _ entries: [RosterEntry],
         empty: String,
         numbered: Bool = false,
+        showsHistory: Bool = false,
         @ViewBuilder trailing: @escaping (RosterEntry) -> AnyView
     ) -> some View {
         VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
@@ -406,22 +417,26 @@ struct AdminClinicDetailView: View {
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
-                        // One line when the name and its controls fit side by
-                        // side; two when they do not (a long name, court plus
-                        // paid, a 4.7-inch phone). ViewThatFits picks per row.
-                        ViewThatFits(in: .horizontal) {
-                            HStack(spacing: Brand.Spacing.sm) {
-                                rosterIdentity(entry, index: numbered ? index + 1 : nil)
-                                Spacer(minLength: Brand.Spacing.xs)
-                                trailing(entry)
-                            }
-                            VStack(alignment: .leading, spacing: Brand.Spacing.xxs) {
-                                rosterIdentity(entry, index: numbered ? index + 1 : nil)
-                                HStack(spacing: Brand.Spacing.sm) {
-                                    Spacer(minLength: 0)
-                                    trailing(entry)
-                                }
-                            }
+                        // The Player Pool's rows carry the player's history
+                        // (decision 0027 §1); the other lists do not.
+                        let history = showsHistory ? model.history[entry.registration.playerId]?.line : nil
+                        // Side by side at the usual text sizes, stacked at the
+                        // accessibility sizes, as ONE layout whose parts keep
+                        // their identity when it changes; a long name wraps.
+                        // This was ViewThatFits, which builds two copies of
+                        // the row and swaps them as the text grows: Apple's
+                        // audit lost each text part way up the sizes and
+                        // reported "Dynamic Type partially unsupported" on
+                        // every name, court and toggle, found 2026-09-28 the
+                        // first time a seeded roster had rows in it (the pro's
+                        // Today Drill). The pro's Today tab has the same fix.
+                        let layout = typeSize.isAccessibilitySize
+                            ? AnyLayout(VStackLayout(alignment: .leading, spacing: Brand.Spacing.xxs))
+                            : AnyLayout(HStackLayout(alignment: .center, spacing: Brand.Spacing.sm))
+                        layout {
+                            rosterIdentity(entry, index: numbered ? index + 1 : nil, history: history)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            trailing(entry)
                         }
                         .padding(.vertical, Brand.Spacing.xs)
                         .frame(minHeight: Brand.Layout.comfortableTapTarget)
@@ -516,7 +531,7 @@ struct AdminClinicDetailView: View {
     /// Name and subtitle, with the Player Pool's queue number when asked for:
     /// the guide requires registration order to be visible, and it is what
     /// makes the queue legible to Tara.
-    private func rosterIdentity(_ entry: RosterEntry, index: Int?) -> some View {
+    private func rosterIdentity(_ entry: RosterEntry, index: Int?, history: String? = nil) -> some View {
         HStack(spacing: Brand.Spacing.sm) {
             if let index {
                 Text("\(index)")
@@ -528,10 +543,17 @@ struct AdminClinicDetailView: View {
                 Text(entry.displayName)
                     .brandFont(.bodyEmphasis)
                     .foregroundStyle(Brand.textPrimary)
-                    .lineLimit(1)
+                    .fixedSize(horizontal: false, vertical: true)
                 Text(entry.subtitle)
                     .brandFont(.caption)
                     .foregroundStyle(Brand.textSecondary)
+                // "12 played · 1 no-show · 2 late cancels", or "New".
+                if let history {
+                    Text(history)
+                        .brandFont(.caption)
+                        .foregroundStyle(Brand.textSecondary)
+                        .accessibilityIdentifier("admin.poolHistory")
+                }
                 // The note left with a late cancel, the player's or Tara's.
                 if let note = entry.lateNote {
                     Text(note)
@@ -622,6 +644,10 @@ struct AdminClinicDetailView: View {
                 .brandFont(.chip)
                 .foregroundStyle(noShow ? Brand.Status.canceled.ink : Brand.textSecondary)
                 .frame(minHeight: Brand.Layout.minTapTarget)
+                // The whole 44-point frame is the button, not just the text:
+                // a plain button hit-tests its visible pixels, and the audit
+                // measured this one at 15 points tall (2026-09-28).
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .disabled(model.busy.contains(entry.id))
@@ -734,6 +760,8 @@ private struct MessageClinicSheet: View {
     @State private var body_ = ""
     @State private var sending = false
     @State private var error: String?
+    /// Her saved messages (decision 0030): the Saved menu and Save this message.
+    @State private var saved = SavedMessagesModel()
 
     var body: some View {
         NavigationStack {
@@ -760,6 +788,8 @@ private struct MessageClinicSheet: View {
                             .foregroundStyle(Brand.textSecondary)
                     }
 
+                    SavedMessagesMenu(model: saved, text: $body_)
+
                     TextEditor(text: $body_)
                         .brandFont(.body)
                         .frame(minHeight: 140)
@@ -769,7 +799,9 @@ private struct MessageClinicSheet: View {
                         .accessibilityIdentifier("admin.messageBody")
                         .accessibilityLabel("Message")
 
-                    if let error {
+                    SaveMessageButton(model: saved, text: body_)
+
+                    if let error = error ?? saved.error {
                         Text(error)
                             .brandFont(.subheadline)
                             .foregroundStyle(Brand.Status.canceled.ink)
@@ -782,6 +814,7 @@ private struct MessageClinicSheet: View {
             .crispTopEdge()
             .navigationTitle("Message Players")
             .navigationBarTitleDisplayMode(.inline)
+            .task { await saved.load() }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

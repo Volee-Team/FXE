@@ -71,11 +71,20 @@ struct RootView: View {
                 // a server error). Not the sign-up form: that is for "no row".
                 LoadFailedView().lightStatusBar()
             case .signedIn:
-                MainTabView()
-                    .pushTapRouting()
-                    .pushPermissionPrompt()
-                    .waiverGate()
-                    .cardGate()
+                // The waiver comes before the app, as its own screen, not a
+                // sheet over Home (Alex, 2026-09-29: "it should be there
+                // before you EVEN SEE the home screen"). Admins are exempt.
+                // Unknown (nil, a check that failed) still opens the app:
+                // register_for_clinic refuses an unsigned player anyway, and
+                // its refusal brings this screen back (SessionStore.reopen).
+                if session.waiverAccepted == false && session.account?.role != "admin" {
+                    WaiverView()
+                } else {
+                    MainTabView()
+                        .pushTapRouting()
+                        .pushPermissionPrompt()
+                        .cardGate()
+                }
             }
         }
         // Coming back to the app refreshes the identity and the waiver and card

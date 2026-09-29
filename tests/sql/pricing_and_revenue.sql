@@ -32,6 +32,13 @@ declare
   r public.registrations;
   v text;
 begin
+  -- The seed's Today Drill (the pro's Today tab, decision 0025) is an ENDED
+  -- clinic with two You're In! rows. Every number in this probe is worked out
+  -- by hand over its own fixture, on a seed that had no You're In! row at
+  -- all, so that clinic leaves this probe's universe here, inside the
+  -- transaction that rolls back. Taken out, not added in: the arithmetic
+  -- stays the rule's, not the seed's.
+  delete from public.clinics where id = 'd0000000-0000-0000-0000-000000000006';
   -- Two open clinics, one of each length. Prices are left NULL deliberately so
   -- the default trigger has to supply them from Tara's table.
   insert into public.clinics (name, audience, starts_at, ends_at,

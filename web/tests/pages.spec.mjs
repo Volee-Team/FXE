@@ -35,11 +35,15 @@ test.describe("scripts", () => {
     // The admin site, signed in: supabase-js has to work, not just load.
     await signIn(page, TARA);
     await expect(page.locator("#clinics .card").first()).toBeVisible();
-    // The reset page with no link in the URL, and the review page.
+    // The reset page with no link in the URL, the review page, and the court
+    // sheet (decision 0027 §3) naming no clinic, signed in as Tara.
     await page.goto("/reset.html");
     await page.waitForLoadState("networkidle");
     await page.goto("/review.html");
     await page.waitForLoadState("networkidle");
+    await page.goto("/sheet.html");
+    await page.waitForLoadState("networkidle");
+    await expect(page.locator("#msg")).toHaveText("Couldn't load this clinic.");
 
     expect(foreign).toEqual([]);
     expect(broken).toEqual([]);
@@ -118,6 +122,22 @@ test.describe("the QR code's link", () => {
     await page.route("https://install.example/**", (route) => route.fulfill({ contentType: "text/html", body: "<title>arrived</title>" }));
     await page.goto("/app/");
     await page.waitForURL("https://install.example/join/ABC123");
+  });
+
+  test("opening /app from the QR code counts one scan, and a plain open counts a link", async ({ page }) => {
+    // Kat, 2026-09-29 (decision 0031). The beacon's body is the only thing
+    // sent: which way they came, nothing about them.
+    const sent = [];
+    await page.route("**/functions/v1/app-visit", async (route) => {
+      sent.push(route.request().postData());
+      await route.fulfill({ status: 204 });
+    });
+    await page.goto("/app/index.html?via=qr");
+    await expect.poll(() => sent.length).toBe(1);
+    await page.goto("/app/index.html");
+    await expect.poll(() => sent.length).toBe(2);
+    expect(sent.map(s => JSON.parse(s).via)).toEqual(["qr", "link"]);
+    expect(Object.keys(JSON.parse(sent[0]))).toEqual(["via"]);
   });
 
   test("the QR card shows the code, the link written out, Print and the PNG", async ({ page, request }) => {

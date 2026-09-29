@@ -35,6 +35,7 @@ declare
   invited_reg uuid;
   cr public.registrations;
   n int;
+  v text;
 begin
   -- A clinic both players are in, with a court assigned and a payment recorded.
   insert into public.clinics (name, audience, starts_at, ends_at,
@@ -241,6 +242,22 @@ begin
    where key ~* '(location|address|venue|map|directions)'
       or value ~* '(https?://|maps\.|directions)';
   insert into _probe_result values ('app_settings_carries_no_location', '0', n::text);
+
+  -- 16. The calendar feed (20260929000003, decision 0029) is player-facing and
+  --     lives OUTSIDE the app: the calendar-feed edge function turns the rows
+  --     of calendar_feed_events into a calendar that syncs to other devices
+  --     and other people's calendars. No column of it may be location-shaped
+  --     or one of the nine hidden facts. Counted as "hidden of total" so a
+  --     function that vanished cannot pass by having no columns at all.
+  --     (calendar_feed.sql pins the exact column list.)
+  select count(*) filter (where a.name ~* '(location|address|venue|map|directions|latitude|longitude|geo|court|capacity|count|remaining|paid|payment|note|description|player|pool)')
+         || ' of ' || count(*)
+    into v
+    from pg_proc p
+    join pg_namespace ns on ns.oid = p.pronamespace and ns.nspname = 'public'
+    cross join lateral unnest(p.proargnames, p.proargmodes) as a(name, mode)
+   where p.proname = 'calendar_feed_events' and a.mode = 't';
+  insert into _probe_result values ('calendar_feed_carries_nothing_hidden', '0 of 5', v);
 end $$;
 
 select

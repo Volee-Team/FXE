@@ -38,6 +38,11 @@ private enum SupabaseConfig {
 // this app, not the browser: the page would fail with "code verifier not found".
 // Implicit puts the recovery token in the URL fragment so any page can finish
 // it. Password sign-in is unaffected by flow type. (2026-09-01)
+/// The project's base URL. Everything else goes through `supabase`; the
+/// calendar feed link (decision 0029) is fetched by Apple's Calendar, not by
+/// this app, so the app has to spell the address out (CalendarFeed).
+let supabaseProjectURL = SupabaseConfig.url
+
 let supabase = SupabaseClient(
     supabaseURL: SupabaseConfig.url,
     supabaseKey: SupabaseConfig.anonKey,

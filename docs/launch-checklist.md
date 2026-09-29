@@ -29,10 +29,10 @@ How this file works, so it can be trusted:
 What must be true on the day, in the order it has to happen. Each item is a
 row below; this list adds nothing of its own. Re-derived 2026-09-28.
 
-1. **Build 5 is on the testers' phones** (C8): tag `v0.1.0-rc5`, everything
+1. **Build 6 is on the testers' phones** (C8): tag `v0.1.0-rc6`, everything
    below in section I plus the MVP-audit fixes. [John]
 2. **Payments on, then tested, then live in Tara's name** (A9, A2, A7, A10,
-   A12): on after build 5 is on phones; Tara's live activation by 2026-11-04
+   A12): on after build 6 is on phones; Tara's live activation by 2026-11-04
    is the gate (A11). [Alex, Tara, me]
 3. **Push on the lock screen** (C3): John makes the key, Alex sets five
    secrets; the Accept and Decline buttons and her words are already built.
@@ -82,9 +82,9 @@ What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision
 | C5 | Delete my account in the app, history kept (guideline 5.1.1(v)) | [me] | **DONE 2026-09-21**; `delete-account` deployed the same day |
 | C6 | Privacy policy at a public URL | [Tara] | **DONE 2026-09-27**: Tara approved it ("looks good"), contact fersctennispro@gmail.com; published at `https://fxe-tennis-admin.vercel.app/privacy.html` (verified by `deploy-web.sh`) and linked from Profile in the app (build 4) |
 | C7 | App Store listing: name, subtitle, description in Tara's words, screenshots, age rating, support URL, review notes with a test account | [Alex]+[me] | **BLOCKED** on C1, or on C11's path |
-| C8 | TestFlight **build 5** from the tag `v0.1.0-rc5` (build 4 was never archived; 5 carries section I as well) | [John] | **OPEN**: `project.yml` says build 5; John archives per `docs/testflight.md` (`docs/for-alex.md` §4) |
+| C8 | TestFlight **build 6** from the tag `v0.1.0-rc6` (it carries everything in build 5, so 5 can be skipped) | [John] | **OPEN**: `project.yml` says build 6 on `build-6`; the tag is made when it merges; John archives per `docs/testflight.md` (`docs/for-alex.md` §4) |
 | C9 | Real-device pass: the two simulator flakes checked on an iPhone | [Alex]/[me] | **BLOCKED** on C8 |
-| C10 | An annotated git tag at every TestFlight upload | [me]/[John] | **OPEN**: `v0.1.0-tf2` exists; `v0.1.0-rc5` marks what John archives; tag `v0.1.0-tf5` when build 5 uploads |
+| C10 | An annotated git tag at every TestFlight upload | [me]/[John] | **OPEN**: `v0.1.0-tf2` exists; `v0.1.0-rc6` will mark what John archives; tag `v0.1.0-tf6` when build 6 uploads |
 | C11 | External TestFlight on John's account with a public link, submitted to Apple's beta review **this week** with no testers invited, so the review is done before it matters (needs C6's URL) | [Alex]/[John] | **OPEN**: C6 is done (the URL is live), so nothing blocks the request; decided 2026-09-27 (Alex: *"yes prob"*) |
 | C12 | Bundle id for the LLC's app. `com.fxetennis.app` is tied to John's account now: Apple transfers only apps with at least one App Store release, and a TestFlight upload locks the id to that account. The LLC's app will need a new id, and testers install it fresh (their accounts carry over; they live on our server) | [Alex] | **DECIDE** [Alex] before the first LLC build |
 | C13 | How Apple's reviewer signs in: one real account called App Review, made through the app's own sign-up with an address Alex controls, left out of the board report; while keys are sandbox the review notes give Stripe's 4242 test card | [Alex] | **DECIDE** [Alex] before the first external or App Store submission |
@@ -118,13 +118,13 @@ observer.
 
 | Layer | Runs where | Count 2026-09-28 | Gap |
 |---|---|---|---|
-| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 866 checks, 35 probes, plus six race probes | none known |
+| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 1240 checks, 43 probes, plus eleven race probes | none known |
 | Stripe pipeline against stripe-mock | every PR | 94 checks | real Stripe behaviour waits on A2 |
 | Push pipeline against a mock APNs | every PR | 57 checks | real APNs waits on C3 |
-| Web admin browser tests (Playwright, real sign-in) | every PR | 33 | a cold-start flake after a local reset (backlog) |
-| Swift unit tests (pure logic) | every PR | 195 | fine |
+| Web admin browser tests (Playwright, real sign-in) | every PR | 45 | a cold-start flake after a local reset (backlog) |
+| Swift unit tests (pure logic) | every PR | 232 | fine |
 | Hosted signed-out smoke (`scripts/hosted-smoke.sh`) | every PR, read-only against production | 126 targets, including a browser preflight to each function the web admin calls | only the signed-out side |
-| XCUITests, player and admin flows, and Apple's accessibility audit | **local only** (section F) | 18 | run on a laptop before every TestFlight build |
+| XCUITests, player and admin flows, and Apple's accessibility audit | **local only** (section F) | 22 | run on a laptop before every TestFlight build |
 | Copy gate, secret scan (now Stripe keys too), migration immutability, icon gate, doc checks | every PR | – | none |
 | Nightly backup and consent purge | nightly | – | restore drill due 2026-10-12 (D4) |
 
@@ -150,7 +150,7 @@ Missing kinds of testing, in the order they matter:
 | G2 | Tara's answers through the review page, **round four**: only what is new since her 2026-09-22 answers (15 words, questions 69 to 79, three tasks). Her 09-22 answers were read on 2026-09-27 (decision 0016); `review-watch.yml` now opens an issue whenever she saves | [Alex] sends, [Tara] answers | **OPEN**: send the link once round four is deployed (`docs/for-alex.md` §5). Question 75 (how members hear about the app) blocks launch |
 | G3 | Kat's calls: the tab bar colour, the green text contrast, the green line under the header; and her earlier "tag spec" line (release tags, answered by C10, or analytics tags, not built; `docs/kat-due-diligence.md`) | [Kat] | **OPEN** (`docs/for-alex.md` §7) |
 | G4 | Alex's ticks in `docs/copy-review.md` (sections G to J and the older open rows) | [Alex] | **OPEN** |
-| G5 | Tara's logo file and the original court photo | [Tara] | **OPEN**: Alex asks her by text (was question 64) |
+| G5 | Tara's logo file and the original court photo | [Tara] | **OPEN**: the logo is in (the gator in colour, decision 0032, 2026-09-29); the court photo is still to come |
 | G6 | GitHub: require the hosted smoke check and stop admins bypassing `main`'s protection. Dependabot alerts are already on (verified 2026-09-27) | [Alex] | **OPEN** (`docs/for-alex.md` §8) |
 
 ## H. The MVP audit of 2026-09-27
@@ -188,14 +188,17 @@ each checked by an independent reviewer or the sql-auditor, then merged on
 | I3 | Text anyone can read: Larger Text followed live, Apple's accessibility audit as a UI test on every main screen, the clock readable on navy, Return through the forms, page titles in the guide's serif, outlined tab icons (decision 0023) | [me] | **OPEN**: in build 5 |
 | I4 | Payouts and chargebacks on the Money tab (H7, decision 0021); the Action Needed crash on the first declined card fixed | [me] | **DONE 2026-09-28**, with H7 |
 | I5 | Tara's questions from this round: 79 narrowed, 88 to 90 new | [Tara] | **DONE 2026-09-28**: answered in round four (decision 0024); 92 to 95 are the next round's |
-| I6 | The QR code for members (question 75): it points at `/app` on the admin site, which forwards to the install link, so the printed card never changes; Tara's printable card under Players → QR code for the app | [me]/[Alex] | **OPEN**: built 2026-09-28 (two decoders read the code back; a browser test proves the forward); live once the TestFlight public link exists: Alex sends it, the model sets `web/app/target.js` and deploys (`docs/for-alex.md` §4b) |
+| I6 | The QR code for members (question 75): it points at `/app` on the admin site, which forwards to the install link, so the printed card never changes; Tara's printable card under Players → QR code for the app | [me]/[Alex] | **OPEN**: live 2026-09-28 (`deploy-web.sh` matched byte for byte; `/app`, `qr.html` and `app-qr.png` answer 200, `/app` reads "Not available yet."). Waits only on the TestFlight public link: Alex sends it, the model sets `web/app/target.js` and redeploys |
+| I7 | Build 6 for players: instant open (decision 0028), Siri and Spotlight, Subscribe in Calendar (0029), every held clinic on Home, clean titles, placeholders, a declined card that says why (0026) | [me] | **OPEN**: merged on `build-6`, all suites green locally; done when it is on `main` and tagged `v0.1.0-rc6` |
+| I8 | Build 6 for Tara: pros and their Today screen (0025), Resolved (0026), saved messages (0030), a player's history, Copy to next week and the court sheet (0027); a clinic never published never reaches a player (20260929000001/2) | [me] | **OPEN**: merged on `build-6`; done when the eight migrations are pushed and `calendar-feed`, `stripe-webhook`, `stripe-charge`, `stripe-setup-intent` and `delete-account` redeployed |
+| I9 | Tara's questions 92 to 100 and 73 on round five of her review page | [me]/[Alex] | **OPEN**: the model builds round five after build 6 merges; Alex sends the link |
 
 ## F. The CI Supabase project (Alex asked 2026-09-12; corrected 2026-09-13; decided 2026-09-18)
 
-**Decided 2026-09-18: option 3.** Alex: *"nahh unless we really need it no more money for now."* No CI project, no Pro plan. The 18 XCUITests run on a laptop before every TestFlight build and the run is pasted into the changelog entry for that build; the `ios-ui-tests` job stays green with its notice until the three settings exist, so switching later is a dashboard visit and two secrets, nothing in the repo. Revisit when the first paying member exists (D3 wants point-in-time recovery then anyway). The rest of this section is kept as the record of why.
+**Decided 2026-09-18: option 3.** Alex: *"nahh unless we really need it no more money for now."* No CI project, no Pro plan. The 22 XCUITests run on a laptop before every TestFlight build and the run is pasted into the changelog entry for that build; the `ios-ui-tests` job stays green with its notice until the three settings exist, so switching later is a dashboard visit and two secrets, nothing in the repo. Revisit when the first paying member exists (D3 wants point-in-time recovery then anyway). The rest of this section is kept as the record of why.
 
 
-Alex gave the go-ahead on 2026-09-13 ("exact steps for me or can you do it all?"); the create was attempted the same day and refused, see below. Would it help a lot? Yes: it is the only way to run the 18 XCUITests on every PR, which is the layer that walks the app like a member does. The macOS runner has no Docker, so it cannot host the local stack; a small hosted project it can reset to the seed is the practical answer. Everything on our side is built and waiting (2026-09-13): the Debug app accepts `FXE_SUPABASE_URL` / `FXE_SUPABASE_ANON_KEY`, the UI tests forward them, and the `ios-ui-tests` job resets the project with `supabase db reset --db-url` and runs the suite with one retry. The job stays green with a notice until the secrets exist.
+Alex gave the go-ahead on 2026-09-13 ("exact steps for me or can you do it all?"); the create was attempted the same day and refused, see below. Would it help a lot? Yes: it is the only way to run the 22 XCUITests on every PR, which is the layer that walks the app like a member does. The macOS runner has no Docker, so it cannot host the local stack; a small hosted project it can reset to the seed is the practical answer. Everything on our side is built and waiting (2026-09-13): the Debug app accepts `FXE_SUPABASE_URL` / `FXE_SUPABASE_ANON_KEY`, the UI tests forward them, and the `ios-ui-tests` job resets the project with `supabase db reset --db-url` and runs the suite with one retry. The job stays green with a notice until the secrets exist.
 
 **Does it use the Volee slot? Yes, and Alex was right.** The 2026-09-12 version of this section said the free plan is two projects per organization. It is two active free projects per *user* across every org they own: `supabase projects create fxe-ci` on 2026-09-13 was refused with "Alex-Epstein (2 project limit)", because Volee and `fxe-tennis` already fill it. Three ways out, cheapest first:
 

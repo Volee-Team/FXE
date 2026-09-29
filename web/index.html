@@ -44,6 +44,12 @@
                    border-color: var(--fxe-navy); }
   button.small { min-height: 38px; padding: 6px 12px; font-size: 14px; }
   button:disabled { opacity: .5; cursor: not-allowed; }
+  /* A link that sits among the card's buttons (Court sheet opens a page, so
+     it is a real link: a new tab, middle-click, the address to share). */
+  a.button { display: inline-flex; align-items: center; font-weight: 600; border-radius: 10px;
+    border: 1px solid var(--fxe-border); background: var(--fxe-surface-raised);
+    color: var(--fxe-text-primary); text-decoration: none; white-space: nowrap; }
+  a.button.small { min-height: 38px; padding: 6px 12px; font-size: 14px; }
   input, select, textarea {
     font: inherit; width: 100%; padding: 10px; border-radius: 10px;
     border: 1.5px solid var(--fxe-border); background: var(--fxe-surface-raised);
@@ -64,6 +70,12 @@
   dialog { border: none; border-radius: 16px; padding: 20px; max-width: 520px; width: 92%;
            background: var(--fxe-surface); color: var(--fxe-text-primary); }
   dialog::backdrop { background: rgba(22,38,76,.45); }
+  /* Saved messages in the Message dialog (decision 0030). */
+  .saved-list { max-height: 190px; overflow-y: auto; }
+  .saved-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .saved-use { flex: 1; min-width: 0; text-align: left; font-weight: 400; white-space: pre-line;
+               overflow-wrap: anywhere; }
+  .saved-empty { margin: 4px 0; }
   .hide { display: none !important; }
   .signin { max-width: 380px; margin: 12vh auto; }
 select.court { width: auto; flex: 0 0 auto; margin: 0; font: inherit; font-size: 13px; padding: 4px 6px; border: 1px solid var(--border, #d8d3c7); border-radius: 6px; background: #fff; color: inherit; }
@@ -141,6 +153,10 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
       <h2 style="margin:0" class="grow">This week</h2>
       <label class="muted" style="white-space:nowrap;display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="show-earlier" style="width:auto;margin:0"> Show earlier</label>
       <label class="muted" style="white-space:nowrap;display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="show-canceled" style="width:auto;margin:0"> Show canceled</label>
+      <!-- Weekly setup in one click (decision 0027 §2): every clinic of this
+           service week, canceled ones aside, copied seven days later as
+           drafts. Players see nothing until she publishes each one. -->
+      <button id="copy-week">Copy to next week</button>
       <button class="primary" id="new-clinic">New clinic</button>
     </div>
     <div id="action" class="hide">
@@ -174,7 +190,7 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
     <!-- The QR code for members (question 75, decision 0024): a card to print
          or drop into her email. It points at /app, which forwards to wherever
          the app installs from, so it never needs reprinting. -->
-    <p class="muted" style="margin-top:14px"><a href="qr.html" target="_blank" rel="noopener" id="open-qr">QR code for the app</a></p>
+    <p class="muted" style="margin-top:14px"><a href="qr.html" target="_blank" rel="noopener" id="open-qr">QR code for the app</a> <span class="muted" id="qr-visits"></span></p>
 
     </div>
 
@@ -192,6 +208,11 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
       </div>
       <div class="row br-controls" style="margin-top:10px">
         <button class="small primary" id="br-run">Run</button>
+        <!-- Foxcroft's share is Tara's rate (20260929000004): 10 until she
+             sets what the club agreed. Admin-only, never readable by members. -->
+        <label for="br-rate" class="muted" style="margin:0 0 0 auto">Foxcroft share %</label>
+        <input id="br-rate" type="number" min="0" max="25" step="0.5" style="width:5.5em">
+        <button class="small" id="br-rate-save">Save</button>
       </div>
       <div id="br-msg"></div>
       <div id="br-report" class="hide"></div>
@@ -303,8 +324,13 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
     <option value="response_needed">Response Needed</option>
     <option value="unpaid">Unpaid</option>
   </select>
+  <!-- Saved messages (decision 0030): her own words, kept to fill the box
+       again. saved-messages.js reads them each time the dialog opens. -->
+  <p id="m-saved-label" class="muted" style="margin:10px 0 4px">Saved</p>
+  <div id="m-saved" class="saved-list" role="group" aria-labelledby="m-saved-label"></div>
   <label for="m-body">Message</label>
   <textarea id="m-body" rows="5"></textarea>
+  <button type="button" class="small" id="m-save" style="margin-top:8px">Save this message</button>
   <div id="message-msg"></div>
   <div class="row" style="margin-top:14px">
     <span class="grow"></span>
@@ -346,8 +372,9 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
 <script type="module">
 import { createClient } from "./vendor/supabase-js.js";
 import { CONFIG, ENV } from "./config.js";
-import { serviceWeekStart, splitThisWeek } from "./week.js";
+import { serviceWeekStart, splitThisWeek, weekLabel } from "./week.js";
 import { readAll, readByIds } from "./read.js";
+import { wireSavedMessages } from "./saved-messages.js";
 
 // implicit flow: a reset started on one device (the phone) must finish on
 // another (this page). PKCE ties the emailed code to the device that asked.
@@ -399,8 +426,58 @@ const courtSelect = (r) => `<select class="court" data-court="${r.id}" aria-labe
   <option value=""${r.court_number == null ? " selected" : ""}>No court</option>
   ${COURTS.map(n => `<option value="${n}"${r.court_number === n ? " selected" : ""}>Court ${n}</option>`).join("")}
 </select>`;
+// Consecutive clinics (the list is in time order) folded under their service
+// week, so a published season reads in weeks the way the phone shows it.
+const byWeek = (clinics) => {
+  const groups = [];
+  for (const c of clinics) {
+    const start = serviceWeekStart(new Date(c.starts_at));
+    const last = groups[groups.length - 1];
+    if (last && last.start.getTime() === start.getTime()) last.items.push(c);
+    else groups.push({ start, items: [c] });
+  }
+  return groups;
+};
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, m =>
   ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+// NTRP is always written with one decimal ("3.0"), as the phone shows it;
+// PostgREST sends numeric(2,1) as a JSON number, so 3.0 arrived as "3".
+const ntrp = (r) => r == null ? "—" : Number(r).toFixed(1);
+
+// A player's history at a glance (decision 0027 §1), under a name in the
+// Player Pool and on the Players tab. Every number is the database's
+// (admin_player_history, 20260928800001); this only words it: "New" when
+// there is nothing yet, and after "played" only the parts that are not zero.
+// PHONE: PlayerHistory.line in FXETennis/Models/PlayerHistory.swift says the same.
+const plural = (n, one) => `${n} ${one}${n === 1 ? "" : "s"}`;
+function historyLine(h) {
+  if (!h) return "";
+  if (!h.played && !h.no_shows && !h.late_cancels) return "New";
+  const parts = [`${h.played} played`];
+  if (h.no_shows) parts.push(plural(h.no_shows, "no-show"));
+  if (h.late_cancels) parts.push(plural(h.late_cancels, "late cancel"));
+  return parts.join(" · ");
+}
+const lastPlayed = (h) => h && h.last_played_at
+  ? "Last played " + new Date(h.last_played_at).toLocaleDateString(undefined,
+      { timeZone: "America/New_York", month: "short", day: "numeric", year: "numeric" })
+  : "";
+// The line, with the last clinic played on hover. Nothing at all when the
+// history could not be read.
+const historyHtml = (h) => {
+  const line = historyLine(h);
+  if (!line) return "";
+  const tip = lastPlayed(h);
+  return `<br><span class="muted" data-history${tip ? ` title="${esc(tip)}"` : ""}>${esc(line)}</span>`;
+};
+// One call per render, every player, a page at a time past PostgREST's row
+// cap. Read leniently, like the disputes list: an unreadable history shows no
+// line rather than blanking the week (the page can reach Vercel before its
+// migration reaches hosted).
+async function readHistory() {
+  const { data, error } = await readAll(() => sb.rpc("admin_player_history").order("player_id"));
+  return error ? {} : Object.fromEntries((data || []).map(h => [h.player_id, h]));
+}
 
 function note(el, text, ok = false) {
   el.innerHTML = text ? `<div class="${ok ? "ok" : "err"}">${esc(text)}</div>` : "";
@@ -439,6 +516,9 @@ function friendly(e) {
   // 20260927300001/3: nothing before card payments; a held charge resolved once.
   if (m.includes("clinic_before_payments")) return "That clinic ended before card payments were on.";
   if (m.includes("payment_not_held")) return "That charge is no longer held.";
+  // 20260928700001: Resolved on a decline that went through, or was already
+  // resolved, meanwhile. CLAUDE.md's own line for hard rule 3.
+  if (m.includes("decline_not_open")) return "That just changed. Here's the latest.";
   if (m.includes("not_late_yet")) return "Not late yet.";
   if (m.includes("payments_disabled")) return "Payments are switched off.";
   if (m.includes("no_card_on_file")) return "No card on file for that player.";
@@ -450,6 +530,13 @@ function friendly(e) {
   if (m.includes("not_refundable")) return "Only a paid charge can be refunded.";
   if (m.includes("stripe_not_configured")) return "Stripe isn't connected yet.";
   if (m.includes("label_required")) return "Give the link a label.";
+  // 20260928600001: admin_set_pro. The page only offers the box where it
+  // would work, so these are a stale page or a second tab.
+  if (m.includes("cannot_change_an_admin")) return "That account is an administrator.";
+  if (m.includes("cannot_change_own_role")) return "That is your own account.";
+  if (m.includes("account_deleted")) return "That account was deleted.";
+  if (m.includes("account_not_found")) return "Couldn't find that account.";
+  if (m.includes("account_changed")) return "That just changed. Here's the latest.";
   if (m.includes("failed to fetch")) return "Couldn't reach the server. Check your connection.";
   return e?.message || "Something went wrong.";
 }
@@ -482,8 +569,11 @@ async function showApp() {
   $("who").textContent = `${acct.first_name} ${acct.last_name}`;
   $("signin").classList.add("hide"); $("app").classList.remove("hide"); $("bar").classList.remove("hide");
   await loadClinics();
+  searchPlayers();
   loadReviewResponses();
   if (!$("tab-money").classList.contains("hide")) loadPayouts();
+  loadBoardRate();
+  loadAppLinkVisits();
 }
 
 async function loadTemplates() {
@@ -551,10 +641,15 @@ async function loadActionNeeded(clinics, byPlayer, owed, stale = () => false) {
       <span class="grow">${esc(r.clinic_name)} ended, not charged yet<br><span class="muted">${fmtDate(r.starts_at)}</span></span>
       <button class="small primary" data-chargeclinic="${r.clinic_id}">Charge clinic</button>
     </div>`),
+    // Resolved (Tara, question 83, decision 0024): "a button that says
+    // “resolved” and it clears - for me only to see". One click, no second:
+    // it moves no money, tells nobody, and leaves the player's card declined
+    // (admin_resolve_decline, 20260928700001). The ledger keeps the charge.
     ...declined.map(d => `<div class="row" data-declined="${d.registration_id}">
       <span class="grow">${esc(d.first_name + " " + d.last_name)}'s card was declined<br>
         <span class="muted">${esc(d.clinic_name)} · ${fmtDate(d.clinic_starts_at)}${d.failure_code ? " · " + esc(declineLabel(d.failure_code)) : ""}</span></span>
       <span class="name">${money(d.amount_cents)}</span>
+      ${d.payment_id ? `<button class="small" data-resolvedecline="${d.payment_id}">Resolved</button>` : ""}
     </div>`),
     ...disputes.map(d => `<div class="row" data-dispute="${d.payment_id}">
       <span class="grow">${esc(d.first_name + " " + d.last_name)} disputed a charge<br>
@@ -728,6 +823,8 @@ async function loadLedger(gen = moneySeq) {
     // Decline reason (20260926000010): Stripe's code in words when there is
     // one, else Stripe's own sentence as before.
     const why = failed && r.failure_code ? "Declined: " + declineLabel(r.failure_code) : reasonLabel(r.failure_reason);
+    // Tara marked the decline Resolved (20260928700001): still here, as history.
+    const resolved = failed && r.resolved_at;
     const held = r.status === "processing" && HELD.includes(r.failure_reason);
     // Open and lost disputes in red: money that is, or was, taken back.
     const dispute = disputeLabel(r.dispute_status);
@@ -740,7 +837,7 @@ async function loadLedger(gen = moneySeq) {
     // name printed on the card, so the account name is what we have).
     return `<div class="row">
       <span class="grow"><span class="name"${failed ? ` style="font-weight:700"` : ""}>${esc(who)}</span> <span class="muted">${KIND[r.kind] || esc(r.kind)}</span><br>
-        <span class="muted">${clinic ? esc(clinic.name) + " · " + fmtDate(clinic.starts_at) : ""}</span>${why ? `<span class="muted"${bad}> · ${esc(why)}</span>` : ""}${dispute ? `<span class="muted"${disputeRed ? ` style="color:#992E22"` : ""} data-dispute-status> · ${esc(dispute)}</span>` : ""}</span>
+        <span class="muted">${clinic ? esc(clinic.name) + " · " + fmtDate(clinic.starts_at) : ""}</span>${why ? `<span class="muted"${bad}> · ${esc(why)}</span>` : ""}${resolved ? `<span class="muted" data-resolved> · Resolved</span>` : ""}${dispute ? `<span class="muted"${disputeRed ? ` style="color:#992E22"` : ""} data-dispute-status> · ${esc(dispute)}</span>` : ""}</span>
       <span><span class="name">${r.kind === "refund" ? "−" : ""}${money(r.amount_cents)}</span><br><span class="muted"${bad}>${status}</span></span>
       ${paymentsOn && r.kind !== "refund" && r.status === "succeeded" && !r.dispute_status ? `<button class="small" data-refund="${r.id}">Refund</button>` : ""}
     </div>${held ? `<div class="row" data-held="${r.id}">
@@ -823,6 +920,29 @@ function previousMonth() {
 { const d = previousMonth(); $("br-from").value = d.from; $("br-to").value = d.to; }
 
 let boardRun = null;   // { from, to, sum, rows } of the last successful run
+let boardRate = 10;
+async function loadBoardRate() {
+  const { data, error } = await sb.rpc("admin_board_share_percent");
+  if (!error && data != null) { boardRate = Number(data); $("br-rate").value = boardRate; }
+}
+$("br-rate-save").addEventListener("click", async () => {
+  const v = Number($("br-rate").value);
+  const { data, error } = await sb.rpc("admin_set_board_share_percent", { p_percent: v });
+  if (error) return note($("br-msg"), (error.message || "").includes("percent_out_of_range")
+    ? "Use a number from 0 to 25, in steps of 0.1." : friendly(error));
+  boardRate = Number(data);
+  note($("br-msg"), "Saved.", true);
+  if (boardRun) runBoardReport();
+});
+// How many opened the app link, and how many by scanning the code (Kat,
+// 2026-09-29; decision 0031). Counts only, per New York day.
+async function loadAppLinkVisits() {
+  const { data, error } = await sb.rpc("admin_app_link_visits");
+  if (error || !data) return;
+  const total = data.reduce((n, r) => n + r.visits, 0);
+  const qr = data.filter(r => r.via === "qr").reduce((n, r) => n + r.visits, 0);
+  $("qr-visits").textContent = total ? `· opened ${total} ${total === 1 ? "time" : "times"}, ${qr} by scanning` : "· not opened yet";
+}
 async function runBoardReport() {
   const from = $("br-from").value, to = $("br-to").value;
   note($("br-msg"), "");
@@ -844,8 +964,8 @@ async function runBoardReport() {
         ${line("Clinics", t.clinics)}
         ${line("Fees at clinic prices", usd(t.fees_due_cents))}
         ${line("Collected by card", usd(t.collected_cents))}
-        ${line("10% of collected", usd(t.board_share_cents))}
-        ${line("10% of fees", usd(t.board_share_of_due_cents))}
+        ${line(`${boardRate}% of collected`, usd(t.board_share_cents))}
+        ${line(`${boardRate}% of fees`, usd(t.board_share_of_due_cents))}
       </table>
       <table>
         <tr><th>Clinic</th><th>Date</th><th class="num">Members attended</th><th class="num">Non-members attended</th>
@@ -994,9 +1114,10 @@ async function loadClinics() {
   // (the Player Pool's numbers are Tara's priority order). Players are read
   // whole because Action Needed names people who are not on a roster yet.
   const onScreen = [...visible, ...visibleEarlier].map(c => c.id);
-  const [{ data: regs, error: regsError }, { data: players, error: playersError }] = await Promise.all([
+  const [{ data: regs, error: regsError }, { data: players, error: playersError }, history] = await Promise.all([
     readByIds(onScreen, (part) => sb.from("registrations_admin").select("*").in("clinic_id", part).order("registered_at").order("id")),
     readAll(() => sb.from("players").select("id,first_name,last_name,is_member,adult_rating,level_note").order("id")),
+    readHistory(),
   ]);
   if (stale()) return;
   if (regsError || playersError) {
@@ -1035,10 +1156,12 @@ async function loadClinics() {
         ${rows.map((r, i) => {
           const p = byPlayer[r.player_id];
           const who = p ? `${p.first_name} ${p.last_name}` : "Unknown player";
-          const sub = p ? `${p.adult_rating ?? "—"} · ${p.is_member ? "Member" : "Non-member"}` : "";
+          const sub = p ? `${ntrp(p.adult_rating)} · ${p.is_member ? "Member" : "Non-member"}` : "";
+          // The Player Pool is where she chooses, so its rows carry the
+          // player's history (decision 0027 §1).
           return `<div class="row">
             ${s === "pool" ? `<span class="muted" style="width:18px;text-align:right">${i + 1}</span>` : ""}
-            <span class="grow"><span class="name">${esc(who)}</span><br><span class="muted">${esc(sub)}</span></span>
+            <span class="grow"><span class="name">${esc(who)}</span><br><span class="muted">${esc(sub)}</span>${s === "pool" ? historyHtml(history[r.player_id]) : ""}</span>
             ${extra(r)}
           </div>`;
         }).join("")}
@@ -1053,6 +1176,7 @@ async function loadClinics() {
         <button class="small" data-edit="${c.id}">Edit</button>
         <button class="small" data-message="${c.id}">Message</button>
         <button class="small" data-walkup="${c.id}">Add player</button>
+        ${c.status !== "canceled" ? `<a class="button small" href="sheet.html?clinic=${c.id}" target="_blank" rel="noopener">Court sheet</a>` : ""}
         ${zelleOn && unpaidIn(c).length ? `<button class="small" data-remind="${c.id}" data-n="${unpaidIn(c).length}">Remind unpaid (${unpaidIn(c).length})</button>` : ""}
         ${c.status === "draft" ? `<button class="small primary" data-publish="${c.id}">Publish</button>` : ""}
         ${c.status !== "canceled" ? `<button class="small" data-cancelclinic="${c.id}">Cancel clinic</button>` : `<span class="chip canceled">Canceled</span>`}
@@ -1069,7 +1193,7 @@ async function loadClinics() {
 
   $("clinics").innerHTML = (hiddenCount && !showCanceled
     ? `<p class="muted">${hiddenCount} canceled ${hiddenCount === 1 ? "clinic" : "clinics"} hidden.</p>` : "")
-    + (visible.length ? visible.map(renderCard).join("")
+    + (visible.length ? byWeek(visible).map(g => (g.start.getTime() === weekStart.getTime() ? "" : `<h2 class="week-head">${weekLabel(g.start, weekStart)}</h2>`) + g.items.map(renderCard).join("")).join("")
       : `<div class="card muted">No clinics this week or later. Use “New clinic” to add one.</div>`)
     + (showEarlier ? `<h2>Earlier</h2>` + (visibleEarlier.length ? visibleEarlier.map(renderCard).join("")
       : `<p class="muted">No earlier clinics.</p>`) : "");
@@ -1155,6 +1279,22 @@ document.addEventListener("click", async (e) => {
     await call("admin_resolve_held_payment", { p_payment: b.dataset.resolve, p_outcome: b.dataset.outcome });
     await loadMoney();
   });
+  if (b.dataset.resolvedecline) {
+    // Resolved on a decline that went through, or that was resolved, in the
+    // meantime (hard rule 3): the latest state first, then the sentence,
+    // because a reload clears the message line (as Late cancel does).
+    b.disabled = true;
+    try {
+      const { error } = await sb.rpc("admin_resolve_decline", { p_payment: b.dataset.resolvedecline });
+      const raced = !!error && (error.message || "").toLowerCase().includes("decline_not_open");
+      if (error && !raced) throw error;
+      await loadClinics();
+      await loadMoney();
+      if (raced) note($("msg"), "That just changed. Here's the latest.");
+    } catch (err) { note($("msg"), friendly(err)); }
+    finally { b.disabled = false; }
+    return;
+  }
   if (b.dataset.publish)  return run(() => call("publish_clinic",     { p_clinic: b.dataset.publish }));
   if (b.dataset.archivetpl) return run(() => call("admin_set_template_archived", { p_id: b.dataset.archivetpl, p_archived: true }));
   if (b.dataset.restoretpl) return run(() => call("admin_set_template_archived", { p_id: b.dataset.restoretpl, p_archived: false }));
@@ -1293,6 +1433,29 @@ $("f-template").onchange = () => {
 };
 
 $("new-clinic").onclick = () => openEdit(null);
+
+// Copy to next week (admin_copy_week, 20260928800002; decision 0027 §2). The
+// week is this service week, named by its New York Sunday, the same week the
+// tab starts at. Every copy is a draft, and the server skips a clinic already
+// copied, so a second click only says there is nothing new. The count is the
+// server's answer, never the page's own.
+$("copy-week").addEventListener("click", async () => {
+  const btn = $("copy-week"); btn.disabled = true;
+  let result = null;
+  try {
+    const p = nyParts(serviceWeekStart());
+    const { data, error } = await sb.rpc("admin_copy_week", { p_week_start: `${p.year}-${p.month}-${p.day}` });
+    if (error) throw error;
+    const n = (data && data[0] && data[0].created) || 0;
+    result = n === 0 ? "Nothing new to copy."
+      : n === 1 ? "Copied 1 clinic to next week as a draft."
+      : `Copied ${n} clinics to next week as drafts.`;
+    await loadClinics();
+  } catch (err) { note($("msg"), friendly(err)); }
+  finally { btn.disabled = false; }
+  // loadClinics() clears the message line, so the result is written after it.
+  if (result) note($("msg"), result, true);
+});
 $("edit-cancel").onclick = () => $("edit").close();
 $("message-cancel").onclick = () => $("message").close();
 $("walkup-cancel").onclick = () => $("walkup").close();
@@ -1323,11 +1486,18 @@ let searchTimer = null;
 // (information_hiding.sql check 7); they are read and written only through
 // admin-only RPCs added in 20260902000002.
 let playerTimer;
-const playerRow = (pl) => `<div class="row" data-player-row="${pl.id}">
+// `who` is the player's account and its role (playerRoles below). The Pro box
+// is shown for a live member or pro account only: admin_set_pro refuses an
+// admin, a deleted account and Tara's own, and the page does not offer what
+// the database would refuse.
+const playerRow = (pl, history, who) => `<div class="row" data-player-row="${pl.id}">
   <span class="grow"><span class="name">${esc(pl.first_name)} ${esc(pl.last_name)}</span>${pl.has_notes ? ' <span class="muted" title="Has a note">✎</span>' : ""}<br>
-    <span class="muted">${pl.adult_rating ?? "—"} · ${pl.is_member ? "Member" : "Non-member"}${pl.is_active ? "" : " · Inactive"}${pl.waiver_accepted ? "" : " · Waiver not signed"}</span>${pl.level_note ? `<br><span class="muted" title="The player's note at level entry; only you see it">“${esc(pl.level_note)}”</span>` : ""}</span>
+    <span class="muted">${ntrp(pl.adult_rating)} · ${pl.is_member ? "Member" : "Non-member"}${pl.is_active ? "" : " · Inactive"}${pl.waiver_accepted ? "" : " · Waiver not signed"}</span>${historyHtml(history)}${pl.level_note ? `<br><span class="muted" title="The player's note at level entry; only you see it">“${esc(pl.level_note)}”</span>` : ""}</span>
   <button class="small" data-member="${pl.id}" data-now="${pl.is_member}">${pl.is_member ? "Make non-member" : "Make member"}</button>
   <button class="small" data-active="${pl.id}" data-now="${pl.is_active}">${pl.is_active ? "Deactivate" : "Reactivate"}</button>
+  ${who && !who.deleted && (who.role === "member" || who.role === "pro")
+    ? `<label class="muted" style="white-space:nowrap;display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" data-pro="${who.account}"${who.role === "pro" ? " checked" : ""} style="width:auto;margin:0"> Pro</label>`
+    : ""}
   <button class="small" data-notes="${pl.id}">Note</button>
   <button class="small" data-resetlink="${pl.id}">Reset link</button>
 </div>
@@ -1340,15 +1510,50 @@ const playerRow = (pl) => `<div class="row" data-player-row="${pl.id}">
   <div class="row"><span class="muted grow">Only you can see this. <span data-noteedited="${pl.id}"></span></span><button class="small primary" data-savenote="${pl.id}">Save note</button></div>
 </div>`;
 
+let playerSeq = 0;
 async function searchPlayers() {
+  // Everyone by last name until she types; one letter waits for a second
+  // (search_players('') returns the whole directory, 2026-09-28).
   const q = $("p-query").value.trim();
-  if (q.length < 2) { $("p-results").innerHTML = ""; return; }
-  const { data, error } = await sb.rpc("search_players", { p_query: q, p_include_inactive: $("p-inactive").checked });
+  if (q.length === 1) return;
+  // The load-time list and a typed search can be in flight together; only
+  // the latest one may draw, or a slow full list would replace her results.
+  const seq = ++playerSeq;
+  const [{ data, error }, history] = await Promise.all([
+    sb.rpc("search_players", { p_query: q, p_include_inactive: $("p-inactive").checked }),
+    readHistory()]);
+  if (seq !== playerSeq) return;
   if (error) return note($("players-msg"), friendly(error));
+  const roles = await playerRoles((data || []).map(pl => pl.id));
+  if (seq !== playerSeq) return;
   $("p-results").innerHTML = (data || []).length
-    ? data.map(playerRow).join("")
-    : `<p class="muted">Nobody by that name yet. They may need to sign up in the app first.</p>`;
+    ? data.map(pl => playerRow(pl, history[pl.id], roles.get(pl.id))).join("")
+    : (q ? `<p class="muted">Nobody by that name yet. They may need to sign up in the app first.</p>`
+         : `<p class="muted">No players yet.</p>`);
 }
+// Each player's account and its role, for the Pro box (decision 0025). Tara
+// reads players and accounts under their is_admin() policies; nobody else
+// gets past this page's door. A failed read leaves the box off, never wrong.
+async function playerRoles(ids) {
+  const out = new Map();
+  if (!ids.length) return out;
+  const { data, error } = await sb.from("players").select("id,account_id,accounts(role,deleted_at)").in("id", ids);
+  if (error) return out;
+  for (const r of data || []) out.set(r.id, { account: r.account_id, role: r.accounts?.role, deleted: !!r.accounts?.deleted_at });
+  return out;
+}
+// Tara's switch, member <-> pro (admin_set_pro). The list is read again after
+// every change, so the box always shows what the database holds.
+document.addEventListener("change", async (e) => {
+  const box = e.target.closest("input[data-pro]"); if (!box) return;
+  box.disabled = true;
+  try {
+    const { error } = await sb.rpc("admin_set_pro", { p_account: box.dataset.pro, p_pro: box.checked });
+    if (error) throw error;
+    note($("players-msg"), "");
+  } catch (err) { note($("players-msg"), friendly(err)); }
+  await searchPlayers();
+});
 $("p-query").addEventListener("input", () => { clearTimeout(playerTimer); playerTimer = setTimeout(searchPlayers, 250); });
 $("p-inactive").addEventListener("change", searchPlayers);
 
@@ -1402,7 +1607,7 @@ $("w-query").addEventListener("input", () => {
     $("w-results").innerHTML = (data || []).length
       ? data.map(pl => `<div class="row">
           <span class="grow"><span class="name">${esc(pl.first_name)} ${esc(pl.last_name)}</span><br>
-          <span class="muted">${pl.adult_rating ?? "—"} · ${pl.is_member ? "Member" : "Non-member"}</span></span>
+          <span class="muted">${ntrp(pl.adult_rating)} · ${pl.is_member ? "Member" : "Non-member"}</span></span>
           <button class="small primary" data-place="${pl.id}">Put in clinic</button>
         </div>`).join("")
       : `<p class="muted">Nobody by that name yet. They may need to sign up in the app first.</p>`;
@@ -1448,6 +1653,11 @@ $("message-send").onclick = async () => {
   } catch (err) { note($("message-msg"), friendly(err)); }
   finally { btn.disabled = false; }
 };
+
+wireSavedMessages(sb, {
+  dialog: $("message"), box: $("m-body"), list: $("m-saved"), save: $("m-save"),
+  say: (text) => note($("message-msg"), text), friendly,
+});
 
 $("forgot").onclick = async () => {
   const email = $("email").value.trim();

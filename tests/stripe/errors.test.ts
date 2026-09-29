@@ -73,10 +73,16 @@ Deno.test("an idempotency error is held for a person, neither retried nor failed
   eq(classifyChargeError(e), { kind: "hold", reason: "idempotency_error" });
 });
 
-Deno.test("a request Stripe refused is failed (nothing was charged)", () => {
+// A refused request is failed, and carries NO code: failure_code means "Stripe
+// said no to the card" (20260928700001), and the database blocks the player's
+// next registration on it. A refusal of our own parameters is not the card's
+// fault, and one bug in them would otherwise block every player in a batch
+// and tell each "Card declined" (sql-auditor, 2026-09-28). Stripe's sentence
+// stays in the reason, for Tara.
+Deno.test("a request Stripe refused is failed (nothing was charged), with no decline code", () => {
   const e = E.StripeError.generate({ type: "invalid_request_error", code: "resource_missing", param: "payment_method",
     message: "No such PaymentMethod: 'pm_gone'", statusCode: 400 });
-  eq(classifyChargeError(e), { kind: "failed", code: "resource_missing", reason: "No such PaymentMethod: 'pm_gone'" });
+  eq(classifyChargeError(e), { kind: "failed", code: null, reason: "No such PaymentMethod: 'pm_gone'" });
 });
 
 Deno.test("our own refusals are failed", () => {

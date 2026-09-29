@@ -279,6 +279,30 @@ final class AccessibilityAuditUITests: XCTestCase {
                       "Return should have moved to the password and then signed in")
     }
 
+    /// A pro's one extra screen (decision 0025): today's clinics with a Came /
+    /// No-show and a Late cancel control on every row. The seed makes
+    /// pro@fxe.test a pro and puts Today Drill on today with two players.
+    func testAProsTodayPassesTheAudit() {
+        app.launch()
+        let email = app.textFields["auth.email"]
+        XCTAssertTrue(email.waitForExistence(timeout: 20))
+        email.tap(); email.typeText("pro@fxe.test")
+        let pw = app.secureTextFields["auth.password"]
+        pw.tap(); pw.typeText(seedPassword)
+        app.buttons["auth.submit"].tap()
+        XCTAssertTrue(app.staticTexts["home.greeting"].waitForExistence(timeout: 20))
+
+        // Same second-tap retry as Manage below.
+        let today = app.tabBars.buttons["Today"]
+        XCTAssertTrue(today.waitForExistence(timeout: 20))
+        today.tap()
+        let row = app.descendants(matching: .any).matching(identifier: "pro.row").firstMatch
+        if !row.waitForExistence(timeout: 5) { today.tap() }
+        XCTAssertTrue(row.waitForExistence(timeout: 20), "No row on the pro's Today tab")
+        sleep(2)
+        audit("pro today")
+    }
+
     func testTarasScreensPassTheAudit() {
         app.launch()
         let email = app.textFields["auth.email"]

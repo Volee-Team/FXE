@@ -9,6 +9,8 @@ import { execSync } from "node:child_process";
 
 const TARA = { email: "tara@fxe.test", password: "password" };
 const MARIA = { email: "maria@fxe.test", password: "password" };
+// The seeded pro (decision 0025): made a pro by admin_set_pro in the seed.
+const PRO = { email: "pro@fxe.test", password: "password" };
 
 async function signIn(page, who) {
   await page.goto("/index.html");
@@ -88,14 +90,31 @@ test.describe("the week", () => {
 });
 
 test.describe("the directory", () => {
+  test("the directory lists everyone before any typing, ratings with their decimal", async ({ page }) => {
+    await signIn(page, TARA);
+    await page.getByRole("tab", { name: "Players" }).click();
+    // Rob's seeded rating is 3.0; before 2026-09-28 the laptop wrote "3".
+    const rob = page.locator("[data-player-row]", { hasText: "Rob Delgado" });
+    await expect(rob).toBeVisible();
+    await expect(rob).toContainText("3.0 · Non-member");
+    await expect(page.locator("[data-player-row]", { hasText: "Maria Alvarez" })).toContainText("3.5 · Member");
+    // Typing still narrows it.
+    await page.getByLabel("Search players by name").fill("Mar");
+    await expect(page.locator("[data-player-row]", { hasText: "Rob Delgado" })).toHaveCount(0);
+    await expect(page.locator("[data-player-row]", { hasText: "Maria Alvarez" })).toBeVisible();
+  });
+
   test("search finds a player and a note round-trips", async ({ page }) => {
     await signIn(page, TARA);
     await page.getByRole("tab", { name: "Players" }).click();
     await page.getByLabel("Search players by name").fill("Mar");
+    // The whole directory shows first (2026-09-28); wait for the search to
+    // narrow it, or the click lands on a row the redraw replaces.
+    await expect(page.locator("[data-player-row]", { hasText: "Rob Delgado" })).toHaveCount(0);
     const row = page.locator("[data-player-row]", { hasText: "Maria Alvarez" });
     await expect(row).toBeVisible();
     await row.getByRole("button", { name: "Note" }).click();
-    const box = page.getByLabel("Private note");
+    const box = page.getByLabel("Private note").filter({ visible: true });
     await expect(box).toBeVisible();
     const stamp = `Playwright ${Date.now()}`;
     await box.fill(stamp);
@@ -105,11 +124,57 @@ test.describe("the directory", () => {
     await page.reload();
     await page.getByRole("tab", { name: "Players" }).click();
     await page.getByLabel("Search players by name").fill("Mar");
+    await expect(page.locator("[data-player-row]", { hasText: "Rob Delgado" })).toHaveCount(0);
     await page.locator("[data-player-row]", { hasText: "Maria Alvarez" }).getByRole("button", { name: "Note" }).click();
-    await expect(page.getByLabel("Private note")).toHaveValue(stamp);
+    await expect(page.getByLabel("Private note").filter({ visible: true })).toHaveValue(stamp);
     // Saving re-lists the players and closes the box, so the stamp is read on
     // reopen: it exists once a note exists, and it is a date, not a slogan.
     await expect(page.locator("[id^=note-]:not(.hide) [data-noteedited]")).toContainText(/Edited .*\d/);
+  });
+});
+
+// Decision 0025. Tara makes an account a pro on the Players tab; a pro gets
+// the phone's Today tab and nothing here. Lena, because no other browser test
+// touches her; she ends as the member the seed made her, so a second run
+// starts where the first did.
+test.describe("pros", () => {
+  const lenaBox = (page) => page.locator("[data-player-row]", { hasText: "Lena Brooks" })
+    .getByRole("checkbox", { name: "Pro" });
+  const findLena = async (page) => {
+    await page.getByRole("tab", { name: "Players" }).click();
+    await page.getByLabel("Search players by name").fill("Lena");
+    await expect(page.locator("[data-player-row]", { hasText: "Lena Brooks" })).toBeVisible();
+  };
+
+  test("Tara makes a player a pro and a member again; the box shows what the database holds", async ({ page }) => {
+    await signIn(page, TARA);
+    await findLena(page);
+    await expect(lenaBox(page)).not.toBeChecked();
+    await lenaBox(page).click();
+    // The list is read again after the change; the box comes back checked.
+    await expect(lenaBox(page)).toBeChecked({ timeout: 15_000 });
+    // Reload and read it back: the database has it, not the page.
+    await page.reload();
+    await findLena(page);
+    await expect(lenaBox(page)).toBeChecked({ timeout: 15_000 });
+
+    await lenaBox(page).click();
+    await expect(lenaBox(page)).not.toBeChecked({ timeout: 15_000 });
+    await page.reload();
+    await findLena(page);
+    await expect(lenaBox(page)).not.toBeChecked({ timeout: 15_000 });
+    await expect(page.locator("#players-msg")).not.toContainText(/./);
+  });
+
+  test("a pro is told this is not their door", async ({ page }) => {
+    // The same gate as a member's: the page asks the database for the role
+    // and anything but admin is signed out again.
+    // Scoped to the sign-in message: a door that let a pro in would also
+    // print "not an administrator" from every admin call that refused them,
+    // and an unscoped match would fail on that for the wrong reason.
+    await signIn(page, PRO);
+    await expect(page.locator("#signin-msg")).toContainText("not an administrator");
+    await expect(page.getByRole("tab", { name: "Players" })).toBeHidden();
   });
 });
 
@@ -189,6 +254,13 @@ test.describe("board report", () => {
     await expect(report.locator("tr", { hasText: "Members attended" }).first()).toContainText(/\d+ \(\d+\)/);
     await expect(report.locator("tr", { hasText: "Collected by card" }).first()).toContainText(/\$\d[\d,]*\.\d{2}/);
     await expect(report.locator("tr", { hasText: "10% of fees" })).toContainText(/\$\d[\d,]*\.\d{2}/);
+    // The rate is hers (20260929000004): set 8 and the lines say 8%.
+    await page.getByLabel("Foxcroft share %").fill("8");
+    await page.locator("#br-rate-save").click();
+    await expect(report.locator("tr", { hasText: "8% of collected" })).toBeVisible();
+    await page.getByLabel("Foxcroft share %").fill("10");
+    await page.locator("#br-rate-save").click();
+    await expect(report.locator("tr", { hasText: "10% of collected" })).toBeVisible();
     await expect(report.locator("tr.total")).toContainText("Total");
     await expect(board.getByRole("button", { name: "Download CSV" })).toBeVisible();
     await expect(board.getByRole("button", { name: "Print" })).toBeVisible();
@@ -584,6 +656,59 @@ test.describe("payouts and disputes", () => {
       if (regs.length) await db.del(`payments?registration_id=in.(${regs.map(r => r.id).join(",")})`);
       await db.del(`registrations?clinic_id=eq.${clinic.id}`);
       await db.del(`clinics?id=eq.${clinic.id}`);
+      await db.patch("app_settings?key=eq.payments_enabled_at", { value: "" });
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A declined card Tara will not chase (decision 0024, question 83): "Can we
+// have a button that says “resolved” and it clears - for me only to see ofc".
+// The charge is declined the way stripe-webhook leaves it (claimed, then
+// failed with Stripe's code), which also marks Ken's card declined.
+test.describe("a declined card", () => {
+  test("Resolved clears it from Action Needed; the card list keeps it, and Ken's card stays declined", async ({ page, request }) => {
+    const db = service(request);
+    const errors = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await db.patch("app_settings?key=eq.payments_enabled_at", { value: daysAgo(5) });
+    const clinic = await db.insert("clinics", pastClinic("Browser Declined Clinic", 2));
+    try {
+      const ken = await db.insert("registrations", { clinic_id: clinic.id, player_id: KEN_P, status: "in", source: "admin",
+        price_cents_charged: 1800, was_member: true, duration_minutes: 60 });
+      const pay = await db.insert("payments", { registration_id: ken.id, account_id: KEN_ACCT, kind: "clinic_fee",
+        amount_cents: 1800, status: "processing" });
+      await db.patch(`payments?id=eq.${pay.id}`, { status: "failed", failure_code: "insufficient_funds",
+        failure_reason: "Your card has insufficient funds." });
+
+      await signIn(page, TARA);
+      const row = page.locator(`#money-needs [data-declined="${ken.id}"]`);
+      await expect(row).toContainText("Ken Whitfield's card was declined");
+      await expect(row).toContainText("Insufficient funds (NSF)");
+      await row.getByRole("button", { name: "Resolved" }).click();
+      await expect(page.locator(`#money-needs [data-declined="${ken.id}"]`)).toHaveCount(0, { timeout: 15_000 });
+
+      // Gone after a fresh load too: the database cleared it, not the page.
+      await page.reload();
+      await expect(page.getByRole("heading", { name: "This week" })).toBeVisible();
+      await expect(page.locator("#clinics .card").first()).toBeVisible();
+      await expect(page.locator(`#money-needs [data-declined="${ken.id}"]`)).toHaveCount(0);
+
+      // The history keeps the declined charge, marked Resolved.
+      await page.getByRole("tab", { name: "Money" }).click();
+      const ledger = page.locator("#ledger");
+      await expect(ledger).toContainText("Declined: Insufficient funds (NSF)");
+      await expect(ledger.locator("[data-resolved]")).toHaveCount(1);
+
+      // Resolved is not a new card: Ken is still refused a spot.
+      const [acct] = await db.get(`accounts?id=eq.${KEN_ACCT}&select=card_decline_code`);
+      expect(acct.card_decline_code).toBe("insufficient_funds");
+      expect(errors).toEqual([]);
+    } finally {
+      await db.del(`payments?registration_id=in.(${(await db.get(`registrations?clinic_id=eq.${clinic.id}&select=id`)).map(r => r.id).join(",") || "00000000-0000-0000-0000-000000000000"})`);
+      await db.del(`registrations?clinic_id=eq.${clinic.id}`);
+      await db.del(`clinics?id=eq.${clinic.id}`);
+      await db.patch(`accounts?id=eq.${KEN_ACCT}`, { card_declined_at: null, card_decline_code: null });
       await db.patch("app_settings?key=eq.payments_enabled_at", { value: "" });
     }
   });

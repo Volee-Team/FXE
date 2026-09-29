@@ -35,6 +35,68 @@ plus every "New since" block.
 
 ---
 
+## Tara's saved messages (2026-09-28) — awaiting Alex
+
+Decision 0030, branch `saved-messages`. Chrome only, the four words the spec
+named. The saved messages themselves are Tara's own text, typed by her and
+shown back unchanged; nothing in the app writes or suggests one (hard rule 13).
+Where: the web admin's Message dialog on a clinic card, and Message Players on
+the phone's roster.
+
+| ✓ | String | Where | Why |
+|---|--------|-------|-----|
+| ☐ | Saved | Web: the heading over her saved messages in the Message dialog. Phone: the menu button above the message box | One word for the list |
+| ☐ | Save this message | Under the message box, on both | Says what it does; off while the box is empty or over 1000 characters |
+| ☐ | No saved messages yet. | Web: the list with nothing in it. Phone: the menu's only line | Says the fact |
+| — | Remove | Web: beside each saved message. Phone: a submenu naming each one | Not new: already approved (the roster's Remove) |
+| — | That didn't save. Check your connection and try again. / Couldn't reach the server. Check your connection. | Phone: a save or Remove that failed | Not new: the lines the directory and the roster already use |
+
+Nothing says why Save this message is off for a message over 1000
+characters (about 170 words; hers are one or two sentences). A sentence for
+it would be new chrome; left out until someone asks.
+
+## Subscribe in Calendar (2026-09-28) — awaiting Alex
+
+Decision 0029. Ours, all chrome. Where: Profile, under My Clinics; then the
+member's own Calendar app, which shows the calendar's name and each event's
+title. The last two live in `supabase/functions/calendar-feed/ics.ts`, which
+`scripts/extract-copy.py` does not scan (it reads the app and the web admin),
+so the gate cannot see them: they are listed here by hand.
+
+| ✓ | Words | Where | Why this wording |
+|---|---|---|---|
+| ☐ | Subscribe in Calendar | Profile, the button under My Clinics | Says what it does and where the clinics go; "Subscribe" is the word iOS uses on the sheet that follows |
+| ☐ | Couldn't load your calendar link. | Under that button when the server refused (no signal and too many attempts show the approved connection lines instead) | Says what happened, in the "Couldn't load clinics." shape |
+| ☐ | FXE Tennis | The calendar's name in the member's Calendar app (`X-WR-CALNAME`); iOS fills its Title field with it | The club's name, nothing added |
+| ☐ | *Evening Coed* (Response Needed) | An event's title for an invitation still waiting on her answer; a You're In! clinic is its name alone | Tara's locked term, composed with the clinic's own name |
+| — | -//FXE Tennis//Clinic Calendar//EN | The feed's `PRODID`, which calendar apps do not show | A label, not copy |
+
+## The app link's open count (2026-09-29, decision 0031) — awaiting Alex
+
+| ✓ | Words | Where | Why |
+|---|---|---|---|
+| ☐ | · opened 12 times, 9 by scanning | Tara's Players tab, beside "QR code for the app" | The two numbers Kat asked for, in one line |
+| ☐ | · not opened yet | The same place before anyone has opened it | Says the fact |
+
+## Foxcroft's share on the board report (2026-09-29) — awaiting Alex
+
+| ✓ | Words | Where | Why |
+|---|---|---|---|
+| ☐ | Foxcroft share % | Money tab, Board report, the label on her rate field | Names the rate she is negotiating (her word, Foxcroft) |
+| ☐ | 8% of collected / 8% of fees | The report's two lines, with her rate in place of 10 | The same lines, now showing her number |
+| ☐ | Use a number from 0 to 25, in steps of 0.1. | If the rate is refused | What the field accepts |
+
+## The waiver screen's refusals (2026-09-29) — awaiting Alex
+
+The waiver is now its own screen before the app. Two lines replace the
+generic "Couldn't save your signature." when the server says why (chrome,
+mine; the extractor cannot see assignments, so listed by hand).
+
+| ✓ | Words | Where | Why |
+|---|---|---|---|
+| ☐ | The waiver was updated. Read it again and sign. | Under the name field, when Tara published a new waiver while this one was open; the new text loads and the box unticks | Says what happened and the one thing to do |
+| ☐ | Couldn't find your account. Sign out and sign in again. | The same place, when the account is gone (a deleted account, or a reset test database) | The only way out; Sign out is on the same screen |
+
 ## Siri, Spotlight and Shortcuts: Next Clinic (2026-09-28) — awaiting Alex
 
 Ours, all of it: plain chrome, no tone. Siri speaks the answer, so it is data
@@ -49,11 +111,41 @@ in FXE Tennis?", the FXE Tennis section of the Shortcuts app, and Spotlight.
 | ☐ | *Saturday Members Only, Sunday, Oct 4 at 4:49 PM. You're In!* | The answer: the clinic's name, its day and time in club time, and You're In!, Player Pool or Response Needed | Composed, not a literal: nothing about where, ever (decision 10) |
 | ☐ | No upcoming clinics. | The answer when you hold no spot | Says the fact |
 | ☐ | Open FXE Tennis and sign in first. | The answer when nobody is signed in on the phone | The one next step there is |
+| ☐ | Next week / Week of Nov 8 | Headings between the weeks on the laptop's This week tab | The phone's own words for the same weeks (`ServiceWeek.label`); too short or built from a date, so the extractor cannot see them |
+| ☐ | No players yet. | Tara's Players tab on the laptop, only before anyone has signed up | Says the fact (the directory now lists everyone at load) |
 | ☐ | Loading | VoiceOver, on the grey placeholder shapes shown while a list first loads (Home, Clinics, My Clinics) | One word for what the shapes mean |
 
 The gate could not see any of these on the first run ("Copy unchanged"):
 `scripts/extract-copy.py` now reads App Intents titles, descriptions, short
 titles and phrases, and `static let …Line` constants.
+
+## Tara's laptop tools (2026-09-28, decision 0027) — awaiting Alex
+
+Chrome only, mine, on Tara's side (the web admin, and two lines on the phone's
+Manage tab). No player sees any of it. Five of these are in the snapshot
+(`docs/copy-approved.txt`); the rest are built in code (ternaries, template
+strings, a title attribute, Swift string values) where the extractor cannot
+see them, so they are listed here by hand.
+
+| ☐ | String | Where | Why |
+|---|---|---|---|
+| ☐ | Copy to next week | This week tab, the button beside New clinic | Copies this service week's clinics, canceled ones aside, to next week as drafts |
+| ☐ | Copied 5 clinics to next week as drafts. | The line after a copy; the number is the server's `created` | One sentence, no exclamation mark. Not seen by the extractor |
+| ☐ | Copied 1 clinic to next week as a draft. | The same, for one clinic | Not seen by the extractor |
+| ☐ | Nothing new to copy. | After a copy that made nothing: a second click, or a week with no clinics | Not seen by the extractor |
+| ☐ | Court sheet | A link on every clinic card that is not canceled; opens the sheet in a new tab | Not seen by the extractor (short link text) |
+| ☐ | FXE Tennis · Court sheet | The court sheet's browser title until the clinic loads; then "{clinic name} · Court sheet", which is what the browser prints in its header | In the snapshot |
+| ☐ | Print | The sheet's one button; the printout leaves it out | The board report's word |
+| ☐ | Court 1, Court 2, … | Headings on the sheet, in order | The court dropdown's words |
+| ☐ | No court yet | Heading over the You're In! players without a court, last | The brief's words |
+| ☐ | Thursday, Oct 1 · 8:10 PM to 9:10 PM | Under the clinic's name on the sheet, New York time | A format: the phone roster's date line |
+| ☐ | Nobody is in yet. | The sheet, when nobody is You're In! | The phone roster's empty line; in the snapshot for the first time because the extractor now sees it on the web |
+| ☐ | Couldn't load this clinic. | The sheet, when the clinic cannot be read: a member, a wrong link, no connection | In the snapshot |
+| ☐ | Sign in on the admin page first. | The sheet opened with no sign-in; the line is a link to the admin page | In the snapshot |
+| ☐ | Canceled | A chip beside a canceled clinic's name on the sheet (reached only by typing its address; the card offers no link) | Locked term |
+| ☐ | 12 played · 1 no-show · 2 late cancels | Under every name in a Player Pool (web and phone), on every Players-tab row, and on the phone's player page. After "played", only the parts that are not zero; "1 no-show", "2 no-shows", "1 late cancel", "2 late cancels" | The brief's form. Not seen by the extractor |
+| ☐ | New | The same places, for a player with no history | The brief's word |
+| ☐ | Last played Sep 13, 2026 | On hover over the web line, and a line on the phone's player page; the New York date | Not seen by the extractor |
 
 ## The QR code and its link (2026-09-28) — awaiting Alex
 
@@ -664,6 +756,57 @@ Chrome only, from the adversarial review's fixes (branch `fix-sql`). No player s
 | ☐ | Too old to retry | Web Money tab, the reason on a row with `retry_window_passed` | Was the raw code |
 | ☐ | Card changed between attempts | Web Money tab, the reason on a row with `idempotency_error` | Was the raw code |
 | ☐ | Account deleted | Web Money tab, the reason on a row with `account_deleted` | Was the raw code |
+
+## The pro role (2026-09-28) — awaiting Alex
+
+Decision 0025. Chrome only; no sentence with tone was needed, so there is no
+placeholder. A pro reads the first group on the phone's Today tab; the
+second group is Tara's web admin. Most of the pro's words are Tara's roster's
+words reused, so the two screens say the same thing. Deliberately **absent**
+for a pro: "The fee applies." under the late-cancel alert (a pro is told
+nothing about money), and "Already charged: refund it first." (a charged row
+reaches a pro as "Only Tara can change this.").
+
+| ☐ | String | Where | Why |
+|---|---|---|---|
+| ☐ | Today | iOS, a pro's fourth tab and its title | The pro's one extra tab, in place of Tara's Manage |
+| ☐ | No clinics today. | iOS Today tab, no clinic today | The words Tara's Manage tab already uses for its Today section (never visible to the extractor there) |
+| ☐ | Nobody is in yet. | iOS Today tab, a clinic nobody is You're In! for | Tara's roster's words, reused |
+| ☐ | Court 1 … Court 5 (`Court \(court)`) | iOS Today tab, under a name, only when Tara has set a court | Pros coach on those courts; read-only, no menu |
+| ☐ | Came / No-show | iOS Today tab, the toggle on each row | Tara's roster's toggle (a ternary, invisible to the extractor) |
+| ☐ | Late cancel | iOS Today tab, the button on each row, inside the cutoff or after the start | Tara's word, already approved |
+| ☐ | Late cancel Lena Brooks? (`Late cancel \(name)?`) | iOS Today tab, the alert title | Tara's alert's title (an `.alert` title, invisible to the extractor) |
+| ☐ | Note (optional), Late cancel, Keep | iOS Today tab, the alert's field and buttons | Tara's alert's, already approved; the note reaches only Tara |
+| ☐ | Couldn't load clinics. | iOS Today tab, pro_today() failed | CLAUDE.md's own example of an error line |
+| ☐ | Only Tara can change this. | iOS Today tab, any row of a clinic Tara has charged (`clinic_locked`), or an account no longer a pro | Already approved; chosen because it does not say "charged", and the same on every row so it says nothing about one player |
+| ☐ | Not late yet. / That clinic is canceled. / That just changed. Here's the latest. / That didn't go through. Check your connection and try again. | iOS Today tab, the server's other refusals | Tara's roster's words for the same refusals |
+| ☐ | VoiceOver: "Lena Brooks, came" / "Lena Brooks, no-show"; "Late cancel Lena Brooks" | iOS Today tab, the two controls' accessibility labels | Tara's toggle has only "Came"; with several rows, VoiceOver needs the name |
+| ☐ | Pro | Web admin, the checkbox on a Players row (live member or pro accounts only) | Tara's switch, admin_set_pro |
+| ☐ | That account is an administrator. | Web admin, admin_set_pro refused `cannot_change_an_admin` | A stale page or second tab; the box is not offered on an admin |
+| ☐ | That is your own account. | Web admin, `cannot_change_own_role` | The same: Tara has no player row, so the box never shows for her |
+| ☐ | That account was deleted. | Web admin, `account_deleted` | Deleted between the search and the tick |
+| ☐ | Couldn't find that account. | Web admin, `account_not_found` | Never the raw code |
+| ☐ | That just changed. Here's the latest. | Web admin, `account_changed`; the list is read again | The iOS roster's words since 2026-09-02 |
+
+## Declined cards and Resolved (2026-09-28) — awaiting Alex
+
+Decision 0026, from Tara's round-four answers 78 and 83 (decision 0024).
+Every player-facing word below is hers: her decline labels from the Money tab
+(the web's `DECLINE` map, `DeclineReason` on the phone), after "Declined: " as
+her card list already writes them, which is the form decision 0024 names
+("Declined: Insufficient funds (NSF)"). The two chrome words are mine. The
+extractor sees only Close, Resolved and the reused sentence; the composed
+lines are listed here by hand.
+
+| ✓ | String | Where | Why |
+|---|---|---|---|
+| ☐ | Declined: Insufficient funds (NSF) (and "Declined: " before each of her other labels: Card expired, Card declined by bank, Wrong security code, Wrong card number, Needs the cardholder to approve, Processing error, try again, Card declined) | Profile, under the card (•••• 4242) and beside Change card, while the card is declined; the clinic page, when Register or Accept is refused; the notification after an Accept from the lock screen is refused | Her 78: "App needs to tell them why their card isn’t working". Her words, her form. Not new words; new places |
+| ☐ | Declined: Card declined | The same places, for a card reported lost or stolen, a charge Stripe stopped as fraud, or a code she has no words for | Stripe asks that lost, stolen and fraud be shown to the cardholder as a plain decline; her screens keep "Card reported lost" / "Card reported stolen". Her label "Card declined". Default for her to confirm (decision 0026) |
+| ☐ | Resolved | Web Action Needed and the phone's Action Needed, a button on each declined card; and " · Resolved" on the web Money tab's card list, on a declined charge she resolved | Her word, her 83: "a button that says “resolved”". Capitalised as every other button label. One tap, no confirmation (it moves no money and tells nobody) |
+| ☐ | Close | The card step's toolbar, only when it opened after a refusal for a declined card | Chrome, one word. The onboarding card step (no card at all) still has no Close; this one can be closed because a card is on file and the rest of the app works |
+| — | That just changed. Here's the latest. | Resolved on a decline that went through, or was resolved, in the meantime (web and phone) | Not new: CLAUDE.md's own line for hard rule 3, already on the web's Late cancel and the phone's roster |
+| — | That didn't go through. Check your connection and try again. | The phone, when Resolved fails for any other reason | Not new: the phone's admin screens' line for the same |
+| — | Add a card | The card step's title, also when it opens for a declined card | Not new |
 
 ## The rule going forward
 

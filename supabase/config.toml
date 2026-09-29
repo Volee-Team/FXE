@@ -436,3 +436,14 @@ verify_jwt = false
 # credential is the X-Push-Secret header, checked against PUSH_WEBHOOK_SECRET.
 [functions.push]
 verify_jwt = false
+
+# A player's clinics as a subscribed calendar (decision 0029). Apple's
+# Calendar, Google and Outlook fetch the link with a plain GET and send no
+# JWT, so the token in the URL is the credential; the function checks it
+# against calendar_feeds through calendar_feed_events.
+[functions.calendar-feed]
+verify_jwt = false
+
+# A scan of the app link comes from a phone with no account (decision 0031).
+[functions.app-visit]
+verify_jwt = false

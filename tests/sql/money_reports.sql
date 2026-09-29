@@ -128,6 +128,13 @@ declare
   p1 uuid; p2 uuid; p5 uuid; p9 uuid;
   s record; v text; n int; n2 int; x text; per record; bad text;
 begin
+  -- The seed's Today Drill (the pro's Today tab, decision 0025) is an ENDED
+  -- clinic with two You're In! rows. Every number in this probe is worked out
+  -- by hand over its own fixture, on a seed that had no You're In! row at
+  -- all, so that clinic leaves this probe's universe here, inside the
+  -- transaction that rolls back. Taken out, not added in: the arithmetic
+  -- stays the rule's, not the seed's.
+  delete from public.clinics where id = 'd0000000-0000-0000-0000-000000000006';
   -- Card payments were switched on before every clinic below (20260927300001:
   -- only clinics ending at or after payments_enabled_at owe anything).
   insert into public.app_settings (key, value)
@@ -362,6 +369,32 @@ begin
     ('aug_board_share_half_up',       '1811',  s.board_share_cents::text),
     ('aug_board_share_of_due',        '1410',  s.board_share_of_due_cents::text);
 
+  -- The rate is Tara's (20260929000004, question 101: Foxcroft at 7 or 8
+  -- instead of 10). Worked by hand from 18105 collected and 14100 due:
+  -- 8%   -> 1448.4 -> 1448 and 1128
+  -- 7.5% -> 1357.875 -> 1358 and 1057.5 -> 1058 (half up)
+  insert into _probe_result values ('board_rate_default_is_10', '10', public.admin_board_share_percent()::text);
+  perform public.admin_set_board_share_percent(8);
+  select * into s from public.admin_board_report('2026-08-01', '2026-08-31');
+  insert into _probe_result values ('aug_share_at_8', '1448|1128', s.board_share_cents || '|' || s.board_share_of_due_cents);
+  perform public.admin_set_board_share_percent(7.5);
+  select * into s from public.admin_board_report('2026-08-01', '2026-08-31');
+  insert into _probe_result values ('aug_share_at_7_5_half_up', '1358|1058', s.board_share_cents || '|' || s.board_share_of_due_cents);
+  begin
+    perform public.admin_set_board_share_percent(7.55);
+    insert into _probe_result values ('rate_two_decimals_refused', '22023', 'ACCEPTED');
+  exception when others then
+    insert into _probe_result values ('rate_two_decimals_refused', '22023', sqlstate);
+  end;
+  begin
+    perform public.admin_set_board_share_percent(30);
+    insert into _probe_result values ('rate_over_25_refused', '22023', 'ACCEPTED');
+  exception when others then
+    insert into _probe_result values ('rate_over_25_refused', '22023', sqlstate);
+  end;
+  insert into _probe_result values ('refused_rates_left_it_at_7_5', '7.5', public.admin_board_share_percent()::text);
+  perform public.admin_set_board_share_percent(10);
+
   select string_agg(c.clinic_name || '|' || c.member_attendances || '|' || c.nonmember_attendances
                     || '|' || c.fees_due_cents || '|' || c.collected_cents, ' ; ' order by c.starts_at)
     into v from public.admin_board_report_clinics('2026-08-01', '2026-08-31') c;
@@ -549,6 +582,26 @@ begin
   exception when others then
     insert into _probe_result values ('member_cannot_run_clinic_rows', 'not_authorized', sqlerrm);
   end;
+  -- The rate: a member can neither read nor change it; the value is checked
+  -- afterwards as postgres, so any refusal counts, not a typo.
+  begin
+    perform public.admin_set_board_share_percent(0);
+  exception when others then null;
+  end;
+  begin
+    perform public.admin_board_share_percent();
+    insert into _probe_result values ('member_cannot_read_board_rate', 'not_authorized', 'CALL SUCCEEDED');
+  exception when others then
+    insert into _probe_result values ('member_cannot_read_board_rate', 'not_authorized', sqlerrm);
+  end;
+  insert into _probe_result values ('member_cannot_read_admin_settings', 'false',
+    has_table_privilege('authenticated', 'public.admin_settings', 'SELECT')::text);
+  perform set_config('role', 'postgres', true);
+  insert into _probe_result values ('member_could_not_change_the_rate', '10',
+    (select value from public.admin_settings where key = 'board_share_percent'));
+  insert into _probe_result values ('anon_cannot_set_the_rate', 'false',
+    has_function_privilege('anon', 'public.admin_set_board_share_percent(numeric)', 'EXECUTE')::text);
+  perform set_config('role', 'authenticated', true);
   -- Her own declined payment is not readable through the admin ledger.
   select count(*) into n from public.payments_ledger;
   insert into _probe_result values ('member_sees_nothing_in_ledger', '0', n::text);

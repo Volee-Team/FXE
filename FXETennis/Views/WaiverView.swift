@@ -184,28 +184,25 @@ struct WaiverView: View {
             session.waiverAccepted = true
             dismiss()
         } catch {
-            self.error = String(describing: error).contains("legal_name_required")
-                ? "Type your first and last name."
-                : RequestFailure(error).line ?? "Couldn't save your signature."
+            // Say which refusal it was (2026-09-29: a generic "Couldn't save
+            // your signature." told Alex nothing when his local account had
+            // been wiped by a database reset underneath him).
+            let text = String(describing: error)
+            if text.contains("legal_name_required") {
+                self.error = "Type your first and last name."
+            } else if text.contains("waiver_version_stale") {
+                // Tara published a new version while this one was open.
+                self.error = "The waiver was updated. Read it again and sign."
+                agreed = false
+                await load()
+            } else if text.contains("account_not_found") || text.contains("not_authenticated") {
+                self.error = "Couldn't find your account. Sign out and sign in again."
+            } else {
+                self.error = RequestFailure(error).line ?? "Couldn't save your signature."
+            }
         }
     }
 }
 
-/// Presents the waiver over the app until the signed-in player has signed the
-/// current version. Admins are exempt (paperwork never blocks Tara). A player
-/// who has not signed cannot reach Register: the server refuses anyway.
-private struct WaiverGate: ViewModifier {
-    @Environment(SessionStore.self) private var session
-
-    func body(content: Content) -> some View {
-        content
-            .sheet(isPresented: Binding(
-                get: { session.waiverAccepted == false && session.account?.role != "admin" },
-                set: { _ in }
-            )) { WaiverView() }
-    }
-}
-
-extension View {
-    func waiverGate() -> some View { modifier(WaiverGate()) }
-}
+// The waiver is shown by RootView as its own screen, before the app
+// (2026-09-29); it used to be a sheet over Home.

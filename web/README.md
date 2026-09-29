@@ -15,8 +15,16 @@ weekly setup.
   that while payments are on, a finished clinic nobody has charged stays in view
 * **Create and edit clinics** — the thing she asked for directly
 * Publish a draft
+* **Copy to next week**: every clinic of this week, canceled ones aside, copied
+  seven days later on the same New York clock as drafts, with next week's
+  windows and prices; a second click copies nothing (decision 0027)
+* **Court sheet** on each clinic card: `sheet.html`, the You're In! players by
+  court with their ratings, to print instead of the handwritten sheet
+* A player's history beside the name in every Player Pool and on the Players
+  tab: "12 played · 1 no-show · 2 late cancels", or "New"
 * Invite from the Player Pool, mark no-shows, cancel an invitation. (The Paid toggle and "Remind unpaid" are gated on `zelle_allowed`, which decision 0013 set to `false`: the card is the only way to pay, so neither renders today.)
-* Message any audience on a clinic
+* Message any audience on a clinic, starting from one of her **saved messages**
+  if she likes (her own text, kept with Save this message; decision 0030)
 * **Action Needed** at the top: players asking in after the 3-hour close (Put
   them in / No room) and cancellations or invitation replies she has not seen
 * **Money** on its own tab: the four counts, expected / collected / still owed,
@@ -45,7 +53,7 @@ get committed aimed at the wrong project. Sign in as `tara@fxe.test` /
 
 ## Test it
 
-33 Playwright tests (`cat web/tests/*.spec.mjs | grep -cE '^\s*test\('`,
+45 Playwright tests (`cat web/tests/*.spec.mjs | grep -cE '^\s*test\('`,
 2026-09-28) walk this page the way Tara does, against the LOCAL stack on a
 fresh seed. They are the only automated check on the web admin,
 so they run in CI on every push (`web-browser-tests` in `probes.yml`).

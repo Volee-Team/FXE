@@ -369,9 +369,20 @@ enum AdminRepository {
         try await supabase.rpc("admin_money_clinics").execute().value
     }
 
-    /// Cards whose charge failed and has not gone through since.
+    /// Cards whose charge failed and has not gone through since, and that
+    /// Tara has not marked Resolved (money_rows calls those 'resolved').
     static func moneyDeclined() async throws -> [MoneyDecline] {
         try await supabase.rpc("admin_money_declined").execute().value
+    }
+
+    /// Tara's Resolved on a declined card she will not chase (decision 0024,
+    /// question 83): it leaves her Action Needed and the Declined figures,
+    /// the ledger keeps the charge, and the player's card stays declined.
+    /// Refused with decline_not_open if the charge went through, or was
+    /// resolved, meanwhile (hard rule 3).
+    static func resolveDecline(payment: UUID) async throws {
+        struct P: Encodable { let p_payment: UUID }
+        _ = try await supabase.rpc("admin_resolve_decline", params: P(p_payment: payment)).execute()
     }
 
     /// Open chargebacks on card payments (admin_money_disputes,
@@ -482,6 +493,47 @@ enum AdminRepository {
             .rpc("search_players", params: SearchParams(p_query: query, p_include_inactive: includeInactive))
             .execute()
             .value
+    }
+
+    // MARK: - Player history (20260928800001, decision 0027 §1)
+    //
+    // Admin only in Postgres: require_admin() is the first line of
+    // admin_player_history, so a member gets not_authorized, never a count.
+
+    /// The history of several players in ONE call: the Player Pool of one
+    /// clinic. The function answers for every player; the filter on its
+    /// result keeps the answer to the people on screen, far under
+    /// PostgREST's row cap.
+    static func playerHistory(players ids: [UUID]) async throws -> [PlayerHistory] {
+        guard !ids.isEmpty else { return [] }
+        return try await supabase
+            .rpc("admin_player_history", params: HistoryParams(p_player: nil))
+            .in("player_id", values: ids)
+            .execute()
+            .value
+    }
+
+    /// One player's history, for their page. Nil only for an id that is no player.
+    static func playerHistory(player: UUID) async throws -> PlayerHistory? {
+        let rows: [PlayerHistory] = try await supabase
+            .rpc("admin_player_history", params: HistoryParams(p_player: player))
+            .execute()
+            .value
+        return rows.first
+    }
+}
+
+/// `p_player` is sent as an explicit JSON null for "every player", never an
+/// omitted key: PostgREST picks the function by argument names (see
+/// AssignCourtParams above).
+private struct HistoryParams: Encodable {
+    let p_player: UUID?
+
+    enum CodingKeys: String, CodingKey { case p_player }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        if let p = p_player { try c.encode(p, forKey: .p_player) } else { try c.encodeNil(forKey: .p_player) }
     }
 }
 
@@ -651,6 +703,9 @@ struct MoneyDecline: Decodable, Identifiable, Sendable {
     /// The account has since been deleted (20260927300001): nobody can fix
     /// that card, so Action Needed leaves the row out; the web Money tab keeps it.
     let accountDeleted: Bool?
+    /// The failed charge the row shows: what Resolved stamps (20260928700001).
+    /// Nil from a server without that migration, and then no Resolved.
+    let paymentId: UUID?
 
     var id: UUID { registrationId }
     var displayName: String {
@@ -668,6 +723,7 @@ struct MoneyDecline: Decodable, Identifiable, Sendable {
         case amountCents = "amount_cents"
         case failureCode = "failure_code"
         case accountDeleted = "account_deleted"
+        case paymentId = "payment_id"
     }
 }
 
