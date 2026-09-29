@@ -264,6 +264,46 @@ begin
        from pg_proc where oid = 'public.admin_copy_week(date)'::regprocedure)::text);
 end $$;
 
+-- The skip key is name AND start (sql-auditor, 2026-09-28): the block above
+-- passes under a name-only or a start-only key. Its own weeks, far from any
+-- seed date: source Sunday 2027-01-10, target Sunday 2027-01-17 (EST, no
+-- daylight change, so copies are +7 days at the same UTC time).
+--   source  Skip Ladies  Tue Jan 12 18:00 EST = 23:00Z   -> Tue Jan 19 23:00Z
+--           Skip Ladies  Thu Jan 14 18:00 EST = 23:00Z   -> Thu Jan 21 23:00Z
+--   target, already there before the copy:
+--           Skip Ladies  Tue Jan 19 10:00 EST = 15:00Z   same name, other time: blocks nothing
+--           Other Name   Thu Jan 21 18:00 EST = 23:00Z   same time, other name: blocks nothing
+--   first call 2|0 (name-only reads 0|2, start-only 1|1); second 0|2;
+--   cancel the Thursday copy, third call 1|1.
+do $$
+declare
+  TARA constant uuid := '11111111-1111-1111-1111-111111111111';
+  v text; thu_copy uuid;
+begin
+  insert into public.clinics (name, audience, starts_at, ends_at, member_opens_at, public_opens_at,
+      internal_capacity, status, duration_minutes) values
+    ('Skip Ladies', 'ladies', '2027-01-12 23:00+00', '2027-01-13 00:00+00', '2027-01-07 13:00+00', '2027-01-08 13:00+00', 8, 'published', 60),
+    ('Skip Ladies', 'ladies', '2027-01-14 23:00+00', '2027-01-15 00:00+00', '2027-01-07 13:00+00', '2027-01-08 13:00+00', 8, 'published', 60),
+    ('Skip Ladies', 'ladies', '2027-01-19 15:00+00', '2027-01-19 16:00+00', '2027-01-14 13:00+00', '2027-01-15 13:00+00', 8, 'published', 60),
+    ('Other Name',  'ladies', '2027-01-21 23:00+00', '2027-01-22 00:00+00', '2027-01-14 13:00+00', '2027-01-15 13:00+00', 8, 'published', 60);
+
+  perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
+  perform set_config('role', 'authenticated', true);
+  select r.created || '|' || r.skipped into v from public.admin_copy_week('2027-01-10') r;
+  insert into _probe_result values ('skip_key_first_call_one_name_two_days', '2|0', v);
+  select r.created || '|' || r.skipped into v from public.admin_copy_week('2027-01-10') r;
+  insert into _probe_result values ('skip_key_second_call', '0|2', v);
+
+  perform set_config('role', 'postgres', true);
+  select id into thu_copy from public.clinics
+   where name = 'Skip Ladies' and starts_at = '2027-01-21 23:00+00' and status = 'draft';
+  update public.clinics set status = 'canceled', canceled_at = now() where id = thu_copy;
+  perform set_config('role', 'authenticated', true);
+  select r.created || '|' || r.skipped into v from public.admin_copy_week('2027-01-10') r;
+  insert into _probe_result values ('skip_key_canceled_copy_made_again', '1|1', v);
+  perform set_config('role', 'postgres', true);
+end $$;
+
 select check_name, expected, actual,
        case when actual = expected
               or (expected ~ '[a-z]' and actual like '%' || expected || '%')

@@ -66,14 +66,58 @@ begin
   select count(*) into n from public.clinics_public where id = draft.id;
   insert into _probe_result values ('plain_draft_invisible_to_player', '0', n::text);
 
-  -- ATTACK: a member cannot stamp published_at themselves.
+  -- ATTACK: a member cannot stamp published_at themselves. Asserted on the
+  -- outcome, not on the error (hard rule 9): any refusal is fine, a typo is not.
   begin
     update public.clinics set published_at = now() where id = draft.id;
-    get diagnostics n = row_count;
-    insert into _probe_result values ('member_cannot_write_published_at', '0', n::text);
-  exception when others then
-    insert into _probe_result values ('member_cannot_write_published_at', '0', '0');
+  exception when others then null;
   end;
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from public.clinics where id = draft.id and published_at is null;
+  insert into _probe_result values ('member_cannot_write_published_at', '1', n::text);
+
+  -- The other doors (sql-auditor, 2026-09-28): Tara can place someone in a
+  -- draft (Add player works on any card), then cancel it. The player must not
+  -- be told about a clinic they never saw, nor find it in Past.
+  perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
+  perform set_config('role', 'authenticated', true);
+  draft := public.admin_upsert_clinic(null, 'Probe Draft With Maria', 'coed',
+             now() + interval '5 days', 60, 8, null, null, null, null, null);
+  perform public.place_player(draft.id, 'a0000000-0000-0000-0000-000000000001', 'in');
+  perform public.cancel_clinic(draft.id);
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from public.notifications
+   where account_id = MARIA and type = 'clinic_canceled' and entity_id = draft.id;
+  insert into _probe_result values ('canceled_draft_notifies_nobody', '0', n::text);
+
+  -- Moved into the past by hand (as postgres, inside this rolled-back
+  -- transaction) so it counts as a finished clinic for Past.
+  update public.clinics set starts_at = now() - interval '2 days', ends_at = now() - interval '2 days' + interval '1 hour'
+   where id = draft.id;
+  perform set_config('request.jwt.claims', json_build_object('sub', MARIA)::text, true);
+  perform set_config('role', 'authenticated', true);
+  select count(*) into n from public.my_past_clinics where clinic_id = draft.id;
+  insert into _probe_result values ('canceled_draft_not_in_past', '0', n::text);
+  perform set_config('role', 'postgres', true);
+
+  -- And a published clinic she cancels still tells the player, and stays in Past.
+  perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
+  perform set_config('role', 'authenticated', true);
+  shown := public.admin_upsert_clinic(null, 'Probe Published With Maria', 'coed',
+             now() + interval '5 days', 60, 8, null, null, null, null, null);
+  perform public.publish_clinic(shown.id);
+  perform public.place_player(shown.id, 'a0000000-0000-0000-0000-000000000001', 'in');
+  perform public.cancel_clinic(shown.id);
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from public.notifications
+   where account_id = MARIA and type = 'clinic_canceled' and entity_id = shown.id;
+  insert into _probe_result values ('canceled_published_clinic_notifies', '1', n::text);
+  update public.clinics set starts_at = now() - interval '2 days', ends_at = now() - interval '2 days' + interval '1 hour'
+   where id = shown.id;
+  perform set_config('request.jwt.claims', json_build_object('sub', MARIA)::text, true);
+  perform set_config('role', 'authenticated', true);
+  select count(*) into n from public.my_past_clinics where clinic_id = shown.id;
+  insert into _probe_result values ('canceled_published_clinic_in_past', '1', n::text);
   perform set_config('role', 'postgres', true);
 end $$;
 

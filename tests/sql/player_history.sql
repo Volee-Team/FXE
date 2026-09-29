@@ -39,6 +39,7 @@
 -- Expected: every row reads PASS.
 
 begin;
+set local timezone to 'UTC';
 create temporary table _probe_result (check_name text, expected text, actual text) on commit drop;
 grant all on _probe_result to authenticated, anon;
 
@@ -50,7 +51,7 @@ declare
   HIST   constant uuid := 'c0000000-0000-0000-0000-0000000000f2';
   EDGE   constant uuid := 'c0000000-0000-0000-0000-0000000000f3';
   NEWP   constant uuid := 'c0000000-0000-0000-0000-0000000000f4';
-  A uuid; B uuid; C uuid; D uuid; E uuid; F uuid; G uuid; G2 uuid; H uuid; I uuid;
+  A uuid; B uuid; C uuid; D uuid; E uuid; F uuid; G uuid; G2 uuid; H uuid; I uuid; J uuid;
   i_starts timestamptz;
   v text; n int; st text;
 begin
@@ -104,6 +105,13 @@ begin
       member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
   values ('History I', 'coed', 'Clinic', 'probe', now() - interval '1 hour', now(),
           now() - interval '9 days', now() - interval '8 days', 8, 'published', 60) returning id, starts_at into I, i_starts;
+  -- In progress (sql-auditor, 2026-09-28): started, not ended. Counts as
+  -- nothing, so a version that tests starts_at instead of ends_at reads HIST
+  -- 3 played and EDGE 1 no-show.
+  insert into public.clinics (name, audience, category, description, starts_at, ends_at,
+      member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
+  values ('History J', 'coed', 'Clinic', 'probe', now() - interval '30 minutes', now() + interval '30 minutes',
+          now() - interval '9 days', now() - interval '8 days', 8, 'published', 60) returning id into J;
 
   insert into public.registrations (clinic_id, player_id, status, no_show, late_cancel, canceled_at) values
     (A,  HIST, 'in',              false, false, null),
@@ -118,7 +126,9 @@ begin
     (I,  EDGE, 'in',              false, false, null),
     (F,  EDGE, 'canceled',        false, true,  '2026-09-15 20:30:00+00'),
     (G,  EDGE, 'in',              true,  false, null),
-    (H,  EDGE, 'response_needed', false, false, null);
+    (H,  EDGE, 'response_needed', false, false, null),
+    (J,  HIST, 'in',              false, false, null),
+    (J,  EDGE, 'in',              true,  false, null);
 
   -- ------------------------------------------------------------ as Tara
   perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
