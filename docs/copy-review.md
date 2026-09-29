@@ -619,6 +619,26 @@ Chrome only, from the adversarial review's fixes (branch `fix-sql`). No player s
 | ☐ | Card changed between attempts | Web Money tab, the reason on a row with `idempotency_error` | Was the raw code |
 | ☐ | Account deleted | Web Money tab, the reason on a row with `account_deleted` | Was the raw code |
 
+## Declined cards and Resolved (2026-09-28) — awaiting Alex
+
+Decision 0026, from Tara's round-four answers 78 and 83 (decision 0024).
+Every player-facing word below is hers: her decline labels from the Money tab
+(the web's `DECLINE` map, `DeclineReason` on the phone), after "Declined: " as
+her card list already writes them, which is the form decision 0024 names
+("Declined: Insufficient funds (NSF)"). The two chrome words are mine. The
+extractor sees only Close, Resolved and the reused sentence; the composed
+lines are listed here by hand.
+
+| ✓ | String | Where | Why |
+|---|---|---|---|
+| ☐ | Declined: Insufficient funds (NSF) (and "Declined: " before each of her other labels: Card expired, Card declined by bank, Wrong security code, Wrong card number, Needs the cardholder to approve, Processing error, try again, Card declined) | Profile, under the card (•••• 4242) and beside Change card, while the card is declined; the clinic page, when Register or Accept is refused; the notification after an Accept from the lock screen is refused | Her 78: "App needs to tell them why their card isn’t working". Her words, her form. Not new words; new places |
+| ☐ | Declined: Card declined | The same places, for a card reported lost or stolen, a charge Stripe stopped as fraud, or a code she has no words for | Stripe asks that lost, stolen and fraud be shown to the cardholder as a plain decline; her screens keep "Card reported lost" / "Card reported stolen". Her label "Card declined". Default for her to confirm (decision 0026) |
+| ☐ | Resolved | Web Action Needed and the phone's Action Needed, a button on each declined card; and " · Resolved" on the web Money tab's card list, on a declined charge she resolved | Her word, her 83: "a button that says “resolved”". Capitalised as every other button label. One tap, no confirmation (it moves no money and tells nobody) |
+| ☐ | Close | The card step's toolbar, only when it opened after a refusal for a declined card | Chrome, one word. The onboarding card step (no card at all) still has no Close; this one can be closed because a card is on file and the rest of the app works |
+| — | That just changed. Here's the latest. | Resolved on a decline that went through, or was resolved, in the meantime (web and phone) | Not new: CLAUDE.md's own line for hard rule 3, already on the web's Late cancel and the phone's roster |
+| — | That didn't go through. Check your connection and try again. | The phone, when Resolved fails for any other reason | Not new: the phone's admin screens' line for the same |
+| — | Add a card | The card step's title, also when it opens for a declined card | Not new |
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148

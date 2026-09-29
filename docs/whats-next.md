@@ -24,7 +24,7 @@ where things stand. Updated 2026-09-27; launch target 2026-10-16.
 
 ## The honest state of the iOS app
 
-Works, and tested (probes, unit tests, browser tests in CI; the 18 UI tests
+Works, and tested (probes, unit tests, browser tests in CI; the 19 UI tests
 on the simulator before each TestFlight build): sign up with profile, waiver
 and (once payments are on) a card with the permission box; sign in; the
 front page (your clinics, then what is open to you now); browse by week;
@@ -54,10 +54,13 @@ notes, the Stripe link).
 Missing on the phone by design: creating or editing a clinic (web only),
 News (deferred, decision 0006).
 
-Testing today: 30 Playwright tests, 18 XCUITests (7 on Tara's side, 4 of them
-the accessibility audit, the status bar and the Return key), 183 unit
-tests, 35 SQL probes, a 94-check Stripe pipeline and a 57-check push pipeline
-against mocks in CI.
+Testing today: 31 Playwright tests, 19 XCUITests (7 on Tara's side, 4 of them
+the accessibility audit, the status bar and the Return key), 196 unit
+tests, 36 SQL probes, a Stripe pipeline of 109 checks on a laptop (CI adds the
+four that need the mock as a container) and a 57-check push pipeline against
+mocks in CI. Since 2026-09-28 (branch `declined-card`, decision 0026): a card
+Stripe declines holds no spot until a card is saved again, and says why in
+Tara's words; her Resolved clears a decline from her lists.
 
 **Answered already, do not re-ask.** Six of the eight closed on 2026-08-27; see
 `docs/decisions/0007`.

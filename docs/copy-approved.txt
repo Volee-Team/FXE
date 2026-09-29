@@ -36,6 +36,7 @@ Children's privacy
 Choose a new password
 Clinic updates come through the app. Keep notifications on so you don't miss them.
 Clinics
+Close
 Collected by card
 Cookies and tracking technologies
 Copy my answers
@@ -170,6 +171,7 @@ Reminder set
 Remove
 Remove \(entry.displayName) from the Player Pool
 Remove from clinic
+Resolved
 Response Needed
 Review links
 Save note
@@ -202,6 +204,7 @@ That clinic is canceled.
 That clinic is full now.
 That didn’t save. Try again.
 That email or password didn't work.
+That just changed. Here's the latest.
 That one is already charged.
 That one is already refunded.
 That player has no card on file.
