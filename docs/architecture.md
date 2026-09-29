@@ -52,10 +52,10 @@ most important thing to understand here, and it is section 5.
 
 | Area | State |
 |---|---|
-| Postgres schema, RLS, narrow views, RPCs | **Built**, 50 migrations. Which of them are on hosted is `supabase migration list --linked`, recorded after each push in `docs/whats-next.md` (49 of 49 paired on 2026-09-28); `20260928500001_uninvite_message.sql` goes with its PR |
+| Postgres schema, RLS, narrow views, RPCs | **Built**, 52 migrations. Which of them are on hosted is `supabase migration list --linked`, recorded after each push in `docs/whats-next.md` (49 of 49 paired on 2026-09-28); `20260928500001_uninvite_message.sql` goes with its PR, and `20260928800001_player_history.sql` and `20260928800002_copy_week.sql` with theirs (decision 0027) |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | **Built**, enumerated by probes |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | **Built** |
-| SQL probe suite (35 probes; the suite prints its own total) + concurrency probe, in CI | **Built** |
+| SQL probe suite (37 probes; the suite prints its own total) + concurrency probe, in CI | **Built** |
 | iOS: sign-in, sign-up with profile, password reset, three tabs | **Built** |
 | iOS: browse by week, per-viewer pricing, register / cancel (inside the 3-hour cutoff the full fee applies; the note is optional) / leave pool / respond, closed-clinic "Message Tara", the bell, My Clinics, profile edit, card on file | **Built** |
 | iOS admin tab: rosters, invite, courts, paid, unpaid reminder, message audiences, late requests, Action Needed (open disputes too, since 2026-09-28), player directory | **Built** |
@@ -183,6 +183,9 @@ FXETennis/
 │   │                            or notes, hard rule 1 (pure, unit-tested)
 │   ├── NTRPRating.swift         the USTA scale for the "?" explainer
 │   ├── NotificationCopy.swift   Tara's notification catalogue, verbatim
+│   ├── PlayerHistory.swift      decision 0027: admin_player_history's row and its line, "12 played ·
+│   │                            1 no-show · 2 late cancels" or "New", for the Pool rows and the
+│   │                            player page (pure, unit-tested)
 │   ├── RegistrationMoments.swift when a clinic's registration changes on its own (opening, close,
 │   │                            start), for TimelineView redraws; `door`: what the clinic page
 │   │                            and card offer someone not registered (pure, unit-tested)
@@ -405,6 +408,8 @@ always `auth.uid()`; `devices` stays client-unreadable), `current_waiver` / `wai
 | `set_paid`, `assign_court` | The court sheet. `assign_court` is the one unconditional update in the schema: a court is a value, not a transition. |
 | `send_clinic_message` | Audiences `everyone` / `in` / `pool` / `response_needed` / `unpaid`, resolved server-side. The one-tap unpaid reminder is this with a fixed body. |
 | `search_players`, `admin_player_note`, `admin_player_note_edited`, `admin_set_player_note`, `admin_set_membership`, `set_player_active` | The directory. `search_players` returns `has_notes`, never the note; `admin_player_note_edited` returns the note's `updated_at` or null (20260912000004). |
+| `admin_player_history` | A player's history at a glance (decision 0027 §1; 20260928800001): per player, clinics played (the board report's attended: You're In!, not a no-show, clinic ended and not canceled), no-shows (the same rows, flagged), late cancellations (in a clinic not canceled, counted when they happen) and the start of the last clinic played. Every player with no argument, one player with `p_player`; a row of zeros is "New". Nothing in a canceled clinic counts. |
+| `admin_copy_week` | Copy to next week (decision 0027 §2; 20260928800002): every clinic of the service week starting on `p_week_start` (a Sunday, else `not_a_sunday`), canceled ones aside, copied to the next week as drafts on the same New York wall clock (local time plus 7 days, never 168 hours); windows, close and prices recomputed for the new date as for any new clinic; registrations, courts and messages never copied. Skips a clinic whose copy exists (same name, same start, not canceled), under an advisory lock on the target week, so a double click makes nothing twice; returns `(created, skipped)`. |
 | `publish_news` | Publish a draft post. |
 | `admin_charge_registration`, `admin_refund_payment` | Insert `pending` ledger rows for the Stripe edge functions to execute; refuse while `payments_enabled` is false. Since 20260927100001, **one fee per player per clinic**: a charge is refused (`already_charged`) while the player holds a live fee in that clinic on any of their rows, of any kind (live = pending, processing, or succeeded and not refunded in full), checked under a per player-and-clinic advisory lock. |
 | `admin_set_no_show`, `admin_charge_clinic` | Came or No-show on a You're In! row, refused once that row holds a live fee (`charged_refund_first`: refund first); her one tap per ended clinic (decision 0012), which refuses a canceled clinic (`clinic_canceled`), skips a late cancel when the same player holds a You're In! row there, and locks the clinic's rows while it charges (20260927100001). Since 20260927300001 it refuses a clinic that ended before `app_settings.payments_enabled_at`, and every clinic while that is empty (`clinic_before_payments`), and skips a row Tara marked Paid that holds no live fee. |
@@ -529,7 +534,8 @@ on the cancellation rule is open except her policy block's wording (Q56).
 `review.html`, `privacy.html`, the member QR code's pages (`web/app/index.html`,
 the one link the code says, forwarding to the install link in `web/app/target.js`;
 `web/qr.html`, Tara's printable card; `web/app-qr.svg` and `web/app-qr.png`, drawn and
-decode-checked by `scripts/make-qr.swift`; `web/gator.png`, the mark), `config.js` (which picks local vs hosted by hostname), `tokens.css`,
+decode-checked by `scripts/make-qr.swift`; `web/gator.png`, the mark), `web/sheet.html`
+(a clinic's court sheet to print, decision 0027 §3), `config.js` (which picks local vs hosted by hostname), `tokens.css`,
 two small modules the admin page imports (`week.js`: the service week and which
 clinics This week lists; `read.js`: reads that page past PostgREST's 1000-row
 cap), and `vendor/supabase-js.js`, plus the Playwright tooling (`package.json`,
@@ -590,6 +596,19 @@ on a disputed card payment in the ledger. The same day fixed a crash found while
 adding the dispute row: `loadActionNeeded`'s parameter was called `money`, which
 shadowed the `money()` formatter, so the first open decline threw and the week
 never drew (red on `main` in the new browser test, green after).
+Also 2026-09-28, Tara's laptop tools (decision 0027): **the history line**
+("12 played · 1 no-show · 2 late cancels", or "New") under every Player Pool
+name and on every Players-tab row, from one `admin_player_history` call per
+render read a page at a time, with "Last played <date>" on hover, read
+leniently so an unreadable history shows no line rather than blanking the
+week; **Copy to next week** on the This week tab (`admin_copy_week` for the
+current service week, then "Copied 5 clinics to next week as drafts." or
+"Nothing new to copy."; each draft is still published by its own button); and
+**Court sheet**, a link on every clinic card that is not canceled, opening
+`sheet.html?clinic=<id>` in a new tab: the name, day and time, the You're In!
+players by court with their ratings, then No court yet, and a Print button the
+printout leaves out. The sheet reads `clinics_admin`, `registrations_admin`
+and `players` with the admin page's own session; a member reads nothing there.
 
 Added 2026-09-21: **Tara's review page lives here too.** `web/review.html`
 is the second target of `scripts/build-tara-review.py` (the first is the
@@ -627,6 +646,8 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `admin_clinic_crud`, `templates_floor_bootstrap` | CRUD, template pricing, the date floor, Tara's bootstrap |
 | `late_requests`, `player_directory` | The late path and the directory, including "a member cannot read their own note" and "a non-member cannot flip their own is_member column" |
 | `past_clinics` | `my_past_clinics`: own rows only, a future clinic is not past, Ken never sees Maria's row, no hidden column, select-only for the signed-in |
+| `player_history` | Decision 0027 §1, from the rule on three fresh players: played, no-shows, late cancels and last played, where a no-show, a canceled clinic, a Player Pool or Response Needed row in an ended clinic, an early cancel and a clinic still to come count as nothing played, a late cancel counts before its clinic ends, one in a canceled clinic does not, and a clinic ending exactly now has ended; every player once, one player alone, no row for an unknown id, zeros for someone new; a member refused for the club and for herself (`not_authorized`), anon and PUBLIC hold no EXECUTE. Red first under five mutants (a no-show as played, a canceled clinic counted, no `require_admin`, `<` for `<=`, a late cancel only once ended). 17 checks |
+| `copy_week` | Decision 0027 §2 on hand-worked times across the 2026-11-01 daylight-saving change: 9:00 AM Saturday Oct 31 EDT to 9:00 AM Saturday Nov 7 EST (13:00 to 14:00 UTC), a Tuesday evening, a Saturday 9 pm that is Sunday in UTC and still its New York week's; windows, close and prices from the rule and the length even when the source overrode them; the source untouched and nobody, no court, no message carried; drafts copied, canceled clinics and other weeks not; two same-name same-time clinics are two copies; a second call creates nothing, a canceled copy is made again; drafts invisible to a member in the target week and on a week two weeks from any run date; a Monday and null refused (`not_a_sunday`), a member refused and nothing created, anon and PUBLIC hold no EXECUTE. Every other clinic in the weeks it uses is set aside inside its transaction, so the counts hold on any run date. Red first under seven mutants (168 hours, the source's windows, no skip, published copies, canceled sources, the UTC week, no `require_admin`). 30 checks |
 | `clinic_messaging` | Decision 0005: a targeted message is readable only by the group it went to; the whole list each player sees is asserted; the recipients table is hidden; each recipient notified once |
 | `schema_decisions` | Tara's decisions with a DB consequence stay true |
 | `notification_targets` | Every notification opens something (MVP audit item 12): `invite_from_pool` writes `registration` with the registration id, which the player resolves through `my_registrations` and nobody else can; Tara's accept and cancel rows name the registration and resolve through `registrations_admin` (never `my_registrations`, hence the app's second branch), a canceled one included; the seed's invitation is the producer's own and resolves for Maria; every row points at something its recipient may open; every `notify_account` caller names `clinic` or `registration` as a literal, and the nine known producers are found (`register_for_clinic` and `place_player` since 20260928000001). Red first under three mutants (the old hand-typed seed row, 2 checks; an invite that names the clinic, 3; a third entity type and a variable one, 2) |
@@ -652,10 +673,11 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `accept_cancel_race.sh` | 20260928300001's clinic lock in `respond_to_invitation`, raced: Tara's `cancel_clinic` held open, Rob's Accept a second later waits and is refused, stays Response Needed, no acceptance written (red with the lock removed and with `FOR KEY SHARE`: Rob in, two acceptances) |
 | `back_to_back_105_race.sh` | Two concurrent registrations by one non-member for two same-day 105s: exactly one survives (the per-player lock in `register_for_clinic`; red without it, 2026-09-26) |
 | `one_fee_race.sh` | Two concurrent charges of different kinds for one player in one clinic (the unique index cannot see them): exactly one live fee survives (the per player-and-clinic lock in `admin_charge_registration`, 20260927100001; red without it, 2026-09-27: both went through) |
+| `copy_week_race.sh` | Two simultaneous Copy to next week calls for one week (`admin_copy_week`, 20260928800002): the first holds its transaction open, the second waits on the advisory lock, then creates nothing; one draft per clinic (red without the lock, 2026-09-28: six drafts of a three-clinic week, one clinic copied twice) |
 | `dispute_race.sh` | Two concurrent deliveries of one dispute (`stripe_record_dispute`, 20260928200001), each holding the row in turn: the newer event's state survives in either commit order. Both statuses are open on purpose, so only the order guard decides; red under a read-then-write version (round 1 ended at the older event), 2026-09-28 |
 
-**Swift**: 183 unit tests (`FXETennisTests`: price formatting, per-viewer
-pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016; since 2026-09-27 the request-failure classifier, a failed load keeping who you are, the waiver and card refusals reopening their steps, the 30-second reload throttle, the redraw moments, and the type scale under Larger Text; since 2026-09-28 the invitation push's Accept and Decline, the Remind me reminder, the calendar entry, and the haptics and chip motion) and 13
+**Swift**: 185 unit tests (`FXETennisTests`: price formatting, per-viewer
+pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016; since 2026-09-27 the request-failure classifier, a failed load keeping who you are, the waiver and card refusals reopening their steps, the 30-second reload throttle, the redraw moments, and the type scale under Larger Text; since 2026-09-28 the invitation push's Accept and Decline, the Remind me reminder, the calendar entry, and the haptics and chip motion, and the Player Pool's history line) and 13
 XCUITests: 8 player flows
 (`PlayerFlowUITests`: sign in / browse / register, undo, sign-up end to end,
 the bell, profile edit, My Clinics, prices, hidden information) and 5 admin
@@ -665,7 +687,7 @@ local stack and are order-dependent on a fresh seed. **They do not run in
 CI**: the macOS runner has no Docker for the stack; a `fxe-ci` Supabase
 project is the ask (`docs/launch-checklist.md` §F).
 
-**Web admin**: 33 Playwright tests (`web/tests/*.spec.mjs`) walk Tara's
+**Web admin**: 37 Playwright tests (`web/tests/*.spec.mjs`) walk Tara's
 side against a fresh seed: sign-in and the non-admin door, prices, walk-up,
 courts, unpaid reminder, a note round-trip, cancel clinic, template archive
 and restore, Money counts, the card-payments ledger, payments off, the
@@ -673,7 +695,10 @@ Payouts card (not connected, then Stripe's numbers, in a New York browser) and
 an open dispute beside a declined card in Action Needed (`admin.spec.mjs`); every script served from the site itself and the
 rate-limit line (`pages.spec.mjs`); the service week at hand-worked instants in
 three laptop time zones, the This week split, a read past a 1000-row cap, and
-a past clinic kept off the tab until Show earlier (`week.spec.mjs`). One
+a past clinic kept off the tab until Show earlier (`week.spec.mjs`); Copy to
+next week making drafts once and then nothing, the court sheet by court with
+No court yet last and a member reading nothing there, and the history line on
+a Pool row and the Players tab (`tools.spec.mjs`). One
 worker, files in name order; the suite is not idempotent (cancel clinic is for
 keeps), so reset between runs.
 
