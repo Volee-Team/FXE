@@ -34,6 +34,7 @@ The history of what we believed is part of the record.
 | [0023](0023-first-open-polish.md) | Accept and Decline from the lock screen; Add to Calendar with nothing about where; Remind me at this player's opening; text that follows Larger Text live; a readable clock on navy; the guide's type for page titles | 2026-09-28 | Active |
 | [0024](0024-tara-review-round-four-2026-09-28.md) | Tara's round four: a pro role (today's rosters, Came / No-show, nothing financial), a declined card blocks sign-up and says why, Resolved for declines she won't chase, her uninvite message, a Contact Tara link, a QR code, the party moves to 2026-11-06 | 2026-09-28 | Active |
 | [0028](0028-instant-open.md) | Instant open: the last good answer kept on the phone per person, shown at launch and refreshed behind it; with no signal it stays with the connection line; removed at sign-out, a server-ended session and deletion; nothing hidden is ever in it | 2026-09-28 | Active |
+| [0029](0029-calendar-feed.md) | A player's clinics as a subscribed calendar: Subscribe in Calendar on Profile, You're In! and Response Needed only, nothing about where or which court, the token as the credential, removed at deletion | 2026-09-28 | Active |
 | [0011](0011-no-email-verification-v1.md) | No email verification in v1; hosted "Confirm email" is OFF by hand, and every new project needs the same flip | 2026-08-16 | Active |
 
 Tara's own numbered decisions (1–23, calls of 2026-08-02 and 2026-08-12) are
