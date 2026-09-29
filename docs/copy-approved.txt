@@ -47,6 +47,7 @@ Couldn't load card payments.
 Couldn't load saved answers, still on this phone
 Couldn't load the numbers.
 Couldn't load this clinic.
+Couldn't load your calendar link.
 Couldn't reach the server. Check your connection.
 Couldn't save, still on this phone
 Court
@@ -218,6 +219,7 @@ Start from a template
 Stripe
 Stripe isn't connected yet.
 Stripe, Inc. processes card payments. Your card details go to Stripe directly and are governed by Stripe's privacy policy.
+Subscribe in Calendar
 Tara has your message.
 Tara, only what's new
 Text this to them. It works once, within an hour.

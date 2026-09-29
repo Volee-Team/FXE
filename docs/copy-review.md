@@ -55,6 +55,22 @@ Nothing says why Save this message is off for a message over 1000
 characters (about 170 words; hers are one or two sentences). A sentence for
 it would be new chrome; left out until someone asks.
 
+## Subscribe in Calendar (2026-09-28) — awaiting Alex
+
+Decision 0029. Ours, all chrome. Where: Profile, under My Clinics; then the
+member's own Calendar app, which shows the calendar's name and each event's
+title. The last two live in `supabase/functions/calendar-feed/ics.ts`, which
+`scripts/extract-copy.py` does not scan (it reads the app and the web admin),
+so the gate cannot see them: they are listed here by hand.
+
+| ✓ | Words | Where | Why this wording |
+|---|---|---|---|
+| ☐ | Subscribe in Calendar | Profile, the button under My Clinics | Says what it does and where the clinics go; "Subscribe" is the word iOS uses on the sheet that follows |
+| ☐ | Couldn't load your calendar link. | Under that button when the server refused (no signal and too many attempts show the approved connection lines instead) | Says what happened, in the "Couldn't load clinics." shape |
+| ☐ | FXE Tennis | The calendar's name in the member's Calendar app (`X-WR-CALNAME`); iOS fills its Title field with it | The club's name, nothing added |
+| ☐ | *Evening Coed* (Response Needed) | An event's title for an invitation still waiting on her answer; a You're In! clinic is its name alone | Tara's locked term, composed with the clinic's own name |
+| — | -//FXE Tennis//Clinic Calendar//EN | The feed's `PRODID`, which calendar apps do not show | A label, not copy |
+
 ## Siri, Spotlight and Shortcuts: Next Clinic (2026-09-28) — awaiting Alex
 
 Ours, all of it: plain chrome, no tone. Siri speaks the answer, so it is data

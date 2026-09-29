@@ -238,6 +238,53 @@ jobs:
           tail -100 functions.log || true
           docker logs --tail 100 supabase_edge_runtime_FXE-Tennis || true
 
+  # A player's clinics as a subscribed calendar (decision 0029): the served
+  # calendar-feed function with no apikey and no JWT, as a calendar app calls
+  # it; exactly her You're In! and Response Needed clinics; nothing about
+  # where or which court; RFC 5545 on the wire; a bare 404 for every bad
+  # token. The iCalendar unit tests run at its end, hence Deno.
+  calendar-feed:
+    name: Calendar feed
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.115.0
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Start local stack (auth, rest, edge runtime)
+        run: supabase start -x realtime,storage-api,imgproxy,studio,logflare,vector,supavisor
+
+      - name: Reset to the seed
+        run: supabase db reset
+
+      # Ready when POST answers 405: that is the function itself. A 404 could
+      # be the runtime's "Function not found" while it is still loading.
+      - name: Serve the edge functions
+        run: |
+          nohup supabase functions serve > functions.log 2>&1 &
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:54321/functions/v1/calendar-feed)
+            [ "$code" = "405" ] && break || sleep 2
+          done
+
+      - name: Run the calendar-feed harness
+        run: bash tests/calendar/run.sh
+
+      - name: Logs on failure
+        if: failure()
+        run: |
+          tail -100 functions.log || true
+          docker logs --tail 100 supabase_edge_runtime_FXE-Tennis || true
+
   # Push delivery (decision 0008), against a mock of APNs: the provider-token
   # signature, the headers, the verbatim body, token pruning, idempotency, the
   # audit columns a player cannot read, and the trigger -> pg_net -> function
