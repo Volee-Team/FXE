@@ -4,6 +4,7 @@ admin_board_report	{"p_from":"2026-01-01","p_to":"2026-01-01"}
 admin_board_report_clinics	{"p_from":"2026-01-01","p_to":"2026-01-01"}
 admin_charge_clinic	{"p_clinic":"00000000-0000-0000-0000-000000000000"}
 admin_charge_registration	{"p_amount_cents":1,"p_kind":"x","p_registration":"00000000-0000-0000-0000-000000000000"}
+admin_copy_week	{"p_week_start":"2026-01-01"}
 admin_create_review_link	{"p_label":"x"}
 admin_delete_template	{"p_id":"00000000-0000-0000-0000-000000000000"}
 admin_mark_late_cancel	{"p_note":"x","p_registration":"00000000-0000-0000-0000-000000000000"}
@@ -11,6 +12,7 @@ admin_money_clinics	{}
 admin_money_declined	{}
 admin_money_disputes	{}
 admin_money_summary	{}
+admin_player_history	{"p_player":"00000000-0000-0000-0000-000000000000"}
 admin_player_note	{"p_player":"00000000-0000-0000-0000-000000000000"}
 admin_player_note_edited	{"p_player":"00000000-0000-0000-0000-000000000000"}
 admin_refund_payment	{"p_payment":"00000000-0000-0000-0000-000000000000"}

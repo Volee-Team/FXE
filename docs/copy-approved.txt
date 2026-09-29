@@ -40,9 +40,11 @@ Collected by card
 Contact Tara
 Cookies and tracking technologies
 Copy my answers
+Copy to next week
 Couldn't load card payments.
 Couldn't load saved answers, still on this phone
 Couldn't load the numbers.
+Couldn't load this clinic.
 Couldn't reach the server. Check your connection.
 Couldn't save, still on this phone
 Court
@@ -65,6 +67,7 @@ FXE Tennis
 FXE Tennis QR code
 FXE Tennis does not share your personal information with third parties for marketing or promotional purposes. Your personal information is kept confidential and is not disclosed to outside organizations, except to the service providers that operate the Services on our behalf and as described here:
 FXE Tennis · Admin
+FXE Tennis · Court sheet
 FXE Tennis · Privacy Policy
 FXE Tennis · Reset password
 FXE Tennis, LLC
@@ -133,6 +136,7 @@ No room
 No templates yet.
 No upcoming clinics.
 Nobody by that name yet. They may need to sign up in the app first.
+Nobody is in yet.
 Non-members attended
 Non-members, 60 min
 Non-members, 90 min
@@ -196,6 +200,7 @@ Selected. Press and hold to copy.
 Send reminder
 She will let you know as soon as possible if there is room in this clinic
 Sign Out
+Sign in on the admin page first.
 Sign out
 Signs you out, you can finish later if needed
 Someone already handled that one.

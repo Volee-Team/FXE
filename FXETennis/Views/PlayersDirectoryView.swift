@@ -141,6 +141,9 @@ private struct PlayerAdminDetailView: View {
     @State private var loadedNote = false
     @State private var busy = false
     @State private var message: String?
+    /// Their history at a glance (decision 0027 §1), read each time the page
+    /// opens; nil until it arrives, and stays nil if it cannot be read.
+    @State private var history: PlayerHistory?
 
     init(player: PlayerSearchResult, onChange: @escaping () -> Void) {
         self.player = player
@@ -175,6 +178,20 @@ private struct PlayerAdminDetailView: View {
                         Text(player.waiverAccepted == true ? "Waiver signed" : "Waiver not signed")
                             .brandFont(.caption)
                             .foregroundStyle(player.waiverAccepted == true ? Brand.Status.youreIn.ink : Brand.Status.canceled.ink)
+                        // The same line as under their name in a Player Pool,
+                        // and the day of the last clinic they played.
+                        if let history {
+                            Text(history.line)
+                                .brandFont(.caption)
+                                .foregroundStyle(Brand.textSecondary)
+                                .accessibilityIdentifier("admin.player.history")
+                            if let last = history.lastPlayedLine() {
+                                Text(last)
+                                    .brandFont(.caption)
+                                    .foregroundStyle(Brand.textSecondary)
+                                    .accessibilityIdentifier("admin.player.lastPlayed")
+                            }
+                        }
                     }
 
                     VStack(spacing: 0) {
@@ -250,6 +267,7 @@ private struct PlayerAdminDetailView: View {
         .navigationTitle("Player")
         .navigationBarTitleDisplayMode(.inline)
         .task {
+            history = (try? await AdminRepository.playerHistory(player: player.id)) ?? history
             guard !loadedNote else { return }
             note = (try? await AdminRepository.playerNote(player.id)) ?? ""
             savedNote = note
