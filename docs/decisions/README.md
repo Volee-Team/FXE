@@ -42,7 +42,7 @@ The history of what we believed is part of the record.
 | [0031](0031-app-link-visits.md) | Opens of the app link counted per day as QR or link, nothing about the person; Tara sees the totals by the QR link; downloads by date are Apple's (App Store Connect) | 2026-09-29 | Active |
 | [0032](0032-gator-in-colour.md) | The gator mark in colour (green gator, cream racquets) before testers, as Tara asked; every copy generated from one source file by `scripts/make-logo-assets.py` | 2026-09-29 | Active |
 | [0033](0033-navy-banner-and-wordmark.md) | The navy banner on every titled page (Kat), white serif titles and bar buttons, white status bar app-wide; the gator larger over a smaller TENNIS (Tara) | 2026-09-29 | Active |
-| [0035](0035-crash-reports.md) | Crash and hang reports through Apple's MetricKit into our own `app_diagnostics`, no third-party SDK; 64 KB and 20 a day per account; an admin reads them, nobody else | 2026-10-01 | Active |
+| [0035](0035-crash-reports.md) | Crash and hang reports through Apple's MetricKit into our own `app_diagnostics`, no third-party SDK; 64 KB and 20 a day per account; tied to the account for at most a day, kept 90 days; an admin reads them without the account, nobody else | 2026-10-01 | Active |
 | [0011](0011-no-email-verification-v1.md) | No email verification in v1; hosted "Confirm email" is OFF by hand, and every new project needs the same flip | 2026-08-16 | Active |
 
 Tara's own numbered decisions (1–23, calls of 2026-08-02 and 2026-08-12) are

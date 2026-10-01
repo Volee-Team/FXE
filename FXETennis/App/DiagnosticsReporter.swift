@@ -22,7 +22,7 @@
 //  The account a report lands under is whoever is signed in when it is
 //  SENT, which on a shared phone may not be who was using it when it
 //  crashed; the account exists for the server's rate limit, not to say whose
-//  phone it was.
+//  phone it was, and the server unlinks it after a day (20261001000002).
 //
 //  NEVER SEEN. Nothing here shows anything, blocks anything or logs
 //  anything; a report that cannot be sent is simply tried again later. The

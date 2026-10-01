@@ -80,6 +80,7 @@ pro_today	{}
 public_opens_at	{"p_starts_at":"2026-01-01T00:00:00Z"}
 publish_clinic	{"p_clinic":"00000000-0000-0000-0000-000000000000"}
 publish_news	{"p_news":"00000000-0000-0000-0000-000000000000"}
+purge_app_diagnostics	{}
 purge_expired_card_consents	{}
 record_app_link_visit	{"p_via":"x"}
 record_card_consent	{"p_app_version":"x"}
