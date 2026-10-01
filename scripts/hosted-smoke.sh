@@ -25,7 +25,7 @@ URL="${SUPABASE_URL:-https://amnaxvznkadkgzdxzegw.supabase.co}"
 KEY="${SUPABASE_ANON_KEY:-$(grep -o 'sb_publishable_[A-Za-z0-9_-]*' "$(dirname "$0")/../web/config.js" | head -1)}"
 [ -n "$KEY" ] || { echo "no publishable key found"; exit 2; }
 
-RELATIONS="clinics registrations players accounts player_notes clinic_templates payments devices notifications app_settings waivers waiver_acceptances card_consents review_links review_responses reset_links_issued calendar_feeds app_link_visits admin_settings late_requests clinic_messages clinic_message_recipients news_posts news_reads clinics_public my_registrations my_clinic_messages my_news my_past_clinics clinics_admin templates_admin registrations_admin payments_ledger revenue_by_clinic"
+RELATIONS="clinics registrations players accounts player_notes clinic_templates payments devices notifications app_settings waivers waiver_acceptances card_consents review_links review_responses reset_links_issued calendar_feeds app_link_visits app_diagnostics admin_settings late_requests clinic_messages clinic_message_recipients news_posts news_reads clinics_public my_registrations my_clinic_messages my_news my_past_clinics clinics_admin templates_admin registrations_admin payments_ledger revenue_by_clinic"
 EDGE="delete-account stripe-charge stripe-setup-intent push admin-reset-link stripe-payouts"
 # Edge functions that take no JWT on purpose, each with its own credential and
 # a refusal that is not 401: review-submit (the link token; 400/404 without
