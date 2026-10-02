@@ -99,7 +99,7 @@ struct HomeView: View {
                                         .accessibilityIdentifier("home.greeting")
                                     Text("Let's Play.")
                                         .brandFont(.greetingAccent)
-                                        .foregroundStyle(Brand.court)
+                                        .foregroundStyle(Brand.courtText)
                                 }
                                 .frame(maxWidth: .infinity)
                                 .padding(.top, Brand.Spacing.xs)
@@ -379,7 +379,7 @@ struct ClinicRow: View {
 
     private var timeLine: String {
         clinic.startsAt.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
-        + " · "
+        + " at "
         + clinic.startsAt.formatted(.dateTime.hour().minute())
     }
 }

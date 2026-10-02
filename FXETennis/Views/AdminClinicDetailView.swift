@@ -320,6 +320,7 @@ struct AdminClinicDetailView: View {
             Text(dateLine)
                 .brandFont(.subheadline)
                 .foregroundStyle(Brand.textSecondary)
+                .accessibilityIdentifier("roster.dateLine")
 
             // Admin-only counts, with capacity. Shown so Tara can decide, never
             // to stop her deciding.
@@ -408,6 +409,7 @@ struct AdminClinicDetailView: View {
                 Text("\(entries.count)")
                     .brandFont(.chip)
                     .foregroundStyle(Brand.textSecondary)
+                    .accessibilityIdentifier("roster.count")
             }
 
             if entries.isEmpty {
@@ -742,7 +744,7 @@ struct AdminClinicDetailView: View {
 
     private var dateLine: String {
         clinic.startsAt.formatted(.dateTime.weekday(.wide).month(.abbreviated).day())
-        + " · "
+        + ", "
         + clinic.startsAt.formatted(.dateTime.hour().minute())
         + " to "
         + clinic.endsAt.formatted(.dateTime.hour().minute())

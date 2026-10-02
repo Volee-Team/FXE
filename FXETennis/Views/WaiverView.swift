@@ -90,6 +90,9 @@ struct WaiverView: View {
                 }
                 .padding(Brand.Spacing.pageMargin)
             }
+            // The screen itself, for a UI test to wait on before scrolling to
+            // the box at the end (iOS 17 builds only what is near the screen).
+            .accessibilityIdentifier("waiver.screen")
             .background(Brand.surfaceGradient)
             .crispTopEdge()
             .navyTitle("Waiver")

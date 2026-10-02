@@ -63,3 +63,19 @@ On the iPhone 17 Pro simulator, iOS 26.2: Home, Clinics, a clinic page,
 Profile, My Clinics, Edit details, Notifications and sign-in, each looked at.
 Not seen on iOS 17 or 18, where the bar buttons are white by the tint set in
 `Brand.styleNavigationTitles`.
+
+## Addendum, 2026-10-01 evening: iOS 17 and 18
+
+The first runs on older iOS (decision 0034's day; the iOS 18.6 and 17.5
+simulators were downloaded for it) found what the iOS 26 walk could not:
+
+- **iOS 17 drew the system's own title, navy, on the navy banner** (Profile,
+  a clinic's page), because `toolbar(removing: .title)` is iOS 18 only. Now an
+  empty principal item covers the system title on iOS 17, and the page name
+  is ours at the leading edge on every version. A centred title on iOS 17 had
+  jammed against Tara's Players and Stripe buttons.
+- **The audit had been forgiving all low contrast in a navigation bar** (meant
+  for iOS 26's glass buttons), which is why it never flagged the navy title.
+  It now forgives buttons only; a bar's text must pass.
+- **Tara's Players search box** sat in the navy bar on iOS 17 as a dark field
+  with a dark prompt. It is now the app's own white field in the page.

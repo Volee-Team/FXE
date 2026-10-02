@@ -58,7 +58,7 @@ struct AuthView: View {
                 // gator-green, centered under the header.
                 Text("Let's Play.")
                     .brandFont(.greetingAccent)
-                    .foregroundStyle(Brand.court)
+                    .foregroundStyle(Brand.courtText)
                     .padding(.top, Brand.Spacing.md)
 
                 // The form sits on cream, lifted slightly into the banner so the
@@ -150,7 +150,7 @@ struct AuthView: View {
                 .accessibilityIdentifier("auth.toggleMode")
 
                 if mode == .signIn {
-                    Button(resetSent ? "Check your email for a reset link." : "Forgot password?") {
+                    Button(resetSent ? "Check your email for a reset link. It can take a few minutes." : "Forgot password?") {
                         guard !resetSent else { return }
                         Task { resetSent = await session.sendPasswordReset(email: email) }
                     }

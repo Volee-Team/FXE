@@ -36,13 +36,13 @@ struct PlayerHistory: Decodable, Sendable, Equatable {
         case lastPlayedAt = "last_played_at"
     }
 
-    /// "12 played · 1 no-show · 2 late cancels", or "New".
+    /// "12 played, 1 no-show, 2 late cancels", or "New".
     var line: String {
         if played == 0 && noShows == 0 && lateCancels == 0 { return "New" }
         var parts = ["\(played) played"]
         if noShows > 0 { parts.append(noShows == 1 ? "1 no-show" : "\(noShows) no-shows") }
         if lateCancels > 0 { parts.append(lateCancels == 1 ? "1 late cancel" : "\(lateCancels) late cancels") }
-        return parts.joined(separator: " · ")
+        return parts.joined(separator: ", ")
     }
 
     /// "Last played Sep 13, 2026", on the club's New York calendar; nil before

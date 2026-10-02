@@ -142,6 +142,7 @@ struct ProTodayView: View {
                 Text("\(clinic.players.count)")
                     .brandFont(.chip)
                     .foregroundStyle(Brand.textSecondary)
+                    .accessibilityIdentifier("today.count")
             }
 
             if clinic.players.isEmpty {

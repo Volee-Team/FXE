@@ -232,10 +232,20 @@ struct ClinicCard: View {
                     chip
                 }
             } else {
-                HStack(alignment: .top) {
-                    name
-                    Spacer()
-                    chip
+                // Side by side only when both fit whole; otherwise the chip
+                // goes under the name. On iOS 17 at the larger text sizes the
+                // name was squeezed beside a "Response Needed" chip and
+                // clipped (accessibility audit, iPhone 15, 2026-10-01).
+                ViewThatFits(in: .horizontal) {
+                    HStack(alignment: .top) {
+                        name.fixedSize()
+                        Spacer(minLength: Brand.Spacing.xs)
+                        chip.fixedSize()
+                    }
+                    VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
+                        name.fixedSize(horizontal: false, vertical: true)
+                        chip
+                    }
                 }
             }
 
@@ -244,7 +254,7 @@ struct ClinicCard: View {
                 .foregroundStyle(Brand.textSecondary)
 
             if let price = clinic.priceCents(forMember: isMember) {
-                Label("\(durationLine) · \(price.centsAsPrice)", systemImage: "tennisball")
+                Label("\(durationLine), \(price.centsAsPrice)", systemImage: "tennisball")
                     .brandFont(.subheadline)
                     .foregroundStyle(Brand.textSecondary)
                     .accessibilityElement(children: .combine)
@@ -272,6 +282,7 @@ struct ClinicCard: View {
         Text(clinic.name)
             .brandFont(.headline)
             .foregroundStyle(Brand.navy)
+            .accessibilityIdentifier("clinicCard.name")
     }
 
     @ViewBuilder private var chip: some View {
@@ -303,7 +314,7 @@ struct ClinicCard: View {
 
     private var dateLine: String {
         clinic.startsAt.formatted(.dateTime.weekday(.wide).month(.abbreviated).day())
-        + " · "
+        + " at "
         + clinic.startsAt.formatted(.dateTime.hour().minute())
     }
     private var durationLine: String {

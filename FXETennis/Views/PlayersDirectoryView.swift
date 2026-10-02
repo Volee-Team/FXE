@@ -26,6 +26,34 @@ struct PlayersDirectoryView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: Brand.Spacing.md) {
+                    // Our own field, not `.searchable`: on iOS 17 the system's
+                    // sat in the navy bar as a dark box with a dark grey
+                    // prompt, hard to read (iPhone 15, 2026-10-01). White, like
+                    // every other field in the app, on every iOS.
+                    HStack(spacing: Brand.Spacing.xs) {
+                        Image(systemName: "magnifyingglass")
+                            .foregroundStyle(Brand.textSecondary)
+                            .accessibilityHidden(true)
+                        // One line, as a search field is: it scrolls sideways
+                        // rather than losing what is typed. (A field allowed
+                        // to grow is reported as its 19-point inner text area,
+                        // too small to tap: iOS 17, 2026-10-01.)
+                        TextField("Search by name", text: $query)
+                            .textInputAutocapitalization(.words)
+                            .autocorrectionDisabled()
+                            .submitLabel(.search)
+                            // The field itself is the tap target, 44 points
+                            // at least; padding outside it was not (19 points,
+                            // the audit on iOS 17, 2026-10-01).
+                            .padding(.vertical, Brand.Spacing.sm)
+                            .frame(minHeight: 44)
+                            .accessibilityIdentifier("admin.players.search")
+                    }
+                    .brandFont(.body)
+                    .padding(.horizontal)
+                    .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
+                    .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
+
                     Toggle("Show inactive players", isOn: $includeInactive)
                         .brandFont(.subheadline)
                         .tint(Brand.navy)
@@ -72,7 +100,6 @@ struct PlayersDirectoryView: View {
         .crispTopEdge()
         .navyTitle("Players")
         .navigationBarTitleDisplayMode(.inline)
-        .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search by name")
         .onChange(of: query) { _, _ in search() }
     }
 
@@ -107,7 +134,7 @@ struct PlayersDirectoryView: View {
         if !p.isActive { parts.append("Inactive") }
         if p.waiverAccepted == false { parts.append("Waiver not signed") }
         if let n = p.levelNote, !n.isEmpty { parts.append(n) }
-        return parts.joined(separator: " · ")
+        return parts.joined(separator: ", ")
     }
 
     private func search() {

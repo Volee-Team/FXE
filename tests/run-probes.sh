@@ -9,6 +9,17 @@ set -uo pipefail
 cd "$(dirname "$0")/.." || exit 1
 DB=${FXE_DB_CONTAINER:-supabase_db_FXE-Tennis}
 
+# A UI test run (scripts/run-ui-tests.sh) owns the main local database while
+# it holds its lock: probes and race scripts write rows and hold locks that
+# make its tests fail for reasons that are not regressions, and its rows make
+# these probes fail the same way (2026-10-01, a reviewer's probe run during a
+# UI run). Another stack (FXE_DB_CONTAINER) is not affected.
+if [ "$DB" = "supabase_db_FXE-Tennis" ] && [ -d /tmp/fxe-ui-tests.lock ] \
+   && kill -0 "$(cat /tmp/fxe-ui-tests.lock/pid 2>/dev/null)" 2>/dev/null; then
+  echo "A UI test run holds the local database (pid $(cat /tmp/fxe-ui-tests.lock/pid)). Wait for it to finish."
+  exit 2
+fi
+
 if ! docker exec "$DB" pg_isready -U postgres >/dev/null 2>&1; then
   echo "Local Postgres is not up. Run: supabase start"
   exit 1

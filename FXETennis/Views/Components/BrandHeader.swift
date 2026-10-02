@@ -149,14 +149,14 @@ extension View {
     /// mockup. iOS 26 does not draw a large title under a solid bar, and its
     /// "inline large" title ignores the serif, so the name is a toolbar item
     /// and the system title is kept only for VoiceOver and the back button.
-    /// On iOS 17, where the system title cannot be removed, the small centred
-    /// title shows instead.
+    /// On iOS 17 the system title cannot be removed, so an empty principal
+    /// item covers it: there it drew navy on the navy banner (iPhone 15,
+    /// iOS 17.5, 2026-10-01).
     func bannerTitle(_ title: String) -> some View {
         self
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
-            .hidesBarTitle()
-            .toolbar { BannerTitle(title: title) }
+            .modifier(BannerTitlePlacement(title: title))
             .navyBanner()
     }
 
@@ -236,23 +236,36 @@ private struct InlineBannerTitle: ToolbarContent {
     }
 }
 
+/// Ours at the leading edge on every iOS. The system title goes: removed on
+/// iOS 18 and later, covered on iOS 17 (no `toolbar(removing:)`) by an
+/// empty principal item, as `hidesBarTitle()` does. A centred title on iOS
+/// 17 sat jammed against Tara's Players and Stripe buttons (iPhone 15,
+/// 2026-10-01), so the page name stays at the left there too.
+private struct BannerTitlePlacement: ViewModifier {
+    let title: String
+
+    func body(content: Content) -> some View {
+        content
+            .hidesBarTitle()
+            .toolbar { BannerTitle(title: title) }
+    }
+}
+
 private struct BannerTitle: ToolbarContent {
     let title: String
 
     var body: some ToolbarContent {
-        if #available(iOS 18.0, *) {
-            #if compiler(>=6.2)
-            if #available(iOS 26.0, *) {
-                // No glass capsule behind a title (iOS 26 gives every bar
-                // item one).
-                item.sharedBackgroundVisibility(.hidden)
-            } else {
-                item
-            }
-            #else
+        #if compiler(>=6.2)
+        if #available(iOS 26.0, *) {
+            // No glass capsule behind a title (iOS 26 gives every bar
+            // item one).
+            item.sharedBackgroundVisibility(.hidden)
+        } else {
             item
-            #endif
         }
+        #else
+        item
+        #endif
     }
 
     private var item: some ToolbarContent {

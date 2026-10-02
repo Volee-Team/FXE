@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;0,700;1,500&display=swap">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>FXE Tennis · Admin</title>
+<title>FXE Tennis Admin</title>
 <link rel="stylesheet" href="./tokens.css">
 <style>
   /* Layout only. Every colour, radius and space comes from tokens.css, which
@@ -109,7 +109,7 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
 <body>
 
 <header class="hide" id="bar">
-  <h1>FXE Tennis · Admin</h1>
+  <h1>FXE Tennis Admin</h1>
   <span class="spacer"></span>
   <span class="muted" id="who" style="color:var(--fxe-text-on-navy-muted)"></span>
   <button class="small" id="signout">Sign out</button>
@@ -456,7 +456,7 @@ function historyLine(h) {
   const parts = [`${h.played} played`];
   if (h.no_shows) parts.push(plural(h.no_shows, "no-show"));
   if (h.late_cancels) parts.push(plural(h.late_cancels, "late cancel"));
-  return parts.join(" · ");
+  return parts.join(", ");
 }
 const lastPlayed = (h) => h && h.last_played_at
   ? "Last played " + new Date(h.last_played_at).toLocaleDateString(undefined,
@@ -586,8 +586,8 @@ async function loadTemplates() {
     + templates.map(t => `<option value="${t.id}">${esc(t.name)}</option>`).join("");
   const shown = $("show-archived").checked ? all : templates;
   $("tpl-list").innerHTML = shown.length ? shown.map(t => `<div class="row" data-template-row="${t.id}">
-    <span class="grow"><span class="name">${esc(t.name)}</span>${t.archived_at ? ' <span class="muted">· archived</span>' : ""}<br>
-      <span class="muted">${t.duration_minutes} min · ${t.internal_capacity} players · ${money(t.member_price_cents)} member / ${money(t.nonmember_price_cents)} non-member</span></span>
+    <span class="grow"><span class="name">${esc(t.name)}</span>${t.archived_at ? ' <span class="muted">(archived)</span>' : ""}<br>
+      <span class="muted">${t.duration_minutes} min, ${t.internal_capacity} players, ${money(t.member_price_cents)} member / ${money(t.nonmember_price_cents)} non-member</span></span>
     ${t.archived_at
       ? `<button class="small" data-restoretpl="${t.id}">Restore</button>`
       : `<button class="small" data-archivetpl="${t.id}">Archive</button>`}
@@ -647,13 +647,13 @@ async function loadActionNeeded(clinics, byPlayer, owed, stale = () => false) {
     // (admin_resolve_decline, 20260928700001). The ledger keeps the charge.
     ...declined.map(d => `<div class="row" data-declined="${d.registration_id}">
       <span class="grow">${esc(d.first_name + " " + d.last_name)}'s card was declined<br>
-        <span class="muted">${esc(d.clinic_name)} · ${fmtDate(d.clinic_starts_at)}${d.failure_code ? " · " + esc(declineLabel(d.failure_code)) : ""}</span></span>
+        <span class="muted">${esc(d.clinic_name)} on ${fmtDate(d.clinic_starts_at)}${d.failure_code ? ": " + esc(declineLabel(d.failure_code)) : ""}</span></span>
       <span class="name">${money(d.amount_cents)}</span>
       ${d.payment_id ? `<button class="small" data-resolvedecline="${d.payment_id}">Resolved</button>` : ""}
     </div>`),
     ...disputes.map(d => `<div class="row" data-dispute="${d.payment_id}">
       <span class="grow">${esc(d.first_name + " " + d.last_name)} disputed a charge<br>
-        <span class="muted">${esc(d.clinic_name)} · ${fmtDate(d.clinic_starts_at)} · ${money(d.amount_cents)}${d.respond_by ? " · Respond by " + esc(fmtRespondBy(d.respond_by)) : ""}</span></span>
+        <span class="muted">${esc(d.clinic_name)} on ${fmtDate(d.clinic_starts_at)}: ${money(d.amount_cents)}${d.respond_by ? ", respond by " + esc(fmtRespondBy(d.respond_by)) : ""}</span></span>
       <a href="https://dashboard.stripe.com" target="_blank" rel="noopener">Manage payments in Stripe</a>
     </div>`),
   ];
@@ -713,12 +713,12 @@ async function loadMoney() {
     </div>
     ${(declined || []).map(d => `<div class="row">
       <span class="grow"><span class="name" style="font-weight:700">${esc(d.first_name + " " + d.last_name)}</span> <span class="muted" style="color:#992E22">Declined</span><br>
-        <span class="muted">${esc(d.clinic_name)} · ${fmtDate(d.clinic_starts_at)}${d.failure_code ? " · " + esc(declineLabel(d.failure_code)) : ""}</span></span>
+        <span class="muted">${esc(d.clinic_name)} on ${fmtDate(d.clinic_starts_at)}${d.failure_code ? ": " + esc(declineLabel(d.failure_code)) : ""}</span></span>
       <span class="name">${money(d.amount_cents)}</span>
     </div>`).join("")}
     ${(perClinic || []).slice(0, 12).map(r => `<div class="row">
       <span class="grow"><span class="name">${esc(r.clinic_name)}</span>${r.canceled ? ` <span class="chip canc">Canceled</span>` : ""}<br><span class="muted">${fmtDate(r.starts_at)}</span></span>
-      <span class="muted">Charged ${money(r.charged_cents)}${r.not_charged_count ? ` · Not charged yet ${money(r.not_charged_cents)}` : ""}${r.declined_count ? ` · Declined ${r.declined_count}` : ""}</span>
+      <span class="muted">Charged ${money(r.charged_cents)}${r.not_charged_count ? `, not charged yet ${money(r.not_charged_cents)}` : ""}${r.declined_count ? `, declined ${r.declined_count}` : ""}</span>
     </div>`).join("")}
     <div id="ledger"></div>`;
   loadLedger(gen);
@@ -837,7 +837,7 @@ async function loadLedger(gen = moneySeq) {
     // name printed on the card, so the account name is what we have).
     return `<div class="row">
       <span class="grow"><span class="name"${failed ? ` style="font-weight:700"` : ""}>${esc(who)}</span> <span class="muted">${KIND[r.kind] || esc(r.kind)}</span><br>
-        <span class="muted">${clinic ? esc(clinic.name) + " · " + fmtDate(clinic.starts_at) : ""}</span>${why ? `<span class="muted"${bad}> · ${esc(why)}</span>` : ""}${resolved ? `<span class="muted" data-resolved> · Resolved</span>` : ""}${dispute ? `<span class="muted"${disputeRed ? ` style="color:#992E22"` : ""} data-dispute-status> · ${esc(dispute)}</span>` : ""}</span>
+        <span class="muted">${clinic ? esc(clinic.name) + " on " + fmtDate(clinic.starts_at) : ""}</span>${why ? `<span class="muted"${bad}>: ${esc(why)}</span>` : ""}${resolved ? `<span class="muted" data-resolved> (resolved)</span>` : ""}${dispute ? `<span class="muted"${disputeRed ? ` style="color:#992E22"` : ""} data-dispute-status> (${esc(dispute)})</span>` : ""}</span>
       <span><span class="name">${r.kind === "refund" ? "−" : ""}${money(r.amount_cents)}</span><br><span class="muted"${bad}>${status}</span></span>
       ${paymentsOn && r.kind !== "refund" && r.status === "succeeded" && !r.dispute_status ? `<button class="small" data-refund="${r.id}">Refund</button>` : ""}
     </div>${held ? `<div class="row" data-held="${r.id}">
@@ -941,7 +941,7 @@ async function loadAppLinkVisits() {
   if (error || !data) return;
   const total = data.reduce((n, r) => n + r.visits, 0);
   const qr = data.filter(r => r.via === "qr").reduce((n, r) => n + r.visits, 0);
-  $("qr-visits").textContent = total ? `· opened ${total} ${total === 1 ? "time" : "times"}, ${qr} by scanning` : "· not opened yet";
+  $("qr-visits").textContent = total ? `(opened ${total} ${total === 1 ? "time" : "times"}, ${qr} by scanning)` : "(not opened yet)";
 }
 async function runBoardReport() {
   const from = $("br-from").value, to = $("br-to").value;
@@ -1156,7 +1156,7 @@ async function loadClinics() {
         ${rows.map((r, i) => {
           const p = byPlayer[r.player_id];
           const who = p ? `${p.first_name} ${p.last_name}` : "Unknown player";
-          const sub = p ? `${ntrp(p.adult_rating)} · ${p.is_member ? "Member" : "Non-member"}` : "";
+          const sub = p ? `${ntrp(p.adult_rating)}, ${p.is_member ? "Member" : "Non-member"}` : "";
           // The Player Pool is where she chooses, so its rows carry the
           // player's history (decision 0027 §1).
           return `<div class="row">
@@ -1170,7 +1170,7 @@ async function loadClinics() {
     return `<div class="card">
       <div class="row">
         <span class="grow"><span class="name">${esc(c.name)}</span><br>
-          <span class="muted">${fmtDate(c.starts_at)} · ${c.duration_minutes} min ·
+          <span class="muted">${fmtDate(c.starts_at)}<br>${c.duration_minutes} min,
           ${money(c.member_price_cents)} member / ${money(c.nonmember_price_cents)} non-member</span></span>
         <span class="muted">${group("in").length}/${c.internal_capacity}</span>
         <button class="small" data-edit="${c.id}">Edit</button>
@@ -1186,7 +1186,7 @@ async function loadClinics() {
       ${section("pool", r => c.status !== "canceled" ? `<button class="small primary" data-invite="${r.id}">Invite</button><button class="small" data-remove="${r.id}">Remove</button>` : "")}
       ${section("response_needed", r => `<button class="small" data-uninvite="${r.id}">Cancel invite</button>`)}
       ${section("canceled", r => r.late_cancel
-        ? `<span class="chip canc" title="Canceled inside ${cutoffHours} hours">Late</span><span class="muted">${r.courtesy_used ? "Courtesy" : "Fee applies"}${r.cancel_note ? " · “" + esc(r.cancel_note) + "”" : ""}</span>${r.courtesy_used ? "" : chargeState(r)}`
+        ? `<span class="chip canc" title="Canceled inside ${cutoffHours} hours">Late</span><span class="muted">${r.courtesy_used ? "Courtesy" : "Fee applies"}${r.cancel_note ? ": “" + esc(r.cancel_note) + "”" : ""}</span>${r.courtesy_used ? "" : chargeState(r)}`
         : "")}
     </div>`;
   };
@@ -1492,7 +1492,7 @@ let playerTimer;
 // the database would refuse.
 const playerRow = (pl, history, who) => `<div class="row" data-player-row="${pl.id}">
   <span class="grow"><span class="name">${esc(pl.first_name)} ${esc(pl.last_name)}</span>${pl.has_notes ? ' <span class="muted" title="Has a note">✎</span>' : ""}<br>
-    <span class="muted">${ntrp(pl.adult_rating)} · ${pl.is_member ? "Member" : "Non-member"}${pl.is_active ? "" : " · Inactive"}${pl.waiver_accepted ? "" : " · Waiver not signed"}</span>${historyHtml(history)}${pl.level_note ? `<br><span class="muted" title="The player's note at level entry; only you see it">“${esc(pl.level_note)}”</span>` : ""}</span>
+    <span class="muted">${ntrp(pl.adult_rating)}, ${pl.is_member ? "Member" : "Non-member"}${pl.is_active ? "" : ", Inactive"}${pl.waiver_accepted ? "" : ", Waiver not signed"}</span>${historyHtml(history)}${pl.level_note ? `<br><span class="muted" title="The player's note at level entry; only you see it">“${esc(pl.level_note)}”</span>` : ""}</span>
   <button class="small" data-member="${pl.id}" data-now="${pl.is_member}">${pl.is_member ? "Make non-member" : "Make member"}</button>
   <button class="small" data-active="${pl.id}" data-now="${pl.is_active}">${pl.is_active ? "Deactivate" : "Reactivate"}</button>
   ${who && !who.deleted && (who.role === "member" || who.role === "pro")
@@ -1607,7 +1607,7 @@ $("w-query").addEventListener("input", () => {
     $("w-results").innerHTML = (data || []).length
       ? data.map(pl => `<div class="row">
           <span class="grow"><span class="name">${esc(pl.first_name)} ${esc(pl.last_name)}</span><br>
-          <span class="muted">${ntrp(pl.adult_rating)} · ${pl.is_member ? "Member" : "Non-member"}</span></span>
+          <span class="muted">${ntrp(pl.adult_rating)}, ${pl.is_member ? "Member" : "Non-member"}</span></span>
           <button class="small primary" data-place="${pl.id}">Put in clinic</button>
         </div>`).join("")
       : `<p class="muted">Nobody by that name yet. They may need to sign up in the app first.</p>`;
@@ -1664,7 +1664,7 @@ $("forgot").onclick = async () => {
   if (!email) return note($("signin-msg"), "Type your email above first.");
   const { error } = await sb.auth.resetPasswordForEmail(email, {
     redirectTo: location.origin + "/reset.html" });
-  note($("signin-msg"), error ? friendly(error) : "Check your email for a reset link.", !error);
+  note($("signin-msg"), error ? friendly(error) : "Check your email for a reset link. It can take a few minutes.", !error);
 };
 
 $("togglemode").onclick = () => {

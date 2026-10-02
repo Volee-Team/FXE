@@ -1,0 +1,10 @@
+8a59637039e82379	PASS	iPhone 17 Pro	iOS 26.2	2026-10-01T19:47Z	232 unit, 22 UI
+ee7e30ce9b6e8e52	PASS	iPhone SE (3rd generation)	iOS 18.6	2026-10-01T21:33Z	232 unit, 22 UI
+e85c51d30ca9c4ac	PASS	iPhone SE (3rd generation)	iOS 18.6	2026-10-01T23:42Z	232 unit, 22 UI
+496298e6f50e3e56	PASS	iPhone SE (3rd generation)	iOS 18.6	2026-10-02T00:21Z	232 unit, 22 UI
+749e06210b9eac1b	PASS	iPhone 15	iOS 17.5	2026-10-02T07:03Z	232 unit, 22 UI
+749e06210b9eac1b	PASS	iPhone SE (3rd generation)	iOS 18.6	2026-10-02T07:19Z	232 unit, 22 UI
+749e06210b9eac1b	PASS	iPhone 17 Pro	iOS 26.2	2026-10-02T07:36Z	232 unit, 22 UI
+6532f9d4d19b3c5b	PASS	iPhone 15	iOS 17.5	2026-10-02T07:03Z	232 unit, 22 UI (re-keyed from 749e06210b9eac1b: the same files, the fingerprint no longer counts version lines)
+6532f9d4d19b3c5b	PASS	iPhone SE (3rd generation)	iOS 18.6	2026-10-02T07:19Z	232 unit, 22 UI (re-keyed from 749e06210b9eac1b: the same files, the fingerprint no longer counts version lines)
+6532f9d4d19b3c5b	PASS	iPhone 17 Pro	iOS 26.2	2026-10-02T07:36Z	232 unit, 22 UI (re-keyed from 749e06210b9eac1b: the same files, the fingerprint no longer counts version lines)

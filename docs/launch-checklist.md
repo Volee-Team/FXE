@@ -148,9 +148,9 @@ Missing kinds of testing, in the order they matter:
 |---|---|---|---|
 | G1 | The MVP call (`docs/mvp.md`): payments in or out, push in or out | [Alex]+[Kat]+[Tara] | **DONE 2026-09-27**: Alex: payments fully live for the party (A11) and push fully working (C3), *"we want everything 100% functional + even better"* |
 | G2 | Tara's answers through the review page, **round four**: only what is new since her 2026-09-22 answers (15 words, questions 69 to 79, three tasks). Her 09-22 answers were read on 2026-09-27 (decision 0016); `review-watch.yml` now opens an issue whenever she saves | [Alex] sends, [Tara] answers | **OPEN**: send the link once round four is deployed (`docs/for-alex.md` §5). Question 75 (how members hear about the app) blocks launch |
-| G3 | Kat's calls: the tab bar colour, the green text contrast, the green line under the header; and her earlier "tag spec" line (release tags, answered by C10, or analytics tags, not built; `docs/kat-due-diligence.md`) | [Kat] | **OPEN** (`docs/for-alex.md` §7) |
+| G3 | Kat's calls: the tab bar colour, the green text contrast, the green line under the header; and her earlier "tag spec" line (release tags, answered by C10, or analytics tags, not built; `docs/kat-due-diligence.md`) | [Kat] | **DONE 2026-10-01**: keep the system tab bar, the darker green for text, keep the green line (decision 0036); her "tag spec" line is answered by the release tags (C10) |
 | G4 | Alex's ticks in `docs/copy-review.md` (sections G to J and the older open rows) | [Alex] | **OPEN** |
-| G5 | Tara's logo file and the original court photo | [Tara] | **OPEN**: the logo is in (the gator in colour, decision 0032, 2026-09-29); the court photo is still to come |
+| G5 | Tara's logo file and the original court photo | [Tara] | **DONE 2026-10-01**: the logo (the gator in colour, decision 0032, 2026-09-29) and the court photo, which is the one from her 2026-09-26 mockup, in the app since then (Alex, 2026-10-01: *"its legit in the app alr"*); a full-size original would only make it sharper |
 | G6 | GitHub: require the hosted smoke check and stop admins bypassing `main`'s protection. Dependabot alerts are already on (verified 2026-09-27) | [Alex] | **OPEN** (`docs/for-alex.md` §8) |
 
 ## H. The MVP audit of 2026-09-27

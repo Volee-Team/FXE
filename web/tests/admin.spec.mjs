@@ -96,8 +96,8 @@ test.describe("the directory", () => {
     // Rob's seeded rating is 3.0; before 2026-09-28 the laptop wrote "3".
     const rob = page.locator("[data-player-row]", { hasText: "Rob Delgado" });
     await expect(rob).toBeVisible();
-    await expect(rob).toContainText("3.0 · Non-member");
-    await expect(page.locator("[data-player-row]", { hasText: "Maria Alvarez" })).toContainText("3.5 · Member");
+    await expect(rob).toContainText("3.0, Non-member");
+    await expect(page.locator("[data-player-row]", { hasText: "Maria Alvarez" })).toContainText("3.5, Member");
     // Typing still narrows it.
     await page.getByLabel("Search players by name").fill("Mar");
     await expect(page.locator("[data-player-row]", { hasText: "Rob Delgado" })).toHaveCount(0);
@@ -637,7 +637,7 @@ test.describe("payouts and disputes", () => {
       await expect(row).toContainText("Maria Alvarez disputed a charge");
       await expect(row).toContainText("Browser Dispute Clinic");
       await expect(row).toContainText("$18");
-      await expect(row).toContainText("Respond by");
+      await expect(row).toContainText("respond by");
       await expect(row.getByRole("link", { name: "Manage payments in Stripe" })).toHaveAttribute("href", "https://dashboard.stripe.com");
       await expect(page.locator(`#money-needs [data-dispute="${lost.id}"]`)).toHaveCount(0);
       const declined = page.locator(`#money-needs [data-declined="${ken.id}"]`);

@@ -175,7 +175,7 @@ extension MyClinicsView {
     private func pastOutcome(_ row: PastClinic) -> String {
         if row.status == .canceled { return row.lateCancel == true ? "Canceled late" : "Canceled" }
         if row.noShow == true { return "No-show" }
-        if let cents = row.priceCentsCharged { return "Played · \(cents.centsAsPrice)" }
+        if let cents = row.priceCentsCharged { return "Played, \(cents.centsAsPrice)" }
         return "Played"
     }
 

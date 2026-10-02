@@ -60,6 +60,25 @@ final class AccessibilityAuditUITests: XCTestCase {
         // from the simulator's pixels inside the exact frame the audit named.
         if issue.auditType == .contrast,
            ["auth.toggleMode", "auth.forgot", "profile.signOut", "notifications.markAllRead"].contains(e.identifier) { return true }
+        // On iOS 18 (not 26) the audit reads the grey count beside a status
+        // chip and a roster's date line, both over the court photo, as low
+        // contrast. Measured from the iPhone SE (iOS 18.6) simulator's pixels
+        // in the frames it named, 2026-10-01: the count 7.62:1, the same grey
+        // date style on the same wash 8.03:1. Accepted by name, so any other
+        // element in that grey still has to pass.
+        if issue.auditType == .contrast,
+           ["roster.count", "today.count", "roster.dateLine"].contains(e.identifier) { return true }
+        // iOS 17 only: a clinic card's name and status chip on My Clinics are
+        // called "partially unsupported" for Dynamic Type. Seen growing on the
+        // iPhone 15 (iOS 17.5) at accessibility-extra-large, 2026-10-01: the
+        // name and "Response Needed" both at full size, the chip moved under
+        // the name. Accepted for "partially" on these two names only.
+        if issue.compactDescription.contains("partially"),
+           ["clinicCard.name", "statusChip"].contains(e.identifier)
+           // iOS 17 reports the chip as a static text with no identifier,
+           // so it is also known by the four status words it can say.
+           || (e.elementType == .staticText
+               && ["You're In!", "Player Pool", "Response Needed", "Canceled"].contains(e.label)) { return true }
         // The logo keeps its size under Larger Text on purpose: it sits in a
         // header of fixed height (Brand.Typography.Role.wordmarkCompact). The
         // audit reaches its "TENNIS" text even inside the one logo element.
@@ -71,8 +90,22 @@ final class AccessibilityAuditUITests: XCTestCase {
         // measured from pixels on 2026-09-28, navy Cancel and Save on the
         // capsule are 16.4:1. So in a navigation bar we accept contrast and
         // "partially" unsupported Dynamic Type, and nothing else.
-        if issue.auditType == .contrast || issue.compactDescription.contains("partially"),
-           isInNavigationBar(e) { return true }
+        // Buttons only (2026-10-01): forgiving any text in the bar hid a navy
+        // page title on the navy banner on iOS 17, which a person could not
+        // read. A bar's titles are ours (white serif) and must pass.
+        if issue.auditType == .contrast, isInNavigationBar(e), e.elementType == .button { return true }
+        // Every bar caps how far its text grows (the system shows the large-
+        // content viewer instead), so "partially" is the bar's behaviour, for
+        // titles and buttons alike.
+        if issue.compactDescription.contains("partially"), isInNavigationBar(e) { return true }
+        // iOS 18 keeps the system's centred title in the accessibility tree
+        // after `toolbar(removing: .title)` hides it, and the audit calls it
+        // clipped. It is not drawn (the page name is the banner title beside
+        // it, which grows with Larger Text; screenshot on the iPhone SE,
+        // 2026-10-01), so clipping in the bar is accepted for exactly that
+        // element: a static text whose label is the screen's own title.
+        if issue.auditType == .textClipped, isInNavigationBar(e), e.elementType == .staticText,
+           app.navigationBars[e.label].exists { return true }
         // The same is true of the strip under the floating tab bar for
         // "partially" unsupported text: a week header or a clinic's time
         // down there is flagged, the identical one higher up passes.
@@ -86,6 +119,10 @@ final class AccessibilityAuditUITests: XCTestCase {
            e.frame.minY > app.frame.height / 2 { return true }
         // The system search field's placeholder, not ours to lay out.
         if issue.auditType == .textClipped, e.elementType == .searchField { return true }
+        // The same for Tara's own Players search field (2026-10-01): one line,
+        // scrolling sideways at large sizes like the system's, never losing
+        // what she typed.
+        if issue.auditType == .textClipped, e.identifier == "admin.players.search" { return true }
         // An email address is not "human-readable" to the audit, and it is
         // exactly what the person typed.
         if issue.auditType == .sufficientElementDescription, e.label.contains("@") { return true }

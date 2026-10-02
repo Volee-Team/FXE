@@ -263,8 +263,17 @@ final class PlayerFlowUITests: XCTestCase {
 
         // The waiver comes next (decision 0013): her checkbox sentence, a typed
         // full legal name, and the sign button stays disabled until both.
+        // The box sits at the end of a long waiver. iOS 17 leaves it out of
+        // the accessibility tree until it is scrolled near (iOS 18 and 26
+        // do not), so on iOS 17 this failed while the waiver was on screen
+        // (2026-10-01, iPhone 15). Wait for the screen, then scroll to the
+        // box the way a person does.
+        XCTAssertTrue(app.descendants(matching: .any)["waiver.screen"].waitForExistence(timeout: 20),
+                      "Waiver never appeared after the profile")
         let agree = app.buttons["waiver.agree"]
-        XCTAssertTrue(agree.waitForExistence(timeout: 20), "Waiver never appeared after the profile")
+        var swipes = 0
+        while !agree.exists && swipes < 15 { app.swipeUp(); swipes += 1 }
+        XCTAssertTrue(agree.waitForExistence(timeout: 5), "The waiver's agree box was not at its end")
         // Before the app, not over it (Alex, 2026-09-29): nothing of Home
         // exists while the waiver is on screen.
         XCTAssertFalse(app.staticTexts["home.greeting"].exists,
@@ -482,10 +491,15 @@ final class PlayerFlowUITests: XCTestCase {
     /// fails with a misleading "never became tappable". Swiping a bounded number
     /// of times keeps a layout regression a failure rather than a hang.
     @discardableResult
+    /// Hittable AND wholly on screen, clear of the home indicator. "Hittable"
+    /// alone passed for a Continue button whose top edge sat 8 points above
+    /// the bottom of an iPhone 15 (iOS 17), and the tap landed on the home
+    /// bar instead (2026-10-01). A person scrolls it fully into view; so do we.
     private func scrollUntilHittable(_ element: XCUIElement, maxSwipes: Int = 5) -> Bool {
         guard element.waitForExistence(timeout: 10) else { return false }
+        let bottom = app.windows.firstMatch.frame.maxY - 40
         for _ in 0..<maxSwipes {
-            if element.isHittable { return true }
+            if element.isHittable && element.frame.maxY <= bottom { return true }
             app.swipeUp()
         }
         return element.isHittable
@@ -667,7 +681,7 @@ final class PlayerFlowUITests: XCTestCase {
                       "Sign-out did not return to the auth screen")
     }
 
-    /// The price line on the first clinic card, e.g. "60 min · $18".
+    /// The price line on the first clinic card, e.g. "60 min, $18".
     private func firstClinicPriceLabel() -> String? {
         let price = app.staticTexts.matching(identifier: "clinic.price").firstMatch
         guard price.waitForExistence(timeout: 20) else { return nil }
