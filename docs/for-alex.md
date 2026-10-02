@@ -289,24 +289,26 @@ your phone running build 4 to prove it, and reads back whether Apple took it.
 No `APNS_HOST` is needed: TestFlight builds use Apple's production server,
 which is the default.
 
-## 4. John: TestFlight build 7 (checklist C8, C10)
+## 4. John: TestFlight build 8 (checklist C8, C10)
 
-**Build 7 is the tag `v0.1.0-rc7`**: build 6 (`v0.1.0-rc6`) plus Kat's navy
-banner on every page and Tara's bigger logo over a smaller TENNIS (decision
-0033). It contains everything in builds 5 and 6, so John archives only this
-one. Text John something like this:
+**Build 8 is the tag `v0.1.0-rc8`**: build 7 (uploaded by John on
+2026-09-29, `v0.1.0-tf7`) plus no middle dots, Kat's darker green for text,
+"It can take a few minutes" under Forgot password, and the fixes the first
+iOS 17 and iOS 18 runs found (titles on the navy banner, the notifications
+prompt on a small iPhone, Tara's search box). Every screen test passed on
+iOS 17, 18 and 26 for this code. Text John something like this:
 
-> John, build 7 is ready. `git fetch --tags && git checkout v0.1.0-rc7`,
+> John, build 8 is ready. `git fetch --tags && git checkout v0.1.0-rc8`,
 > `xcodegen generate`, open the project, scheme FXETennis, destination Any
 > iOS Device, Product → Archive, then Distribute App → TestFlight Internal
 > Only → Upload. After it processes, add it to the internal group, then tag
-> it: `git tag -a v0.1.0-tf7 -m "TestFlight build 7, uploaded by John"` and
-> `git push origin v0.1.0-tf7`. Full steps are in `docs/testflight.md`.
+> it: `git tag -a v0.1.0-tf8 -m "TestFlight build 8, uploaded by John"` and
+> `git push origin v0.1.0-tf8`. Full steps are in `docs/testflight.md`.
 
 **"What to Test" for TestFlight** (John pastes it; plain words, for your tick
 before it goes, hard rule 13):
 
-> New in build 7: a fresh look, and the app opens straight onto your clinics, even with poor
+> New in build 8: a fresh look, and the app opens straight onto your clinics, even with poor
 > signal. Ask Siri "When's my next clinic in FXE Tennis?". Add your clinics
 > to your calendar from Profile (Subscribe in Calendar). Please try signing
 > up for a clinic, canceling it, and turning up Larger Text in Settings, and

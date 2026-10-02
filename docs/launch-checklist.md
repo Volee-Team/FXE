@@ -29,10 +29,10 @@ How this file works, so it can be trusted:
 What must be true on the day, in the order it has to happen. Each item is a
 row below; this list adds nothing of its own. Re-derived 2026-09-28.
 
-1. **Build 7 is on the testers' phones** (C8): tag `v0.1.0-rc7`, everything
+1. **Build 8 is on the testers' phones** (C8): tag `v0.1.0-rc8`, everything
    below in section I plus the MVP-audit fixes. [John]
 2. **Payments on, then tested, then live in Tara's name** (A9, A2, A7, A10,
-   A12): on after build 7 is on phones; Tara's live activation by 2026-11-04
+   A12): on after build 8 is on phones; Tara's live activation by 2026-11-04
    is the gate (A11). [Alex, Tara, me]
 3. **Push on the lock screen** (C3): John makes the key, Alex sets five
    secrets; the Accept and Decline buttons and her words are already built.
@@ -82,9 +82,9 @@ What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision
 | C5 | Delete my account in the app, history kept (guideline 5.1.1(v)) | [me] | **DONE 2026-09-21**; `delete-account` deployed the same day |
 | C6 | Privacy policy at a public URL | [Tara] | **DONE 2026-09-27**: Tara approved it ("looks good"), contact fersctennispro@gmail.com; published at `https://fxe-tennis-admin.vercel.app/privacy.html` (verified by `deploy-web.sh`) and linked from Profile in the app (build 4) |
 | C7 | App Store listing: name, subtitle, description in Tara's words, screenshots, age rating, support URL, review notes with a test account | [Alex]+[me] | **BLOCKED** on C1, or on C11's path |
-| C8 | TestFlight **build 7** from the tag `v0.1.0-rc7` (build 6 plus the navy banner and the logo sizes, decision 0033; it carries everything in builds 5 and 6, so those can be skipped) | [John] | **OPEN**: `v0.1.0-rc7` is made when this merges (2026-09-29); John archives it per `docs/testflight.md` (`docs/for-alex.md` §4) |
+| C8 | TestFlight **build 8** from the tag `v0.1.0-rc8` (build 7 plus no dots, the darker green, and the iOS 17/18 fixes; green on iOS 17, 18 and 26) | [John] | **OPEN**: build 7 uploaded 2026-09-29 (`v0.1.0-tf7`); `v0.1.0-rc8` is made when this merges (2026-10-02); John archives it per `docs/testflight.md` (`docs/for-alex.md` §4) |
 | C9 | Real-device pass: the two simulator flakes checked on an iPhone | [Alex]/[me] | **BLOCKED** on C8 |
-| C10 | An annotated git tag at every TestFlight upload | [me]/[John] | **OPEN**: `v0.1.0-tf2`, `v0.1.0-rc6` and (on merge) `v0.1.0-rc7` exist (2026-09-29); tag `v0.1.0-tf7` when John's upload of build 7 is processed |
+| C10 | An annotated git tag at every TestFlight upload | [me]/[John] | **OPEN**: `v0.1.0-tf2`, `tf5`, `tf7` and `rc6` to `rc8` exist or are made on merge (2026-10-02); tag `v0.1.0-tf8` when John's upload of build 8 is processed |
 | C11 | External TestFlight on John's account with a public link, submitted to Apple's beta review **this week** with no testers invited, so the review is done before it matters (needs C6's URL) | [Alex]/[John] | **OPEN**: C6 is done (the URL is live), so nothing blocks the request; decided 2026-09-27 (Alex: *"yes prob"*) |
 | C12 | Bundle id for the LLC's app. `com.fxetennis.app` is tied to John's account now: Apple transfers only apps with at least one App Store release, and a TestFlight upload locks the id to that account. The LLC's app will need a new id, and testers install it fresh (their accounts carry over; they live on our server) | [Alex] | **DECIDE** [Alex] before the first LLC build |
 | C13 | How Apple's reviewer signs in: one real account called App Review, made through the app's own sign-up with an address Alex controls, left out of the board report; while keys are sandbox the review notes give Stripe's 4242 test card | [Alex] | **DECIDE** [Alex] before the first external or App Store submission |
