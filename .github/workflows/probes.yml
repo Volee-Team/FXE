@@ -171,7 +171,12 @@ jobs:
       # edge runtime so the functions reach it as http://stripe-mock:12111.
       - name: Start stripe-mock
         run: |
-          docker run -d --name stripe-mock --network supabase_network_FXE-Tennis -p 12111:12111 stripe/stripe-mock:latest
+          # Pinned by digest (2026-10-02): `:latest` moved overnight and the
+          # new image returned nothing for a SetupIntent, so this job went red
+          # on a PR that touched no Stripe code. This digest is the image the
+          # last green run on main pulled (2026-09-29). Move it on purpose,
+          # with the harness green, never by accident.
+          docker run -d --name stripe-mock --network supabase_network_FXE-Tennis -p 12111:12111 stripe/stripe-mock@sha256:ff32647993847be491e68533e2881c90434fa8d5df40246ee5f7d41253422081
           for i in $(seq 1 20); do
             curl -s -o /dev/null http://127.0.0.1:12111/ && break || sleep 2
           done

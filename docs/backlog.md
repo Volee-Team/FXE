@@ -5,6 +5,7 @@ noticed and not fixed goes here in the same breath**, or it is forgotten.
 
 Priority: 🔴 blocks a person · 🟡 should fix · 🟢 whenever
 
+- **2026-10-02, stripe-mock's newest image breaks our SetupIntent call.** CI pinned the previous digest (`sha256:ff3264…`, the image of the last green run) after `stripe/stripe-mock:latest` (`sha256:aeb96b…`) returned no client secret for `stripe-setup-intent`. To do: run the Stripe harness against the new image and read the function's error, because stripe-mock follows Stripe's current API definition, so this may be a parameter the live API will also refuse at some point. Docker Hub pulls hang on Alex's Mac, so this needs CI or another machine.
 ## Open
 
 | | Item | Found | Note |
