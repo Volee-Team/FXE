@@ -138,8 +138,8 @@ final class AdminFlowUITests: XCTestCase {
         XCTAssertTrue(players.waitForExistence(timeout: 20), "No Players entry on Manage")
         players.tap()
 
-        let search = app.searchFields.firstMatch
-        XCTAssertTrue(search.waitForExistence(timeout: 10))
+        let search = app.textFields["admin.players.search"]
+        XCTAssertTrue(search.waitForExistence(timeout: 10), "No search field on Players")
         search.tap()
         search.typeText("Mar")
 
@@ -337,10 +337,15 @@ final class AdminFlowUITests: XCTestCase {
         card.tap()
     }
 
+    /// Hittable AND wholly on screen, clear of the home indicator. "Hittable"
+    /// alone passed for a Continue button whose top edge sat 8 points above
+    /// the bottom of an iPhone 15 (iOS 17), and the tap landed on the home
+    /// bar instead (2026-10-01). A person scrolls it fully into view; so do we.
     private func scrollUntilHittable(_ element: XCUIElement, maxSwipes: Int = 6) -> Bool {
         guard element.waitForExistence(timeout: 10) else { return false }
+        let bottom = app.windows.firstMatch.frame.maxY - 40
         for _ in 0..<maxSwipes {
-            if element.isHittable { return true }
+            if element.isHittable && element.frame.maxY <= bottom { return true }
             app.swipeUp()
         }
         return element.isHittable

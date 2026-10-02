@@ -99,6 +99,11 @@ public enum Brand {
     /// 4.5 text floor, so it may never carry body text — use `textOnCourt` on it,
     /// or keep it to fills and the You're In! dot.
     public static let court = Color(hex: 0x4F7A38)         // gator-green: mascot, accent stripe, active tab, "Let's Play"
+    /// Gator-green for TEXT: "Let's Play." and the active tab's label. Kat,
+    /// 2026-10-01: "Use the darker green" for text (her #4F7A38 measures
+    /// 4.42:1 on porcelain, under the 4.5 floor; this one 5.51:1). The guide's
+    /// green stays for fills, the header line and the logo.
+    public static let courtText = Color(hex: 0x446A30)
     /// green-shade: mascot shading/outline only.
     public static let courtShade = Color(hex: 0x33501F)
     /// ace-yellow: photography accent only, never text or UI fill.
@@ -513,6 +518,7 @@ public struct StatusChip: View {
         .background(status.tint, in: Capsule())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(status.accessibilityLabel)
+        .accessibilityIdentifier("statusChip")
     }
 }
 
@@ -658,7 +664,15 @@ extension View {
     /// but does not draw it in the bar, where it repeated the page's own
     /// serif heading (a clinic's page, 2026-09-28). iOS 18 and later; on 17
     /// the title stays.
+    ///
+    /// On iOS 17, which has no `toolbar(removing:)`, an empty principal item
+    /// takes the title's place: the system's own title drew navy on the navy
+    /// banner there (a clinic's page, iPhone 15, iOS 17.5, 2026-10-01).
     @ViewBuilder func hidesBarTitle() -> some View {
-        if #available(iOS 18.0, *) { self.toolbar(removing: .title) } else { self }
+        if #available(iOS 18.0, *) {
+            self.toolbar(removing: .title)
+        } else {
+            self.toolbar { ToolbarItem(placement: .principal) { Color.clear.frame(width: 1, height: 1).accessibilityHidden(true) } }
+        }
     }
 }

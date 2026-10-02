@@ -24,6 +24,10 @@ struct NotificationPermissionView: View {
                 .brandFont(.body)
                 .foregroundStyle(Brand.textPrimary)
                 .multilineTextAlignment(.center)
+                // Its full height always: on an iPhone SE at the medium
+                // detent the spacers squeezed it to one line ending "...."
+                // (seen on iOS 18.6, 2026-10-01).
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, Brand.Spacing.pageMargin)
             Spacer(minLength: 0)
 
@@ -56,7 +60,8 @@ struct NotificationPermissionView: View {
         }
         .padding(Brand.Spacing.pageMargin)
         .background(Brand.surfaceGradient.ignoresSafeArea())
-        .presentationDetents([.medium])
+        // Large too, so a small phone or Larger Text can pull it up to fit.
+        .presentationDetents([.medium, .large])
     }
 }
 

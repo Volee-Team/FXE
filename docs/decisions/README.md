@@ -42,6 +42,8 @@ The history of what we believed is part of the record.
 | [0031](0031-app-link-visits.md) | Opens of the app link counted per day as QR or link, nothing about the person; Tara sees the totals by the QR link; downloads by date are Apple's (App Store Connect) | 2026-09-29 | Active |
 | [0032](0032-gator-in-colour.md) | The gator mark in colour (green gator, cream racquets) before testers, as Tara asked; every copy generated from one source file by `scripts/make-logo-assets.py` | 2026-09-29 | Active |
 | [0033](0033-navy-banner-and-wordmark.md) | The navy banner on every titled page (Kat), white serif titles and bar buttons, white status bar app-wide; the gator larger over a smaller TENNIS (Tara) | 2026-09-29 | Active |
+| [0034](0034-no-middle-dots.md) | No middle dots between words anywhere a person reads: "at" for times, commas for lists, "on" and a colon for a clinic and its reason | 2026-10-01 | Active |
+| [0036](0036-kats-style-calls.md) | Kat's calls: keep the system tab bar, the darker green (#446A30) for text only, keep the green line under the header | 2026-10-01 | Active |
 | [0011](0011-no-email-verification-v1.md) | No email verification in v1; hosted "Confirm email" is OFF by hand, and every new project needs the same flip | 2026-08-16 | Active |
 
 Tara's own numbered decisions (1–23, calls of 2026-08-02 and 2026-08-12) are

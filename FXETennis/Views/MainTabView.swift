@@ -74,6 +74,8 @@ struct MainTabView: View {
         // the tabs too, and green toolbar buttons on a sheet's glass (Cancel,
         // Save, Done, Mark all read) failed the contrast audit (2026-09-28);
         // each tab's content is navy instead, which sheets inherit.
-        .tint(Brand.court)
+        // The active tab's label is text, so it takes the text green (Kat,
+        // 2026-10-01, decision 0036).
+        .tint(Brand.courtText)
     }
 }

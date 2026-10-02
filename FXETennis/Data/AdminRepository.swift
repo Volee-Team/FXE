@@ -158,7 +158,7 @@ struct RosterEntry: Identifiable, Sendable {
         return "\(p.firstName) \(p.lastName)"
     }
 
-    /// "3.5 · Member" — the two things Tara needs beside a name when she is
+    /// "3.5, Member", the two things Tara needs beside a name when she is
     /// choosing who to invite.
     var subtitle: String {
         guard let p = player else { return "" }
@@ -166,15 +166,15 @@ struct RosterEntry: Identifiable, Sendable {
         if let r = p.adultRating, let bucket = NTRPRating(rating: r) { parts.append(bucket.label) }
         parts.append(p.isMember ? "Member" : "Non-member")
         if let n = p.levelNote, !n.isEmpty { parts.append(n) }
-        return parts.joined(separator: " · ")
+        return parts.joined(separator: ", ")
     }
 
     /// A late cancel on the Canceled list reads the way the web roster reads
-    /// it: "Late · Fee applies", or "Late · Courtesy" when the courtesy was
+    /// it: "Late: fee applies", or "Late: courtesy" when the courtesy was
     /// used (switched off since decision 0013). Nil for any other row.
     var lateLabel: String? {
         guard registration.status == .canceled, registration.lateCancel == true else { return nil }
-        return registration.courtesyUsed == true ? "Late · Courtesy" : "Late · Fee applies"
+        return registration.courtesyUsed == true ? "Late: courtesy" : "Late: fee applies"
     }
 
     /// The note left with a late cancel, quoted, for the Canceled list.

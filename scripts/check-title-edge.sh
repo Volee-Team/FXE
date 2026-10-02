@@ -49,7 +49,9 @@ while IFS= read -r file; do
   if [ "$items" -ne "$navy" ]; then
     printf "  NOT ON NAVY %s  %s toolbar items, %s .onNavy()\n" "$file" "$items" "$navy"; fail=1
   fi
-done < <(grep -l 'ToolbarItem(placement' $(find FXETennis -name '*.swift' ! -path '*/Components/BrandHeader.swift') | sort)
+# Brand.swift is skipped: its one ToolbarItem is hidesBarTitle()'s empty,
+# iOS 17-only placeholder, which has no text to vanish.
+done < <(grep -l 'ToolbarItem(placement' $(find FXETennis -name '*.swift' ! -path '*/Components/BrandHeader.swift' ! -path '*/Resources/Brand.swift') | sort)
 
 if [ "$fail" -ne 0 ]; then
   echo

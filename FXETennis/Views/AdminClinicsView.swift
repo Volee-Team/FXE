@@ -296,19 +296,20 @@ struct AdminClinicsView: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// "Tuesday Ladies 3.0+ · Tue, Sep 29 · Insufficient funds (NSF)".
+    /// "Tuesday Ladies 3.0+ on Tue, Sep 29: Insufficient funds (NSF)". No
+    /// middle dots (Alex, 2026-10-01: they read as machine-made); the date
+    /// already holds a comma, so "on" and a colon carry the joins.
     private func declineDetail(_ d: MoneyDecline) -> String {
-        var parts = [d.clinicName, d.clinicStartsAt.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())]
-        if let reason = DeclineReason.label(d.failureCode) { parts.append(reason) }
-        return parts.joined(separator: " · ")
+        let head = "\(d.clinicName) on \(d.clinicStartsAt.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))"
+        guard let reason = DeclineReason.label(d.failureCode) else { return head }
+        return "\(head): \(reason)"
     }
 
-    /// "Tuesday Ladies 3.0+ · Tue, Sep 29 · $18 · Respond by Oct 5".
+    /// "Tuesday Ladies 3.0+ on Tue, Sep 29: $18, respond by Oct 5".
     private func disputeDetail(_ d: MoneyDispute) -> String {
-        var parts = [d.clinicName, d.clinicStartsAt.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()),
-                     d.amountCents.centsAsPrice]
-        if let by = d.respondBy { parts.append("Respond by \(by.formatted(.dateTime.month(.abbreviated).day()))") }
-        return parts.joined(separator: " · ")
+        var line = "\(d.clinicName) on \(d.clinicStartsAt.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())): \(d.amountCents.centsAsPrice)"
+        if let by = d.respondBy { line += ", respond by \(by.formatted(.dateTime.month(.abbreviated).day()))" }
+        return line
     }
 
     /// A money row opens its clinic. A clinic the list does not hold (it
@@ -410,7 +411,7 @@ private struct AdminClinicRow: View {
 
     private var timeLine: String {
         clinic.startsAt.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
-        + " · "
+        + " at "
         + clinic.startsAt.formatted(.dateTime.hour().minute())
     }
 }

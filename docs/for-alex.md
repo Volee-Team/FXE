@@ -334,28 +334,28 @@ the printed code never changes, even when the App Store link replaces it later.
 Tara's card: web admin → Players → **QR code for the app** → Print, or
 Download for email.
 
-## 5. Tara's review page, round four (checklist G2), about 5 minutes
+## 5. Tara's review page, round five (checklist I9), about 5 minutes
 
-**Do not send the round-three link.** Tara answered round two on 2026-09-22
-and nobody had read it (decision 0016); round three would have asked her the
-same things again. Round four is only what is new since then: 15 words to
-Keep or Change, 17 short questions (who the pros are and what they may do,
-guests without the app, the board's 10%, the 105 rule, how members hear about
-the app, how they reach her, the waiver after deletion, declined cards,
-telling a player when she moves them, and three from 2026-09-28: the day or
-the date in "You're all set", a bank taking back a fee, the late-request
-message), and three things to try.
+Round five is only what is new since her 2026-09-28 answers (decision 0024):
+15 words to Keep or Change (Subscribe in Calendar, Siri, a declined card's
+reason, the pros' Today screen, Resolved, Copy to next week, the court sheet,
+a player's history, saved messages, Pro), 10 short questions (Foxcroft's
+share and what it counts, guests, pros and the waiver, what a pro may mark,
+taking someone out of You're In!), and 6 things to try (the new look on build
+7, setting Foxcroft's share, copying a week, a court sheet, making a pro, a
+saved message). Refreshed 2026-10-01 for the new look, Foxcroft's share and
+the dots.
 
-1. Wait for the model to say round four is live (it deploys it and checks the
-   live page says version 4).
+1. Wait for the model to say round five is live (it deploys it and checks the
+   live page byte for byte).
 2. On a laptop, open https://fxe-tennis-admin.vercel.app and sign in with the
    admin login.
 3. Click the small grey **Testing** link at the very bottom right of the page.
-4. Under **Review links**, type a label such as `Tara round 4`, click **Make
+4. Under **Review links**, type a label such as `Tara round 5`, click **Make
    link**, then **Copy**.
-5. Text her the link, with something like: *"Your changes from last week are
-   in the app. This is only what's new: 15 words and 9 short questions. One
-   line each is plenty, and it saves as you type."*
+5. Text her the link, with something like: *"Your latest changes are in. This
+   is only what's new: 15 words and 10 short questions, plus a few things to
+   try. One line each is plenty, and it saves as you type."*
 6. Nothing else to do: when she saves answers, GitHub opens an issue labelled
    `tara-answers` and the next session with the model starts with it.
 

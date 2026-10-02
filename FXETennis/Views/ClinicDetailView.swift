@@ -343,7 +343,7 @@ struct ClinicDetailView: View {
             detailRow("calendar", clinic.startsAt.formatted(.dateTime.weekday(.wide).month(.wide).day()))
             detailRow("clock", timeRange)
             if let price = clinic.priceCents(forMember: isMember) {
-                detailRow("tennisball", "\(durationLine) · \(price.centsAsPrice)")
+                detailRow("tennisball", "\(durationLine), \(price.centsAsPrice)")
             }
             if let desc = clinic.description, !desc.isEmpty {
                 Divider().overlay(Brand.hairline)

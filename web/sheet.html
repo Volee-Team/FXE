@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@600;700&display=swap">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>FXE Tennis · Court sheet</title>
+<title>FXE Tennis Court Sheet</title>
 <link rel="stylesheet" href="./tokens.css">
 <style>
   /* A court sheet to print, in place of the handwritten one (decision 0027
@@ -102,9 +102,9 @@ async function load() {
     : { data: [], error: null };
   if (e3) { $("msg").textContent = "Couldn't load this clinic."; return; }
 
-  document.title = `${clinic.name} · Court sheet`;
+  document.title = `${clinic.name} Court Sheet`;
   $("name").innerHTML = esc(clinic.name) + (clinic.status === "canceled" ? ` <span class="chip">Canceled</span>` : "");
-  $("when").textContent = `${day(clinic.starts_at)} · ${time(clinic.starts_at)} to ${time(clinic.ends_at)}`;
+  $("when").textContent = `${day(clinic.starts_at)}, ${time(clinic.starts_at)} to ${time(clinic.ends_at)}`;
 
   const byId = Object.fromEntries((players || []).map(p => [p.id, p]));
   const people = (regs || []).map(r => {

@@ -1,0 +1,38 @@
+name: hosted watch
+
+# The live project was only checked when a pull request ran, so anything that
+# changed it between PRs (a dashboard click, a project pause, a grant taken
+# away by a platform upgrade, 2026-08-19) stayed invisible until the next PR.
+# This asks production the same question every night, plus a bare "is it up"
+# request, and GitHub emails the repository's owner when it goes red
+# (2026-10-01, the pre-launch audit).
+on:
+  schedule:
+    - cron: "17 10 * * *"   # 06:17 New York, before anyone opens the app
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: Hosted is up and closed to a signed-out caller
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: The API answers
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 \
+            https://amnaxvznkadkgzdxzegw.supabase.co/auth/v1/health)
+          echo "auth health: $code"
+          # 401 means the gateway is up and wants a key; anything else (000 no
+          # answer, 5xx, a paused project's 540) is down.
+          [ "$code" = "200" ] || [ "$code" = "401" ]
+      - name: Signed-out smoke against the hosted project
+        run: bash scripts/hosted-smoke.sh
+      - name: The admin site and the member link answer
+        run: |
+          for u in https://fxe-tennis-admin.vercel.app/ https://fxe-tennis-admin.vercel.app/app/ https://fxe-tennis-admin.vercel.app/privacy.html; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "$u"); echo "$u $code"; [ "$code" = "200" ] || exit 1
+          done

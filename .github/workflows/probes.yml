@@ -171,7 +171,12 @@ jobs:
       # edge runtime so the functions reach it as http://stripe-mock:12111.
       - name: Start stripe-mock
         run: |
-          docker run -d --name stripe-mock --network supabase_network_FXE-Tennis -p 12111:12111 stripe/stripe-mock:latest
+          # Pinned by digest (2026-10-02): `:latest` moved overnight and the
+          # new image returned nothing for a SetupIntent, so this job went red
+          # on a PR that touched no Stripe code. This digest is the image the
+          # last green run on main pulled (2026-09-29). Move it on purpose,
+          # with the harness green, never by accident.
+          docker run -d --name stripe-mock --network supabase_network_FXE-Tennis -p 12111:12111 stripe/stripe-mock@sha256:ff32647993847be491e68533e2881c90434fa8d5df40246ee5f7d41253422081
           for i in $(seq 1 20); do
             curl -s -o /dev/null http://127.0.0.1:12111/ && break || sleep 2
           done
@@ -565,6 +570,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check user-visible strings against the approved snapshot
         run: bash scripts/check-copy.sh
+      # Decision 0034: no middle dots in text a person reads. The copy gate
+      # cannot see lines built from data, so this greps the code.
+      - name: No middle dots
+        run: bash scripts/check-no-dots.sh
 
   # Credentials must never reach this repo. CLAUDE.md tells you to put the
   # hosted Postgres password in .env.local, and until 2026-08-13 that file was
@@ -654,6 +663,20 @@ jobs:
       # RPC and edge function answers a signed-out caller with 401/403/404.
       - name: Signed-out smoke against the hosted project
         run: bash scripts/hosted-smoke.sh
+
+  # The app's UI tests cannot run here (no CI database, launch checklist F),
+  # so they run on a Mac through scripts/run-ui-tests.sh, which records each
+  # full green run against a fingerprint of the code it tested. A PR whose
+  # app, tests, project or database changed since the last green run fails
+  # here until the suite is run again and the record committed (2026-10-01).
+  ui-test-record:
+    name: UI tests passed on this exact code
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: A green run of the whole suite is recorded for this code
+        run: bash scripts/check-ui-test-record.sh
 
   migration-immutability:
     name: No edits to existing migrations
