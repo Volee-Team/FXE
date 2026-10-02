@@ -334,6 +334,30 @@ enum AdminRepository {
                                    noCard: counts["no_card"] ?? 0)
     }
 
+    /// Who on this clinic owes a fee right now (20261002000001): the rows
+    /// that get a Charge button. Empty while payments are off, before the
+    /// clinic ends, and once everyone is charged or removed.
+    static func feesDue(clinic: UUID) async throws -> [FeeDue] {
+        struct P: Encodable { let p_clinic: UUID }
+        return try await supabase.rpc("admin_fees_due", params: P(p_clinic: clinic)).execute().value
+    }
+
+    /// Tara's tap on one name (decision 0037): one pending ledger row for
+    /// what that person owes, then stripe-charge sends it to Stripe. Returns
+    /// Stripe's status for this fee ("succeeded", "failed", ...), or nil if
+    /// Stripe has not answered yet; the roster reload shows it either way.
+    /// Only the queueing can fail the tap: once the fee is queued it is owed
+    /// to Stripe, and a stripe-charge that cannot be reached leaves it
+    /// pending for the next call, so the row reads Processing, not an error.
+    @discardableResult
+    static func chargePlayer(registration: UUID) async throws -> String? {
+        struct P: Encodable { let p_registration: UUID }
+        struct Queued: Decodable { let payment_id: UUID }
+        let queued: Queued = try await supabase.rpc("admin_charge_player", params: P(p_registration: registration)).execute().value
+        let settled: StripeChargeAnswer? = try? await supabase.functions.invoke("stripe-charge", options: .init(method: .post))
+        return settled?.processed?[queued.payment_id.uuidString.lowercased()]
+    }
+
     /// Tara records a late cancellation for someone who told her (a text an
     /// hour before). You're In! to Canceled, late, with an optional note; the
     /// server refuses before the cutoff, once charged, or on a canceled clinic
@@ -636,6 +660,23 @@ struct PlayerSearchResult: Codable, Identifiable, Sendable {
 }
 
 // MARK: - Money (20260927100003)
+
+/// One person who owes a fee now, from admin_fees_due (20261002000001).
+struct FeeDue: Decodable, Sendable {
+    let registrationId: UUID
+    let kind: String
+    let amountCents: Int
+    /// "not_charged", or "declined" when an earlier try failed.
+    let state: String
+    let hasCard: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case kind, state
+        case registrationId = "registration_id"
+        case amountCents = "amount_cents"
+        case hasCard = "has_card"
+    }
+}
 
 /// stripe-charge's answer: Stripe's status for every pending row it took.
 struct StripeChargeAnswer: Decodable, Sendable {

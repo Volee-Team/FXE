@@ -730,6 +730,42 @@ struct ServiceRest {
         _ = try send("PATCH", path, try JSONSerialization.data(withJSONObject: json))
     }
 
+    /// One row in, its id back.
+    @discardableResult
+    func insert(_ table: String, _ fields: [String: Any]) throws -> String {
+        var request = URLRequest(url: URL(string: "\(base)/rest/v1/\(table)")!)
+        request.httpMethod = "POST"
+        request.setValue(key, forHTTPHeaderField: "apikey")
+        request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("return=representation", forHTTPHeaderField: "Prefer")
+        request.httpBody = try JSONSerialization.data(withJSONObject: fields)
+        var result: Result<Data, Error> = .failure(URLError(.timedOut))
+        let done = DispatchSemaphore(value: 0)
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error { result = .failure(error) }
+            else if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+                result = .failure(NSError(domain: "ServiceRest", code: http.statusCode,
+                                          userInfo: [NSLocalizedDescriptionKey: String(data: data ?? Data(), encoding: .utf8) ?? ""]))
+            } else { result = .success(data ?? Data()) }
+            done.signal()
+        }.resume()
+        _ = done.wait(timeout: .now() + 20)
+        let rows = try JSONSerialization.jsonObject(with: try result.get()) as? [[String: Any]]
+        guard let id = rows?.first?["id"] as? String else { throw NSError(domain: "ServiceRest", code: 0) }
+        return id
+    }
+
+    /// The ids of the rows a filter matches.
+    func ids(_ path: String) throws -> [String] {
+        let rows = try JSONSerialization.jsonObject(with: try send("GET", path + "&select=id", nil)) as? [[String: Any]]
+        return rows?.compactMap { $0["id"] as? String } ?? []
+    }
+
+    func delete(_ path: String) throws {
+        _ = try send("DELETE", path, nil)
+    }
+
     func count(_ path: String) throws -> Int {
         let rows = try JSONSerialization.jsonObject(with: try send("GET", path + "&select=id", nil)) as? [Any]
         return rows?.count ?? -1

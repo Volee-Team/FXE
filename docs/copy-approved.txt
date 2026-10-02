@@ -29,7 +29,9 @@ Cancel my spot
 Cancel the invitation to \(entry.displayName)
 Canceled inside ${cutoffHours} hours
 Card payments
-Charge clinic
+Charge \(due.amountCents.centsAsPrice)
+Charge \(entry.displayName) \(due.amountCents.centsAsPrice)
+Charged
 Check this charge in Stripe.
 Checking your reset link…
 Children's privacy
@@ -128,6 +130,7 @@ New password
 Next Clinic
 Next clinic in \(.applicationName)
 Next deposit
+No card
 No card on file for that player.
 No card payments yet.
 No clinics currently open for registration
@@ -172,6 +175,7 @@ Players
 Policy changes
 Privacy Policy
 Private note
+Processing
 Profile
 Put in clinic
 Put them in
@@ -193,6 +197,7 @@ Remind me
 Remind unpaid (\(model.unpaidCount))
 Reminder set
 Remove
+Remove \(entry.displayName)
 Remove \(entry.displayName) from the Player Pool
 Remove from clinic
 Resolved
