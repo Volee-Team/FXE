@@ -46,7 +46,10 @@ check() {
 }
 for attempt in 1 2; do
   echo "deploy attempt $attempt"
-  npx -y vercel --prod --yes > /tmp/vercel-deploy.log 2>&1
+  # Non-interactive, with no stdin: on 2026-10-02 the CLI sat for 25
+  # minutes on a prompt nobody could see; with CI=1 and stdin closed it
+  # answered at once.
+  CI=1 VERCEL_TELEMETRY_DISABLED=1 npx -y vercel --prod --yes </dev/null > /tmp/vercel-deploy.log 2>&1
   sleep 8
   if check; then echo "live site matches the working tree byte for byte (every page incl. the privacy policy, the QR card, the court sheet and /app, every stylesheet, script and image, web/vendor; test tooling absent)"; exit 0; fi
   echo "live site does not match yet"
