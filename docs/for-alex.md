@@ -76,7 +76,7 @@ logins, guests billed to a member, her Contact link) are in
 
 ---
 
-## 1. Stripe keys (checklist A1, A8, A12): A1 and A8 DONE 2026-09-27; step G (A12) is new
+## 1. Stripe keys (checklist A1, A8, A12): A1 and A8 DONE 2026-09-27; step G (A12) DONE 2026-10-01
 
 Verified 2026-09-27: all three secret names exist on hosted, and a forged
 webhook call is rejected with `bad_signature`. The steps stay here for live
