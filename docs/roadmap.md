@@ -219,6 +219,8 @@ a decision for her.
 | 🔨 | **A player's history at a glance** (clinics played, no-shows, late cancels) on her directory and beside each name in the Player Pool |
 | 🔨 | **Copy this week to next week**, as drafts she checks and publishes (the v1.1 row "Duplicate an entire week") |
 | 🔨 | Her saved messages (decision 0030, on build 6): sentences she sends often, kept in her words, sent in one tap |
+| 🔨 | **Charge each person on their own tap** (2026-10-02, decision 0037): a green Charge $18 beside every name once a clinic ends, phone and laptop; Remove means not charged; Charge clinic retired from both screens |
+| ⬜ | **Everything from her phone** (Tara, 2026-10-02, via Alex: *"EVERYTHING she possibly can from her phone ... in a perfect world get rid of the dashboard"*; Alex: not top priority). Laptop-only today: new / edit clinic and publish, templates and Copy to next week, add a walk-up, the Money tab (ledger, refunds, payouts, disputes), a player's reset link, the board report and the court sheet (a share sheet on the phone, not a printer). Every one is a screen over a server function that already exists; about three or four sessions. The laptop stays as her backup |
 | ⬜ | A Sunday-night email: next week's sign-ups, cards to chase, requests waiting on her (needs the club's mail sender) |
 | ⬜ | More for two of her pros, when she asks ("Eventually", question 71) |
 | ⬜ | Guests billed to the member (question 72): designed in `docs/guests.md`, waits on questions 93 and 95 |

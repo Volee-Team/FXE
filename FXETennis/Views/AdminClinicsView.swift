@@ -36,7 +36,7 @@ final class AdminClinicsModel {
     /// Open chargebacks (20260928200001). Tara answers them in Stripe.
     var disputes: [MoneyDispute] = []
 
-    /// Clinics that ended with someone one more Charge clinic would charge.
+    /// Clinics that ended with someone who still owes a fee.
     /// Only while payments are on: the tap is the resolving action.
     var uncharged: [MoneyClinic] {
         paymentsOn ? moneyClinics.filter { !$0.canceled && $0.chargeableCount > 0 } : []
@@ -218,8 +218,8 @@ struct AdminClinicsView: View {
                         .foregroundStyle(Brand.textSecondary)
 
                     VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
-                        // Money first: each row opens its clinic, where Charge
-                        // clinic is (20260927100003).
+                        // Money first: each row opens its clinic, where each
+                        // person is charged on the row (decision 0037).
                         ForEach(model.uncharged) { m in
                             clinicLink(m.clinicId) {
                                 needRow(Brand.Status.responseNeeded, "\(m.clinicName) ended, not charged yet",

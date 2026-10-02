@@ -245,6 +245,94 @@ final class AdminFlowUITests: XCTestCase {
         XCTAssertTrue(remove.waitForNonExistence(timeout: 20), "Rob is still in the Player Pool after Remove")
     }
 
+    // MARK: - G. charge each person, remove one (decision 0037)
+
+    /// Tara, 2026-10-02: "charge charge charge", a green button beside each
+    /// name, and take someone off so they are never charged. From the rule:
+    /// a clinic that ended yesterday with payments on; Maria (card) came and
+    /// owes $18; Lena (card) was sick and is removed. One tap charges Maria
+    /// and nobody else; Lena is removed with no fee; there is no Charge
+    /// clinic in More. Needs the local service key, like the declined card.
+    func testAdminG_ChargesEachPlayerAndRemovesOne() throws {
+        guard let key = ProcessInfo.processInfo.environment["FXE_SUPABASE_SERVICE_KEY"], !key.isEmpty else {
+            throw XCTSkip("Needs the local stack's service key (TEST_RUNNER_FXE_SUPABASE_SERVICE_KEY)")
+        }
+        let stack = ServiceRest(base: ProcessInfo.processInfo.environment["FXE_SUPABASE_URL"] ?? "http://localhost:54321", key: key)
+        let iso = ISO8601DateFormatter()
+        let day: TimeInterval = 86_400
+        let accounts = ["22222222-2222-2222-2222-222222222222", "88888888-8888-8888-8888-888888888888"]
+        var clinic: String?
+        addTeardownBlock {
+            if let clinic {
+                for reg in (try? stack.ids("registrations?clinic_id=eq.\(clinic)")) ?? [] {
+                    try? stack.delete("payments?registration_id=eq.\(reg)")
+                }
+                try? stack.delete("registrations?clinic_id=eq.\(clinic)")
+                try? stack.delete("clinics?id=eq.\(clinic)")
+            }
+            for a in accounts {
+                try? stack.patch("accounts?id=eq.\(a)", ["stripe_customer_id": nil, "card_brand": nil, "card_last4": nil])
+            }
+            try? stack.patch("app_settings?key=eq.payments_enabled", ["value": "false"])
+            try? stack.patch("app_settings?key=eq.payments_enabled_at", ["value": ""])
+        }
+        try stack.patch("app_settings?key=eq.payments_enabled", ["value": "true"])
+        try stack.patch("app_settings?key=eq.payments_enabled_at", ["value": iso.string(from: Date().addingTimeInterval(-5 * day))])
+        for a in accounts {
+            try stack.patch("accounts?id=eq.\(a)", ["stripe_customer_id": "cus_uitest_each_\(a.prefix(4))", "card_brand": "visa", "card_last4": "4242"])
+        }
+        let ended = Date().addingTimeInterval(-day)
+        clinic = try stack.insert("clinics", [
+            "name": "UITest Charge Clinic", "audience": "coed", "category": "Clinic", "description": "ui test",
+            "starts_at": iso.string(from: ended.addingTimeInterval(-3600)), "ends_at": iso.string(from: ended),
+            "member_opens_at": iso.string(from: ended.addingTimeInterval(-7 * day)),
+            "public_opens_at": iso.string(from: ended.addingTimeInterval(-6 * day)),
+            "internal_capacity": 8, "status": "published", "duration_minutes": 60])
+        let reg: (String) throws -> String = { player in
+            try stack.insert("registrations", ["clinic_id": clinic!, "player_id": player, "status": "in", "source": "admin",
+                                               "price_cents_charged": 1800, "was_member": true, "duration_minutes": 60])
+        }
+        let maria = try reg("a0000000-0000-0000-0000-000000000001")
+        let lena = try reg("a0000000-0000-0000-0000-000000000007")
+
+        app.launch()
+        signIn(as: admin)
+        openAdminClinic(containing: "UITest Charge")
+
+        let chargeMaria = app.buttons["Charge Maria Alvarez $18"]
+        XCTAssertTrue(chargeMaria.waitForExistence(timeout: 20),
+                      "No Charge on Maria's row. Buttons: \(app.buttons.allElementsBoundByIndex.map(\.label).prefix(40))")
+        XCTAssertTrue(app.buttons["Charge Lena Brooks $18"].exists, "No Charge on Lena's row")
+
+        // Lena: Remove, confirmed. No fee, not late.
+        let removeLena = app.buttons["Remove Lena Brooks"]
+        XCTAssertTrue(scrollUntilHittable(removeLena), "No Remove on Lena's row")
+        removeLena.tap()
+        let confirm = app.buttons["Remove"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 10), "No confirmation before removing")
+        confirm.tap()
+        XCTAssertTrue(app.buttons["Charge Lena Brooks $18"].waitForNonExistence(timeout: 20),
+                      "Lena can still be charged after Remove")
+
+        // Maria: one tap, no dialog. Her row stops offering a charge.
+        XCTAssertTrue(scrollUntilHittable(chargeMaria))
+        chargeMaria.tap()
+        XCTAssertTrue(chargeMaria.waitForNonExistence(timeout: 30), "Maria's Charge is still there after the tap")
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "admin.charged").firstMatch.waitForExistence(timeout: 10),
+                      "Maria's row does not say Processing or Charged")
+
+        // The database: one fee, Maria's; Lena canceled, not late, no fee.
+        XCTAssertEqual(try stack.count("payments?registration_id=eq.\(maria)"), 1)
+        XCTAssertEqual(try stack.count("payments?registration_id=eq.\(lena)"), 0)
+        XCTAssertEqual(try stack.count("registrations?id=eq.\(lena)&status=eq.canceled&late_cancel=is.false"), 1)
+
+        // No whole-clinic charge left in More. Last, so the open menu needs
+        // no dismissing.
+        app.buttons["admin.more"].tap()
+        XCTAssertTrue(app.buttons["Cancel clinic"].waitForExistence(timeout: 10))
+        XCTAssertFalse(app.buttons["Charge clinic"].exists, "Charge clinic is still in More")
+    }
+
     // MARK: - helpers (mirrors PlayerFlowUITests; kept local so each file reads alone)
 
     private func signIn(as email: String) {
@@ -332,7 +420,14 @@ final class AdminFlowUITests: XCTestCase {
         app.buttons["Manage"].tap()
         let card = app.descendants(matching: .any).matching(identifier: "admin.clinic.card")
             .matching(NSPredicate(format: "label CONTAINS[c] %@", name)).firstMatch
-        XCTAssertTrue(card.waitForExistence(timeout: 20), "No Manage card for \(name)")
+        // A past clinic sits under every upcoming one, and the list builds
+        // only the rows on screen, so scroll down to it.
+        var found = card.waitForExistence(timeout: 20)
+        for _ in 0..<8 where !found {
+            app.swipeUp()
+            found = card.waitForExistence(timeout: 2)
+        }
+        XCTAssertTrue(found, "No Manage card for \(name)")
         XCTAssertTrue(scrollUntilHittable(card))
         card.tap()
     }
