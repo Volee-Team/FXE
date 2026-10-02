@@ -35,7 +35,7 @@ jobs:
             echo "::notice::ANTHROPIC_API_KEY is not set; the monthly model audit is off. The 45-day human audit (check-doc-claims.sh) still applies."
           fi
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         if: steps.cfg.outputs.on == 'true'
         with:
           node-version: 22
