@@ -480,6 +480,19 @@ Tara, 2026-09-29: *"Sorry I pay Foxcroft 10% of revenue. But asking I pay them 8
 **101. When Foxcroft agrees a number, what is it? You can also set it yourself: Money tab, Board report, "Foxcroft share %", then Save.**
 *Default: 10 until you change it (built 2026-09-29, `20260929000004`; only you can see or change it). Status: open, asked 2026-09-29.*
 
+## T. Half a clinic (added 2026-10-03)
+
+Tara, 2026-10-03: *"sometimes maybe three times a year we do a clinic and we only get in half of the clinic. I want to still be able to charge half. Is there a way to implement this it's not incredibly necessary but sort of."* Written down, not built (Alex, 2026-10-02: player-facing work first).
+
+**102. When a clinic is cut short, is it half for everyone in it, or do you pick a price per person?**
+*Default: one "Half clinic" switch on the clinic after it ends; every Charge button on it then reads half ($9 instead of $18). Status: open, asked 2026-10-03.*
+
+**103. On a half clinic, does a no-show or a late cancel still pay the full fee, or half too?**
+*Default: full, as today (they did not come either way). Status: open, asked 2026-10-03.*
+
+**104. Is it always exactly half, or sometimes another amount?**
+*Default: always half. Status: open, asked 2026-10-03.*
+
 ### How 52 to 57 are being sent
 
 Round two of the review page (2026-09-21, later): the Words tab now shows her
