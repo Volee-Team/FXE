@@ -247,7 +247,7 @@ two to verify. This is the step with the 2026-11-04 deadline (A11; it was 10-14 
 and the cutover migration that clears everyone's test cards, and runs the
 payment test (A2) with you. Nothing about the test keys changes before then.
 
-## 3. Push notifications (checklist C3): John's key, about 10 minutes
+## 3. Push notifications (checklist C3): KEY IN 2026-10-03; one real push left to see
 
 Decided 2026-09-27: push works for launch, on **John's** Apple account, because
 every tester build (and the launch build, if C11 is used) is signed by his
