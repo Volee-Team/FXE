@@ -24,6 +24,9 @@ late cancel pay the full fee, all after the clinic ends, all on her tap.
    to the roster instead of charging everyone. `admin_charge_clinic` stays on
    the server, unused, so nothing that calls it breaks (hard rule 6), and
    bringing the button back is a client change.
+   After a clinic ends the row is Came / No-show, Remove and Charge; the
+   Court menu is shown only before then (courts no longer matter, and the
+   row cannot hold four controls on a small phone).
 3. **"Don't charge this person" is Remove**, now a visible button on every
    row after the clinic (it was inside the Court menu on the phone; the
    laptop already showed it). The server already allowed it after a clinic

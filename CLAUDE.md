@@ -682,7 +682,7 @@ matters and it is not in the repo, it is gone.
 | `docs/copy.md` / `docs/copy-review.md` / `docs/copy-approved.txt` | Her words verbatim / ours awaiting Alex's tick / the CI snapshot |
 | `docs/notifications.md` | Her notification drafts and what fires today |
 | `docs/launch-runbook.md` | The pre-mortem (every way 2026-11-06 could go wrong, with its fix or owner), the dress rehearsal, and who does what on the day |
-| `docs/prompt-log/` | Every prompt and reply, written by hooks |
+| `docs/prompt-log/` | Every prompt and reply, written by hooks. **Local only since 2026-10-04** (gitignored; the repo is public) |
 
 **The habit that makes it work:** when Tara says something new, it goes in the
 roadmap before it goes in a migration. When a decision gets made, it gets a
