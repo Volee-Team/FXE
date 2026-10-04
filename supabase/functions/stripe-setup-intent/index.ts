@@ -13,13 +13,14 @@
 // none: a fresh one is made, and the stale card summary, which described a
 // card on the old customer, is cleared.
 
-import { getStripe, admin, callerId, json } from "../_shared/stripe.ts";
+import { getStripe, admin, callerId, json, safeError, keyModesAgree } from "../_shared/stripe.ts";
 import { isMissingCustomer } from "../_shared/stripe-errors.ts";
 
-Deno.serve(async (req) => { try { return await handle(req); } catch (e) { const m = String((e as Error).message ?? e); return json({ error: m }, m === "stripe_not_configured" ? 503 : 500); } });
+Deno.serve(async (req) => { try { return await handle(req); } catch (e) { const m = safeError(e, "stripe-setup-intent"); return json({ error: m }, m === "stripe_not_configured" ? 503 : 500); } });
 
 async function handle(req: Request): Promise<Response> {
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
+  if (!keyModesAgree()) { console.error("stripe-setup-intent: secret and publishable keys are different modes"); return json({ error: "stripe_not_configured" }, 503); }
   const uid = await callerId(req);
   if (!uid) return json({ error: "not_authenticated" }, 401);
 

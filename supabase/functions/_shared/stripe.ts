@@ -50,3 +50,25 @@ export async function callerId(req: Request): Promise<string | null> {
 
 export const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
+
+// What a caller is told when something throws. Our own refusals are
+// snake_case codes and pass through; anything else (Stripe's sentences,
+// which can quote the end of a key) is logged here and answered with a
+// plain code (review, 2026-10-04; stripe-payouts already did this).
+export function safeError(e: unknown, where: string): string {
+  const m = String((e as Error)?.message ?? e);
+  if (/^[a-z][a-z0-9_]*$/.test(m)) return m;
+  console.error(`${where}:`, m);
+  return "stripe_error";
+}
+
+// The secret and publishable keys must be the same mode. Swapping only some
+// of the three secrets at the live switch would otherwise show members
+// Stripe's "a similar object exists in live mode" in the card sheet.
+export function keyModesAgree(): boolean {
+  const sk = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
+  const pk = Deno.env.get("STRIPE_PUBLISHABLE_KEY") ?? "";
+  if (!sk || !pk) return true;
+  const skLive = /^(sk|rk)_live_/.test(sk), pkLive = pk.startsWith("pk_live_");
+  return skLive === pkLive;
+}

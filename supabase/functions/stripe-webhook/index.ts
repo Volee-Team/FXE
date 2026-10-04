@@ -34,6 +34,7 @@
 
 import Stripe from "npm:stripe@17.5.0";
 import { getStripe, admin, json } from "../_shared/stripe.ts";
+import { isMissingCustomer } from "../_shared/stripe-errors.ts";
 
 Deno.serve(async (req) => { try { return await handle(req); } catch (e) { const m = String((e as Error).message ?? e); return json({ error: m }, m === "stripe_not_configured" ? 503 : 500); } });
 
@@ -52,12 +53,32 @@ async function handle(req: Request): Promise<Response> {
   switch (event.type) {
     case "setup_intent.succeeded": {
       const si = event.data.object as Stripe.SetupIntent;
+      // Only a card setup this app started (stripe-setup-intent stamps
+      // fxe_account_id). A bank account added in the Stripe dashboard, or a
+      // dashboard test event with made-up ids, must not touch a member's
+      // card: either could have wiped it and put them back on the card step
+      // (review, 2026-10-04).
+      if (!si.metadata?.fxe_account_id) break;
       const pmId = typeof si.payment_method === "string" ? si.payment_method : si.payment_method?.id;
       const customerId = typeof si.customer === "string" ? si.customer : si.customer?.id;
       if (!pmId || !customerId) break;
-      const pm = await getStripe().paymentMethods.retrieve(pmId);
+      let pm: Stripe.PaymentMethod;
+      try {
+        pm = await getStripe().paymentMethods.retrieve(pmId);
+      } catch (e) {
+        // Gone already: nothing to record, and a 500 would make Stripe retry
+        // the event for three days.
+        if (isMissingCustomer(e)) break;
+        throw e;
+      }
+      if (pm.type !== "card") break;
       // Make it the default so off-session charges need no payment_method.
-      await getStripe().customers.update(customerId, { invoice_settings: { default_payment_method: pmId } });
+      try {
+        await getStripe().customers.update(customerId, { invoice_settings: { default_payment_method: pmId } });
+      } catch (e) {
+        if (isMissingCustomer(e)) break;
+        throw e;
+      }
       await admin.from("accounts").update({
         card_brand: pm.card?.brand ?? null,
         card_last4: pm.card?.last4 ?? null,

@@ -147,10 +147,15 @@ check "no card summary before the webhook" "" "$(sql "select coalesce(card_brand
 check "anon cannot ask for a setup intent" "not_authenticated" "$(fn stripe-setup-intent "$ANON" '{}' | field "['error']")"
 
 # ---- 2. Webhook writes the card summary, and only when signed
-si="{\"id\":\"seti_1\",\"object\":\"setup_intent\",\"customer\":\"$CUS\",\"payment_method\":\"pm_card_visa\",\"status\":\"succeeded\"}"
+si="{\"id\":\"seti_1\",\"object\":\"setup_intent\",\"customer\":\"$CUS\",\"payment_method\":\"pm_card_visa\",\"status\":\"succeeded\",\"metadata\":{\"fxe_account_id\":\"harness\"}}"
 check "unsigned webhook is rejected" "no_signature" "$(curl -s -X POST "$API/functions/v1/stripe-webhook" -d "$(event setup_intent.succeeded "$si")" | field "['error']")"
 check "wrong secret is rejected" "bad_signature" "$(webhook "$(event setup_intent.succeeded "$si")" whsec_wrong | field "['error']")"
 check "still no card after the bad ones" "" "$(sql "select coalesce(card_brand,'') from public.accounts where id='$MARIA'")"
+# A setup this app did not start (no fxe_account_id: a bank account added in
+# the Stripe dashboard, or a dashboard test event) is accepted and ignored.
+si_foreign="{\"id\":\"seti_foreign\",\"object\":\"setup_intent\",\"customer\":\"$CUS\",\"payment_method\":\"pm_card_visa\",\"status\":\"succeeded\"}"
+check "a setup the app did not start is accepted" "True" "$(webhook "$(event setup_intent.succeeded "$si_foreign")" | field "['received']")"
+check "and leaves the card alone" "" "$(sql "select coalesce(card_brand,'') from public.accounts where id='$MARIA'")"
 check "signed setup_intent.succeeded accepted" "True" "$(webhook "$(event setup_intent.succeeded "$si")" | field "['received']")"
 check "card summary written by the webhook" "yes" "$(sql "select case when card_brand is not null and card_last4 ~ '^[0-9]{4}$' and card_added_at is not null then 'yes' else 'no' end from public.accounts where id='$MARIA'")"
 
@@ -464,7 +469,7 @@ clinic() { # name starts-in-hours
   sql "with i as (insert into public.clinics (name, audience, category, description, starts_at, ends_at, member_opens_at, public_opens_at, internal_capacity, status, duration_minutes) values ('$1', 'coed', 'Clinic', 'harness', now() + interval '$2 hours', now() + interval '$2 hours' + interval '1 hour', now() - interval '9 days', now() - interval '8 days', 8, 'published', 60) returning id) select id from i"; }
 DC_PLAYED=$(clinic "Harness Declined Played" -26); DC_OPEN=$(clinic "Harness Declined Open" 72)
 CUS16=$(sql "select stripe_customer_id from public.accounts where id='$MARIA'")
-SI16="{\"id\":\"seti_16a\",\"object\":\"setup_intent\",\"customer\":\"$CUS16\",\"payment_method\":\"pm_card_visa\",\"status\":\"succeeded\"}"
+SI16="{\"id\":\"seti_16a\",\"object\":\"setup_intent\",\"customer\":\"$CUS16\",\"payment_method\":\"pm_card_visa\",\"status\":\"succeeded\",\"metadata\":{\"fxe_account_id\":\"harness\"}}"
 webhook "$(event setup_intent.succeeded "$SI16")" >/dev/null
 check "her card is saved through the webhook" "4242 NULL" "$(sql "select coalesce(card_last4,'NULL') from public.accounts where id='$MARIA'") $(declined "$MARIA")"
 REG16=$(reg "$DC_PLAYED" "$MARIA_P" 1800 true 60); REGS="$REGS,'$REG16'"
@@ -489,7 +494,7 @@ rpc admin_resolve_decline "$TARA_JWT" "{\"p_payment\":\"$PAY16\"}" >/dev/null
 check "Tara presses Resolved: stamped with who, the decline kept" "true failed insufficient_funds" "$(sql "select (resolved_at is not null and resolved_by='$TARA')::text||' '||status||' '||failure_code from public.payments where id='$PAY16'")"
 check "a second press is refused" "decline_not_open" "$(rpc admin_resolve_decline "$TARA_JWT" "{\"p_payment\":\"$PAY16\"}" | field "['message']")"
 check "Resolved does not unblock her" "card_declined" "$(rpc register_for_clinic "$MARIA_JWT" "$BODY16" | field "['message']")"
-SI16B="{\"id\":\"seti_16b\",\"object\":\"setup_intent\",\"customer\":\"$CUS16\",\"payment_method\":\"pm_card_mastercard\",\"status\":\"succeeded\"}"
+SI16B="{\"id\":\"seti_16b\",\"object\":\"setup_intent\",\"customer\":\"$CUS16\",\"payment_method\":\"pm_card_mastercard\",\"status\":\"succeeded\",\"metadata\":{\"fxe_account_id\":\"harness\"}}"
 webhook "$(event setup_intent.succeeded "$SI16B")" >/dev/null
 check "a new card saved through the webhook clears it" "NULL" "$(declined "$MARIA")"
 check "and she registers" "$DC_OPEN" "$(rpc register_for_clinic "$MARIA_JWT" "$BODY16" | field "['clinic_id']")"
