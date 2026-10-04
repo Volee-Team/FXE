@@ -75,6 +75,8 @@ declare
   ce uuid; cg uuid; cb uuid; cc uuid;
   e_maria uuid; e_ken uuid; e_rob uuid; e_priya uuid; e_dana uuid; e_casey uuid; e_lena uuid; e_theo uuid;
   g_maria uuid; b_ken uuid; c_maria uuid;
+  cd uuid; c2 uuid; cs uuid; cx uuid; ct uuid; cr uuid; cl uuid;
+  d_maria uuid; x2_maria uuid; s_ken uuid; x_rob uuid; t_dana uuid; r_ken uuid; r_rob uuid; r_theo uuid; l1_rob uuid; l2_rob uuid; snap uuid; f1 uuid;
   v text; n int; j jsonb;
 begin
   -- ------------------------------------------------------------ fixture
@@ -139,6 +141,92 @@ begin
    where id in (MARIA, KEN, ROB, DANA, CASEY, LENA, THEO);
   update public.accounts set stripe_customer_id = null, card_brand = null, card_last4 = null
    where id = '55555555-5555-5555-5555-555555555555';
+
+  -- The sql-auditor's cases (2026-10-04), each its own clinic.
+  -- D: a DRAFT that ended after T0, Maria in: never published, owes nothing.
+  insert into public.clinics (name, audience, category, description, starts_at, ends_at,
+      member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
+  values ('Probe draft', 'coed', 'Clinic', 'probe',
+          timestamp '2026-09-22 18:00' at time zone ny, timestamp '2026-09-22 19:00' at time zone ny,
+          timestamp '2026-09-17 08:00' at time zone ny, timestamp '2026-09-18 08:00' at time zone ny, 8, 'draft', 60)
+  returning id into cd;
+  insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
+  values (cd, MARIA_P, 'in', 'admin', 1800, true, 60) returning id into d_maria;
+  -- E2: a second ended, published clinic with Maria owing: never in E's list.
+  insert into public.clinics (name, audience, category, description, starts_at, ends_at,
+      member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
+  values ('Probe other clinic', 'coed', 'Clinic', 'probe',
+          timestamp '2026-09-23 18:00' at time zone ny, timestamp '2026-09-23 19:00' at time zone ny,
+          timestamp '2026-09-17 08:00' at time zone ny, timestamp '2026-09-18 08:00' at time zone ny, 8, 'published', 60)
+  returning id into c2;
+  insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
+  values (c2, MARIA_P, 'in', 'self', 1800, true, 60) returning id into x2_maria;
+  -- S: started an hour ago, ends in an hour: not over.
+  insert into public.clinics (name, audience, category, description, starts_at, ends_at,
+      member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
+  values ('Probe under way', 'coed', 'Clinic', 'probe', now() - interval '1 hour', now() + interval '1 hour',
+          now() - interval '5 days', now() - interval '4 days', 8, 'published', 120)
+  returning id into cs;
+  insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
+  values (cs, KEN_P, 'in', 'self', 1800, true, 120) returning id into s_ken;
+  -- X: starts before T0, ends after it: owes (ended at or after T0).
+  insert into public.clinics (name, audience, category, description, starts_at, ends_at,
+      member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
+  values ('Probe across the switch', 'coed', 'Clinic', 'probe',
+          timestamp '2026-08-31 23:30' at time zone ny, timestamp '2026-09-01 00:30' at time zone ny,
+          timestamp '2026-08-27 08:00' at time zone ny, timestamp '2026-08-28 08:00' at time zone ny, 8, 'published', 60)
+  returning id into cx;
+  insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
+  values (cx, ROB_P, 'in', 'self', 2300, false, 60) returning id into x_rob;
+  -- T: a sandbox fee that went through, after the live switch: still owes.
+  insert into public.clinics (name, audience, category, description, starts_at, ends_at,
+      member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
+  values ('Probe test money', 'coed', 'Clinic', 'probe',
+          timestamp '2026-09-24 18:00' at time zone ny, timestamp '2026-09-24 19:00' at time zone ny,
+          timestamp '2026-09-17 08:00' at time zone ny, timestamp '2026-09-18 08:00' at time zone ny, 8, 'published', 60)
+  returning id into ct;
+  insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
+  values (ct, DANA_P, 'in', 'self', 1800, true, 60) returning id into t_dana;
+  insert into public.payments (registration_id, account_id, kind, amount_cents, status, livemode)
+  values (t_dana, DANA, 'clinic_fee', 1800, 'succeeded', false);
+  insert into public.app_settings (key, value)
+  values ('stripe_live_since', (timestamp '2026-09-15 00:00' at time zone ny)::text)
+  on conflict (key) do update set value = excluded.value;
+  -- R: Ken's decline Tara Resolved, Rob's fee refunded, Theo's held
+  -- (processing, too old to retry), and a stale price snapshot for Lena.
+  insert into public.clinics (name, audience, category, description, starts_at, ends_at,
+      member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
+  values ('Probe settled ways', 'coed', 'Clinic', 'probe',
+          timestamp '2026-09-25 18:00' at time zone ny, timestamp '2026-09-25 19:00' at time zone ny,
+          timestamp '2026-09-17 08:00' at time zone ny, timestamp '2026-09-18 08:00' at time zone ny, 8, 'published', 60)
+  returning id into cr;
+  insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
+  values (cr, KEN_P, 'in', 'self', 1800, true, 60) returning id into r_ken;
+  insert into public.payments (registration_id, account_id, kind, amount_cents, status, failure_code, failure_reason, resolved_at)
+  values (r_ken, KEN, 'clinic_fee', 1800, 'failed', 'card_declined', 'Your card was declined.', now());
+  insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
+  values (cr, ROB_P, 'in', 'self', 2300, false, 60) returning id into r_rob;
+  insert into public.payments (registration_id, account_id, kind, amount_cents, status, livemode)
+  values (r_rob, ROB, 'clinic_fee', 2300, 'succeeded', true) returning id into f1;
+  insert into public.payments (registration_id, account_id, kind, amount_cents, status, livemode, refunds_payment_id)
+  values (r_rob, ROB, 'refund', 2300, 'succeeded', true, f1);
+  insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
+  values (cr, THEO_P, 'in', 'self', 2300, false, 60) returning id into r_theo;
+  insert into public.payments (registration_id, account_id, kind, amount_cents, status, failure_reason, first_attempted_at)
+  values (r_theo, THEO, 'clinic_fee', 2300, 'processing', 'retry_window_passed', now() - interval '2 days');
+  insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
+  values (cr, LENA_P, 'in', 'self', 1500, true, 60) returning id into snap;
+  -- L: Rob cancels late, is put back in, cancels late again: one late fee.
+  insert into public.clinics (name, audience, category, description, starts_at, ends_at,
+      member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
+  values ('Probe twice late', 'coed', 'Clinic', 'probe',
+          timestamp '2026-09-26 18:00' at time zone ny, timestamp '2026-09-26 19:00' at time zone ny,
+          timestamp '2026-09-17 08:00' at time zone ny, timestamp '2026-09-18 08:00' at time zone ny, 8, 'published', 60)
+  returning id into cl;
+  insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes, late_cancel, canceled_at)
+  values (cl, ROB_P, 'canceled', 'self', 2300, false, 60, true, timestamp '2026-09-26 16:00' at time zone ny) returning id into l1_rob;
+  insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes, late_cancel, canceled_at)
+  values (cl, ROB_P, 'canceled', 'self', 2300, false, 60, true, timestamp '2026-09-26 17:00' at time zone ny) returning id into l2_rob;
 
   -- ------------------------------------------------------------ as Tara
   perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
@@ -252,6 +340,81 @@ begin
     insert into _probe_result values ('canceled_clinic_refused', 'clinic_canceled', 'CALL SUCCEEDED ' || j::text);
   exception when others then
     insert into _probe_result values ('canceled_clinic_refused', 'clinic_canceled', sqlerrm);
+  end;
+
+  -- The auditor's cases.
+  select count(*) into n from public.admin_fees_due(cd);
+  insert into _probe_result values ('draft_never_owes', '0', n::text);
+  begin
+    j := public.admin_charge_player(d_maria);
+    insert into _probe_result values ('draft_charge_refused', 'clinic_not_published', 'CALL SUCCEEDED ' || j::text);
+  exception when others then
+    insert into _probe_result values ('draft_charge_refused', 'clinic_not_published', sqlerrm);
+  end;
+  select count(*) into n from public.admin_fees_due(ce) d where d.registration_id = x2_maria;
+  insert into _probe_result values ('fees_due_is_one_clinic_only', '0', n::text);
+  select count(*) into n from public.admin_fees_due(c2);
+  insert into _probe_result values ('other_clinic_lists_its_own', '1', n::text);
+  begin
+    j := public.admin_charge_player(s_ken);
+    insert into _probe_result values ('under_way_refused', 'clinic_not_over', 'CALL SUCCEEDED ' || j::text);
+  exception when others then
+    insert into _probe_result values ('under_way_refused', 'clinic_not_over', sqlerrm);
+  end;
+  begin
+    j := public.admin_charge_player(x_rob);
+    insert into _probe_result values ('ending_after_the_switch_owes', 'clinic_fee|2300', (j->>'kind') || '|' || (j->>'amount_cents'));
+  exception when others then
+    insert into _probe_result values ('ending_after_the_switch_owes', 'clinic_fee|2300', sqlerrm);
+  end;
+  begin
+    j := public.admin_charge_player(t_dana);
+    insert into _probe_result values ('sandbox_fee_after_live_still_owes', 'clinic_fee|1800', (j->>'kind') || '|' || (j->>'amount_cents'));
+  exception when others then
+    insert into _probe_result values ('sandbox_fee_after_live_still_owes', 'clinic_fee|1800', sqlerrm);
+  end;
+  begin
+    j := public.admin_charge_player(r_ken);
+    insert into _probe_result values ('resolved_decline_not_owed', 'not_owed', 'CALL SUCCEEDED ' || j::text);
+  exception when others then
+    insert into _probe_result values ('resolved_decline_not_owed', 'not_owed', sqlerrm);
+  end;
+  begin
+    j := public.admin_charge_player(r_rob);
+    insert into _probe_result values ('refunded_not_owed', 'not_owed', 'CALL SUCCEEDED ' || j::text);
+  exception when others then
+    insert into _probe_result values ('refunded_not_owed', 'not_owed', sqlerrm);
+  end;
+  begin
+    j := public.admin_charge_player(r_theo);
+    insert into _probe_result values ('held_charge_is_already_charged', 'already_charged', 'CALL SUCCEEDED ' || j::text);
+  exception when others then
+    insert into _probe_result values ('held_charge_is_already_charged', 'already_charged', sqlerrm);
+  end;
+  select string_agg(d.amount_cents::text, ',') into v from public.admin_fees_due(cr) d;
+  insert into _probe_result values ('settled_ways_only_the_snapshot_owes', '1500', coalesce(v, 'NONE'));
+  begin
+    j := public.admin_charge_player(snap);
+    insert into _probe_result values ('charges_the_price_snapshot', 'clinic_fee|1500', (j->>'kind') || '|' || (j->>'amount_cents'));
+  exception when others then
+    insert into _probe_result values ('charges_the_price_snapshot', 'clinic_fee|1500', sqlerrm);
+  end;
+  select count(*) || '|' || coalesce(string_agg((d.registration_id = l2_rob)::text, ','), '') into v from public.admin_fees_due(cl) d;
+  insert into _probe_result values ('two_late_cancels_one_fee_the_newest', '1|true', v);
+
+  -- ------------------------------------------------------------ as the pro
+  perform set_config('request.jwt.claims', json_build_object('sub', CASEY)::text, true);
+  begin
+    j := public.admin_charge_player(snap);
+    insert into _probe_result values ('pro_cannot_charge', 'not_authorized', 'CALL SUCCEEDED ' || j::text);
+  exception when others then
+    insert into _probe_result values ('pro_cannot_charge', 'not_authorized', sqlerrm);
+  end;
+  begin
+    select count(*) into n from public.admin_fees_due(cr);
+    insert into _probe_result values ('pro_cannot_read_fees_due', 'not_authorized', 'READ ' || n || ' ROWS');
+  exception when others then
+    insert into _probe_result values ('pro_cannot_read_fees_due', 'not_authorized', sqlerrm);
   end;
 
   -- ------------------------------------------------------------ as Maria
