@@ -122,7 +122,7 @@ observer.
 | Stripe pipeline against stripe-mock | every PR | 94 checks | real Stripe behaviour waits on A2 |
 | Push pipeline against a mock APNs | every PR | 57 checks | real APNs waits on C3 |
 | Web admin browser tests (Playwright, real sign-in) | every PR | 45 | a cold-start flake after a local reset (backlog) |
-| Swift unit tests (pure logic) | every PR | 232 | fine |
+| Swift unit tests (pure logic) | every PR | 234 | fine |
 | Hosted signed-out smoke (`scripts/hosted-smoke.sh`) | every PR, read-only against production | 126 targets, including a browser preflight to each function the web admin calls | only the signed-out side |
 | XCUITests, player and admin flows, and Apple's accessibility audit | **local only** (section F) | 22 | run on a laptop before every TestFlight build |
 | Copy gate, secret scan (now Stripe keys too), migration immutability, icon gate, doc checks | every PR | – | none |

@@ -212,7 +212,7 @@ FXETennis/
 │   ├── RegistrationReminder.swift "Remind me": goes off at this player's opening (member_opens_at
 │   │                            or public_opens_at), Tara's notification 10 verbatim, a tap opens the
 │   │                            clinic; what to move or drop when a list loads (pure, unit-tested)
-│   └── ServiceWeek.swift        Sunday-in-New-York week math for grouping (pure, unit-tested)
+│   └── ServiceWeek.swift        Sunday-in-New-York week math for grouping (pure, unit-tested); ClubTime, the app runs in Charlotte time (decision 0038, ClubTimeTests.swift)
 ├── Resources/
 │   └── Brand.swift              tokens: navy / cream / court / brass, type, spacing, the gator mark;
 │                                type scales with Larger Text through UIFontMetrics (unit-tested)
@@ -762,7 +762,7 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `declined_card_race.sh` | 20260928700001: a later-attempted success held open while an earlier attempt's decline is recorded; the account ends with no decline, because `payments_card_decline` locks the account row before deciding (red without the lock, 2026-09-28) |
 | `dispute_race.sh` | Two concurrent deliveries of one dispute (`stripe_record_dispute`, 20260928200001), each holding the row in turn: the newer event's state survives in either commit order. Both statuses are open on purpose, so only the order guard decides; red under a read-then-write version (round 1 ended at the older event), 2026-09-28 |
 
-**Swift**: 232 unit tests (`FXETennisTests`: price formatting, per-viewer
+**Swift**: 234 unit tests (`FXETennisTests`: price formatting, per-viewer
 pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016; since 2026-09-27 the request-failure classifier, a failed load keeping who you are, the waiver and card refusals reopening their steps, the 30-second reload throttle, the redraw moments, and the type scale under Larger Text; since 2026-09-28 the invitation push's Accept and Decline, the Remind me reminder, the calendar entry, and the haptics and chip motion; a clinic the player holds beyond the list's five-week edge staying on their screens, the instant-open snapshot's per-person and ended-clinic rules, Siri's next-clinic answer, and the Player Pool's history line) and 22
 XCUITests: 9 player flows
 (`PlayerFlowUITests`: sign in / browse / register, undo, sign-up end to end,

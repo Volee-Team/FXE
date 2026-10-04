@@ -480,6 +480,15 @@ Tara, 2026-09-29: *"Sorry I pay Foxcroft 10% of revenue. But asking I pay them 8
 **101. When Foxcroft agrees a number, what is it? You can also set it yourself: Money tab, Board report, "Foxcroft share %", then Save.**
 *Default: 10 until you change it (built 2026-09-29, `20260929000004`; only you can see or change it). Status: open, asked 2026-09-29.*
 
+## U. Cancellations at a glance (added 2026-10-04)
+
+Tara, 2026-10-04: *"I wanna make sure that the app can keep track of how many people have canceled their clinic that they sign up for. So everyone's profile may be something that only I can see of course shows me how many times they've signed up and canceled. I don't wanna bring those people from the pool as often as somebody that never cancels."*
+
+Already built (decision 0027 §1): beside every Player Pool name, only to you, "12 played, 1 no-show, 2 late cancels". It does not yet count cancels made in good time.
+
+**105. Should that line also count every cancel, early ones too, e.g. "12 played, 5 canceled (2 late), 1 no-show"?**
+*Default: yes, on the Pool line and on each player's page in Players. Status: open, asked 2026-10-04.*
+
 ### How 52 to 57 are being sent
 
 Round two of the review page (2026-09-21, later): the Words tab now shows her

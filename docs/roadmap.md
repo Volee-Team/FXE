@@ -219,6 +219,7 @@ a decision for her.
 | 🔨 | **A player's history at a glance** (clinics played, no-shows, late cancels) on her directory and beside each name in the Player Pool |
 | 🔨 | **Copy this week to next week**, as drafts she checks and publishes (the v1.1 row "Duplicate an entire week") |
 | 🔨 | Her saved messages (decision 0030, on build 6): sentences she sends often, kept in her words, sent in one tap |
+| ⬜ | **Every cancel on a player's history line** (Tara, 2026-10-04): today it shows late cancels and no-shows; she wants all cancels counted, to weigh who she invites from the Pool. Question 105. Not started |
 | ⬜ | A Sunday-night email: next week's sign-ups, cards to chase, requests waiting on her (needs the club's mail sender) |
 | ⬜ | More for two of her pros, when she asks ("Eventually", question 71) |
 | ⬜ | Guests billed to the member (question 72): designed in `docs/guests.md`, waits on questions 93 and 95 |

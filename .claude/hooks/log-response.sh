@@ -121,6 +121,16 @@ t = re.sub(r"\bsb_secre[t]_[A-Za-z0-9_-]{8,}", "[redacted Supabase secret]", t)
 t = re.sub(r"\beyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{10,}", "[redacted token]", t)
 # A reset link is a one-hour sign-in as the member (decision 0017).
 t = re.sub(r"token_hash=[0-9A-Fa-f]{20,}", "token_hash=[redacted]", t)
+# 2026-10-04: a Stripe activation summary pasted into a prompt carried
+# Tara: her date of birth, home address and phone, and the EIN letter was one
+# photo away. None reached a commit (scrubbed by hand), but the rules above
+# would not have caught them. An EIN (12-3456789), a date of birth after its
+# label, and a street address with a number and a street-type word.
+t = re.sub(r"\b\d{2}-\d{7}\b", "[redacted EIN]", t)
+t = re.sub(r"(?i)\b(born on|date of birth|dob)\b[: ]*[^\n]*", r"\1 [redacted]", t)
+t = re.sub(r"\b\d{2,6} (?:[A-Z][a-z]+ ){1,3}(?:Lane|Ln|Street|St|Road|Rd|Drive|Dr|Avenue|Ave|Court|Ct|Circle|Cir|Way|Boulevard|Blvd|Place|Pl|Trail|Trl)\b\.?", "[redacted address]", t)
+# A phone in the "+1 (704) 555-0100" form that Stripe prints.
+t = re.sub(r"\+1 \(\d{3}\) \d{3}-\d{4}", "[redacted phone]", t)
 sys.stdout.write(t)
 '
 }
