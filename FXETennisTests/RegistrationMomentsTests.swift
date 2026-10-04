@@ -73,4 +73,33 @@ final class RegistrationMomentsTests: XCTestCase {
         XCTAssertEqual(RedrawSchedule.at([memberOpens, memberOpens]),
                        [memberOpens, memberOpens.addingTimeInterval(1)])
     }
+
+    // The late-cancel moment (2026-10-04): start minus the cutoff, worked by
+    // hand: 22:00Z less 3 hours is 19:00Z; with Tara's close moved to 2
+    // hours before (20:00Z) the cutoff moment is still 19:00Z, which the
+    // close no longer covers. That gap is how a fee landed with no sheet.
+    func testTheLateCancelMomentIsStartMinusTheCutoff() {
+        let morning = iso.date(from: "2026-10-06T12:00:00Z")!
+        XCTAssertEqual(clinic().lateCancelMoment(cutoffHours: 3, after: morning),
+                       [iso.date(from: "2026-10-06T19:00:00Z")!])
+    }
+
+    func testTheLateCancelMomentIsNotTheCloseWhenTaraMovesIt() {
+        let moved = ClinicPublic(id: UUID(), name: "Tuesday Ladies 3.0+", audience: "ladies", category: nil,
+                                 description: nil, startsAt: starts, endsAt: starts.addingTimeInterval(3600),
+                                 memberOpensAt: memberOpens, publicOpensAt: publicOpens,
+                                 closesAt: iso.date(from: "2026-10-06T20:00:00Z")!, status: "published", canceledAt: nil,
+                                 memberPriceCents: 1800, nonmemberPriceCents: 2300, durationMinutes: 60)
+        let morning = iso.date(from: "2026-10-06T12:00:00Z")!
+        let schedule = RedrawSchedule.at(moved.upcomingMoments(isMember: true, after: morning)
+                                         + moved.lateCancelMoment(cutoffHours: 3, after: morning))
+        XCTAssertTrue(schedule.contains(iso.date(from: "2026-10-06T19:00:00Z")!),
+                      "the page must redraw when a cancel becomes late, not only at the close")
+    }
+
+    func testNoLateCancelMomentOnceItHasPassedOrTheClinicIsCanceled() {
+        let late = iso.date(from: "2026-10-06T20:30:00Z")!
+        XCTAssertEqual(clinic().lateCancelMoment(cutoffHours: 3, after: late), [])
+        XCTAssertEqual(clinic(status: "canceled").lateCancelMoment(cutoffHours: 3, after: iso.date(from: "2026-10-06T12:00:00Z")!), [])
+    }
 }

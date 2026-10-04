@@ -153,9 +153,24 @@ final class SessionResilienceTests: XCTestCase {
     }
 
     func testARealRefusalIsStillARace() {
-        let refusal = PostgrestError(code: "P0001", message: "already_registered")
+        // An invitation answered or withdrawn meanwhile: a genuine race.
+        let refusal = PostgrestError(code: "P0001", message: "invitation_no_longer_available")
         XCTAssertEqual(ClinicDetailModel.outcome(for: refusal),
                        .init(notice: "Sorry, someone beat you to the punch. Here's the latest!", reopens: nil))
+    }
+
+    /// Already in (a double tap, or a second phone) is not losing: no line,
+    /// the reload shows her own You're In! (review, 2026-10-04).
+    func testAlreadyRegisteredSaysNothing() {
+        let refusal = PostgrestError(code: "P0001", message: "already_registered")
+        XCTAssertEqual(ClinicDetailModel.outcome(for: refusal), .init(notice: nil, reopens: nil))
+    }
+
+    /// Closed between the draw and the tap reads as closed, not as a race.
+    func testRegistrationClosedSaysClosed() {
+        let refusal = PostgrestError(code: "P0001", message: "registration_closed")
+        XCTAssertEqual(ClinicDetailModel.outcome(for: refusal),
+                       .init(notice: "Registration has closed for this clinic.", reopens: nil))
     }
 
     func testTheBackToBack105LineIsKept() {

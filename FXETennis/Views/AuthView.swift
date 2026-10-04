@@ -138,6 +138,9 @@ struct AuthView: View {
 
                 Button(mode.toggle) {
                     mode = (mode == .signIn) ? .signUp : .signIn
+                    // "That email already has an account" must not follow her
+                    // to Sign in, where it reads as the new screen's answer.
+                    session.authError = nil
                 }
                 .brandFont(.caption)
                 // Navy, not grey: the links sit over the court photo, where

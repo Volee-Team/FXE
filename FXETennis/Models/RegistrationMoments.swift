@@ -31,6 +31,20 @@ extension ClinicPublic {
     }
 }
 
+extension ClinicPublic {
+    /// The moment a You're In! cancel becomes late (start minus the cutoff),
+    /// if it is still ahead. The page redraws then too, so the button turns
+    /// into the late path on the second. Until 2026-10-04 it only matched
+    /// a redraw when the close happened to equal the cutoff, and a member
+    /// who opened the page at 3h02m and confirmed at 2h59m was charged the
+    /// fee without seeing the late-cancel sheet (review).
+    func lateCancelMoment(cutoffHours: Int, after now: Date = .now) -> [Date] {
+        guard !isCanceled else { return [] }
+        let m = startsAt.addingTimeInterval(-TimeInterval(cutoffHours) * 3600)
+        return m > now ? [m] : []
+    }
+}
+
 enum RedrawSchedule {
     /// A TimelineView schedule for these moments. Each moment is followed by
     /// a second redraw one second later: a screen that compares against the
