@@ -14,6 +14,7 @@ struct FXETennisApp: App {
     @State private var session = SessionStore()
 
     init() {
+        ClubTime.apply()
         Brand.styleNavigationTitles()
     }
 
@@ -21,6 +22,8 @@ struct FXETennisApp: App {
         WindowGroup {
             RootView()
                 .environment(session)
+                // Charlotte time in SwiftUI's own formatting too (ClubTime).
+                .environment(\.timeZone, ClubTime.zone)
                 .tint(Brand.navy)
                 // LIGHT MODE IS LOAD-BEARING, and it lives in Info.plist now
                 // (project.yml, INFOPLIST_KEY_UIUserInterfaceStyle: Light).

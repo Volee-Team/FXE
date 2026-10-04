@@ -492,6 +492,14 @@ Tara, 2026-10-03: *"sometimes maybe three times a year we do a clinic and we onl
 
 **104. Is it always exactly half, or sometimes another amount?**
 *Default: always half. Status: open, asked 2026-10-03.*
+## U. Cancellations at a glance (added 2026-10-04)
+
+Tara, 2026-10-04: *"I wanna make sure that the app can keep track of how many people have canceled their clinic that they sign up for. So everyone's profile may be something that only I can see of course shows me how many times they've signed up and canceled. I don't wanna bring those people from the pool as often as somebody that never cancels."*
+
+Already built (decision 0027 §1): beside every Player Pool name, only to you, "12 played, 1 no-show, 2 late cancels". It does not yet count cancels made in good time.
+
+**105. Should that line also count every cancel, early ones too, e.g. "12 played, 5 canceled (2 late), 1 no-show"?**
+*Default: yes, on the Pool line and on each player's page in Players. Status: open, asked 2026-10-04.*
 
 ### How 52 to 57 are being sent
 

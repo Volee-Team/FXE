@@ -11,6 +11,34 @@
 
 import Foundation
 
+/// Every time the app prints is Charlotte time, wherever the phone is.
+/// Tara, 2026-10-04: "The times should not convert to where the phone is. It
+/// always needs to be 9 o'clock ... Or whatever time it's at Charlotte time",
+/// after a member in Wisconsin saw every clinic an hour early. A clinic is a
+/// place on a court in Charlotte, not a moment to convert.
+enum ClubTime {
+    static let zone = ServiceWeek.timeZone
+
+    /// Makes Charlotte the app's own time zone, so every formatter, every
+    /// `.formatted()` and every Calendar.current reads club time. Called once
+    /// at launch, before any view exists. Reminders and calendar events are
+    /// absolute moments and stay correct either way.
+    ///
+    /// Both halves are needed. `NSTimeZone.default` moves Calendar and
+    /// DateFormatter, but `.formatted()` (most screens) reads the SYSTEM
+    /// zone, which ignored it: seen on a simulator launched in Central time,
+    /// where the first version of this fix still showed 3:59 PM for a 4:59 PM
+    /// clinic. The system zone comes from the process's TZ variable, which is
+    /// how the simulator was put in Central in the first place, so setting
+    /// TZ to Charlotte before anything reads a zone moves it too.
+    static func apply() {
+        setenv("TZ", zone.identifier, 1)
+        tzset()
+        NSTimeZone.resetSystemTimeZone()
+        NSTimeZone.default = zone
+    }
+}
+
 enum ServiceWeek {
     static let timeZone = TimeZone(identifier: "America/New_York")!
 

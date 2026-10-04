@@ -60,7 +60,7 @@ News (deferred, decision 0006).
 Testing today: 46 Playwright tests, 23 XCUITests (9 player flows, 7 on
 Tara's side, 2 on a pro's, and 5 accessibility checks: Apple's audit on the
 player's, Tara's and the pro's screens, the status bar and the Return key),
-232 unit tests, 44 SQL probes, a 94-check Stripe pipeline and a 57-check push pipeline
+234 unit tests, 44 SQL probes, a 94-check Stripe pipeline and a 57-check push pipeline
 against mocks in CI.
 Since 2026-09-28 (decision 0026): a card
 Stripe declines holds no spot until a card is saved again, and says why in
