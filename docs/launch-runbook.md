@@ -79,8 +79,8 @@ The script, each line watched by someone and timed:
 **If payments misbehave on the night:** the switch is `payments_enabled` in
 `app_settings`, which only a migration can change today (no admin control;
 backlog). Turning it off is a one-line migration pushed by the model, about
-ten minutes through CI. Decide before the party whether that is fast enough
-or whether Tara needs a switch of her own.
+ten minutes through CI. **Decided 2026-10-03 (Alex): no switch of her own;
+the ten-minute migration is the plan.**
 
 **If the app will not open for everyone:** check the Supabase status page
 and the project's state in the dashboard first (a paused free project
