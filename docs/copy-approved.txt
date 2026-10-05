@@ -41,6 +41,7 @@ Clinics
 Close
 Collected by card
 Contact Tara
+Continue
 Cookies and tracking technologies
 Copy my answers
 Copy to next week
@@ -156,7 +157,6 @@ Non-members, 90 min
 Not available yet.
 Not charged yet
 Not late yet.
-Not now
 Note (optional)
 Note for Tara (optional)
 Notifications
