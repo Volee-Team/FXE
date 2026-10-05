@@ -59,7 +59,7 @@ is_pro	{}
 leave_pool	{"p_registration":"00000000-0000-0000-0000-000000000000"}
 mark_news_read	{"p_news":"00000000-0000-0000-0000-000000000000"}
 member_opens_at	{"p_starts_at":"2026-01-01T00:00:00Z"}
-money_rows	{}
+money_rows	{"p_clinic":"00000000-0000-0000-0000-000000000000"}
 my_calendar_feed_token	{}
 my_card_consent	{}
 my_courtesy_available	{"p_player":"00000000-0000-0000-0000-000000000000"}
