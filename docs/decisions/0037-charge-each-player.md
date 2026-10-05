@@ -37,6 +37,17 @@ late cancel pay the full fee, all after the clinic ends, all on her tap.
    copying its CASE. The app draws a button for exactly the rows the server
    lists; the server re-checks on the tap.
 
+## Since the review (2026-10-04, before hosted)
+
+The sql-auditor found no critical issue and five worth fixing, all in
+20261002000001 before it reached hosted: a draft Tara never published was
+chargeable once its time passed (money_rows now counts published clinics
+only); a rain-out cancel racing a Charge tap could both commit (the clinic
+is locked FOR SHARE before the registration); one person could get two
+late fees' buttons (only the newest late cancel owes); every per-clinic read
+computed the whole club (money_rows takes an optional clinic). A late
+canceller cannot be let off: that is question 106 for Tara.
+
 ## Rejected
 
 - **Calling `admin_charge_registration` straight from the row.** It takes the

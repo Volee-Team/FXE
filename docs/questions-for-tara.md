@@ -501,6 +501,14 @@ Already built (decision 0027 §1): beside every Player Pool name, only to you, "
 **105. Should that line also count every cancel, early ones too, e.g. "12 played, 5 canceled (2 late), 1 no-show"?**
 *Default: yes, on the Pool line and on each player's page in Players. Status: open, asked 2026-10-04.*
 
+## V. Two money edges from the 2026-10-04 review
+
+**106. If someone cancels late and you decide not to charge them (a family emergency), should you be able to clear that fee?** Today you can take a sick player off the roster so they are never charged, but someone who already canceled late cannot be taken off, so their fee stays on your "not charged yet" list.
+*Default: yes, a "Waive" button beside a late cancel, after the clinic. Status: open, asked 2026-10-04.*
+
+**107. When someone in the Player Pool accepts your invitation from their lock screen, should they need a card saved first, like everyone who registers?** Today someone who joined the Pool before cards were required could accept without one, and then there is nothing to charge after the clinic.
+*Default: yes, accepting asks for a card the same way registering does. Status: open, asked 2026-10-04.*
+
 ### How 52 to 57 are being sent
 
 Round two of the review page (2026-09-21, later): the Words tab now shows her
