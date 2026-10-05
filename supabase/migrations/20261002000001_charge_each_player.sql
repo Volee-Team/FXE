@@ -198,7 +198,7 @@ begin
     raise exception 'registration_not_found' using errcode = 'P0002';
   end if;
   -- Clinic first (FOR SHARE), registration second (FOR UPDATE): the order
-  -- place_player and require_pro_today use, so no deadlock, and a cancel of
+  -- place_player and the pro's Today lookup use, so no deadlock, and a cancel of
   -- the clinic in the same instant waits for this or this waits for it
   -- (sql-auditor, 2026-10-04: a rain-out cancel racing a Charge tap).
   select * into c from public.clinics where id = v_clinic for share;
