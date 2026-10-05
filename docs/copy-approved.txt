@@ -50,6 +50,7 @@ Couldn't load saved answers, still on this phone
 Couldn't load the numbers.
 Couldn't load this clinic.
 Couldn't load your calendar link.
+Couldn't reach Stripe. Try again.
 Couldn't reach the server. Check your connection.
 Couldn't save, still on this phone
 Court

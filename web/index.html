@@ -375,7 +375,7 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
 <script type="module">
 import { createClient } from "./vendor/supabase-js.js";
 import { CONFIG, ENV } from "./config.js";
-import { serviceWeekStart, splitThisWeek, weekLabel } from "./week.js";
+import { serviceWeekStart, splitThisWeek, weekLabel, nyFromInput, nyInputValue } from "./week.js";
 import { readAll, readByIds } from "./read.js";
 import { wireSavedMessages } from "./saved-messages.js";
 
@@ -393,8 +393,10 @@ const STATUS = {
   canceled:        { label: "Canceled",        cls: "canc" },
 };
 
+// Charlotte's clock wherever the laptop is (decision 0038): the times match
+// the phones, and a clinic never sits under the wrong week's heading.
 const fmtDate = (iso) => new Date(iso).toLocaleString(undefined,
-  { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
 const money = (c) => c == null ? "" : "$" + (c % 100 === 0 ? c / 100 : (c / 100).toFixed(2));
 // Court 1-5 or unassigned, the same values assign_court accepts. A dropdown
 // rather than drag-and-drop on purpose: docs/web-admin.md section 4 says the
@@ -545,6 +547,7 @@ function friendly(e) {
   if (m.includes("registration_not_in")) return "Only a You're In! player can be a no-show.";
   if (m.includes("not_refundable")) return "Only a paid charge can be refunded.";
   if (m.includes("stripe_not_configured")) return "Stripe isn't connected yet.";
+  if (m.includes("stripe_unreachable") || m.includes("stripe_error")) return "Couldn't reach Stripe. Try again.";
   if (m.includes("label_required")) return "Give the link a label.";
   // 20260928600001: admin_set_pro. The page only offers the box where it
   // would work, so these are a stale page or a second tab.
@@ -782,9 +785,18 @@ const HELD = ["retry_window_passed", "idempotency_error"];
 // function needs the admin JWT the client already holds.
 async function settleLedger() {
   const { data, error } = await sb.functions.invoke("stripe-charge", { body: {} });
-  if (error) throw new Error(error.message || "stripe_charge_failed");
+  // The function's own code (stripe_not_configured, ...) when it answered,
+  // else "stripe_unreachable": supabase-js's "Edge Function returned a
+  // non-2xx status code" is not a sentence for Tara (review, 2026-10-04).
+  if (error) throw new Error((await functionErrorCode(error)) || "stripe_unreachable");
   return data;
 }
+// A fee queued but not sent (the page closed, or Stripe was unreachable at
+// the tap) waits for the next call to stripe-charge, which nothing makes on
+// a schedule. Once per page load, any pending row is sent (review,
+// 2026-10-04: a last charge of the week could sit at Pending past the
+// 24-hour retry window).
+let settledOnLoad = false;
 
 async function loadLedger(gen = moneySeq) {
   const box = $("ledger");
@@ -795,6 +807,11 @@ async function loadLedger(gen = moneySeq) {
   const head = `<div class="row" style="border-top:1px solid var(--fxe-hairline);margin-top:10px;padding-top:10px"><span class="grow name">Card payments</span></div>`;
   if (error) { box.innerHTML = head + `<div class="muted">Couldn't load card payments.</div>`; return; }
   if (!rows || !rows.length) { box.innerHTML = head + `<div class="muted">No card payments yet.</div>`; return; }
+  if (paymentsOn && !settledOnLoad && rows.some(r => r.status === "pending")) {
+    settledOnLoad = true;
+    try { await settleLedger(); } catch { /* the rows say Pending; the next tap retries */ }
+    return loadMoney();
+  }
   box.innerHTML = head + rows.map(r => {
     const who = `${r.first_name} ${r.last_name}`;
     const clinic = r.clinic_name ? { name: r.clinic_name, starts_at: r.clinic_starts_at } : null;
@@ -1101,11 +1118,18 @@ async function loadClinics() {
     $("clinics").innerHTML = "";
     return note($("msg"), "Couldn't load clinics.");
   }
-  // Read leniently: without them no row offers a charge, and the week works.
-  const ended = [...visible, ...visibleEarlier].filter(c => c.status !== "canceled" && new Date(c.ends_at) < new Date());
+  // Who owes, read only for the clinics the Money numbers say owe something
+  // (owed.data: someone not charged, or a declined card), not every ended
+  // clinic on screen: each read computes the clinic's whole money picture
+  // (review, 2026-10-04). A failed read is said, not swallowed: the Charge
+  // buttons would vanish while Action Needed still says "not charged yet".
+  const owedIds = new Set(owed.data || []);
+  const ended = [...visible, ...visibleEarlier].filter(c => owedIds.has(c.id) && new Date(c.ends_at) < new Date());
   const dueLists = paymentsOn ? await Promise.all(ended.map(c => sb.rpc("admin_fees_due", { p_clinic: c.id }))) : [];
   if (stale()) return;
+  const dueFailed = dueLists.some(x => x.error);
   feesDue = Object.fromEntries(dueLists.flatMap(x => x.data || []).map(d => [d.registration_id, d]));
+  if (dueFailed) queueMicrotask(() => note($("msg"), "Couldn't load charges."));
   const byPlayer = Object.fromEntries((players || []).map(p => [p.id, p]));
   clinicIndex = Object.fromEntries(clinics.map(c => [c.id, c]));
   regsByClinic = {};
@@ -1260,6 +1284,14 @@ document.addEventListener("click", async (e) => {
     $("latecancel").showModal();
     return;
   }
+  // Refund and the held-charge answers move money or decide whether someone
+  // can be charged again: two clicks, like Remove (review, 2026-10-04).
+  if ((b.dataset.refund || b.dataset.resolve) && b.dataset.armed !== "1") {
+    const label = b.textContent;
+    b.dataset.armed = "1"; b.textContent = b.dataset.refund ? "Really refund?" : "Really?"; b.classList.add("danger");
+    setTimeout(() => { if (b.isConnected) { b.dataset.armed = ""; b.textContent = label; b.classList.remove("danger"); } }, 5000);
+    return;
+  }
   if (b.dataset.refund)   return run(async () => {
     await call("admin_refund_payment", { p_payment: b.dataset.refund });
     await settleLedger();
@@ -1402,9 +1434,8 @@ async function openEdit(id) {
   if (id) {
     const { data: c } = await sb.from("clinics_admin").select("*").eq("id", id).single();
     $("f-name").value = c.name; $("f-audience").value = c.audience;
-    // datetime-local wants local wall-clock with no zone.
-    const d = new Date(c.starts_at);
-    $("f-starts").value = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    // datetime-local has no zone; it shows Charlotte's clock (decision 0038).
+    $("f-starts").value = nyInputValue(c.starts_at);
     $("f-duration").value = c.duration_minutes;
     $("f-capacity").value = c.internal_capacity;
     $("f-desc").value = c.description || "";
@@ -1527,7 +1558,9 @@ async function searchPlayers() {
 async function playerRoles(ids) {
   const out = new Map();
   if (!ids.length) return out;
-  const { data, error } = await sb.from("players").select("id,account_id,accounts(role,deleted_at)").in("id", ids);
+  // In chunks (read.js): 700 ids in one URL is past what the gateway takes,
+  // and a refusal hid the Pro box for everyone (review, 2026-10-04).
+  const { data, error } = await readByIds(ids, (part) => sb.from("players").select("id,account_id,accounts(role,deleted_at)").in("id", part).order("id"));
   if (error) return out;
   for (const r of data || []) out.set(r.id, { account: r.account_id, role: r.accounts?.role, deleted: !!r.accounts?.deleted_at });
   return out;
@@ -1611,7 +1644,8 @@ $("edit-save").onclick = async () => {
       p_id: editingId,
       p_name: $("f-name").value,
       p_audience: $("f-audience").value,
-      p_starts_at: new Date($("f-starts").value).toISOString(),
+      // Read as Charlotte time, not the laptop's (decision 0038).
+      p_starts_at: nyFromInput($("f-starts").value).toISOString(),
       p_duration_minutes: Number($("f-duration").value),
       p_internal_capacity: Number($("f-capacity").value),
       p_description: $("f-desc").value,

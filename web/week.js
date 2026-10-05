@@ -27,7 +27,15 @@ function nyClock(date) {
 // wall time read as UTC, then move by whatever New York's clock is off by;
 // the second pass settles a guess that landed across a daylight-saving change.
 function nyMidnight(y, m, d) {
-  const want = Date.UTC(y, m - 1, d);
+  return nyInstant(y, m, d, 0, 0);
+}
+
+// The instant at which New York's clock reads y-m-d hh:mi, by the same
+// settle-twice method. A clinic's time is Charlotte's whatever zone the
+// laptop is in (decision 0038, 2026-10-04: a laptop in California typed
+// 10:00 and saved 13:00 Eastern).
+export function nyInstant(y, m, d, hh = 0, mi = 0) {
+  const want = Date.UTC(y, m - 1, d, hh, mi);
   let t = want;
   for (let i = 0; i < 3; i++) {
     const c = nyClock(new Date(t));
@@ -83,4 +91,18 @@ export function weekLabel(weekStart, thisWeekStart) {
   const day = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", month: "short", day: "numeric" })
     .format(weekStart);
   return `Week of ${day}`;
+}
+
+// A datetime-local input's value ("2026-11-10T10:00") read as New York wall
+// time, and the value to show for an instant, on New York's clock. The
+// input itself has no zone; these make it Charlotte's.
+export function nyFromInput(value) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(value || "");
+  if (!m) return null;
+  return nyInstant(+m[1], +m[2], +m[3], +m[4], +m[5]);
+}
+export function nyInputValue(iso) {
+  const c = nyClock(new Date(iso));
+  const p = (n) => String(n).padStart(2, "0");
+  return `${c.year}-${p(c.month)}-${p(c.day)}T${p(c.hour)}:${p(c.minute)}`;
 }

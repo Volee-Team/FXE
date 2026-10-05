@@ -524,7 +524,10 @@ test.describe("fix round", () => {
       const heldRow = page.locator(`#ledger [data-held="${held.id}"]`);
       await expect(heldRow).toContainText("Check this charge in Stripe.");
       await expect(page.locator("#ledger")).toContainText("Too old to retry");
+      // Two clicks since 2026-10-04: the first only arms it.
       await heldRow.getByRole("button", { name: "Did not go through" }).click();
+      await expect(page.locator(`#ledger [data-held="${held.id}"]`)).toBeVisible();
+      await heldRow.getByRole("button", { name: "Really?" }).click();
       await expect(page.locator(`#ledger [data-held="${held.id}"]`)).toHaveCount(0, { timeout: 15_000 });
       await expect(page.locator("#ledger")).toContainText("Canceled");
     } finally {
