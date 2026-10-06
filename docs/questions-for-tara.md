@@ -509,6 +509,9 @@ Already built (decision 0027 §1): beside every Player Pool name, only to you, "
 **107. When someone in the Player Pool accepts your invitation from their lock screen, should they need a card saved first, like everyone who registers?** Today someone who joined the Pool before cards were required could accept without one, and then there is nothing to charge after the clinic.
 *Default: yes, accepting asks for a card the same way registering does. Status: open, asked 2026-10-04.*
 
+**108. When you refund someone, is it always the whole fee, or do you sometimes give part back?**
+*Default: the whole fee only, as today. Status: open, asked 2026-10-06.*
+
 ### How 52 to 57 are being sent
 
 Round two of the review page (2026-09-21, later): the Words tab now shows her

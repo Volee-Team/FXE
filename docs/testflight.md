@@ -40,7 +40,10 @@ Everything a build needs is on `main`; nothing lives only on Alex's machine.
    (`FXETennis/Data/SupabaseClient.swift`: Debug points at `localhost`, Release
    at `amnaxvznkadkgzdxzegw.supabase.co`). A Debug build on a phone would show
    an empty app.
-4. Organizer → **Distribute App → TestFlight Internal Only**. Upload.
+4. Organizer → **Distribute App → App Store Connect → Upload**. Not
+   "TestFlight Internal Only": a build uploaded that way can never be added to
+   External Testing (the public link) or the App Store, which build 9 needs
+   (found 2026-10-06, before the first external submission).
 5. In App Store Connect, add the build to the internal group. Testers get the
    TestFlight email within minutes.
 6. Tag the commit and add the changelog line (launch checklist C10):
