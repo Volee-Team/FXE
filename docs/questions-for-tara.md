@@ -480,6 +480,35 @@ Tara, 2026-09-29: *"Sorry I pay Foxcroft 10% of revenue. But asking I pay them 8
 **101. When Foxcroft agrees a number, what is it? You can also set it yourself: Money tab, Board report, "Foxcroft share %", then Save.**
 *Default: 10 until you change it (built 2026-09-29, `20260929000004`; only you can see or change it). Status: open, asked 2026-09-29.*
 
+## T. Half a clinic (added 2026-10-03)
+
+Tara, 2026-10-03: *"sometimes maybe three times a year we do a clinic and we only get in half of the clinic. I want to still be able to charge half. Is there a way to implement this it's not incredibly necessary but sort of."* Written down, not built (Alex, 2026-10-02: player-facing work first).
+
+**102. When a clinic is cut short, is it half for everyone in it, or do you pick a price per person?**
+*ANSWERED 2026-10-04 (Tara, via Alex: "yes"): one "Half clinic" switch on the clinic after it ends; every Charge button on it then reads half ($9 instead of $18). Not built yet (roadmap).*
+
+**103. On a half clinic, does a no-show or a late cancel still pay the full fee, or half too?**
+*ANSWERED 2026-10-04, in the same "yes": a no-show and a late cancel still pay the full fee.*
+
+**104. Is it always exactly half, or sometimes another amount?**
+*ANSWERED 2026-10-04, in the same "yes": half.*
+## U. Cancellations at a glance (added 2026-10-04)
+
+Tara, 2026-10-04: *"I wanna make sure that the app can keep track of how many people have canceled their clinic that they sign up for. So everyone's profile may be something that only I can see of course shows me how many times they've signed up and canceled. I don't wanna bring those people from the pool as often as somebody that never cancels."*
+
+Already built (decision 0027 §1): beside every Player Pool name, only to you, "12 played, 1 no-show, 2 late cancels". It does not yet count cancels made in good time.
+
+**105. Should that line also count every cancel, early ones too, e.g. "12 played, 5 canceled (2 late), 1 no-show"?**
+*Default: yes, on the Pool line and on each player's page in Players. Status: open, asked 2026-10-04.*
+
+## V. Two money edges from the 2026-10-04 review
+
+**106. If someone cancels late and you decide not to charge them (a family emergency), should you be able to clear that fee?** Today you can take a sick player off the roster so they are never charged, but someone who already canceled late cannot be taken off, so their fee stays on your "not charged yet" list.
+*Default: yes, a "Waive" button beside a late cancel, after the clinic. Status: open, asked 2026-10-04.*
+
+**107. When someone in the Player Pool accepts your invitation from their lock screen, should they need a card saved first, like everyone who registers?** Today someone who joined the Pool before cards were required could accept without one, and then there is nothing to charge after the clinic.
+*Default: yes, accepting asks for a card the same way registering does. Status: open, asked 2026-10-04.*
+
 ### How 52 to 57 are being sent
 
 Round two of the review page (2026-09-21, later): the Words tab now shows her

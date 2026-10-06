@@ -63,16 +63,8 @@ if [ -f docs/.last-doc-audit ]; then
   fi
 fi
 
-# The prompt log is only a record once it is committed. It sat uncommitted
-# from 2026-09-21 to 2026-09-26 (1,676 lines) because every branch switch
-# stashed it around the work instead of committing it. Say so at session
-# start, so it rides in the next PR.
-LOGLINES=$(git diff --numstat -- docs/prompt-log/ 2>/dev/null | awk '{s+=$1} END {print s+0}')
-if [ "${LOGLINES:-0}" -gt 200 ]; then
-  echo ""
-  echo "PROMPT LOG: $LOGLINES uncommitted lines in docs/prompt-log/. Scan them for"
-  echo "personal data (see log-prompt.sh) and commit them in the next PR."
-fi
+# The prompt log is local only since 2026-10-04 (gitignored; the repo is
+# public), so there is nothing to commit and nothing to remind about.
 
 # Tara's review answers. Her 2026-09-22 answers sat unread for five days
 # (decision 0016); review-watch.yml now opens a tara-answers issue when she

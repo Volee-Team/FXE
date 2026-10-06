@@ -29,7 +29,9 @@ Cancel my spot
 Cancel the invitation to \(entry.displayName)
 Canceled inside ${cutoffHours} hours
 Card payments
-Charge clinic
+Charge \(due.amountCents.centsAsPrice)
+Charge \(entry.displayName) \(due.amountCents.centsAsPrice)
+Charged
 Check this charge in Stripe.
 Checking your reset link…
 Children's privacy
@@ -39,6 +41,7 @@ Clinics
 Close
 Collected by card
 Contact Tara
+Continue
 Cookies and tracking technologies
 Copy my answers
 Copy to next week
@@ -48,6 +51,7 @@ Couldn't load saved answers, still on this phone
 Couldn't load the numbers.
 Couldn't load this clinic.
 Couldn't load your calendar link.
+Couldn't reach Stripe. Try again.
 Couldn't reach the server. Check your connection.
 Couldn't save, still on this phone
 Court
@@ -128,6 +132,7 @@ New password
 Next Clinic
 Next clinic in \(.applicationName)
 Next deposit
+No card
 No card on file for that player.
 No card payments yet.
 No clinics currently open for registration
@@ -152,7 +157,6 @@ Non-members, 90 min
 Not available yet.
 Not charged yet
 Not late yet.
-Not now
 Note (optional)
 Note for Tara (optional)
 Notifications
@@ -172,6 +176,7 @@ Players
 Policy changes
 Privacy Policy
 Private note
+Processing
 Profile
 Put in clinic
 Put them in
@@ -193,6 +198,7 @@ Remind me
 Remind unpaid (\(model.unpaidCount))
 Reminder set
 Remove
+Remove \(entry.displayName)
 Remove \(entry.displayName) from the Player Pool
 Remove from clinic
 Resolved

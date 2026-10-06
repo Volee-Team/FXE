@@ -24,13 +24,13 @@
 // customer id and card summary are cleared, so the app asks for a card again,
 // and the row fails as no_card_on_file. A deleted account is never charged.
 
-import { getStripe, admin, callerId, json } from "../_shared/stripe.ts";
+import { getStripe, admin, callerId, json, safeError } from "../_shared/stripe.ts";
 import { withCors } from "../_shared/cors.ts";
 
 import { classifyChargeError, isMissingCustomer, RETRY_WINDOW_HOURS } from "../_shared/stripe-errors.ts";
 
 // withCors: the web admin calls this from the browser (_shared/cors.ts).
-Deno.serve(withCors(async (req) => { try { return await handle(req); } catch (e) { const m = String((e as Error).message ?? e); return json({ error: m }, m === "stripe_not_configured" ? 503 : 500); } }));
+Deno.serve(withCors(async (req) => { try { return await handle(req); } catch (e) { const m = safeError(e, "stripe-charge"); return json({ error: m }, m === "stripe_not_configured" ? 503 : 500); } }));
 
 // Longer than any call runs: a row processing this long with no Stripe id
 // belongs to a call that died between the claim and storing the id.
@@ -128,6 +128,13 @@ async function handle(req: Request): Promise<Response> {
           currency: row.currency,
           customer: customerId,
           payment_method: paymentMethod,
+          // Card only. Without it, API versions since 2023-08-16 turn on
+          // automatic payment methods with redirects, and a server-side
+          // confirm with no return_url is refused (invalid_request_error) on
+          // live accounts: every charge Tara tapped would have failed. The
+          // SetupIntent is card-only too. stripe-mock accepts either, so this
+          // was found by review (2026-10-04), not by the harness.
+          payment_method_types: ["card"],
           off_session: true,
           confirm: true,
           description: `FXE Tennis ${row.kind.replace("_", " ")}`,

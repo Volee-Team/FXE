@@ -76,7 +76,7 @@ logins, guests billed to a member, her Contact link) are in
 
 ---
 
-## 1. Stripe keys (checklist A1, A8, A12): A1 and A8 DONE 2026-09-27; step G (A12) is new
+## 1. Stripe keys (checklist A1, A8, A12): A1 and A8 DONE 2026-09-27; step G (A12) DONE 2026-10-01
 
 Verified 2026-09-27: all three secret names exist on hosted, and a forged
 webhook call is rejected with `bad_signature`. The steps stay here for live
@@ -247,7 +247,7 @@ two to verify. This is the step with the 2026-11-04 deadline (A11; it was 10-14 
 and the cutover migration that clears everyone's test cards, and runs the
 payment test (A2) with you. Nothing about the test keys changes before then.
 
-## 3. Push notifications (checklist C3): John's key, about 10 minutes
+## 3. Push notifications (checklist C3): KEY IN 2026-10-03; one real push left to see
 
 Decided 2026-09-27: push works for launch, on **John's** Apple account, because
 every tester build (and the launch build, if C11 is used) is signed by his
@@ -323,6 +323,65 @@ declined card that says why. For Tara: pros (a Today screen), Resolved on a
 declined card, her saved messages, and on the laptop a player's history in
 the Pool, Copy to next week, a court sheet to print, and the full player list.
 Payments stay off until you say go (checklist A9).
+
+## 4a. John: build 9 and External Testing (checklist C8, C11), written 2026-10-05
+
+**Build 9 is the tag `v0.1.0-rc9`** (made when PR #87 merges): per-person
+charging, Charlotte time, and the pre-launch review fixes. Archive it exactly
+as in §4, then:
+
+1. appstoreconnect.apple.com → Apps → FXE Tennis → **TestFlight**.
+2. External Testing → **+** → a group named `FXE Members`.
+3. Add build 9 to the group. Fill in **Test Information** (below), the
+   contact (name, phone, email) and the sign-in for Apple's reviewer.
+4. **Submit for Review**. Apple usually answers in 1 to 2 days.
+5. Once approved: the group → **Public Link** → **Enable**. Send Alex the
+   link; it becomes the QR code's target (§4b).
+
+**Before submitting (Alex):**
+- **The reviewer's account.** Make a real member account on the app yourself
+  (never the model; no test fixtures in hosted), sign the waiver on it, and
+  put its email and password in the review notes. Payments must still be
+  OFF when you submit, or the reviewer stops at Add a card.
+- **An open clinic.** Check a clinic is open to non-members during the
+  review days, or the reviewer sees only "Registration opens".
+- **"Not now" on the notification sheet** is a known rejection risk
+  (backlog). Your call whether to change it first.
+
+**Test Information** (testers read the first two; words for Alex to approve):
+
+> What to test: Sign in or create an account, then look through the Clinics
+> tab. Register for a clinic, or join the Player Pool when it is full. Check
+> that your clinics show under Profile, My Clinics. Tell us anything that
+> looks wrong or is hard to find.
+
+> Beta App Description: FXE Tennis is the clinic sign-up app for the FXE
+> tennis program. Players see the week's clinics, register, get updates from
+> their coach, and manage their spot. This is a test version for club players
+> before the full release.
+
+**Beta App Review notes** (only Apple reads these):
+
+> This app is for a private tennis club's clinic program. Players register
+> for in-person group tennis clinics run by the club's coach.
+>
+> Sign-in: email [REVIEW ACCOUNT EMAIL] / password [REVIEW ACCOUNT PASSWORD].
+> This is a real member account with the waiver already signed.
+>
+> Home shows your clinics and what is open to you. The Clinics tab lists the
+> week's clinics; tap one for its details and Register. Profile has My
+> Clinics, Subscribe in Calendar, Contact, Privacy Policy and Delete my
+> account (please use a new account from Create an account to try deletion).
+>
+> Registration for each week opens Thursday 8:00 AM Eastern for club members
+> and Friday 8:00 AM Eastern for everyone else.
+>
+> Payments: players save a card through Stripe's form and are charged only
+> after an in-person clinic they attended, or for a late cancellation or
+> no-show. These are real-world services used outside the app, so in-app
+> purchase does not apply (guideline 3.1.3(e)). Card entry is not active in
+> this build. Notifications are optional. Clinic locations are deliberately
+> not shown because this is a members' club.
 
 ## 4b. The QR code's link (checklist I6), one message
 

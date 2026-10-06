@@ -200,3 +200,43 @@ test.describe("the tab", () => {
     await expect(page.locator("#clinics .card", { hasText: "Thursday Morning Cardio" })).toBeVisible();
   });
 });
+
+// Decision 0038 on the laptop (2026-10-04): a clinic's time is Charlotte's,
+// whatever zone the laptop is in. Kat in California, or Tara at an away
+// tournament with her Mac on local time, typed 10:00 and saved 13:00
+// Eastern, which every phone then showed. From the rule: 10:00 New York on
+// Tuesday 2026-11-10 is EST (UTC-5), so 15:00Z.
+test.describe("a laptop outside Eastern time", () => {
+  test.use({ timezoneId: "America/Los_Angeles" });
+
+  test("a clinic typed as 10:00 is saved as 10:00 Charlotte time, and reads back as 10:00", async ({ page, request }) => {
+    const { execSync } = await import("node:child_process");
+    const env = Object.fromEntries(execSync("supabase status -o env", { cwd: "..", stdio: ["ignore", "pipe", "ignore"] })
+      .toString().split("\n").filter(l => l.includes("="))
+      .map(l => { const i = l.indexOf("="); return [l.slice(0, i), l.slice(i + 1).replace(/^"|"$/g, "")]; }));
+    const headers = { apikey: env.SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SERVICE_ROLE_KEY}` };
+    const name = `LA laptop clinic ${Date.now()}`;
+    try {
+      await signIn(page, TARA);
+      await expect(page.getByRole("button", { name: "New clinic" })).toBeVisible();
+      await page.getByRole("button", { name: "New clinic" }).click();
+      await page.locator("#f-name").fill(name);
+      await page.locator("#f-starts").fill("2026-11-10T10:00");
+      await page.locator("#f-duration").fill("60");
+      await page.locator("#edit-save").click();
+      await expect(page.locator("dialog#edit")).toBeHidden({ timeout: 15_000 });
+
+      const rows = await request.fetch(`${env.API_URL}/rest/v1/clinics?name=eq.${encodeURIComponent(name)}&select=starts_at`, { headers })
+        .then(r => r.json());
+      expect(rows.map(r => new Date(r.starts_at).toISOString())).toEqual(["2026-11-10T15:00:00.000Z"]);
+
+      // The card and the edit form read it back as 10:00, not 7:00.
+      const card = page.locator("#clinics .card", { hasText: name });
+      await expect(card).toContainText("10:00");
+      await card.getByRole("button", { name: "Edit" }).click();
+      await expect(page.locator("#f-starts")).toHaveValue("2026-11-10T10:00");
+    } finally {
+      await request.fetch(`${env.API_URL}/rest/v1/clinics?name=eq.${encodeURIComponent(name)}`, { method: "DELETE", headers });
+    }
+  });
+});

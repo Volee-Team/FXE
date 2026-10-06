@@ -53,6 +53,14 @@ final class AdminClinicModel {
     /// Each Player Pool player's history (decision 0027 §1), by player id:
     /// the line under the name that makes choosing who to invite one look.
     var history: [UUID: PlayerHistory] = [:]
+    /// Who owes a fee now, by registration id (admin_fees_due,
+    /// 20261002000001). Decision 0037: Tara charges each person on her own
+    /// tap, so a row gets a Charge button exactly when it is in here.
+    var feesDue: [UUID: FeeDue] = [:]
+
+    /// The clinic is over: the roster becomes the charge sheet. Came /
+    /// No-show, Remove and Charge sit on a line under each name.
+    func isOver(now: Date = Date()) -> Bool { !clinic.isCanceled && clinic.endsAt < now }
 
     /// Late cancel (20260927100002) is offered on a You're In! row inside the
     /// cutoff or later, on a clinic that is not canceled, while the row holds
@@ -80,6 +88,10 @@ final class AdminClinicModel {
             let poolIds = Array(Set(pool.map(\.registration.playerId)))
             let rows = (try? await AdminRepository.playerHistory(players: poolIds)) ?? []
             history = Dictionary(rows.map { ($0.playerId, $0) }, uniquingKeysWith: { first, _ in first })
+            // Leniently too: without it no row offers a charge, and the
+            // roster still works.
+            let due = (try? await AdminRepository.feesDue(clinic: clinic.id)) ?? []
+            feesDue = Dictionary(due.map { ($0.registrationId, $0) }, uniquingKeysWith: { first, _ in first })
             error = nil
         } catch {
             self.error = "Couldn't load the roster. Pull to refresh."
@@ -116,6 +128,10 @@ final class AdminClinicModel {
         if e.contains("charged_refund_first") { return "Already charged: refund it first." }
         if e.contains("not_late_yet") { return "Not late yet." }
         if e.contains("clinic_canceled") { return "That clinic is canceled." }
+        if e.contains("no_card_on_file") { return "No card on file for that player." }
+        if e.contains("payments_disabled") { return "Payments are switched off." }
+        if e.contains("clinic_not_over") { return "The clinic hasn't ended yet." }
+        if e.contains("not_owed") || e.contains("already_charged") { return changedUnderYou }
         if e.contains("registration_not_in") || e.contains("already_canceled") { return changedUnderYou }
         return "That didn't go through. Check your connection and try again."
     }
@@ -129,8 +145,6 @@ struct AdminClinicDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var typeSize
     @State private var confirmCancelClinic = false
-    @State private var confirmCharge = false
-    @State private var chargeNote: String?
     @State private var removing: RosterEntry?
     @State private var lateCanceling: RosterEntry?
     @State private var lateNote = ""
@@ -162,8 +176,9 @@ struct AdminClinicDetailView: View {
 
                     rosterSection(
                         Brand.Status.youreIn, model.youreIn,
-                        empty: "Nobody is in yet."
-                    ) { entry in AnyView(HStack(spacing: Brand.Spacing.xs) { courtMenu(entry); if model.zelleAllowed { paidToggle(entry) }; noShowToggle(entry); declinedLabel(entry) }) }
+                        empty: "Nobody is in yet.",
+                        controlsBelow: model.isOver()
+                    ) { entry in AnyView(youreInControls(entry)) }
 
                     rosterSection(
                         Brand.Status.playerPool, model.pool,
@@ -191,7 +206,13 @@ struct AdminClinicDetailView: View {
                     // "Keep canceled players visible to Tara." A late cancel
                     // says so, with its note, the way the web roster does.
                     if !model.canceled.isEmpty {
-                        rosterSection(Brand.Status.canceled, model.canceled, empty: "") { entry in AnyView(lateLabel(entry)) }
+                        // A late cancel owes the fee too, charged the same way.
+                        rosterSection(Brand.Status.canceled, model.canceled, empty: "") { entry in
+                            AnyView(HStack(spacing: Brand.Spacing.xs) {
+                                lateLabel(entry)
+                                if model.isOver() { declinedLabel(entry); chargeControl(entry) }
+                            })
+                        }
                     }
                 }
                 .padding(Brand.Spacing.pageMargin)
@@ -204,11 +225,8 @@ struct AdminClinicDetailView: View {
             if clinic.status != "canceled" {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
-                        // Decision 0012: cards are charged after the clinic, on her
-                        // tap. Offered only once the clinic has ended.
-                        if clinic.endsAt < Date() {
-                            Button("Charge clinic") { confirmCharge = true }
-                        }
+                        // Charge clinic was here until 2026-10-02: Tara charges
+                        // each person on the row instead (decision 0037).
                         Button("Cancel clinic", role: .destructive) { confirmCancelClinic = true }
                     } label: {
                         // The word, not an ellipsis: a Label in a toolbar renders
@@ -222,30 +240,6 @@ struct AdminClinicDetailView: View {
                 }
                 .onNavy()
             }
-        }
-        .confirmationDialog(
-            "Charge every card for \(clinic.name)? Attendees pay the clinic fee; no-shows and late cancellations pay the full fee.",
-            isPresented: $confirmCharge, titleVisibility: .visible
-        ) {
-            Button("Charge clinic") {
-                Task {
-                    do {
-                        // What Stripe answered for this clinic's fees, then
-                        // the roster again, so each row's charge state is fresh.
-                        let outcome = try await AdminRepository.chargeClinic(clinic.id)
-                        chargeNote = ChargeSummary.text(outcome)
-                        await model.load()
-                    } catch {
-                        let e = String(describing: error)
-                        chargeNote = e.contains("payments_disabled") ? "Payments are switched off."
-                            : e.contains("clinic_not_over") ? "The clinic hasn't ended yet."
-                            : e.contains("clinic_canceled") ? "That clinic is canceled."
-                            : e.contains("clinic_before_payments") ? "That clinic ended before card payments were on."
-                            : "That didn't go through. Try again."
-                    }
-                }
-            }
-            Button("Not now", role: .cancel) {}
         }
         // Canceling tells everyone in You're In!, the Player Pool and Response
         // Needed. A confirmation with the consequence spelled out, because a
@@ -385,12 +379,6 @@ struct AdminClinicDetailView: View {
                     .foregroundStyle(Brand.textSecondary)
                     .accessibilityIdentifier("admin.remindNote")
             }
-            if let chargeNote {
-                Text(chargeNote)
-                    .brandFont(.caption)
-                    .foregroundStyle(Brand.textSecondary)
-                    .accessibilityIdentifier("admin.chargeNote")
-            }
         }
     }
 
@@ -400,6 +388,7 @@ struct AdminClinicDetailView: View {
         empty: String,
         numbered: Bool = false,
         showsHistory: Bool = false,
+        controlsBelow: Bool = false,
         @ViewBuilder trailing: @escaping (RosterEntry) -> AnyView
     ) -> some View {
         VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
@@ -434,7 +423,9 @@ struct AdminClinicDetailView: View {
                         // every name, court and toggle, found 2026-09-28 the
                         // first time a seeded roster had rows in it (the pro's
                         // Today Drill). The pro's Today tab has the same fix.
-                        let layout = typeSize.isAccessibilitySize
+                        // controlsBelow: the after-clinic line (Came, Remove,
+                        // Charge) is too wide to share a row with a name.
+                        let layout = typeSize.isAccessibilitySize || controlsBelow
                             ? AnyLayout(VStackLayout(alignment: .leading, spacing: Brand.Spacing.xxs))
                             : AnyLayout(HStackLayout(alignment: .center, spacing: Brand.Spacing.sm))
                         layout {
@@ -634,6 +625,96 @@ struct AdminClinicDetailView: View {
         Task { await model.perform(entry.id) {
             try await AdminRepository.assignCourt(registration: entry.id, court: court)
         } }
+    }
+
+    /// A You're In! row's controls. Before the clinic ends: court, Paid
+    /// (while Zelle is allowed), Came / No-show. After (decision 0037): each
+    /// name is charged on its own tap, or removed so it never is.
+    @ViewBuilder private func youreInControls(_ entry: RosterEntry) -> some View {
+        if model.isOver() {
+            HStack(spacing: Brand.Spacing.xs) {
+                noShowToggle(entry)
+                removeButton(entry)
+                Spacer(minLength: 0)
+                declinedLabel(entry)
+                chargeControl(entry)
+            }
+        } else {
+            HStack(spacing: Brand.Spacing.xs) {
+                courtMenu(entry)
+                if model.zelleAllowed { paidToggle(entry) }
+                noShowToggle(entry)
+                declinedLabel(entry)
+            }
+        }
+    }
+
+    /// Decision 0037: one person's fee on one tap, no dialog ("charge charge
+    /// charge"). Green while owed, "No card" when there is nothing to charge,
+    /// "Processing" until Stripe answers, then "Charged". A decline reads Declined beside the
+    /// button, which charges again. The server decides who owes
+    /// (admin_fees_due); this only draws it.
+    @ViewBuilder private func chargeControl(_ entry: RosterEntry) -> some View {
+        if let due = model.feesDue[entry.id] {
+            if due.hasCard {
+                Button {
+                    Task { await model.perform(entry.id) {
+                        try await AdminRepository.chargePlayer(registration: entry.id)
+                    } }
+                } label: {
+                    Text("Charge \(due.amountCents.centsAsPrice)")
+                        .brandFont(.chip)
+                        .foregroundStyle(Brand.textOnNavy)
+                        .padding(.horizontal, Brand.Spacing.sm)
+                        .frame(minHeight: Brand.Layout.minTapTarget)
+                        .background(Capsule().fill(Brand.courtText))
+                        .contentShape(Capsule())
+                }
+                .buttonStyle(.plain)
+                .disabled(model.busy.contains(entry.id))
+                .accessibilityIdentifier("admin.charge")
+                .accessibilityLabel("Charge \(entry.displayName) \(due.amountCents.centsAsPrice)")
+            } else {
+                Text("No card")
+                    .brandFont(.chip)
+                    .foregroundStyle(Brand.textSecondary)
+                    .accessibilityIdentifier("admin.noCard")
+            }
+        } else if entry.registration.chargeStatus == "succeeded" {
+            Label("Charged", systemImage: "checkmark.circle.fill")
+                .brandFont(.chip)
+                .foregroundStyle(Brand.Status.youreIn.ink)
+                .accessibilityIdentifier("admin.charged")
+        } else if entry.registration.hasLiveCharge {
+            // Queued or with Stripe, not answered yet.
+            Text("Processing")
+                .brandFont(.chip)
+                .foregroundStyle(Brand.textSecondary)
+                .accessibilityIdentifier("admin.charged")
+        }
+    }
+
+    /// Off the roster after the clinic, never charged (Tara, 2026-10-02: the
+    /// player who was sick). The same Remove as the Court menu's, behind the
+    /// same confirmation; tells the player nothing. Not on a charged row: the
+    /// server refuses that (refund first).
+    @ViewBuilder private func removeButton(_ entry: RosterEntry) -> some View {
+        if !entry.registration.hasLiveCharge {
+            Button {
+                removing = entry
+            } label: {
+                Text("Remove")
+                    .brandFont(.chip)
+                    .foregroundStyle(Brand.Status.canceled.ink)
+                    .padding(.horizontal, Brand.Spacing.xs)
+                    .frame(minHeight: Brand.Layout.minTapTarget)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(model.busy.contains(entry.id))
+            .accessibilityIdentifier("admin.remove")
+            .accessibilityLabel("Remove \(entry.displayName)")
+        }
     }
 
     /// Decision 0012: who did not come. Charged the full fee by the tap.

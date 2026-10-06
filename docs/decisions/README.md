@@ -44,6 +44,8 @@ The history of what we believed is part of the record.
 | [0033](0033-navy-banner-and-wordmark.md) | The navy banner on every titled page (Kat), white serif titles and bar buttons, white status bar app-wide; the gator larger over a smaller TENNIS (Tara) | 2026-09-29 | Active |
 | [0034](0034-no-middle-dots.md) | No middle dots between words anywhere a person reads: "at" for times, commas for lists, "on" and a colon for a clinic and its reason | 2026-10-01 | Active |
 | [0036](0036-kats-style-calls.md) | Kat's calls: keep the system tab bar, the darker green (#446A30) for text only, keep the green line under the header | 2026-10-01 | Active |
+| [0037](0037-charge-each-player.md) | Tara charges each person on their own tap (a green Charge per row after the clinic); Charge clinic gone from both screens; Remove means not charged | 2026-10-02 | Active |
+| [0038](0038-charlotte-time.md) | Every time in the app is Charlotte time, wherever the phone is (`ClubTime.apply()` at launch) | 2026-10-04 | Active |
 | [0011](0011-no-email-verification-v1.md) | No email verification in v1; hosted "Confirm email" is OFF by hand, and every new project needs the same flip | 2026-08-16 | Active |
 
 Tara's own numbered decisions (1–23, calls of 2026-08-02 and 2026-08-12) are

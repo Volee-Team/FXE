@@ -99,17 +99,20 @@ final class ProFlowUITests: XCTestCase {
         XCTAssertTrue(app.tabBars.buttons["Manage"].waitForExistence(timeout: 10), "Tara lost Manage")
         XCTAssertFalse(todayTab.exists, "Tara was given the pro's Today tab")
 
-        // Her roster of the same clinic still has her controls: the court
-        // menu and Came / No-show, in the row layout both screens now share.
+        // Her roster of the same clinic still has her controls. Came /
+        // No-show is on every You're In! row before and after the clinic;
+        // the Court menu is only before it ends (decision 0037: after, the
+        // row is Came, Remove and Charge). The Today Drill runs 00:30 to
+        // 01:30 New York, so which layout shows depends on the clock, and the
+        // first version of this test failed at 19:11 for asking for a court
+        // (2026-10-04).
         app.tabBars.buttons["Manage"].tap()
         let card = app.descendants(matching: .any).matching(identifier: "admin.clinic.card")
             .matching(NSPredicate(format: "label CONTAINS[c] 'Today Drill'")).firstMatch
         if !card.waitForExistence(timeout: 5) { app.tabBars.buttons["Manage"].tap() }
         XCTAssertTrue(card.waitForExistence(timeout: 20), "No Manage card for Today Drill")
         card.tap()
-        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "admin.court").firstMatch.waitForExistence(timeout: 20),
-                      "Tara's roster has no court menu")
-        XCTAssertTrue(app.buttons["admin.noShowToggle"].firstMatch.exists, "Tara's roster has no Came / No-show")
+        XCTAssertTrue(app.buttons["admin.noShowToggle"].firstMatch.waitForExistence(timeout: 20), "Tara's roster has no Came / No-show")
         keepScreenshot("3 Tara's roster of the same clinic")
     }
 

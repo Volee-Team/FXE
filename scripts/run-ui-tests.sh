@@ -44,7 +44,9 @@ trap 'rm -rf "$LOCK"' EXIT
 DEVICE="${DEVICE:-iPhone 17 Pro}"
 RUNTIME="${RUNTIME:-}"
 DD="${DERIVED_DATA:-/tmp/fxe-ui-dd}"
-LOG="${LOG:-/tmp/fxe-ui-tests.log}"
+# One log per device and iOS version: with one shared file, the iOS 18 run
+# overwrote the iOS 26 run's failure before anyone read it (2026-10-04).
+LOG="${LOG:-/tmp/fxe-ui-tests-${RUNTIME:-26}-$(echo "$DEVICE" | tr -c 'A-Za-z0-9' '-').log}"
 
 # The simulator by name, on the newest runtime unless RUNTIME picks a major
 # version ("18" -> the newest iOS 18.x runtime installed).

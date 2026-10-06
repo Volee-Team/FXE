@@ -524,7 +524,10 @@ test.describe("fix round", () => {
       const heldRow = page.locator(`#ledger [data-held="${held.id}"]`);
       await expect(heldRow).toContainText("Check this charge in Stripe.");
       await expect(page.locator("#ledger")).toContainText("Too old to retry");
+      // Two clicks since 2026-10-04: the first only arms it.
       await heldRow.getByRole("button", { name: "Did not go through" }).click();
+      await expect(page.locator(`#ledger [data-held="${held.id}"]`)).toBeVisible();
+      await heldRow.getByRole("button", { name: "Really?" }).click();
       await expect(page.locator(`#ledger [data-held="${held.id}"]`)).toHaveCount(0, { timeout: 15_000 });
       await expect(page.locator("#ledger")).toContainText("Canceled");
     } finally {
@@ -657,6 +660,70 @@ test.describe("payouts and disputes", () => {
       await db.del(`registrations?clinic_id=eq.${clinic.id}`);
       await db.del(`clinics?id=eq.${clinic.id}`);
       await db.patch("app_settings?key=eq.payments_enabled_at", { value: "" });
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Tara, 2026-10-02 (decision 0037): "charge charge charge", one green button
+// beside each name, and take someone off so they are never charged. From the
+// rule: Maria came and Ken was a no-show, both owe $18; Rob has no card;
+// Lena is removed and owes nothing; there is no Charge clinic any more.
+test.describe("charging each person", () => {
+  test("each name has its own Charge, a removed player has none, and nothing charges the whole clinic", async ({ page, request }) => {
+    const db = service(request);
+    const LENA_P = "a0000000-0000-0000-0000-000000000007";
+    const LENA_ACCT = "88888888-8888-8888-8888-888888888888";
+    const carded = [MARIA_ACCT, KEN_ACCT, LENA_ACCT];
+    const clinic = await db.insert("clinics", pastClinic("Browser Each Clinic", 1));
+    try {
+      await db.patch("app_settings?key=eq.payments_enabled", { value: "true" });
+      await db.patch("app_settings?key=eq.payments_enabled_at", { value: daysAgo(5) });
+      for (const id of carded) {
+        await db.patch(`accounts?id=eq.${id}`, { stripe_customer_id: `cus_browser_each_${id.slice(0, 4)}`, card_brand: "visa", card_last4: "4242" });
+      }
+      const reg = (player, cents, extra = {}) => db.insert("registrations",
+        { clinic_id: clinic.id, player_id: player, status: "in", source: "admin", price_cents_charged: cents, was_member: true, duration_minutes: 60, ...extra });
+      const maria = await reg(MARIA_P, 1800), ken = await reg(KEN_P, 1800, { no_show: true });
+      const rob = await reg(ROB_P, 2300), lena = await reg(LENA_P, 1800);
+
+      await signIn(page, TARA);
+      const card = page.locator("#clinics .card", { hasText: "Browser Each Clinic" });
+      await expect(card).toBeVisible();
+      await expect(card.getByRole("button", { name: "Charge clinic" })).toHaveCount(0);
+      const row = (who) => card.locator(".row", { hasText: who });
+      await expect(row("Maria Alvarez").getByRole("button", { name: "Charge $18" })).toBeVisible();
+      await expect(row("Ken Whitfield").getByRole("button", { name: "Charge $18" })).toBeVisible();
+      await expect(row("Rob Delgado")).toContainText("No card");
+      await expect(row("Rob Delgado").getByRole("button", { name: /^Charge/ })).toHaveCount(0);
+      // Action Needed points at the roster instead of charging everyone.
+      const needs = page.locator(`#money-needs [data-uncharged="${clinic.id}"]`);
+      await expect(needs.getByRole("button", { name: "Open" })).toBeVisible();
+
+      // Lena was sick: Remove, confirmed, and she owes nothing.
+      await row("Lena Brooks").getByRole("button", { name: "Remove" }).click();
+      await row("Lena Brooks").getByRole("button", { name: "Really remove?" }).click();
+      await expect(card.locator(".row", { hasText: "Lena Brooks" }).getByRole("button", { name: /^Charge/ })).toHaveCount(0, { timeout: 15_000 });
+
+      // One tap charges Maria and nobody else. Locally Stripe is not set up,
+      // so her fee waits as Pending; Ken still has his own button.
+      await row("Maria Alvarez").getByRole("button", { name: "Charge $18" }).click();
+      await expect(row("Maria Alvarez").getByRole("button", { name: /^Charge/ })).toHaveCount(0, { timeout: 15_000 });
+      await expect(row("Ken Whitfield").getByRole("button", { name: "Charge $18" })).toBeVisible();
+      const fees = await db.get(`payments?registration_id=in.(${[maria.id, ken.id, rob.id, lena.id].join(",")})&select=registration_id,kind,amount_cents`);
+      expect(fees).toEqual([{ registration_id: maria.id, kind: "clinic_fee", amount_cents: 1800 }]);
+      const lenaRow = await db.get(`registrations?id=eq.${lena.id}&select=status,late_cancel`);
+      expect(lenaRow).toEqual([{ status: "canceled", late_cancel: false }]);
+    } finally {
+      const env = stackEnv();
+      const regs = await request.fetch(`${env.API_URL}/rest/v1/registrations?clinic_id=eq.${clinic.id}&select=id`,
+        { headers: { apikey: env.SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SERVICE_ROLE_KEY}` } }).then(r => r.json());
+      if (regs.length) await db.del(`payments?registration_id=in.(${regs.map(r => r.id).join(",")})`);
+      await db.del(`registrations?clinic_id=eq.${clinic.id}`);
+      await db.del(`clinics?id=eq.${clinic.id}`);
+      await db.patch(`accounts?id=in.(${carded.join(",")})`, { stripe_customer_id: null, card_brand: null, card_last4: null });
+      await db.patch("app_settings?key=eq.payments_enabled_at", { value: "" });
+      await db.patch("app_settings?key=eq.payments_enabled", { value: "false" });
     }
   });
 });

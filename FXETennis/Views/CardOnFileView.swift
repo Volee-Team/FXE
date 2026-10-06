@@ -21,7 +21,9 @@
 //
 
 import SwiftUI
-import StripePaymentSheet
+// The SPI is Stripe's own opt-in for allowsRemovalOfLastSavedPaymentMethod
+// (experimental in 24.x; re-check when the SDK is upgraded).
+@_spi(ExperimentalAllowsRemovalOfLastSavedPaymentMethodAPI) import StripePaymentSheet
 
 struct CardOnFileView: View {
     @Environment(SessionStore.self) private var session
@@ -142,6 +144,13 @@ struct CardOnFileView: View {
             config.merchantDisplayName = "FXE Tennis"
             config.customer = .init(id: payload.customerId, ephemeralKeySecret: payload.ephemeralKeySecret)
             config.allowsDelayedPaymentMethods = false
+            // A bank's web or app check comes back here (Info.plist,
+            // fxetennis://; FXETennisApp hands the link to Stripe).
+            config.returnURL = "fxetennis://stripe-redirect"
+            // The sheet lets a member delete saved cards, and nothing on our
+            // side hears of it, so the summary would still read the old card
+            // and pass card_required. Change card replaces one instead.
+            config.allowsRemovalOfLastSavedPaymentMethod = false
             sheet = PaymentSheet(setupIntentClientSecret: payload.setupIntentClientSecret, configuration: config)
             presenting = true
         } catch PaymentsError.notConfigured {

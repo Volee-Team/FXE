@@ -8,5 +8,20 @@
 	     app-wide instead of per screen (2026-09-29). -->
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<!-- fxetennis:// brings a member back from a bank's web or app check of
+	     a card (3-D Secure) to Stripe's sheet, which finishes the setup.
+	     Without it the member was left in Safari or their bank's app
+	     (review, 2026-10-04). Handled in FXETennisApp's onOpenURL. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.fxetennis.app.stripe-return</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>fxetennis</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

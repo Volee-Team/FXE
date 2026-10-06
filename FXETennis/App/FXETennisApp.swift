@@ -7,6 +7,7 @@
 //
 
 import SwiftUI
+import StripePaymentSheet
 
 @main
 struct FXETennisApp: App {
@@ -14,6 +15,7 @@ struct FXETennisApp: App {
     @State private var session = SessionStore()
 
     init() {
+        ClubTime.apply()
         Brand.styleNavigationTitles()
     }
 
@@ -21,6 +23,8 @@ struct FXETennisApp: App {
         WindowGroup {
             RootView()
                 .environment(session)
+                // Charlotte time in SwiftUI's own formatting too (ClubTime).
+                .environment(\.timeZone, ClubTime.zone)
                 .tint(Brand.navy)
                 // LIGHT MODE IS LOAD-BEARING, and it lives in Info.plist now
                 // (project.yml, INFOPLIST_KEY_UIUserInterfaceStyle: Light).
@@ -44,6 +48,9 @@ struct FXETennisApp: App {
                 // Do not remove the key to "support dark mode". Supporting dark
                 // mode means Tara supplying a dark surface set first.
                 .task { await session.bootstrap() }
+                // A bank's 3-D Secure check returning to Stripe's card sheet
+                // (CardOnFileView's returnURL). Anything else is ignored.
+                .onOpenURL { url in _ = StripeAPI.handleURLCallback(with: url) }
         }
     }
 }

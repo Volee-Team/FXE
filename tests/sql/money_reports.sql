@@ -681,7 +681,7 @@ begin
      and exists (select 1 from unnest(p.proconfig) c where c like 'search_path=%');
   insert into _probe_result values ('money_tab_functions_definer_pinned_callable', '3', n::text);
   insert into _probe_result values ('money_rows_is_internal', 'false',
-    has_function_privilege('authenticated', 'public.money_rows()', 'EXECUTE')::text);
+    has_function_privilege('authenticated', 'public.money_rows(uuid)', 'EXECUTE')::text);
 end $$;
 
 select check_name, expected, actual,

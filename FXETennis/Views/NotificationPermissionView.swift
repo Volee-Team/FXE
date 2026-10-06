@@ -3,8 +3,12 @@
 //  FXETennis
 //
 //  Shown once, after the profile exists, before iOS's own permission dialog.
-//  The sentence is Tara's (Developer Guide, Screen 3). Two buttons and no
-//  dark pattern: "Not now" is the same size as "Turn on notifications".
+//  The sentence is Tara's (Developer Guide, Screen 3). One button, Continue,
+//  which always leads to iOS's dialog, where the member chooses Allow or
+//  Don't Allow. Until 2026-10-05 a "Not now" here skipped iOS's dialog, the
+//  pattern App Review rejects under guideline 5.1.1 (a pre-prompt must not
+//  let the person bypass the system request); Alex: "do whatever is
+//  possible to avoid rejection". The sheet cannot be swiped away either.
 //
 
 import SwiftUI
@@ -34,7 +38,7 @@ struct NotificationPermissionView: View {
             Button {
                 Task { await registrar.requestPermission(); dismiss() }
             } label: {
-                Text("Turn on notifications")
+                Text("Continue")
                     .brandFont(.button)
                     .frame(maxWidth: .infinity)
                     .frame(minHeight: Brand.Layout.comfortableTapTarget)
@@ -43,25 +47,13 @@ struct NotificationPermissionView: View {
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("push.turnOn")
-
-            Button {
-                dismiss()
-            } label: {
-                Text("Not now")
-                    .brandFont(.button)
-                    .frame(maxWidth: .infinity)
-                    .frame(minHeight: Brand.Layout.comfortableTapTarget)
-                    .foregroundStyle(Brand.navy)
-                    .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
-                    .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
-            }
-            .buttonStyle(.plain)
-            .accessibilityIdentifier("push.notNow")
         }
         .padding(Brand.Spacing.pageMargin)
         .background(Brand.surfaceGradient.ignoresSafeArea())
         // Large too, so a small phone or Larger Text can pull it up to fit.
         .presentationDetents([.medium, .large])
+        // Only Continue closes it, so iOS's own dialog is always the choice.
+        .interactiveDismissDisabled(true)
     }
 }
 

@@ -377,7 +377,10 @@ final class SessionStore {
     func signIn(email: String, password: String) async {
         authError = nil
         do {
-            try await supabase.auth.signIn(email: email, password: password)
+            // Trimmed: iOS autofill often leaves a trailing space, and the
+            // server then answers "That email or password didn't work." to a
+            // member with the right password (review, 2026-10-04).
+            try await supabase.auth.signIn(email: email.trimmingCharacters(in: .whitespacesAndNewlines), password: password)
         } catch {
             authError = Self.friendly(error)
             return
@@ -394,7 +397,7 @@ final class SessionStore {
     func signUp(email: String, password: String) async {
         authError = nil
         do {
-            try await supabase.auth.signUp(email: email, password: password)
+            try await supabase.auth.signUp(email: email.trimmingCharacters(in: .whitespacesAndNewlines), password: password)
             phase = .needsProfile
         } catch {
             authError = Self.friendly(error)

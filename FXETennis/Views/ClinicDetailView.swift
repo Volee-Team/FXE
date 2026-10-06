@@ -119,8 +119,14 @@ final class ClinicDetailModel {
         if text.contains("clinic_canceled") {
             return FailureOutcome(notice: "This clinic has been canceled.", reopens: nil)
         }
-        if text.contains("clinic_ended") {
+        if text.contains("clinic_ended") || text.contains("registration_closed") {
             return FailureOutcome(notice: "Registration has closed for this clinic.", reopens: nil)
+        }
+        // A double tap, or the same player on two phones: she is already in,
+        // and the reload shows it. "Someone beat you" beside her own
+        // You're In! chip read as losing (review, 2026-10-04).
+        if text.contains("already_registered") {
+            return FailureOutcome(notice: nil, reopens: nil)
         }
         let failure = RequestFailure(error)
         switch failure {
@@ -233,7 +239,8 @@ struct ClinicDetailView: View {
                 // so Register appears at 8:00 on the second and gives way to
                 // the late-request door at the close, with nobody pulling to
                 // refresh (MVP audit item 8). The clock is read at each draw.
-                TimelineView(.explicit(RedrawSchedule.at(clinic.upcomingMoments(isMember: isMember)))) { _ in
+                TimelineView(.explicit(RedrawSchedule.at(clinic.upcomingMoments(isMember: isMember)
+                                                          + clinic.lateCancelMoment(cutoffHours: cutoffHours)))) { _ in
                     let now = Date()
                     VStack(spacing: Brand.Spacing.sm) {
                         confirmDialog(actionArea(now: now))
@@ -417,7 +424,7 @@ struct ClinicDetailView: View {
         } else if let reg = model.registration {
             switch reg.status {
             case .in_:
-                if CancelPolicy.isInsideCutoff(startsAt: clinic.startsAt, cutoffHours: cutoffHours) {
+                if CancelPolicy.isInsideCutoff(startsAt: clinic.startsAt, cutoffHours: cutoffHours, now: now) {
                     // Same button, different path: the server refuses a late
                     // cancel without a note, so ask for it before the tap.
                     Button(role: .destructive) { lateCancel = reg } label: {
@@ -427,6 +434,13 @@ struct ClinicDetailView: View {
                     .disabled(model.working)
                 } else {
                     destructiveButton("Cancel Registration") {
+                        // The clock again at the confirm: the cutoff can pass
+                        // between the tap and "Yes, cancel my spot". Late now
+                        // means the late sheet, never a silent fee.
+                        if CancelPolicy.isInsideCutoff(startsAt: clinic.startsAt, cutoffHours: cutoffHours) {
+                            lateCancel = reg
+                            return
+                        }
                         try await RegistrationRepository.cancelRegistration(registrationId: reg.id)
                     }
                 }

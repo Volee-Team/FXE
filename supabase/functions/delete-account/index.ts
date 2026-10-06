@@ -26,11 +26,11 @@
 //
 // Requires the caller's JWT. Admins are refused by the RPC.
 
-import { admin, callerId, getStripe, json } from "../_shared/stripe.ts";
+import { admin, callerId, getStripe, json, safeError } from "../_shared/stripe.ts";
 import { isMissingCustomer } from "../_shared/stripe-errors.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-Deno.serve(async (req) => { try { return await handle(req); } catch (e) { return json({ error: String((e as Error).message ?? e) }, 500); } });
+Deno.serve(async (req) => { try { return await handle(req); } catch (e) { return json({ error: safeError(e, "delete-account") }, 500); } });
 
 async function handle(req: Request): Promise<Response> {
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);

@@ -23,7 +23,7 @@ are `docs/for-alex.md` §1:
 
 | Name | Who sets it | What it is |
 |---|---|---|
-| `STRIPE_SECRET_KEY` | Alex (test), Tara or Alex (live) | `sk_test_…` now, `sk_live_…` when Tara's account is ready |
+| `STRIPE_SECRET_KEY` | Alex (test), Tara or Alex (live) | `sk_test_…` now; at the live switch a RESTRICTED key `rk_live_…` (permissions below) |
 | `STRIPE_WEBHOOK_SECRET` | Alex | `whsec_…` from the webhook endpoint Stripe creates for `…/functions/v1/stripe-webhook` |
 | `STRIPE_PUBLISHABLE_KEY` | Alex | `pk_test_…` / `pk_live_…`; safe in a client, returned to the app by `stripe-setup-intent` |
 
@@ -31,10 +31,19 @@ The webhook endpoint in Stripe's dashboard sends only the events ticked on
 it. Besides the five payment and refund events, `stripe-webhook` records
 chargebacks from `charge.dispute.created`, `charge.dispute.updated` and
 `charge.dispute.closed` (2026-09-28): tick those on the test endpoint and on
-the live one, or no dispute ever reaches the app. A restricted live key needs
-Balance and Payouts read for `stripe-payouts`, Charges read for the rare
-dispute that names its charge but not its PaymentIntent, and PaymentIntents
-read for the dispute on a held charge that never learned its id.
+the live one, or no dispute ever reaches the app.
+
+The restricted live key, every permission and why (re-derived from every
+Stripe call in these functions, 2026-10-04): **Write** Customers (create,
+retrieve, update the default card, delete on account deletion), SetupIntents,
+PaymentIntents (the off-session charge; retrieve for disputes), Refunds
+(create, list), Ephemeral keys (PaymentSheet); **Read** PaymentMethods (list,
+retrieve), Charges (a dispute naming only its charge), Balance and Payouts
+(`stripe-payouts`). Everything else None. A missing permission does not show
+as an error: 401/403 are retried as pending (decision 0019), so rehearse the
+switch with a sandbox restricted key carrying exactly these first (backlog).
+`stripe-setup-intent` refuses while the secret and publishable keys are
+different modes (`keyModesAgree`).
 | `APNS_KEY_ID` | Alex | the 10-character Key ID Apple shows next to the APNs key |
 | `APNS_TEAM_ID` | Alex | FXE Tennis, LLC's 10-character Team ID (Membership page) |
 | `APNS_PRIVATE_KEY` | Alex | the whole contents of `AuthKey_<KEYID>.p8`, PEM markers included. Apple lets you download it once |
@@ -66,6 +75,11 @@ row to pending when a call may have reached Stripe; plus the one-off
 `stripe_cutover_to_live()` below).
 
 ## Switching Stripe from the sandbox to live money
+
+**Hosted is written by migration, never by hand (decision 0019 §2, CLAUDE.md).**
+The SQL lines below say what the two migrations contain; they are not to be
+pasted into the SQL editor. The cutover migration's PR also changes
+`supabase/seed.sql` to put the pre-live state back locally and in CI (backlog).
 
 Every Stripe customer and saved card made with the test key is invisible to
 the live key ("No such customer ... exists in test mode"). Left alone, every

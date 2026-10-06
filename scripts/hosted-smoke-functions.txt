@@ -6,10 +6,12 @@ admin_board_report	{"p_from":"2026-01-01","p_to":"2026-01-01"}
 admin_board_report_clinics	{"p_from":"2026-01-01","p_to":"2026-01-01"}
 admin_board_share_percent	{}
 admin_charge_clinic	{"p_clinic":"00000000-0000-0000-0000-000000000000"}
+admin_charge_player	{"p_registration":"00000000-0000-0000-0000-000000000000"}
 admin_charge_registration	{"p_amount_cents":1,"p_kind":"x","p_registration":"00000000-0000-0000-0000-000000000000"}
 admin_copy_week	{"p_week_start":"2026-01-01"}
 admin_create_review_link	{"p_label":"x"}
 admin_delete_template	{"p_id":"00000000-0000-0000-0000-000000000000"}
+admin_fees_due	{"p_clinic":"00000000-0000-0000-0000-000000000000"}
 admin_mark_late_cancel	{"p_note":"x","p_registration":"00000000-0000-0000-0000-000000000000"}
 admin_message_templates	{}
 admin_money_clinics	{}
@@ -57,7 +59,7 @@ is_pro	{}
 leave_pool	{"p_registration":"00000000-0000-0000-0000-000000000000"}
 mark_news_read	{"p_news":"00000000-0000-0000-0000-000000000000"}
 member_opens_at	{"p_starts_at":"2026-01-01T00:00:00Z"}
-money_rows	{}
+money_rows	{"p_clinic":"00000000-0000-0000-0000-000000000000"}
 my_calendar_feed_token	{}
 my_card_consent	{}
 my_courtesy_available	{"p_player":"00000000-0000-0000-0000-000000000000"}

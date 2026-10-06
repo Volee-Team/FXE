@@ -28,3 +28,8 @@ supabase/.branches/
 *.xcodeproj
 .build/
 DerivedData/
+
+# The chat log stays on this Mac (Alex, 2026-10-04: "just stop publishing chat
+# log!!"). The hooks still write it locally; only this README is tracked.
+docs/prompt-log/*
+!docs/prompt-log/README.md
