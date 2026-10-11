@@ -274,91 +274,91 @@ say it's an emergency to cancel."* These are the gaps that remain.
 *ANSWERED 2026-09-21 (decision 0013): "Both." search_players returns it; the roster row and the player page show it.*
 
 **48. Deleting an account. Apple requires a "Delete my account" button. When a player deletes theirs, should their history and payment record stay with you with the name removed, or go entirely?**
-*Default: the rows stay, the name, phone and email are blanked (a paid clinic in March should still add up in Money in April). Status: open, asked 2026-09-18 (launch checklist D5).*
+*Default: the rows stay, the name, phone and email are blanked (a paid clinic in March should still add up in Money in April). Status: answered 2026-09-21 (decision 0013).*
 *ANSWERED 2026-09-21 (decision 0013): "Keep their history." Built: delete_my_account() plus the delete-account edge function.*
 
 **49. A Saturday clinic opens with the week before it: the Thursday nine days out for members, the Friday for everyone. Right?**
-*Default: yes, that is what is built (decision 0001; the first of the three open points under "Open questions on the window rule" in CLAUDE.md). Status: open, asked 2026-09-18.*
+*Default: yes, that is what is built (decision 0001; the first of the three open points under "Open questions on the window rule" in CLAUDE.md). Status: answered 2026-09-21 (decision 0013).*
 *ANSWERED 2026-09-21 (decision 0013): "Yes. But no Saturday clinics. The 'week' starts on a Sunday to Friday. Membership opens Thursday Sept 1 for clinics Sunday, Sept 4th - Friday, Sept 9th." Confirms decision 0001 as built; Saturday is theoretical.*
 
 **50. A short week, say clinics only Monday to Wednesday over a holiday, still opens the Thursday and Friday before. Right?**
-*Default: yes, built that way. Status: open, asked 2026-09-18.*
+*Default: yes, built that way. Status: answered 2026-09-21 (decision 0013).*
 *ANSWERED 2026-09-21 (decision 0013): "Yes."*
 
 **51. "Smart. Simple. Built for Tennis." under the logo on the sign-in screen came from the AI mockups, not from you. Keep, change, or drop?**
-*Default: drop it; the logo needs no caption. Status: open, asked 2026-09-18.*
+*Default: drop it; the logo needs no caption. Status: closed 2026-10-11: the line is not in the app; the sign-in header carries "Let's Play." (decision 0016 §7).*
 *ANSWERED 2026-09-21 (decision 0013): "Let's play!" on the Questions tab, "Let's Play." on the Words tab. The Words version ships; question 55 confirms which.*
 
 ## L. After her review of every word (added 2026-09-21)
 
 **52. Under your membership line on Edit details the app says "Set by Tara". You wrote "Do we need anything?" Drop the caption, or keep it so a player knows why they can't change it?**
-*Default: keep it. Status: open, asked 2026-09-21.*
+*Default: keep it. Status: superseded by 70, answered 2026-09-28 (decision 0024).*
 *ANSWERED 2026-09-22 (decision 0016): "I'm confused by this. Let's talk". Replaced with "Only Tara can change this."; question 70 shows it to her, and Alex raises it when they talk.*
 
 **53. After a player messages you inside the 3-hour close, the app says "Tara has your message." You chose Change and left it blank. What should it say?**
-*Default: keep "Tara has your message." Status: open, asked 2026-09-21.*
+*Default: keep "Tara has your message." Status: answered 2026-09-22 (decision 0016).*
 *ANSWERED 2026-09-22 (decision 0016): keep.*
 
 **54. "You're not registered for any clinics this week" now shows under My Clinics, which lists every upcoming clinic, not only this week's. Keep it, or "You're not registered for any clinics"?**
-*Default: keep your words. Status: open, asked 2026-09-21.*
+*Default: keep your words. Status: answered 2026-09-22 (decision 0016).*
 *ANSWERED 2026-09-22 (decision 0016): keep.*
 
 **55. The line under the logo: "Let's Play." or "Let's play!"?**
-*Default: "Let's Play." Status: open, asked 2026-09-21.*
+*Default: "Let's Play." Status: answered 2026-09-22 (decision 0016).*
 *ANSWERED 2026-09-22 (decision 0016): "Let's Play.", kept.*
 
 **56. Your cancellation policy text still says 4 hours, the courtesy paragraph, and the emergency email. The app shows only your two sentences today. Do you want the block rewritten (3 hours, no courtesy) shown somewhere, and if so, where and in what words?**
-*Default: not shown until you rewrite it. Status: open, asked 2026-09-21.*
+*Default: not shown until you rewrite it. Status: closed 2026-09-27: answered, merged into 69 to 79, or withdrawn (decision 0016; CLAUDE.md changelog 2026-09-27 evening).*
 *WITHDRAWN 2026-09-27: the default stands and is not re-asked. Alex, 2026-09-27: "why tf are we giving her so many if she did this like last week". Round four asks only what is still open.*
 
 **57. "Cards aren't set up yet." (before Stripe is connected): you wrote "Stripe needs to be connected". Was that a note to us, or the words a player should see?**
-*Default: a note to us; the line disappears once Stripe is live. Status: open, asked 2026-09-21.*
+*Default: a note to us; the line disappears once Stripe is live. Status: answered 2026-09-22 (decision 0016).*
 *ANSWERED 2026-09-22 (decision 0016): "Let's only do if stripe is connected". Read as a note to us; the line shows only while Stripe is not connected, and it is connected.*
 
 ## M. After the Final Updates (added 2026-09-26, decision 0015)
 
 **58. The board's 10%: of what was collected by card, or of full clinic prices? Before or after Stripe's fee?**
-*Default: 10% of what was collected, before Stripe's fee. The report shows both bases. Status: open, asked 2026-09-26.*
+*Default: 10% of what was collected, before Stripe's fee. The report shows both bases. Status: closed 2026-09-27: answered, merged into 69 to 79, or withdrawn (decision 0016; CLAUDE.md changelog 2026-09-27 evening).*
 *MERGED 2026-09-27 into question 73.*
 
 **59. Home when a player has exactly one clinic of their own: that clinic on top and the open clinics listed under it (built), or only their clinic and the blue button?**
-*Default: as built. With two or more, only their clinics and the blue button. Status: open, asked 2026-09-26.*
+*Default: as built. With two or more, only their clinics and the blue button. Status: closed 2026-09-27: answered, merged into 69 to 79, or withdrawn (decision 0016; CLAUDE.md changelog 2026-09-27 evening).*
 *WITHDRAWN 2026-09-27: the default stands and is not re-asked. Alex, 2026-09-27: "why tf are we giving her so many if she did this like last week". Round four asks only what is still open.*
 
 **60. Back-to-back 105s: the 48 hours count from the start of the earlier 105 that day, so in your example both unlock Friday 4:30 for the Sunday 4:30 and 6:00. Right?**
-*Default: yes, built that way, counted on the clock: two days earlier at the same time, so on the weekends the clocks change it is still Friday 4:30, not 3:30 or 5:30. Status: open, asked 2026-09-26.*
+*Default: yes, built that way, counted on the clock: two days earlier at the same time, so on the weekends the clocks change it is still Friday 4:30, not 3:30 or 5:30. Status: closed 2026-09-27: answered, merged into 69 to 79, or withdrawn (decision 0016; CLAUDE.md changelog 2026-09-27 evening).*
 *MERGED 2026-09-27 into question 74.*
 
 **61. Does a Player Pool spot count as "signed up" for the 105 rule, or only You're In!?**
-*Default: any spot counts, Pool included, since non-members join the Pool. Status: open, asked 2026-09-26.*
+*Default: any spot counts, Pool included, since non-members join the Pool. Status: closed 2026-09-27: answered, merged into 69 to 79, or withdrawn (decision 0016; CLAUDE.md changelog 2026-09-27 evening).*
 *MERGED 2026-09-27 into question 74.*
 
 **62. Is it only 105s, or any two clinics on the same day?**
-*Default: only 105s (a clinic with 105 in its name or category). Status: open, asked 2026-09-26.*
+*Default: only 105s (a clinic with 105 in its name or category). Status: closed 2026-09-27: answered, merged into 69 to 79, or withdrawn (decision 0016; CLAUDE.md changelog 2026-09-27 evening).*
 *MERGED 2026-09-27 into question 74.*
 
 **63. The words a non-member sees when the rule stops them.**
-*Default until you write it: "Non-members can take one 105 a day until 48 hours before." Status: open, asked 2026-09-26.*
+*Default until you write it: "Non-members can take one 105 a day until 48 hours before." Status: closed 2026-09-27: answered, merged into 69 to 79, or withdrawn (decision 0016; CLAUDE.md changelog 2026-09-27 evening).*
 *MERGED 2026-09-27 into question 74.*
 
 **64. Could you send the court photo as the original file?** The one in the message is a screenshot and looks soft on a full screen.
-*Default: keep the screenshot until then. Status: open, asked 2026-09-26.*
+*Default: keep the screenshot until then. Status: closed 2026-09-27: answered, merged into 69 to 79, or withdrawn (decision 0016; CLAUDE.md changelog 2026-09-27 evening).*
 *MOVED 2026-09-27 to Alex (docs/for-alex.md §9): a request for a file, not a question.*
 
 **65. The card box says "I give permission for my card to be charged", your exact words. Keep, or longer?**
-*Default: keep. Status: open, asked 2026-09-26.*
+*Default: keep. Status: closed 2026-09-27: answered, merged into 69 to 79, or withdrawn (decision 0016; CLAUDE.md changelog 2026-09-27 evening).*
 *WITHDRAWN 2026-09-27: the default stands and is not re-asked. Alex, 2026-09-27: "why tf are we giving her so many if she did this like last week". Round four asks only what is still open.*
 
 **66. A player who added a card before the permission box existed (nobody today; cards could not be added until Stripe is connected) has no permission on record. Charge them anyway, or ask them to tick the box first?**
-*Default: ask first; nobody is in this position yet. Status: open, asked 2026-09-26.*
+*Default: ask first; nobody is in this position yet. Status: closed 2026-09-27: answered, merged into 69 to 79, or withdrawn (decision 0016; CLAUDE.md changelog 2026-09-27 evening).*
 *WITHDRAWN 2026-09-27: the default stands and is not re-asked. Alex, 2026-09-27: "why tf are we giving her so many if she did this like last week". Round four asks only what is still open.*
 
 **67. Someone is refunded in September for an August clinic, after August's report went to the board. Should the refund come off August (the report you already sent changes) or off September?**
-*Default today: it comes off August, the month of the clinic, and the report prints the time it was run so a re-run can be explained. Status: open, asked 2026-09-26.*
+*Default today: it comes off August, the month of the clinic, and the report prints the time it was run so a re-run can be explained. Status: closed 2026-09-27: answered, merged into 69 to 79, or withdrawn (decision 0016; CLAUDE.md changelog 2026-09-27 evening).*
 *MERGED 2026-09-27 into question 73.*
 
 **68. Do late-cancel and no-show fees count toward the board's 10%?**
-*Default: yes, they are program income; the report shows them under "Collected by card" but not under "Fees at clinic prices". Status: open, asked 2026-09-26.*
+*Default: yes, they are program income; the report shows them under "Collected by card" but not under "Fees at clinic prices". Status: closed 2026-09-27: answered, merged into 69 to 79, or withdrawn (decision 0016; CLAUDE.md changelog 2026-09-27 evening).*
 *MERGED 2026-09-27 into question 73.*
 
 ## N. Round four, only what is still open (added 2026-09-27, decision 0016)
@@ -368,10 +368,10 @@ Round three repeated 120 strings and 17 questions she had mostly answered on
 new and changed words and these questions, nothing else.
 
 **69. "Need Help?" at sign-up: you marked it Change with no new words. It now says "Rating Guide", the name of the chart it opens. OK?**
-*Default: "Rating Guide". Status: open, asked 2026-09-27 (Words tab).*
+*Default: "Rating Guide". Status: answered 2026-09-28 (decision 0024).*
 
 **70. Beside a player's membership on Edit details it said "Set by Tara" and you wrote "I'm confused by this. Let's talk". It now says "Only Tara can change this.", because members can't change their own membership (you can, on their profile). OK?**
-*Default: "Only Tara can change this." Status: open, asked 2026-09-27 (Words tab; Alex also raises it with her).*
+*Default: "Only Tara can change this." Status: answered 2026-09-28 (decision 0024).*
 
 **71. You and the pros. You wrote that only you charge people and see the money, and the pros can see the clinic list and mark no-show and late cancellation. Who are the pros who need a login, and can they also: set courts, message a clinic, invite from the Player Pool, add a walk-up, see your private notes on players?**
 *ANSWERED 2026-09-28 (decision 0024): only she sees everything; pros see who is coming to that day's clinics, mark Came / No-show and late cancellations, never invite from the Pool, never see anything financial. Four pros named (kept on hosted, not here: the repo is public). "Eventually I will have [one pro] see more and [another pro] see more" (the two names are on hosted with the rest).*
