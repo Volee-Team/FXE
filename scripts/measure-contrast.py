@@ -10,8 +10,12 @@ background, and the WCAG contrast ratio between them is printed.
     xcrun simctl io booted screenshot /tmp/s.png
     python3 scripts/measure-contrast.py /tmp/s.png 149 616.7 104.3 44 "Create an account"
 
-Coordinates are the element's frame in points, as the audit prints them;
-the screenshot is 3x (iPhone Pro).
+Coordinates are the element's frame in points, as the audit prints them.
+The scale comes from the screenshot's width: 2x for the 2x phones (iPhone SE
+750, the 828-wide XR and 11), 3x otherwise. Until 2026-10-11 it was fixed at
+3x, so an iPhone SE screenshot was measured at the wrong place (a 2x frame
+read at 3x lands half as far again down and across the screen); pass --scale
+to override.
 """
 import sys
 from PIL import Image
@@ -23,10 +27,12 @@ def lum(c):
     r, g, b = c
     return 0.2126 * ch(r) + 0.7152 * ch(g) + 0.0722 * ch(b)
 
-path, x, y, w, h = sys.argv[1], *map(float, sys.argv[2:6])
-name = sys.argv[6] if len(sys.argv) > 6 else "element"
-scale = 3
+args = [a for a in sys.argv[1:] if not a.startswith("--scale")]
+forced = [a.split("=", 1)[1] for a in sys.argv[1:] if a.startswith("--scale=")]
+path, x, y, w, h = args[0], *map(float, args[1:5])
+name = args[5] if len(args) > 5 else "element"
 im = Image.open(path).convert("RGB")
+scale = int(forced[0]) if forced else (2 if im.width in (640, 750, 828) else 3)
 px = [im.getpixel((i, j)) for i in range(int(x * scale), int((x + w) * scale))
       for j in range(int(y * scale), int((y + h) * scale))]
 ls = sorted(lum(p) for p in px)
