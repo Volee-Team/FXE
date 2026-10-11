@@ -121,6 +121,8 @@ struct RegistrationAdmin: Codable, Identifiable, Sendable {
     /// succeeded, failed), or nil when it was never charged.
     let chargeStatus: String?
     let hasCard: Bool?
+    /// The player's private note to Tara, from Register (decision 0039).
+    var playerNote: String? = nil
 
     enum CodingKeys: String, CodingKey {
         case id, status, paid
@@ -135,6 +137,7 @@ struct RegistrationAdmin: Codable, Identifiable, Sendable {
         case cancelNote = "cancel_note"
         case chargeStatus = "charge_status"
         case hasCard = "has_card"
+        case playerNote = "player_note"
     }
 
     /// A charge that is pending, processing or went through. The server's rule
@@ -175,6 +178,12 @@ struct RosterEntry: Identifiable, Sendable {
     var lateLabel: String? {
         guard registration.status == .canceled, registration.lateCancel == true else { return nil }
         return registration.courtesyUsed == true ? "Late: courtesy" : "Late: fee applies"
+    }
+
+    /// The player's note to Tara, quoted, on any row that has one.
+    var playerNote: String? {
+        guard let n = registration.playerNote?.trimmingCharacters(in: .whitespacesAndNewlines), !n.isEmpty else { return nil }
+        return "“\(n)”"
     }
 
     /// The note left with a late cancel, quoted, for the Canceled list.

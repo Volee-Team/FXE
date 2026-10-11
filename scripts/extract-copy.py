@@ -48,6 +48,12 @@ SWIFT = [
     r'shortTitle:\s*"([^"]{2,})"',
     r'"([^"]*\\\(\.applicationName\)[^"]*)"',   # App Shortcut phrases
     r'static let \w*Line\s*=\s*"([^"]{2,})"',     # sentences kept as constants
+    # A box's placeholder and a refusal's line are read by players too. Both
+    # were invisible until 2026-10-11, when Tara's own example sentence for
+    # the note box ("please put me on court with my friend Jane") and its
+    # error line went through the gate as "unchanged".
+    r'(?:TextField|SecureField)\(\s*"([^"]{2,})"',
+    r'notice:\s*"([^"]{2,})"',
 ]
 # Web: prose in HTML text nodes, plus strings that are clearly sentences in JS.
 WEB = [

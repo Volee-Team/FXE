@@ -34,6 +34,8 @@
   .row + .row { border-top: 1px solid var(--fxe-hairline); padding-top: 10px; margin-top: 10px; }
   .grow { flex: 1; min-width: 0; }
   .muted { color: var(--fxe-text-secondary); font-size: 14px; }
+  /* The player's private note to Tara from Register (decision 0039). */
+  .player-note { color: var(--fxe-text-primary, inherit); font-size: 14px; font-style: italic; overflow-wrap: anywhere; }
   .name { font-weight: 600; }
   button {
     font: inherit; font-weight: 600; cursor: pointer; border-radius: 10px;
@@ -1167,7 +1169,7 @@ async function loadClinics() {
           // player's history (decision 0027 §1).
           return `<div class="row">
             ${s === "pool" ? `<span class="muted" style="width:18px;text-align:right">${i + 1}</span>` : ""}
-            <span class="grow"><span class="name">${esc(who)}</span><br><span class="muted">${esc(sub)}</span>${s === "pool" ? historyHtml(history[r.player_id]) : ""}</span>
+            <span class="grow"><span class="name">${esc(who)}</span><br><span class="muted">${esc(sub)}</span>${s === "pool" ? historyHtml(history[r.player_id]) : ""}${r.player_note ? `<br><span class="player-note" data-player-note="${r.id}">“${esc(r.player_note)}”</span>` : ""}</span>
             ${extra(r)}
           </div>`;
         }).join("")}

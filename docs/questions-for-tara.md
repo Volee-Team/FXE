@@ -512,6 +512,22 @@ Already built (decision 0027 §1): beside every Player Pool name, only to you, "
 **108. When you refund someone, is it always the whole fee, or do you sometimes give part back?**
 *Default: the whole fee only, as today. Status: open, asked 2026-10-06.*
 
+## W. The note when they register (added 2026-10-11, decision 0039)
+
+Built as you asked: a box above Register with your example and "Only Tara sees this". You see the note under the person's name on your roster, phone and laptop.
+
+**109. Can players change or delete their note after they register, up until the clinic starts?**
+*Default: yes. Status: open, asked 2026-10-11.*
+
+**110. Should the notes print on the court sheet?** Paper left on a bench could be read by others.
+*Default: no, the notes stay on your screen only. Status: open, asked 2026-10-11.*
+
+**111. Do you want a notification when someone writes a note, or is seeing it on the roster enough?**
+*Default: the roster is enough, no notification. Status: open, asked 2026-10-11.*
+
+**112. Should your pros see the notes too, since they help run the courts?**
+*Default: no, only you. Status: open, asked 2026-10-11.*
+
 ### How 52 to 57 are being sent
 
 Round two of the review page (2026-09-21, later): the Words tab now shows her

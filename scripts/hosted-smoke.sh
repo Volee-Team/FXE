@@ -63,6 +63,13 @@ while IFS=$'\t' read -r f args; do
   code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$URL/rest/v1/rpc/$f" -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" -d "$args")
   check rpc "$f" "$code"
 done < "$(dirname "$0")/hosted-smoke-functions.txt"
+# The call build 9 makes, with two arguments (decision 0039 added an optional
+# third). The generated list sends all three, so without this line a hosted
+# register_for_clinic that lost its default would pass: 404 here means every
+# phone on build 9 can no longer register.
+n=$((n+1))
+code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$URL/rest/v1/rpc/register_for_clinic" -H "apikey: $KEY" -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" -d '{"p_clinic":"00000000-0000-0000-0000-000000000000","p_player":"00000000-0000-0000-0000-000000000000"}')
+check rpc "register_for_clinic/2" "$code"
 for e in $EDGE; do
   code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$URL/functions/v1/$e" -H "apikey: $KEY" -H "Content-Type: application/json" -d '{}')
   check edge "$e" "$code"

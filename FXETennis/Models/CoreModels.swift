@@ -110,6 +110,9 @@ struct MyRegistration: Codable, Identifiable, Sendable {
     let lateCancel: Bool?
     /// This late cancel used the one courtesy per 90 days (decision 0012).
     let courtesyUsed: Bool?
+    /// Her private note to Tara (decision 0039). Only she and Tara read it;
+    /// a var with a default so a row from before the column still decodes.
+    var playerNote: String? = nil
 
     enum CodingKeys: String, CodingKey {
         case id, status, paid
@@ -117,6 +120,7 @@ struct MyRegistration: Codable, Identifiable, Sendable {
         case playerId = "player_id"
         case lateCancel = "late_cancel"
         case courtesyUsed = "courtesy_used"
+        case playerNote = "player_note"
         case registeredAt = "registered_at"
         case invitedAt = "invited_at"
         case respondedAt = "responded_at"

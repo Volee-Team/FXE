@@ -333,6 +333,51 @@ final class AdminFlowUITests: XCTestCase {
         XCTAssertFalse(app.buttons["Charge clinic"].exists, "Charge clinic is still in More")
     }
 
+    // MARK: - H. the player's note for Tara (decision 0039)
+
+    /// Tara, 2026-10-11: a private note at Register, her example in the box
+    /// and "Only Tara sees this" under it. Ken, a member on Thursday (its
+    /// public window is open, so he lands in the Player Pool), writes one and
+    /// registers; the box keeps it on his page; Tara reads it on her roster.
+    /// Ken because no other UI test registers him anywhere.
+    func testAdminH_APlayersNoteReachesTara() {
+        let note = "with Jane please"
+        app.launch()
+        signIn(as: "ken@fxe.test")
+        openClinicsTab()
+        let card = app.buttons.matching(identifier: "clinic.card")
+            .matching(NSPredicate(format: "label CONTAINS[c] 'Thursday Morning'")).firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 20), "No Clinics-tab card for Thursday Morning")
+        card.tap()
+
+        let box = app.descendants(matching: .any).matching(identifier: "clinic.note").firstMatch
+        XCTAssertTrue(box.waitForExistence(timeout: 10), "No note box beside Register")
+        XCTAssertEqual(app.staticTexts["clinic.noteCaption"].label, "Only Tara sees this")
+        XCTAssertEqual(box.placeholderValue, "please put me on court with my friend Jane")
+        box.tap()
+        // Return is Done: it ends the note and the keyboard goes.
+        box.typeText(note + "\n")
+
+        let register = app.buttons["clinic.primaryAction"]
+        XCTAssertTrue(register.waitForExistence(timeout: 10))
+        XCTAssertEqual(register.label, "Register")
+        register.tap()
+        let changed = NSPredicate(format: "NOT (label CONTAINS[c] 'register')")
+        expectation(for: changed, evaluatedWith: register)
+        waitForExpectations(timeout: 20)
+        // The box now shows what Tara has, read back from the server.
+        XCTAssertEqual(box.value as? String, note, "The note is not on his page after Register")
+        XCTAssertFalse(app.buttons["clinic.noteSave"].exists, "Save offered with nothing to save")
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        signOut()
+
+        signIn(as: admin)
+        openAdminClinic(containing: "Thursday Morning")
+        let onRoster = app.staticTexts["admin.playerNote"].firstMatch
+        XCTAssertTrue(onRoster.waitForExistence(timeout: 20), "Tara's roster does not show Ken's note")
+        XCTAssertEqual(onRoster.label, "“\(note)”")
+    }
+
     // MARK: - helpers (mirrors PlayerFlowUITests; kept local so each file reads alone)
 
     private func signIn(as email: String) {

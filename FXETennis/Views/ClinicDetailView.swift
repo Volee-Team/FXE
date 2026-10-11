@@ -128,6 +128,11 @@ final class ClinicDetailModel {
         if text.contains("already_registered") {
             return FailureOutcome(notice: nil, reopens: nil)
         }
+        // The note could not be saved: the clinic started, or the spot is
+        // gone (decision 0039). Not a race for a seat.
+        if text.contains("note_not_editable") || text.contains("note_too_long") {
+            return FailureOutcome(notice: "Couldn't save your note.", reopens: nil)
+        }
         let failure = RequestFailure(error)
         switch failure {
         case .unreachable, .rateLimited:
@@ -218,6 +223,10 @@ struct ClinicDetailView: View {
     /// A "Remind me" is waiting for this clinic, as the notification center says.
     @State private var reminderSet = false
     @State private var reminderBusy = false
+    /// The note for Tara as typed (decision 0039): sent with Register, or
+    /// saved on its own once she holds a spot.
+    @State private var noteDraft = ""
+    @FocusState private var noteFocused: Bool
     let clinic: ClinicPublic
     let isMember: Bool
     var onChanged: () async -> Void = {}
@@ -243,6 +252,12 @@ struct ClinicDetailView: View {
                                                           + clinic.lateCancelMoment(cutoffHours: cutoffHours)))) { _ in
                     let now = Date()
                     VStack(spacing: Brand.Spacing.sm) {
+                        if ClinicNote.offered(status: model.registration?.status,
+                                              door: clinic.door(isMember: isMember, now: now),
+                                              isCanceled: clinic.isCanceled,
+                                              startsAt: clinic.startsAt, now: now) {
+                            noteArea
+                        }
                         confirmDialog(actionArea(now: now))
                         // Under the action and outside its confirmation, so
                         // the cancel dialog stays anchored to the cancel
@@ -255,6 +270,7 @@ struct ClinicDetailView: View {
             }
             .padding(Brand.Spacing.pageMargin)
         }
+        .scrollDismissesKeyboard(.interactively)
         .background(CourtBackdrop())
         .crispTopEdge()
         .navigationTitle(clinic.name)
@@ -266,6 +282,11 @@ struct ClinicDetailView: View {
         .task {
             if !model.loaded { await model.load(clinicId: clinic.id) }
             await syncReminder()
+        }
+        // The saved note fills the box whenever the server's copy changes
+        // (a load, a save), never while she is mid-sentence otherwise.
+        .onChange(of: model.registration?.playerNote, initial: true) { _, saved in
+            if model.registration != nil { noteDraft = saved ?? "" }
         }
         .task {
             cutoffHours = (try? await RegistrationRepository.cancelCutoffHours()) ?? 3
@@ -491,7 +512,8 @@ struct ClinicDetailView: View {
         case .register:
             primaryButton("Register", landing: true) {
                 guard let playerId = session.activePlayer?.id else { return }
-                _ = try await RegistrationRepository.register(clinicId: clinic.id, playerId: playerId)
+                _ = try await RegistrationRepository.register(clinicId: clinic.id, playerId: playerId,
+                                                              note: ClinicNote.cleaned(noteDraft))
             }
         case .opens(let openMoment):
             VStack(spacing: Brand.Spacing.xs) {
@@ -549,6 +571,55 @@ struct ClinicDetailView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, Brand.Spacing.xs)
+    }
+
+    // MARK: the note for Tara
+
+    /// Tara, 2026-10-11: a private note at Register, "Only Tara sees this",
+    /// her example inside the box. The label is the late-cancel sheet's
+    /// approved one. Once she holds a spot, Save appears when the box
+    /// differs from what Tara has.
+    private var noteArea: some View {
+        VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
+            Text("Note for Tara (optional)")
+                .brandFont(.subheadline)
+                .foregroundStyle(Brand.textPrimary)
+            TextField("please put me on court with my friend Jane", text: $noteDraft, axis: .vertical)
+                .lineLimit(2...5)
+                .textFieldStyle(.roundedBorder)
+                .accessibilityLabel("Note for Tara (optional)")
+                .accessibilityIdentifier("clinic.note")
+                .focused($noteFocused)
+                // Return is Done: the keyboard goes, so Register under the
+                // box is in reach. A note is one thought, not paragraphs.
+                .submitLabel(.done)
+                .onChange(of: noteDraft) { _, typed in
+                    let (fitted, finished) = ClinicNote.edited(typed)
+                    if fitted != typed { noteDraft = fitted }
+                    if finished { noteFocused = false }
+                }
+            Text("Only Tara sees this")
+                .brandFont(.caption)
+                .foregroundStyle(Brand.textSecondary)
+                .accessibilityIdentifier("clinic.noteCaption")
+            if let reg = model.registration,
+               ClinicNote.cleaned(noteDraft) != ClinicNote.cleaned(reg.playerNote ?? "") {
+                Button {
+                    Task {
+                        await run {
+                            try await RegistrationRepository.setNote(registrationId: reg.id,
+                                                                     note: ClinicNote.cleaned(noteDraft) ?? "")
+                        }
+                    }
+                } label: {
+                    Text("Save").modifier(QuietButtonLabel(stroke: Brand.hairline))
+                }
+                .buttonStyle(.plain)
+                .disabled(model.working)
+                .accessibilityIdentifier("clinic.noteSave")
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: button builders
