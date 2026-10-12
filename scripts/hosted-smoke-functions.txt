@@ -44,6 +44,7 @@ cancel_invitation	{"p_registration":"00000000-0000-0000-0000-000000000000"}
 cancel_registration	{"p_note":"x","p_registration":"00000000-0000-0000-0000-000000000000"}
 card_consent_text	{}
 card_required	{}
+clean_player_note	{"p_note":"x"}
 courtesy_available	{"p_player":"00000000-0000-0000-0000-000000000000"}
 courtesy_cancel_days	{}
 create_clinic_from_template	{"p_ends_at":"2026-01-01T00:00:00Z","p_starts_at":"2026-01-01T00:00:00Z","p_template":"00000000-0000-0000-0000-000000000000"}
@@ -85,7 +86,7 @@ purge_expired_card_consents	{}
 record_app_link_visit	{"p_via":"x"}
 record_card_consent	{"p_app_version":"x"}
 register_device	{"p_platform":"x","p_token":"x"}
-register_for_clinic	{"p_clinic":"00000000-0000-0000-0000-000000000000","p_player":"00000000-0000-0000-0000-000000000000"}
+register_for_clinic	{"p_clinic":"00000000-0000-0000-0000-000000000000","p_note":"x","p_player":"00000000-0000-0000-0000-000000000000"}
 registration_has_live_fee	{"p_registration":"00000000-0000-0000-0000-000000000000"}
 registration_mark_late_cancel	{"p_note":"x","p_registration":"00000000-0000-0000-0000-000000000000"}
 registration_set_no_show	{"p_no_show":false,"p_registration":"00000000-0000-0000-0000-000000000000"}
@@ -100,6 +101,7 @@ revenue_summary	{"p_from":"2026-01-01T00:00:00Z","p_to":"2026-01-01T00:00:00Z"}
 search_players	{"p_include_inactive":false,"p_query":"x"}
 send_clinic_message	{"p_audience":"x","p_body":"x","p_clinic":"00000000-0000-0000-0000-000000000000"}
 service_week_start	{"p_starts_at":"2026-01-01T00:00:00Z"}
+set_my_registration_note	{"p_note":"x","p_registration":"00000000-0000-0000-0000-000000000000"}
 set_paid	{"p_paid":false,"p_registration":"00000000-0000-0000-0000-000000000000"}
 set_player_active	{"p_active":false,"p_player":"00000000-0000-0000-0000-000000000000"}
 stripe_cutover_to_live	{}

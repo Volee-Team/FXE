@@ -83,6 +83,7 @@ struct MyClinicsView: View {
                                 .foregroundStyle(Brand.textSecondary)
                                 .padding(.top, week.start == weeks.first?.start ? 0 : Brand.Spacing.sm)
                                 .accessibilityAddTraits(.isHeader)
+                                .accessibilityIdentifier("week.heading")
                             ForEach(week.items) { clinic in
                                 NavigationLink {
                                     ClinicDetailView(clinic: clinic, isMember: isMember,

@@ -4,6 +4,7 @@ About this clinic
 Accept
 Action Needed
 Add a card
+Add a card on your Profile to register.
 Add a player
 Add to Calendar
 Add your first and last name.
@@ -53,6 +54,7 @@ Couldn't load this clinic.
 Couldn't load your calendar link.
 Couldn't reach Stripe. Try again.
 Couldn't reach the server. Check your connection.
+Couldn't save your note.
 Couldn't save, still on this phone
 Court
 Court \(court)
@@ -70,6 +72,7 @@ Download CSV
 Download for email
 Draft
 Edit details
+Email
 FROM TARA
 FXE Tennis
 FXE Tennis Admin
@@ -82,6 +85,7 @@ FXE Tennis, LLC
 FXE Tennis, Tara's Review
 FXE-Tennis-QR.png
 Fees at clinic prices
+First and last name
 First time? Create your account
 For someone who called or grabbed you at the club. They go straight to You&rsquo;re In!
 For testing with Tara and Kat. Nothing here is part of running the clinics.
@@ -99,6 +103,7 @@ Information collection
 International data
 Invite
 Invite \(entry.displayName)
+Just coming back from a back injury - probably a low 3.5
 Keep
 Keep my account
 Keep my spot
@@ -152,6 +157,7 @@ No upcoming clinics.
 Nobody by that name yet. They may need to sign up in the app first.
 Nobody is in yet.
 Non-members attended
+Non-members can take one 105 a day until 48 hours before.
 Non-members, 60 min
 Non-members, 90 min
 Not available yet.
@@ -161,6 +167,7 @@ Note (optional)
 Note for Tara (optional)
 Notifications
 On your laptop, with your real account. Whatever you set up here is real: it is your schedule.
+Only Tara sees this
 Only Tara sees this.
 Only a You're In! player can be a no-show.
 Only a paid charge can be refunded.
@@ -168,6 +175,7 @@ Only you can see this.
 Open FXE Tennis and sign in first.
 Open for Registration
 Our hosting provider stores the Services' data on servers in the United States.
+Password
 Payment method
 Payments are switched off.
 Pick something you'll remember. At least 8 characters.
@@ -204,6 +212,7 @@ Remove from clinic
 Resolved
 Response Needed
 Review links
+Save
 Save note
 Save password
 Save this message
@@ -220,8 +229,10 @@ She will let you know as soon as possible if there is room in this clinic
 Sign Out
 Sign in on the admin page first.
 Sign out
+Sign the waiver first.
 Signs you out, you can finish later if needed
 Someone already handled that one.
+Sorry, someone beat you to the punch. Here's the latest!
 Start from a template
 Stripe
 Stripe isn't connected yet.
@@ -301,3 +312,4 @@ Your changes through September 29 are in the app, including the new logo and the
 Your next FXE Tennis clinic and your status in it.
 Your tennis rating
 asking to get in
+please put me on court with my friend Jane

@@ -15,9 +15,18 @@ import Supabase
 
 // MARK: - RPC parameter encodables
 
-private struct ClinicPlayerParams: Encodable {
+/// Register with the note for Tara (decision 0039). A nil note is left out
+/// of the JSON, and the server's default (no note) applies.
+private struct RegisterParams: Encodable {
     let p_clinic: UUID
     let p_player: UUID
+    let p_note: String?
+}
+/// Changing or clearing the note: blank clears it on the server, so the
+/// argument is always sent (an omitted one would find no function).
+private struct NoteParams: Encodable {
+    let p_registration: UUID
+    let p_note: String
 }
 private struct RegistrationParam: Encodable {
     let p_registration: UUID
@@ -148,12 +157,19 @@ enum RegistrationRepository {
     /// Register the given player for a clinic. The server decides You're In! vs
     /// Player Pool vs rejection; we just relay the outcome.
     @discardableResult
-    static func register(clinicId: UUID, playerId: UUID) async throws -> MyRegistration {
+    static func register(clinicId: UUID, playerId: UUID, note: String? = nil) async throws -> MyRegistration {
         try await supabase
-            .rpc("register_for_clinic", params: ClinicPlayerParams(p_clinic: clinicId, p_player: playerId))
+            .rpc("register_for_clinic", params: RegisterParams(p_clinic: clinicId, p_player: playerId, p_note: note))
             .single()
             .execute()
             .value
+    }
+
+    /// Changes or clears (blank) her note to Tara until the clinic starts.
+    static func setNote(registrationId: UUID, note: String) async throws {
+        try await supabase
+            .rpc("set_my_registration_note", params: NoteParams(p_registration: registrationId, p_note: note))
+            .execute()
     }
 
     /// `note` is the player's own concise message, required by the server

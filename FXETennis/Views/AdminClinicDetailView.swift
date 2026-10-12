@@ -549,6 +549,14 @@ struct AdminClinicDetailView: View {
                         .foregroundStyle(Brand.textSecondary)
                         .accessibilityIdentifier("admin.poolHistory")
                 }
+                // The player's note to her from Register (decision 0039).
+                if let note = entry.playerNote {
+                    Text(note)
+                        .brandFont(.caption)
+                        .foregroundStyle(Brand.textPrimary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("admin.playerNote")
+                }
                 // The note left with a late cancel, the player's or Tara's.
                 if let note = entry.lateNote {
                     Text(note)

@@ -808,6 +808,28 @@ lines are listed here by hand.
 | — | That didn't go through. Check your connection and try again. | The phone, when Resolved fails for any other reason | Not new: the phone's admin screens' line for the same |
 | — | Add a card | The card step's title, also when it opens for a declined card | Not new |
 
+## The note for Tara at Register (2026-10-11) — awaiting Alex
+
+Decision 0039. Tara, 2026-10-11, both lines hers: the example in the box and
+the line under it.
+
+| ✓ | Words | Where | Whose |
+|---|---|---|---|
+| — | please put me on court with my friend Jane | the note box's example, beside Register and on a held spot | **Tara's**, verbatim, lower-case "please" as she wrote it |
+| — | Only Tara sees this | under the box | **Tara's**, verbatim, no period |
+| — | Note for Tara (optional) | the box's label | Not new: the late-cancel sheet's approved label, reused |
+| ☐ | Save | under the box once the text differs from what Tara has | Chrome, mine |
+| ☐ | Couldn't save your note. | when the clinic started or the spot went before Save landed | Chrome, mine |
+
+**The gate learned two things the same day.** It could not see a box's
+placeholder or a refusal's `notice:` line, so Tara's sentence and the error
+went through as "unchanged". `scripts/extract-copy.py` reads both now, and
+that surfaced eight strings that were already in the app and already listed
+here or hers (Email, Password, First and last name, her back-injury example,
+Sign the waiver first., Add a card on your Profile to register., the 105
+placeholder, her "beat you to the punch" line). They are in the snapshot now,
+so a change to any of them goes through review.
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148

@@ -482,6 +482,31 @@ test.describe("remove from a clinic", () => {
   });
 });
 
+// Tara, 2026-10-11: a private note at Register, "Only Tara sees this"
+// (decision 0039). She reads it beside the name on her roster. The printed
+// court sheet leaves it off until she says otherwise (question 110): paper
+// on a bench is not "only Tara".
+test.describe("the player's note", () => {
+  test("Tara reads a player's note beside the name; the court sheet leaves it off", async ({ page, request }) => {
+    const db = service(request);
+    const TUESDAY = "d0000000-0000-0000-0000-000000000001";
+    const NOTE = "please put me on court with my friend Jane";
+    const reg = await db.insert("registrations", { clinic_id: TUESDAY, player_id: ROB_P, status: "in", source: "self",
+      price_cents_charged: 2300, was_member: false, duration_minutes: 60, player_note: NOTE });
+    try {
+      await signIn(page, TARA);
+      const card = page.locator("#clinics .card", { hasText: "Tuesday Ladies" });
+      const rob = card.locator(".row", { hasText: "Rob Delgado" });
+      await expect(rob.locator(`[data-player-note="${reg.id}"]`)).toHaveText(`“${NOTE}”`, { timeout: 15_000 });
+      await page.goto(`/sheet.html?clinic=${TUESDAY}`);
+      await expect(page.locator("#courts")).toContainText("Rob Delgado", { timeout: 15_000 });
+      await expect(page.locator("body")).not.toContainText(NOTE);
+    } finally {
+      await db.del(`registrations?id=eq.${reg.id}`);
+    }
+  });
+});
+
 test.describe("fix round", () => {
   test("a late request for a clinic off this week's list still names its clinic", async ({ page, request }) => {
     const db = service(request);
