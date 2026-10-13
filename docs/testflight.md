@@ -1,9 +1,15 @@
 # TestFlight runbook
 
 How a build of this repo gets onto a phone. Written 2026-09-21 for John, who
-is uploading internal TestFlight builds from his own Apple Developer account
-while the FXE Tennis, LLC enrollment sits in Apple's queue (decision 0014).
+uploads TestFlight builds from his own Apple Developer account while the FXE
+Tennis, LLC enrollment sits in Apple's queue (decision 0014; checklist C1).
 Everything a build needs is on `main`; nothing lives only on Alex's machine.
+
+**The next upload is build 10, the tag `v0.1.0-rc10`** (checklist C8), made
+when the `build-10` branch merges (decision 0040 merged in PR #93). It goes up as **App Store Connect**,
+not TestFlight Internal Only, and then to External Testing (checklist C11):
+see "External Testing" below. Archive the tag, not `main`, so John gets
+exactly the build that was tested whatever lands on `main` afterwards.
 
 ## Before the first build (once)
 
@@ -30,9 +36,11 @@ Everything a build needs is on `main`; nothing lives only on Alex's machine.
 
 ## Every build
 
-1. `git pull` on `main`. The build number is `CURRENT_PROJECT_VERSION` in
-   `project.yml` (`MARKETING_VERSION` is 0.1.0). Bump the build number by one,
-   commit it on a branch, open a PR; CI must be green before you upload.
+1. `git fetch --tags && git checkout v0.1.0-rc<build>`, the tag Alex names
+   (for build 10, `v0.1.0-rc10`). The build number is
+   `CURRENT_PROJECT_VERSION` in `project.yml` (`MARKETING_VERSION` is 0.1.0);
+   the model bumps it in the PR that makes the tag, so the tag already
+   carries the right number and CI was green on it.
 2. `xcodegen generate` again (the project file reflects `project.yml`).
 3. In Xcode, scheme `FXETennis`, destination *Any iOS Device*, then
    **Product → Archive**. Archive builds the **Release** configuration, and
@@ -42,24 +50,44 @@ Everything a build needs is on `main`; nothing lives only on Alex's machine.
    an empty app.
 4. Organizer → **Distribute App → App Store Connect → Upload**. Not
    "TestFlight Internal Only": a build uploaded that way can never be added to
-   External Testing (the public link) or the App Store, which build 9 needs
-   (found 2026-10-06, before the first external submission).
-5. In App Store Connect, add the build to the internal group. Testers get the
-   TestFlight email within minutes.
+   External Testing (the public link) or the App Store (found 2026-10-06,
+   before the first external submission).
+5. Wait for Processing in App Store Connect. Add the build to the internal
+   group (Tara, Kat and Alex get the TestFlight email within minutes) and to
+   the external group (below).
 6. Tag the commit and add the changelog line (launch checklist C10):
    ```bash
    git tag -a v0.1.0-tf<build> -m "TestFlight build <build>, uploaded by John"
    git push origin v0.1.0-tf<build>
    ```
 
+## External Testing (checklist C11)
+
+The public link is how members install the app before the LLC's App Store
+listing exists. It needs Apple's beta review, which usually takes 1 to 2
+days.
+
+1. Before John submits, Alex makes the App Review account (checklist C13;
+   steps in `docs/for-alex.md` §4a) and sends John its email and password.
+2. appstoreconnect.apple.com → Apps → FXE Tennis → **TestFlight** →
+   External Testing → **+** → a group named `FXE Members` (once; later
+   builds go into the same group).
+3. Add the build. Fill in **Test Information**: What to Test, Beta App
+   Description, feedback email, the sign-in for Apple's reviewer, the review
+   notes and John's contact. The words are in `docs/for-alex.md` §4a.
+4. **Submit for Review**.
+5. Once approved: the group → **Public Link** → **Enable**, and send Alex
+   the link. It becomes the QR code's target (checklist I6). Nobody gets it
+   until the soft launch (checklist G7).
+
 ## What a tester sees
 
 Sign up with a real email (the app sends no confirmation email; decision
 0011), fill the profile (name, phone, rating, member yes/no, an optional note
 for Tara), sign the waiver (typed full name), then Home. Nothing charges
-anyone: Stripe's sandbox keys are in (2026-09-27), but the payment switch
-stays off until Alex says go (launch checklist A9), after build 5 is on
-phones. Tara's account
+anyone: the payment switch stays off (launch checklist A9) until Apple has
+approved the external build (C11) and the live keys and their rehearsal are
+done (A10, A13), and then only when Alex says go. Tara's account
 is the one with the Manage tab; she creates it herself the same way and Alex
 promotes it once (`bootstrap_first_admin`, already done on hosted).
 
@@ -70,8 +98,9 @@ promotes it once (`bootstrap_first_admin`, already done on hosted).
   is junk forever in Tara's Money tab.
 * **Hosted is written only by `supabase db push`** from a merged `main`. A
   TestFlight upload never touches the database.
-* Push notifications do not deliver yet (decision 0008: the sender waits on
-  an APNs key). The permission sheet still appears; that is expected.
+* Push is configured on hosted with John's APNs key (checklist C3), so a
+  TestFlight build can receive it; the first push seen on a real lock screen
+  is C3's row.
 
 ## When the LLC account is approved
 
@@ -84,5 +113,5 @@ roadmap rules out (2026-08-19: the seller is the LLC). So the LLC's app gets a
 Store Connect record, and the LLC's Team in Xcode; testers install it once as
 a new app and sign in with the same account, because accounts live on our
 server, not on the phone. Public TestFlight and the App Store listing are the
-LLC's. If the LLC is late for 2026-10-16, the fallback is external TestFlight
-on John's account (checklist C11).
+LLC's. Until then, members install through external TestFlight on John's
+account (checklist C11).

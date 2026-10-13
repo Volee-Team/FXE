@@ -5,8 +5,9 @@ Used by hand (paste it into a session with four read-only agents, one per file
 set, as on 2026-09-12) and by `.github/workflows/docs-audit.yml` monthly when
 `ANTHROPIC_API_KEY` is set. Deterministic checks already run on every PR
 (`scripts/check-doc-paths.sh`, `scripts/check-doc-claims.sh`,
-`scripts/check-doc-inventory.sh`); this brief is for the claims a script cannot
-judge.
+`scripts/check-doc-inventory.sh`, `scripts/check-doc-status.sh`,
+`scripts/check-doc-registry.sh`, `scripts/check-launch-checklist.sh`); this
+brief is for the claims a script cannot judge.
 
 ---
 
@@ -15,15 +16,22 @@ Do not run supabase, xcodebuild, npm or docker. Read the code, the migrations,
 the tests and the workflows, and compare every checkable claim in the docs
 against them.
 
-Scope, in this order: `CLAUDE.md` above `## Changelog`; `docs/roadmap.md`;
-`docs/archive/whats-next.md`; `docs/backlog.md`; `docs/launch-checklist.md`;
-`docs/architecture.md`; `docs/web-admin.md`; `docs/archive/design-system.md`;
+Scope, in this order: `CLAUDE.md` above `## Changelog`;
+`docs/launch-checklist.md`; `docs/backlog.md`; `docs/questions-for-tara.md`;
+`docs/decisions/README.md` and `docs/decisions/*.md`; `docs/roadmap.md`;
+`docs/architecture.md`; `docs/web-admin.md`; `docs/style-guide.md`;
 `docs/notifications.md`; `docs/copy.md`, `docs/copy-review.md`;
-`docs/questions-for-tara.md`; `docs/decisions/*.md`; `README.md`,
-`web/README.md`, `supabase/functions/README.md`; `.claude/agents/*.md`.
+`docs/for-alex.md`, `docs/testflight.md`, `docs/launch-runbook.md`,
+`docs/stripe-e2e-test.md`; `README.md`, `web/README.md`,
+`supabase/functions/README.md`; `.claude/agents/*.md`. Everything under
+`docs/archive/` is a dated snapshot with an "Archived" banner and is out of
+scope.
 
 What counts as drift: a status marker (done, missing, not built, blocked) that
-disagrees with the code; a "we will" that was built differently; a decision
+disagrees with the code; a status restated outside its four homes
+(`docs/launch-checklist.md`, `docs/backlog.md`, `docs/questions-for-tara.md`,
+`docs/decisions/README.md`) instead of pointing at a row ID such as
+"checklist C11"; a "we will" that was built differently; a decision
 superseded by a later decision or a later Tara answer without a note saying so;
 a backlog row already fixed; a question already answered but unmarked; a
 function, column, view, setting, file or job named that does not exist or has
