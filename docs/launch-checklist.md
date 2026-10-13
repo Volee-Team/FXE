@@ -41,10 +41,10 @@ How this file works, so it can be trusted:
 
 ## State today (re-derived 2026-10-12)
 
-- **Code:** `main` is PR #90 (`ab57967`, Tara's note at Register, decision
-  0039). Tara's 2026-10-12 answers (decision 0040) are on the open branch
-  `tara-answers-1012`; build 10 is tagged `v0.1.0-rc10` when it merges
-  (the newest tag is `v0.1.0-rc9`; `project.yml` says build 9).
+- **Code:** `main` is PR #93 (`bbf31f1`, Tara's 2026-10-12 answers,
+  decision 0040, on top of her note at Register, decision 0039). The build
+  number goes to 10 on the open branch `build-10`; the tag `v0.1.0-rc10` is
+  made when it merges (the newest tag is `v0.1.0-rc9`).
 - **On testers' phones:** the last upload tagged in git is `v0.1.0-tf7`; no
   upload of build 8 or 9 was reported (C8).
 - **Hosted:** 63 migrations through `20261012000001`, 63 of 63 paired on
@@ -73,7 +73,7 @@ needs only Apple's beta review, and payments go through Stripe, not Apple.
 1. **The review account exists** (C13): Alex signs up "App Review" in the
    TestFlight app, so it lands on hosted, and gives John the login. [Alex]
 2. **Build 10 to External Testing on John's account** (C8, C11): tag
-   `v0.1.0-rc10` when Tara's 2026-10-12 answers merge; John archives it,
+   `v0.1.0-rc10` when the `build-10` branch merges; John archives it,
    uploads as App Store Connect (not Internal Only) and submits External
    Testing. Apple's beta review takes about 1 to 2 days. [me, John, Apple]
 3. **Real payments on** (A13, A10, A14, then A9), after Apple approves 2: a
@@ -131,7 +131,7 @@ What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision
 | C5 | Delete my account in the app, history kept (guideline 5.1.1(v)) | [me] | **DONE 2026-09-21**; `delete-account` deployed the same day |
 | C6 | Privacy policy at a public URL | [Tara] | **DONE 2026-09-27**: Tara approved it ("looks good"), contact fersctennispro@gmail.com; published at `https://fxe-tennis-admin.vercel.app/privacy.html` (verified by `deploy-web.sh`) and linked from Profile in the app (build 4) |
 | C7 | App Store listing: name, subtitle, description in Tara's words, screenshots, age rating, support URL, review notes with a test account | [Alex]+[me] | **BLOCKED** on C1, or on C11's path |
-| C8 | TestFlight **build 10** from the tag `v0.1.0-rc10` (Tara's note box at Register, decision 0039, and her 2026-10-12 answers, decision 0040; green on iOS 17, 18 and 26 before the tag) | [John] | **OPEN**: tagged when the PR for decision 0040 merges (`git tag` shows `v0.1.0-rc9` as the newest, 2026-10-12); John uploads it as App Store Connect, not Internal Only (`docs/testflight.md`). Build 9 was never reported uploaded; build 10 replaces it |
+| C8 | TestFlight **build 10** from the tag `v0.1.0-rc10` (Tara's note box at Register, decision 0039, and her 2026-10-12 answers, decision 0040; green on iOS 17, 18 and 26 before the tag) | [John] | **OPEN**: decision 0040 merged 2026-10-12 (PR #93); the build number goes to 10 on the open branch `build-10`, tagged `v0.1.0-rc10` when it merges (`git tag` shows `v0.1.0-rc9` as the newest, 2026-10-12); John uploads it as App Store Connect, not Internal Only (`docs/testflight.md`). Build 9 was never reported uploaded; build 10 replaces it |
 | C9 | Real-device pass: the two simulator flakes checked on an iPhone | [Alex]/[me] | **BLOCKED** on C8 |
 | C10 | An annotated git tag at every TestFlight build and upload | [me]/[John] | **OPEN**: `v0.1.0-rc4` to `rc9` exist, and upload tags were made for builds 2, 5 and 7 only (`git tag`, 2026-10-12). Next: `v0.1.0-rc10` on merge, `v0.1.0-tf10` when John's upload of build 10 is processed |
 | C11 | External TestFlight on John's account with a public link, through Apple's beta review, with no testers invited until the soft launch (G7) | [Alex]/[John] | **OPEN**: not yet submitted; John uploads build 10 as App Store Connect and submits External Testing (`docs/testflight.md`, `docs/for-alex.md`). The privacy URL it needs is live (C6) |

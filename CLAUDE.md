@@ -443,7 +443,7 @@ most recent thing she said wins over both.
 
 Navy country-club styling, not bright royal blue. Cream or warm-white backgrounds, clean cards, restrained green accents. Large text and generous tap areas for outdoor use. Icons always paired with text labels. Player screens must never feel like long blocks of writing.
 
-Status colors, always paired with text (never color alone, for accessibility):
+Status colors, always paired with text (never color alone, for accessibility). This is the intent; the exact inks, their measured contrast, and why Response Needed is a deep teal rather than yellow are in `docs/style-guide.md`:
 
 | Color | Status |
 |---|---|

@@ -44,7 +44,9 @@
 set -u
 cd "$(dirname "$0")/.." || exit 2
 
-CUR=$(sed -nE 's/^ *CURRENT_PROJECT_VERSION: *"?([0-9]+)"?.*/\1/p' project.yml | head -1)
+# CURRENT_BUILD=N overrides project.yml, to see what the next build bump
+# will flag before it lands.
+CUR=${CURRENT_BUILD:-$(sed -nE 's/^ *CURRENT_PROJECT_VERSION: *"?([0-9]+)"?.*/\1/p' project.yml | head -1)}
 [ -n "$CUR" ] || { echo "  FAIL  no CURRENT_PROJECT_VERSION in project.yml"; exit 1; }
 
 MAIN=origin/main
