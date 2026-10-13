@@ -10,6 +10,8 @@
 --      in keeps the price they signed up at (question 113 open).
 --   2. Canceling a clinic cancels its charges not yet sent to Stripe. A
 --      refund still goes; a charge already with Stripe is left for Tara.
+--   4. A fee refunded in full reads "refunded" on Tara's roster; a partial
+--      refund leaves it charged.
 --   3. Past lists only clinics she was in or canceled from: a Player Pool
 --      spot never picked and an invitation never answered are not there. A
 --      clinic Tara canceled says so.
@@ -94,6 +96,17 @@ begin
   insert into _probe_result values ('charge_with_stripe_left_alone', 'processing', v);
   select status::text into v from public.payments where id = p_refund;
   insert into _probe_result values ('queued_refund_still_goes', 'pending', v);
+
+  -- ------------------------------- 4. a refunded fee reads refunded
+  -- Ken's charge went through and was refunded in full: the roster says so.
+  update public.payments set status = 'succeeded' where id = p_sent;
+  update public.payments set status = 'succeeded' where id = p_refund;
+  select charge_status into v from public.registrations_admin where id = r_ken;
+  insert into _probe_result values ('roster_reads_refunded', 'refunded', coalesce(v, '<null>'));
+  -- A partial refund leaves it charged.
+  update public.payments set amount_cents = 500 where id = p_refund;
+  select charge_status into v from public.registrations_admin where id = r_ken;
+  insert into _probe_result values ('partial_refund_still_charged', 'succeeded', coalesce(v, '<null>'));
 
   -- --------------------------------------- 3. Past is what she played
   insert into public.clinics (name, audience, category, description, starts_at, ends_at,

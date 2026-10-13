@@ -11,6 +11,9 @@
 --   2. cancel_clinic left charges queued for the clinic, which the next
 --      stripe-charge run sent. It now cancels the clinic's pending charges
 --      that have not reached Stripe; refunds still go.
+--   4. registrations_admin.charge_status read "succeeded" after a full
+--      refund, so the roster said Charged / Paid on a refunded fee and hid
+--      Remove and Waive (audit 2026-10-12). It reads "refunded" now.
 --   3. my_past_clinics listed Player Pool spots never picked and invitations
 --      never answered as played. Only You're In! and canceled rows now, and
 --      a clinic Tara canceled says so (clinic_canceled).
@@ -189,3 +192,46 @@ SELECT r.id AS registration_id,
 
 revoke all on public.my_past_clinics from public, anon, authenticated;
 grant select on public.my_past_clinics to authenticated;
+
+-- ------------------------------------------- 4. a refunded fee reads so --
+create or replace view public.registrations_admin as
+SELECT id,
+    clinic_id,
+    player_id,
+    status,
+    paid,
+    court_number,
+    source,
+    registered_at,
+    invited_at,
+    responded_at,
+    canceled_at,
+    canceled_by,
+    late_cancel,
+    cancel_note,
+    (EXISTS ( SELECT 1
+           FROM (players p
+             JOIN accounts a ON ((a.id = p.account_id)))
+          WHERE ((p.id = r.player_id) AND (a.stripe_customer_id IS NOT NULL) AND (a.card_last4 IS NOT NULL)))) AS has_card,
+    ( SELECT
+                CASE
+                    WHEN ((x.status = 'succeeded'::payment_status) AND (EXISTS ( SELECT 1
+                       FROM payments rf
+                      WHERE ((rf.refunds_payment_id = x.id) AND (rf.kind = 'refund'::payment_kind) AND (rf.status = 'succeeded'::payment_status) AND (rf.amount_cents >= x.amount_cents))))) THEN 'refunded'::text
+                    ELSE (x.status)::text
+                END AS status
+           FROM payments x
+          WHERE ((x.registration_id = r.id) AND (x.kind <> 'refund'::payment_kind) AND ((x.livemode IS NOT FALSE) OR (NOT (EXISTS ( SELECT 1
+                   FROM app_settings s
+                  WHERE (s.key = 'stripe_live_since'::text))))))
+          ORDER BY x.created_at DESC
+         LIMIT 1) AS charge_status,
+    courtesy_used,
+    no_show,
+    player_note,
+    fee_waived_at
+   FROM registrations r
+  WHERE is_admin();
+
+revoke all on public.registrations_admin from public, anon, authenticated;
+grant select on public.registrations_admin to authenticated;

@@ -754,6 +754,12 @@ struct AdminClinicDetailView: View {
                 .brandFont(.chip)
                 .foregroundStyle(Brand.Status.youreIn.ink)
                 .accessibilityIdentifier("admin.charged")
+        } else if entry.registration.chargeStatus == "refunded" {
+            // A full refund (registrations_admin, 20261013000001).
+            Text("Refunded")
+                .brandFont(.chip)
+                .foregroundStyle(Brand.textSecondary)
+                .accessibilityIdentifier("admin.charged")
         } else if entry.registration.hasLiveCharge {
             // Queued or with Stripe, not answered yet.
             Text("Processing")
