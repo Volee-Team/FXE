@@ -13,8 +13,7 @@ see and do what. Not Volee: separate repo, project, bundle id and listing.
 | `CLAUDE.md`, **Build & Run** | Local stack, migrations, the probe suite, and the one sanctioned way to write hosted |
 | `docs/architecture.md` | The system in one document: surfaces, the security model, the schema, the RPCs, testing |
 | `docs/roadmap.md` | What is in v1, v1.1, v2, what is parked, and what we are deliberately not doing |
-| `docs/archive/whats-next.md` | What is blocked and on whom (Tara, Alex, Apple) |
-| `docs/launch-checklist.md` | Everything between here and the App Store, with an owner per line |
+| `docs/launch-checklist.md` | The state of the app today, and everything between here and the App Store, with an owner and a status per line. Status words live there, in `docs/backlog.md`, `docs/questions-for-tara.md` and `docs/decisions/README.md`, and nowhere else |
 
 ## How it is tested
 

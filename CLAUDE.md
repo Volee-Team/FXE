@@ -439,7 +439,7 @@ most recent thing she said wins over both.
 
 ## Visual direction
 
-**Kat's style guide is the source of truth for style from the day it lands** (Alex, 2026-09-22: *"for all of these edits in the app, go w the style guide! write down, this is source of truth for style!!"*). It goes in `docs/style-guide.md` when she sends it; until then `docs/archive/design-system.md` and `Brand.swift` stand, and every visual change made before it arrives gets re-checked against it. Tara's one standing ask on top of it: pages carry a light cream-to-warmer-cream gradient, not flat white (`Brand.surfaceGradient`, 2026-09-22).
+**Kat's style guide is the source of truth for style from the day it lands** (Alex, 2026-09-22: *"for all of these edits in the app, go w the style guide! write down, this is source of truth for style!!"*). It landed 2026-09-22 as `docs/style-guide.md`, which also holds her three later calls (decision 0036) and, since 2026-10-12, the status colours and accessibility rules from the retired design-system doc. `Brand.swift` follows it; `web/tokens.css` follows `Brand.swift`. Tara's one standing ask on top of it: pages carry a light cream-to-warmer-cream gradient, not flat white (`Brand.surfaceGradient`, 2026-09-22).
 
 Navy country-club styling, not bright royal blue. Cream or warm-white backgrounds, clean cards, restrained green accents. Large text and generous tap areas for outdoor use. Icons always paired with text labels. Player screens must never feel like long blocks of writing.
 
@@ -508,12 +508,19 @@ The local Supabase dev image segfaults the Postgres backend when a role without 
 * Delegating to a cheaper model (Alex, 2026-09-10, from a thread he liked: "have Fable define the requirements, a lower AI implement, Fable check"): fine for fenced work that comes with a spec and a test (a migration plus its probe, a Playwright test, a web panel); never for simulator or browser verification, copy judgement, or anything that touches Tara's rules. Credits are not the constraint.
 * A wait loop polls a process or a status, never a log line for a word (2026-09-10: one of mine spun seven hours waiting for a word that never appeared).
 * **After a compaction, the summary is a claim, not a record.** The session-start hook replays Alex's last three prompts verbatim from the prompt log and the first lines of the last reply. Read them, then `git log --oneline -5`, section 0 of `docs/launch-checklist.md` and the newest changelog entry, before touching code. Where the summary and the repo disagree, the repo wins. (2026-09-23; a long session is compacted, never cleared, so this happens several times a day.)
+* End every reply with a "Still open" list grouped by who acts (Alex, Tara, the model, waiting on others), repeating everything not yet acknowledged (2026-10-04).
+* Player-facing polish first; Tara-side asks go into `docs/roadmap.md`, not straight into code, unless Alex says otherwise (2026-10-02).
+* Extra features, not just MVP: the launch build should be fully functional and impress on first open (2026-09-27, *"WE WANT EXTRA FEATURES NOT JUST MVP"*).
+* The model merges its own PRs once every check is green, keeping the guardrails (2026-09-01).
+* Warn Alex before starting a UI test run: it disconnects the Claude simulator panel he may be watching (2026-10-12).
+* Run a full error audit unprompted before a big merge (independent reviewers with narrow briefs, as on 2026-10-04), not only when asked (2026-10-12).
+* Status words live in four files only (`docs/launch-checklist.md`, `docs/backlog.md`, `docs/questions-for-tara.md`, `docs/decisions/README.md`); every other doc points at a row ID. A retired doc moves to `docs/archive/` with the banner `Archived YYYY-MM-DD. Current source: <file>.` (2026-10-12, enforced by `scripts/check-doc-status.sh` and `scripts/check-doc-registry.sh`).
 
 ---
 
 ## What this project is FOR (read this before optimising for speed)
 
-**Timeline (Alex, 2026-09-22):** TestFlight fixes tonight; then Tara, Kat and Alex define what is CRITICAL for an MVP (`docs/archive/mvp.md` is the draft to argue with); then a testing group; full launch hoped for the **launch party, moved by Tara to 2026-11-06** (2026-09-28, decision 0024: *"Party is changing to Nov 6"*; she would go earlier if the app is ready). Kat (product manager, ex big-tech PM) is on the team; John uploads TestFlight builds (decision 0014).
+**Timeline (Alex, 2026-09-22):** TestFlight fixes tonight; then Tara, Kat and Alex define what is CRITICAL for an MVP (that call happened 2026-09-27, checklist G1; the draft is archived as `docs/archive/mvp.md`); then a testing group; full launch hoped for the **launch party, moved by Tara to 2026-11-06** (2026-09-28, decision 0024: *"Party is changing to Nov 6"*; she would go earlier if the app is ready). Kat (product manager, ex big-tech PM) is on the team; John uploads TestFlight builds (decision 0014).
 
 Alex, 2026-08-13: *"the goal of this whole project is developing this app the
 first time, using iteration and asking me and tara questions, double and triple
@@ -664,24 +671,45 @@ gets written down rather than silently resolved.
 
 ## Where things are written down
 
-- `docs/archive/feature-review-2026-09-02.md` — every screen walked after the 09-02 merges; one finding per line with the change to make and a severity. The UI-testing pass targets its coverage table.
-
 Chat is not memory. Every session ends and takes its context with it. If it
 matters and it is not in the repo, it is gone.
+
+**Status words live in four files only** (2026-10-12, Alex: *"we have tons of
+docs and some are becoming outdated and we need a SOLID system and ASOT to
+stick to"*): the launch checklist (work, LATER included), the backlog (bugs),
+the questions for Tara (questions) and the decisions README (decision
+status). Every other doc describes how things are and points at a row ID
+("see C3") rather than saying DONE, OPEN, built or pending. This table is the
+registry: `scripts/check-doc-registry.sh` fails on any file under `docs/` it
+does not name, and on any file in `docs/archive/` without its banner.
 
 | File | What belongs there |
 |---|---|
 | `CLAUDE.md` | Rules, conventions, hard-won lessons. What every session must know |
-| `docs/roadmap.md` | What is in v1, v1.1, v2, what is parked, what we are deliberately not doing. **Tara's new asks land here first**, never straight into code |
-| `docs/decisions/` | One file per decision that would otherwise be re-litigated. What we chose, why, what we rejected, how we would know we were wrong |
-| `docs/backlog.md` | Bugs and chores. Anything noticed and not fixed goes here in the same breath |
 | `CLAUDE.md` changelog | One entry per session. The diary |
-| `docs/questions-for-tara.md` | Every question for Tara, numbered, with the default we would pick and the decision that answered it |
-| `docs/archive/whats-next.md` | The state of the app today. **No tasks**: those are in the launch checklist |
-| `docs/launch-checklist.md` | **The one list of what is left** (Alex, 2026-09-27: *"one thing to totally trust"*): every row with an owner and a status word, a critical path to 2026-11-06 at the top, re-derived by command at least every 21 days, format enforced by `scripts/check-launch-checklist.sh` in CI. `docs/for-alex.md` is only the how-to for Alex's rows |
-| `docs/copy.md` / `docs/copy-review.md` / `docs/copy-approved.txt` | Her words verbatim / ours awaiting Alex's tick / the CI snapshot |
+| `docs/launch-checklist.md` | **The one list of what is left** (Alex, 2026-09-27: *"one thing to totally trust"*): the State today block, a critical path to 2026-11-06, every row with an owner and a status word, re-derived by command at least every 21 days, format enforced by `scripts/check-launch-checklist.sh` in CI. **Status** |
+| `docs/backlog.md` | Bugs and chores. Anything noticed and not fixed goes here in the same breath; fixed rows move to its Fixed section with their evidence. **Status** |
+| `docs/questions-for-tara.md` | Every question for Tara, numbered, with the default we would pick and the decision that answered it. **Status** |
+| `docs/decisions/` | One file per decision that would otherwise be re-litigated: what we chose, why, what we rejected, how we would know we were wrong. A record is a dated snapshot; a later one supersedes it with a forward line. The README's table is the decision **status** |
+| `docs/roadmap.md` | What is in v1, v1.1, v2, what is parked, what we are deliberately not doing. **Tara's new asks land here first**, never straight into code. Built rows point at the architecture, scheduled ones at a checklist row |
+| `docs/architecture.md` | The system as built: surfaces, the security model, the schema, the RPCs, the tests. Every schema object, probe, job and Swift file is named (`scripts/check-doc-inventory.sh`) |
+| `docs/for-alex.md` | Click-by-click steps for Alex's checklist rows, each section naming its row |
+| `docs/style-guide.md` | Kat's style guide, the source of truth for style, with the status colours and accessibility rules |
+| `docs/web-admin.md` | Tara's laptop admin: what each tab does and why |
 | `docs/notifications.md` | Her notification drafts and what fires today |
+| `docs/copy.md` / `docs/copy-review.md` / `docs/copy-approved.txt` | Her words verbatim / ours awaiting Alex's tick / the CI snapshot |
+| `docs/testflight.md` | The TestFlight runbook for John |
+| `docs/stripe-e2e-test.md` | The end-to-end payment test, row by row |
 | `docs/launch-runbook.md` | The pre-mortem (every way 2026-11-06 could go wrong, with its fix or owner), the dress rehearsal, and who does what on the day |
+| `docs/kat-due-diligence.md` | Kat's due-diligence questions, each mapped to where its answer lives |
+| `docs/audit-brief.md` | The brief for the periodic human docs audit |
+| `docs/.last-doc-audit` | The date of the last human docs audit, read by `scripts/check-doc-claims.sh` |
+| `docs/ui-test-runs.log` | One line per full green UI run, per iOS version, with the code fingerprint (`scripts/run-ui-tests.sh`) |
+| `docs/ntrp-chart.md` | The NTRP rating chart, shared with Volee |
+| `docs/legal/` | The privacy policy as published |
+| `docs/brand/` | Tara's artwork, the one source `scripts/make-logo-assets.py` makes every logo from |
+| `docs/dev-practices-for-john.md` | Volee's practices pack for John (describes the other repo) |
+| `docs/archive/` | Retired snapshots, each starting `Archived YYYY-MM-DD. Current source: <file>.` History, never instructions |
 | `docs/prompt-log/` | Every prompt and reply, written by hooks. **Local only since 2026-10-04** (gitignored; the repo is public) |
 
 **The habit that makes it work:** when Tara says something new, it goes in the
@@ -701,9 +729,14 @@ obeyed.
 Three of those questions are now machines (2026-09-13), and CI runs them:
 `scripts/check-doc-paths.sh` (every path a doc names exists),
 `scripts/check-doc-claims.sh` (counts, the decisions index, question statuses,
-and the age of the last human audit: warning at 21 days, red at 45), and
+no question a decision answered still open, and the age of the last human
+audit: warning at 21 days, red at 45), and
 `scripts/check-doc-inventory.sh` (every schema object, probe, job and Swift
-file is named in `docs/architecture.md`). The rest is reading, and the brief
+file is named in `docs/architecture.md`). Since 2026-10-12 also
+`scripts/check-doc-status.sh` (no build older than the last two on a line
+that is not DONE or history, no merged branch named as in flight, nothing
+from `scripts/doc-forbidden.txt`) and `scripts/check-doc-registry.sh` (the
+table above names every doc; every archived doc carries its banner). The rest is reading, and the brief
 for it is `docs/audit-brief.md`: run it by hand with parallel read-only agents,
 or let `docs-audit.yml` run it monthly once an API key is set. When the audit
 is done, write today's date to `docs/.last-doc-audit`.
