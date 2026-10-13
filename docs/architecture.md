@@ -52,10 +52,10 @@ most important thing to understand here, and it is section 5.
 
 | Area | State |
 |---|---|
-| Postgres schema, RLS, narrow views, RPCs | **Built**, 63 migrations. Which of them are on hosted is `supabase migration list --linked`, recorded after each push in `docs/whats-next.md` (49 of 49 paired on 2026-09-28); `20260928500001_uninvite_message.sql` goes with its PR, and `20260928800001_player_history.sql` and `20260928800002_copy_week.sql` with theirs (decision 0027), `20260929000001_canceled_drafts_stay_hidden.sql` and `20260929000002_unpublished_clinics_stay_quiet.sql` (a clinic never published is never shown or mentioned to a player) |
+| Postgres schema, RLS, narrow views, RPCs | **Built**, 64 migrations. Which of them are on hosted is `supabase migration list --linked`, recorded after each push in `docs/whats-next.md` (49 of 49 paired on 2026-09-28); `20260928500001_uninvite_message.sql` goes with its PR, and `20260928800001_player_history.sql` and `20260928800002_copy_week.sql` with theirs (decision 0027), `20260929000001_canceled_drafts_stay_hidden.sql` and `20260929000002_unpublished_clinics_stay_quiet.sql` (a clinic never published is never shown or mentioned to a player) |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | **Built**, enumerated by probes |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | **Built** |
-| SQL probe suite (46 probes; the suite prints its own total) + concurrency probe, in CI | **Built** |
+| SQL probe suite (47 probes; the suite prints its own total) + concurrency probe, in CI | **Built** |
 | iOS: sign-in, sign-up with profile, password reset, three tabs | **Built** |
 | iOS: browse by week, per-viewer pricing, register / cancel (inside the 3-hour cutoff the full fee applies; the note is optional) / leave pool / respond, closed-clinic "Message Tara", the bell, My Clinics, profile edit, card on file | **Built** |
 | iOS admin tab: rosters, invite, courts, paid, unpaid reminder, message audiences, late requests, Action Needed (open disputes too, since 2026-09-28), player directory | **Built** |
@@ -726,6 +726,7 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `create_my_account` | Sign-up creates rows, cannot impersonate, cannot self-promote, is idempotent |
 | `admin_clinic_crud`, `templates_floor_bootstrap` | CRUD, template pricing, the date floor, Tara's bootstrap |
 | `late_requests`, `player_directory` | The late path and the directory, including "a member cannot read their own note" and "a non-member cannot flip their own is_member column" |
+| `audit_fixes_1012` | The 2026-10-12 audits: a length change reprices the clinic (people already in keep their price); canceling a clinic cancels its charges not yet sent (refunds still go); Past is only clinics she was in or canceled from, and a canceled clinic says so; a fee refunded in full reads refunded on the roster |
 | `waive_charge_race.sh` | Decision 0040: a Waive and a Charge on one late cancel at the same instant never both land (Charge held then Waive: charged, not waived; Waive held then Charge: waived, no payment); red against the single-UPDATE Waive |
 | `tara_answers_1012` | Decision 0040: a waived late cancel owes nothing anywhere and only a late cancel with no live charge can be waived, by Tara alone; Accept needs a saved card while payments are on and cards are required, and nothing moves on refusal; the history counts every cancel the player made plus every late cancel, not Tara's Remove |
 | `registration_note` | Decision 0039: the player's note reaches Tara and the writer only (not another player, a pro or anon; exactly two views carry it), written at Register or by `set_my_registration_note` until the start on her own live spot, 300 at most, blank is none, erased with the account |
@@ -769,7 +770,7 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `declined_card_race.sh` | 20260928700001: a later-attempted success held open while an earlier attempt's decline is recorded; the account ends with no decline, because `payments_card_decline` locks the account row before deciding (red without the lock, 2026-09-28) |
 | `dispute_race.sh` | Two concurrent deliveries of one dispute (`stripe_record_dispute`, 20260928200001), each holding the row in turn: the newer event's state survives in either commit order. Both statuses are open on purpose, so only the order guard decides; red under a read-then-write version (round 1 ended at the older event), 2026-09-28 |
 
-**Swift**: 254 unit tests (`FXETennisTests`: price formatting, per-viewer
+**Swift**: 264 unit tests (`FXETennisTests`: price formatting, per-viewer
 pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016; since 2026-09-27 the request-failure classifier, a failed load keeping who you are, the waiver and card refusals reopening their steps, the 30-second reload throttle, the redraw moments, and the type scale under Larger Text; since 2026-09-28 the invitation push's Accept and Decline, the Remind me reminder, the calendar entry, and the haptics and chip motion; a clinic the player holds beyond the list's five-week edge staying on their screens, the instant-open snapshot's per-person and ended-clinic rules, Siri's next-clinic answer, and the Player Pool's history line) and 25
 XCUITests: 9 player flows
 (`PlayerFlowUITests`: sign in / browse / register, undo, sign-up end to end,

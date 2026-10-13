@@ -197,10 +197,13 @@ Rating Guide
 Rating \(bucket.label)
 Really cancel? Everyone is told.
 Really remove?
+Really?
 Recent deposits
 Refresh
+Refunded
 Register
 Registration has closed for this clinic.
+Registration isn't open yet.
 Registration open
 Registration opens \(openMoment.formatted(.dateTime.month(.abbreviated).day()))
 Registration opens \(openMoment.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day().hour().minute()))
