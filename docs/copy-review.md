@@ -845,6 +845,23 @@ plain words are mine.
 | ☐ | Waive (name)'s fee | VoiceOver's name for the Waive button | Chrome, mine |
 | ☐ | Your answers of October 12 are in the app. This is only the words still waiting on you, and a few things to try on your laptop. Tap Keep, or Change and write it your way. Your answers save as you go. | The intro of round six of Tara's review page (`web/review.html`), for Tara, not players | Mine, replaces round five's intro |
 
+## The privacy policy: three things it does not mention (audit 2026-10-12) — awaiting Alex
+
+Found by the docs audit: `web/privacy.html` (live since 2026-09-27, linked
+from Profile) never mentions the waiver signature, the card-permission record
+or the private note for Tara. Apple checks that a policy matches what an app
+collects. Drafted, **not applied**: Alex reads, edits or approves, then it goes
+into `web/privacy.html` and `docs/legal/privacy-policy.md` together.
+
+| ✓ | Add | Where |
+|---|---|---|
+| ☐ | When you sign the waiver, we keep the name you type, your email address, when you signed and the app version you signed with. When you give permission for your card to be charged, we keep a record of that permission and when you gave it. If you leave a note for Tara when you register, it is kept with that registration and only Tara can read it. | "Information collection", after "...attend, cancel, or miss." |
+| ☐ | The notes you left for Tara are removed too. A waiver you signed is kept as a record that you signed it. The record of your card permission is kept for 90 days, then removed. | "Data retention", after "...card summary are removed;" |
+
+One decision inside it: today, deleting an account **does not** erase the
+signed waiver (`delete_my_account` leaves `waiver_acceptances`), so the draft
+says so. If the waiver should go too, that is a code change, not a wording one.
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148
