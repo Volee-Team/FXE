@@ -843,6 +843,7 @@ plain words are mine.
 | ☐ | Fee waived | after Waive | Chrome, mine |
 | ☐ | Undo | beside "Fee waived" | Chrome, mine |
 | ☐ | Waive (name)'s fee | VoiceOver's name for the Waive button | Chrome, mine |
+| ☐ | Your answers of October 12 are in the app. This is only the words still waiting on you, and a few things to try on your laptop. Tap Keep, or Change and write it your way. Your answers save as you go. | The intro of round six of Tara's review page (`web/review.html`), for Tara, not players | Mine, replaces round five's intro |
 
 ## The rule going forward
 
