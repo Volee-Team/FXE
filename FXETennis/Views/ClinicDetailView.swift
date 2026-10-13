@@ -44,6 +44,11 @@ final class ClinicDetailModel {
     /// index on (clinic, player) while pending, so a double tap is refused
     /// server-side regardless.
     var lateRequestSent = false
+    /// The clinic as the server has it now. The page is opened with the copy
+    /// the list had; a pull or coming back to the app used to reload only the
+    /// registration, so a canceled clinic kept its Register button and a moved
+    /// start kept the old cutoff (audit 2026-10-12).
+    var freshClinic: ClinicPublic?
 
     /// Ask Tara to fit this player in after registration has closed.
     ///
@@ -73,6 +78,8 @@ final class ClinicDetailModel {
         do {
             let regs = try await RegistrationRepository.mine()
             registration = regs.first { $0.clinicId == clinicId && $0.status != .canceled }
+            // Leniently: no answer keeps the copy the page opened with.
+            if let current = try? await ClinicRepository.clinic(id: clinicId) { freshClinic = current }
             messages = try await ClinicRepository.messages(clinicId: clinicId)
             // A load that worked clears an old "Couldn't reach the server"
             // (review, 2026-09-27: it stayed after a pull that succeeded).
@@ -253,9 +260,17 @@ struct ClinicDetailView: View {
     /// saved on its own once she holds a spot.
     @State private var noteDraft = ""
     @FocusState private var noteFocused: Bool
-    let clinic: ClinicPublic
+    /// The copy the page was opened with; `clinic` is the fresher one once loaded.
+    private let initialClinic: ClinicPublic
+    private var clinic: ClinicPublic { model.freshClinic ?? initialClinic }
     let isMember: Bool
     var onChanged: () async -> Void = {}
+
+    init(clinic: ClinicPublic, isMember: Bool, onChanged: @escaping () async -> Void = {}) {
+        self.initialClinic = clinic
+        self.isMember = isMember
+        self.onChanged = onChanged
+    }
 
     @Environment(SessionStore.self) private var session
     /// Accept and Decline stack at the accessibility text sizes.
