@@ -39,7 +39,7 @@ if ! mkdir "$LOCK" 2>/dev/null; then
   exit 2
 fi
 echo $$ > "$LOCK/pid"
-trap 'rm -rf "$LOCK"' EXIT
+trap 'rm -rf "$LOCK"; [ -n "${UDID:-}" ] && [ -n "${TEST_UDID:-}" ] && xcrun simctl shutdown "$TEST_UDID" 2>/dev/null' EXIT
 
 DEVICE="${DEVICE:-iPhone 17 Pro}"
 RUNTIME="${RUNTIME:-}"
@@ -72,16 +72,37 @@ for rt, devs in json.load(sys.stdin)["devices"].items():
     for d in devs:
         if d["udid"] == sys.argv[1]:
             m = re.search(r"iOS-(\d+)-(\d+)", rt); print(f"{m.group(1)}.{m.group(2)}")' "$UDID")
-echo "Device: $DEVICE, iOS $OS ($UDID)"
+# The run gets its own copy of that phone, "FXE UI <name>", made once and
+# reused. Until 2026-10-12 the script shut down every other booted simulator,
+# which knocked the Claude app's simulator panel off its phone on every run
+# (Alex: "it keeps disconnecting then asking again"). Now nothing outside the
+# "FXE UI" copies is touched, other runs' copies are shut down (one run at a
+# time, the 2026-09-27/28 crashes), and this copy is shut down at the end, so
+# a second simulator is open only while a run is going.
+TEST_NAME="FXE UI $DEVICE"
+TEST_UDID=$(xcrun simctl list devices available -j | python3 -c '
+import json, sys
+want, base = sys.argv[1], sys.argv[2]
+devs = json.load(sys.stdin)["devices"]
+rt = next(r for r, ds in devs.items() if any(d["udid"] == base for d in ds))
+print(next((d["udid"] for d in devs[rt] if d["name"] == want), ""))' "$TEST_NAME" "$UDID")
+if [ -z "$TEST_UDID" ]; then
+  read -r TYPE RT < <(xcrun simctl list devices available -j | python3 -c '
+import json, sys
+for rt, ds in json.load(sys.stdin)["devices"].items():
+    for d in ds:
+        if d["udid"] == sys.argv[1]: print(d["deviceTypeIdentifier"], rt)' "$UDID")
+  TEST_UDID=$(xcrun simctl create "$TEST_NAME" "$TYPE" "$RT")
+  echo "Created $TEST_NAME ($TEST_UDID) for test runs."
+fi
+UDID="$TEST_UDID"
+echo "Device: $TEST_NAME, iOS $OS ($UDID)"
 
-# One simulator at a time: shut down every other booted one first. Several
-# left running ate memory and confused whoever was watching (Alex,
-# 2026-10-01: "why do u keep opening 2 sims?").
 for other in $(xcrun simctl list devices booted -j | python3 -c '
 import json, sys
 for devs in json.load(sys.stdin)["devices"].values():
     for d in devs:
-        if d["state"] == "Booted" and d["udid"] != sys.argv[1]: print(d["udid"])' "$UDID"); do
+        if d["state"] == "Booted" and d["udid"] != sys.argv[1] and d["name"].startswith("FXE UI "): print(d["udid"])' "$UDID"); do
   xcrun simctl shutdown "$other" 2>/dev/null
 done
 
