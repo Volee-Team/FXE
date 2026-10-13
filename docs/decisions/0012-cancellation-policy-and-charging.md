@@ -2,6 +2,8 @@
 
 **Date:** 2026-09-16 · **Status:** Active; §2 and §6 (the courtesy) and the 4-hour figure superseded by 0013 on 2026-09-21 · **Supersedes:** 0010 (the emergency-note rule) and the "charge when You're In!" default in 0009
 
+**Superseded in part (forward note added 2026-10-12):** §2 and §6 (the courtesy) and the 4-hour figure by 0013; §4's one tap per clinic (`admin_charge_clinic`) by 0037: Tara charges each person on their own tap, and Charge clinic is gone from both screens.
+
 ## What Tara said
 
 Relayed by Alex on 2026-09-16. Her policy text, verbatim, is the player-facing

@@ -2,6 +2,8 @@
 
 **Date:** 2026-09-28 · **Status:** Active, three defaults for Alex and Tara to confirm (below) · **Source:** Tara's round-four answers 78 and 83 (decision 0024), branch `declined-card`, migration `20260928700001_declined_card.sql`
 
+**Extended by 0040 (forward note added 2026-10-12):** Accept also needs a saved card while payments are on and cards are required, as Register does (question 107); `respond_to_invitation` refuses `card_required`. The three defaults below are still for Alex and Tara to confirm.
+
 Her words, exactly:
 
 > 78: "Cannot sign up without proper, transactional card. App needs to tell them why their card isn’t working, yes."

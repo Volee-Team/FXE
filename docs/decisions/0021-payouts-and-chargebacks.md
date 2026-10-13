@@ -2,6 +2,8 @@
 
 **Date:** 2026-09-28 · **Status:** Active, one default pending question 89 · **Source:** Alex, 2026-09-27 (the admin should let Tara run everything, payouts included, without opening Stripe; checklist H7), branch `payouts-disputes`
 
+**Answered (forward note added 2026-10-12):** question 89 was answered in 0024 ("What you said yes"): Paid stays after a lost chargeback.
+
 ## What we chose
 
 1. **Payouts come from Stripe, read at the moment, never stored.** A new edge

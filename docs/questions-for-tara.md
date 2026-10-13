@@ -26,6 +26,7 @@ Does it stop new Player Pool entries too, or only new You're In! registrations? 
 **4. Confirming the time zone is Eastern (Charlotte).**
 *Default: yes, all times are Charlotte local, and the app handles daylight saving automatically.*
 *Default built. Not explicitly confirmed; low risk.*
+*ANSWERED 2026-10-04 (decision 0038): "The times should not convert to where the phone is ... Charlotte time". Every time in the app is Charlotte time wherever the phone is (`ClubTime.apply()`).*
 
 ---
 
@@ -100,6 +101,7 @@ No packages, no punch cards, no monthly billing, no running balance.
 Venmo handle on every clinic page, only in the unpaid reminder message, or in both?
 *Default: both, and we will put the exact text you give us.*
 *ANSWERED 2026-08-02 (decision 11): her exact Zelle/Venmo line; shown in both places.*
+*SUPERSEDED 2026-09-21 and 2026-09-26 (decisions 0013, 0015 §8): card only, so the line is shown nowhere; her string stays in `app_settings` behind `zelle_allowed` false.*
 
 **17. If you cancel a clinic that people already paid for, does the app need to do anything?**
 *Default: nothing. The Paid checkbox stays as it was and you handle refunds or credits outside the app.*
@@ -137,6 +139,7 @@ This is the single biggest question on this list. It changes what we build.
 Not building it now either way. We just want to know whether to design for it so it is cheap later.
 *Default: design for it, build one admin.*
 *Default built (accounts.role). Not confirmed; nothing to build.*
+*ANSWERED 2026-09-22 and 2026-09-28 (decisions 0016, 0024, 0025): Tara stays the only admin, "a super admin above the pros"; pros get their own role (today's rosters, Came / No-show, nothing financial), built so one pro can be given more later.*
 
 ---
 
@@ -148,14 +151,15 @@ Volee is under John's account. FXE should probably be its own, under FXE or unde
 
 **24. The app stores children's first name, last name, and age under a parent account. Does FXE have parent consent language already, from club registration forms or waivers?**
 Apple requires a privacy policy URL and an accurate privacy declaration, and apps handling kids' data get looked at more carefully. We need to know what already exists so we are not writing policy from scratch.
-*DEFERRED with juniors (0004, 0007 §6). Waiver wording still pending (decision 16). Short-list item 12.*
+*DEFERRED with juniors (0004, 0007 §6). Short-list item 12. The adult waiver was answered by question 45 (decision 0013, 2026-09-21); parent consent waits for juniors.*
 
 **25. Who writes the privacy policy and terms of service, and is there an FXE website we can host them on?**
-*HALF ANSWERED 2026-08-02 (decision 16): reuse Volee's policy. Open: a URL to host it. Short-list item 13.*
+*HALF ANSWERED 2026-08-02 (decision 16): reuse Volee's policy. Short-list item 13.*
+*ANSWERED 2026-09-27 (checklist C6): Tara approved the policy ("looks good"); published at https://fxe-tennis-admin.vercel.app/privacy.html and linked from Profile in the app.*
 
 **26. Final logo asset and exact brand colors.**
 We need the gator-with-tennis-ball logo as a PNG or SVG with a transparent background, and the exact navy, cream, and green you want (hex codes if the club has them, otherwise send an image and we will pull them).
-*ANSWERED 2026-08-02/08-12 (decisions 15, 22, 23): crossed-racquets mark (in repo), her hex codes in Brand.swift. Still open: the cream ground #F7F4EC is our choice awaiting her OK (the older #FAF7F1 belonged to palette A and is gone).*
+*ANSWERED 2026-08-02/08-12 (decisions 15, 22, 23): crossed-racquets mark (in repo), her hex codes in Brand.swift. The cream ground is settled too: Kat's style guide (2026-09-22, `docs/style-guide.md`) set porcelain #F2F0EC, with Tara's cream-to-warmer-cream gradient on top; the mark is in colour since decision 0032.*
 
 ---
 
@@ -176,7 +180,7 @@ service); Stripe takes about 3% per card payment. Every question below has a
 default we would otherwise pick, so "yes" is a complete answer.
 
 **27. Cancellation cutoff: how close to the start is a cancellation charged?**
-*ANSWERED 2026-09-12: 4 hours, honor system (decision 0010). **SUPERSEDED 2026-09-21 (decision 0013): 3 hours** ("3 hours instead of 4. Otherwise good"), which is also the registration close. Free before; inside 4 hours the player has to say it is an emergency, with a very concise message.*
+*ANSWERED 2026-09-12: 4 hours, honor system (decision 0010). **SUPERSEDED 2026-09-21 (decision 0013): 3 hours** ("3 hours instead of 4. Otherwise good"), which is also the registration close. Free before 3 hours; inside them it is a late cancellation with the full fee. The emergency note of 0010 was dropped by 0012 (2026-09-16), and the courtesy by 0013.*
 
 **28. Is the late-cancellation charge the full clinic price, or a fixed amount?**
 *Default: full price of that clinic ($18/$23 or $22/$28).*
@@ -207,6 +211,7 @@ default we would otherwise pick, so "yes" is a complete answer.
 *Default: the regular fee is automatic; a late-cancel or no-show charge waits for your tap on the roster, so you can waive it for a good reason.*
 *ANSWERED 2026-09-16 (decision 0012): the courtesy is automatic; the charge is her one tap per clinic (question 43 confirms the tap).*
 *The automatic courtesy in that answer was withdrawn 2026-09-21 (decision 0013); the tap is confirmed by question 43.*
+*SUPERSEDED 2026-10-02 (decision 0037): still her tap and nothing automatic, but one tap per person (a Charge button on each row after the clinic), not one per clinic.*
 
 **35. Do you want Zelle to stay as an option once cards work?**
 *Default: yes, for members who prefer it; you mark those paid by hand as today.*
@@ -256,6 +261,7 @@ say it's an emergency to cancel."* These are the gaps that remain.
 **43. Charging after a clinic: you tap "Charge clinic" once you've marked any no-shows, or should the app charge everyone automatically at the end time?**
 *Default: your tap. Nothing is charged until you press it, and the roster shows who will be charged what.*
 *ANSWERED 2026-09-21 (decision 0013): "I'll do this - I'll tap charge - app does nothing automatically w payments." Built as her tap.*
+*SUPERSEDED 2026-10-02 (decision 0037): Charge clinic is gone from both screens; she taps Charge on each person after the clinic.*
 
 **44. The one courtesy every 90 days covers a late cancellation only; a no-show is always the full fee. Right?**
 *Default: yes, as your policy lists them separately.*
@@ -292,7 +298,7 @@ say it's an emergency to cancel."* These are the gaps that remain.
 ## L. After her review of every word (added 2026-09-21)
 
 **52. Under your membership line on Edit details the app says "Set by Tara". You wrote "Do we need anything?" Drop the caption, or keep it so a player knows why they can't change it?**
-*Default: keep it. Status: superseded by 70, answered 2026-09-28 (decision 0024).*
+*Default: keep it. Status: superseded by 70, answered 2026-09-28 (decision 0024): the caption is removed from every player screen; membership shows with no caption.*
 *ANSWERED 2026-09-22 (decision 0016): "I'm confused by this. Let's talk". Replaced with "Only Tara can change this."; question 70 shows it to her, and Alex raises it when they talk.*
 
 **53. After a player messages you inside the 3-hour close, the app says "Tara has your message." You chose Change and left it blank. What should it say?**
@@ -371,13 +377,14 @@ new and changed words and these questions, nothing else.
 *Default: "Rating Guide". Status: answered 2026-09-28 (decision 0024).*
 
 **70. Beside a player's membership on Edit details it said "Set by Tara" and you wrote "I'm confused by this. Let's talk". It now says "Only Tara can change this.", because members can't change their own membership (you can, on their profile). OK?**
-*Default: "Only Tara can change this." Status: answered 2026-09-28 (decision 0024).*
+*Default: "Only Tara can change this." Status: answered 2026-09-28 (decision 0024): "Remove “set my Tara” from view by user." The caption is gone from every player screen; membership still shows ("FXE Member" / "Non-member").*
 
 **71. You and the pros. You wrote that only you charge people and see the money, and the pros can see the clinic list and mark no-show and late cancellation. Who are the pros who need a login, and can they also: set courts, message a clinic, invite from the Player Pool, add a walk-up, see your private notes on players?**
 *ANSWERED 2026-09-28 (decision 0024): only she sees everything; pros see who is coming to that day's clinics, mark Came / No-show and late cancellations, never invite from the Pool, never see anything financial. Four pros named (kept on hosted, not here: the repo is public). "Eventually I will have [one pro] see more and [another pro] see more" (the two names are on hosted with the rest).*
 
 **72. Guests who don't have the app. You wrote the member who brings them gets charged. Proposed: you (or a pro) add the guest to the clinic from the laptop, pick which member brought them, and after the clinic that member's card is charged the guest's fee. Which price does the guest pay, member or non-member? Do they take a spot like anyone else?**
 *HALF ANSWERED 2026-09-28 (decision 0024): the guest always pays the non-member price, billed to the member who brings them, through an "Invite a friend" button that shares the app or asks her to add the friend by name. Flow in `docs/archive/guests.md`; the sentence telling the member they will be charged is question 93.*
+*ANSWERED 2026-10-12 (decision 0040, questions 93 and 95): guests are parked, "Until this becomes an issue, none of the above"; a guest gets the app like anyone. Her sentence for the member (93) is kept in `docs/copy.md` for when guests come back (roadmap, Parked).*
 
 **73. The board's 10% (was 58, 67, 68). The report shows 10% of what players actually paid by card that month, late-cancel and no-show fees included, before Stripe's fee, and a refund comes off the month of the clinic. Right?**
 *Default: as stated, which is what is built. Status: answered 2026-10-12: "Correct" (decision 0040).*
@@ -527,6 +534,26 @@ Built as you asked: a box above Register with your example and "Only Tara sees t
 
 **112. Should your pros see the notes too, since they help run the courts?**
 *Default: no, only you. Status: open, asked 2026-10-11.*
+
+## X. Edges found in the 2026-10-12 review
+
+Five things the app does today that nobody has asked you about. Each has the
+answer we would pick, so "yes" is enough.
+
+**113. You change a clinic's length after people have signed up (say 60 to 90 minutes). Do the people already in pay the new price, or the price they signed up at?**
+*Default: the new price. Status: open, asked 2026-10-12.*
+
+**114. Someone deletes their account less than 3 hours before a clinic they are in. Is that a late cancellation, with the fee?**
+*Default: yes, the same as any late cancel. Status: open, asked 2026-10-12.*
+
+**115. You change someone between member and non-member after they signed up for a clinic. Do they keep the price they signed up at?**
+*Default: yes, the price they signed up at. Status: open, asked 2026-10-12.*
+
+**116. Stripe shows Foxcroft's club address as FXE's support address on card statements and receipts. Is that all right?**
+*Default: yes. Status: open, asked 2026-10-12.*
+
+**117. North Carolina sales tax: no tax is charged on clinic fees today. Do you need any?**
+*Default: none. Status: open, asked 2026-10-12.*
 
 ### How 52 to 57 are being sent
 

@@ -2,6 +2,8 @@
 
 **Date:** 2026-09-28 · **Status:** Active, four defaults pending questions 79, 88, 90 and 91 · **Source:** Tara's catalogue (`docs/notifications.md`), Alex 2026-09-27 (*"we want everything 100% functional + even better to wow people on the first opening"*), branch `notif-her-words`, migration `20260928000001_notifications_in_her_words.sql`
 
+**Answered (forward note added 2026-10-12):** questions 79, 88, 90 and 91 were answered in 0024; question 92 (taking someone out of You're In!) in 0040: nothing is sent.
+
 ## What we chose
 
 Her words, character for character, from the database functions that cause
