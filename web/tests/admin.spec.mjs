@@ -570,6 +570,11 @@ test.describe("fix round", () => {
 
       await signIn(page, TARA);
       await expect(page.getByRole("heading", { name: "This week" })).toBeVisible();
+      // A held charge is in Action Needed however far down the ledger it has
+      // slipped (audit 2026-10-12), with the same two answers.
+      const heldAction = page.locator(`#money-needs [data-held-action="${held.id}"]`);
+      await expect(heldAction).toContainText("Check this charge in Stripe.", { timeout: 15_000 });
+      await expect(heldAction.getByRole("button", { name: "Went through" })).toBeVisible();
       // Nobody can fix a deleted account's card: not in Action Needed...
       await expect(page.locator(`#money-needs [data-declined="${dana.id}"]`)).toHaveCount(0);
       // ...but still on the Money tab, under the account's name.

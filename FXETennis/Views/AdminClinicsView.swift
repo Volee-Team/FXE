@@ -35,6 +35,8 @@ final class AdminClinicsModel {
     var declines: [MoneyDecline] = []
     /// Open chargebacks (20260928200001). Tara answers them in Stripe.
     var disputes: [MoneyDispute] = []
+    /// Charges held for her answer (20260927300003).
+    var held: [HeldCharge] = []
 
     /// Clinics that ended with someone who still owes a fee.
     /// Only while payments are on: the tap is the resolving action.
@@ -65,6 +67,7 @@ final class AdminClinicsModel {
             // A deleted account's decline is nobody's to fix (20260927300001).
             declines = ((try? await AdminRepository.moneyDeclined()) ?? []).filter { $0.accountDeleted != true }
             disputes = (try? await AdminRepository.moneyDisputes()) ?? []
+            held = (try? await AdminRepository.heldCharges()) ?? []
             error = nil
             await loadCounts()
         } catch {
@@ -85,6 +88,20 @@ final class AdminClinicsModel {
         } catch {
             line = String(describing: error).contains("decline_not_open")
                 ? AdminClinicModel.changedUnderYou
+                : (RequestFailure(error).line ?? "That didn't go through. Check your connection and try again.")
+        }
+        await load()
+        if let line { self.error = line }
+    }
+
+    /// Her answer on a held charge, after she has looked in Stripe.
+    func resolve(_ charge: HeldCharge, outcome: String) async {
+        var line: String?
+        do {
+            try await AdminRepository.resolveHeld(payment: charge.id, outcome: outcome)
+        } catch {
+            line = String(describing: error).contains("payment_not_held")
+                ? "That charge is no longer held."
                 : (RequestFailure(error).line ?? "That didn't go through. Check your connection and try again.")
         }
         await load()
@@ -114,8 +131,20 @@ final class AdminClinicsModel {
     }
 }
 
+/// A held-charge answer waiting on "Really?".
+private struct PendingHeldAnswer {
+    let charge: HeldCharge
+    let label: String
+    let outcome: String
+}
+
 struct AdminClinicsView: View {
     @State private var model = AdminClinicsModel()
+    @State private var pendingHeldAnswer: PendingHeldAnswer?
+    private var pendingHeld: (HeldCharge, String, String)? {
+        get { pendingHeldAnswer.map { ($0.charge, $0.label, $0.outcome) } }
+        nonmutating set { pendingHeldAnswer = newValue.map { PendingHeldAnswer(charge: $0.0, label: $0.1, outcome: $0.2) } }
+    }
 
     private var today: [ClinicAdmin] {
         model.clinics.filter { Calendar.current.isDateInToday($0.startsAt) }
@@ -193,6 +222,13 @@ struct AdminClinicsView: View {
             }
         }
         .task { await model.load() }
+        .confirmationDialog(pendingHeldAnswer?.label ?? "",
+                            isPresented: .init(get: { pendingHeldAnswer != nil }, set: { if !$0 { pendingHeldAnswer = nil } }),
+                            titleVisibility: .visible) {
+            if let p = pendingHeldAnswer {
+                Button("Really?") { Task { await model.resolve(p.charge, outcome: p.outcome) } }
+            }
+        }
         // A late request or a reply that came in while the app slept shows
         // when Tara comes back to it (MVP audit item 8).
         .reloadOnForeground { await model.load() }
@@ -208,7 +244,7 @@ struct AdminClinicsView: View {
 
         let asks = model.lateRequests.count
         let news = model.notices.count
-        let money = !model.uncharged.isEmpty || !model.declines.isEmpty || !model.disputes.isEmpty
+        let money = !model.uncharged.isEmpty || !model.declines.isEmpty || !model.disputes.isEmpty || !model.held.isEmpty
 
         return Group {
             if waiting > 0 || unpaid > 0 || pool > 0 || asks > 0 || news > 0 || money {
@@ -249,6 +285,20 @@ struct AdminClinicsView: View {
                                 }
                             }
                         }
+                        // A held charge: she looks in Stripe, then answers.
+                        // Each answer asks once more, as on the laptop.
+                        ForEach(model.held) { h in
+                            VStack(alignment: .leading, spacing: 2) {
+                                needRow(Brand.Status.responseNeeded, h.displayName,
+                                        detail: "\(h.clinicName.map { $0 + ": " } ?? "")Check this charge in Stripe.")
+                                HStack(spacing: Brand.Spacing.sm) {
+                                    heldAnswer(h, label: "Went through", outcome: "succeeded")
+                                    heldAnswer(h, label: "Did not go through", outcome: "canceled")
+                                }
+                                .padding(.leading, 17)
+                            }
+                            .accessibilityIdentifier("admin.actionNeeded.held")
+                        }
                         // A dispute is answered in Stripe, so the row opens
                         // Stripe's dashboard in Safari, like the toolbar link.
                         ForEach(model.disputes) { d in
@@ -275,6 +325,19 @@ struct AdminClinicsView: View {
                 .accessibilityIdentifier("admin.actionNeeded")
             }
         }
+    }
+
+    /// One of her two answers on a held charge, confirmed with "Really?".
+    private func heldAnswer(_ h: HeldCharge, label: String, outcome: String) -> some View {
+        Button {
+            pendingHeld = (h, label, outcome)
+        } label: {
+            Text(label)
+                .brandFont(.chip)
+                .foregroundStyle(Brand.navy)
+                .frame(minHeight: Brand.Layout.minTapTarget)
+        }
+        .buttonStyle(.plain)
     }
 
     private func needRow(_ status: Brand.Status, _ text: String, detail: String? = nil) -> some View {

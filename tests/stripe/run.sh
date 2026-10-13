@@ -95,6 +95,12 @@ webhook() { # payload [secret]
   sig=$(printf '%s.%s' "$ts" "$payload" | openssl dgst -sha256 -hmac "$secret" | sed 's/^.* //')
   curl -s -X POST "$API/functions/v1/stripe-webhook" -H "Content-Type: application/json" \
        -H "stripe-signature: t=$ts,v1=$sig" -d "$payload"; }
+webhookcode() { # payload -> the HTTP status the webhook answered
+  local ts sig
+  ts=$(date +%s)
+  sig=$(printf '%s.%s' "$ts" "$1" | openssl dgst -sha256 -hmac "$WHSEC" | sed 's/^.* //')
+  curl -s -o /dev/null -w '%{http_code}' -X POST "$API/functions/v1/stripe-webhook" -H "Content-Type: application/json" \
+       -H "stripe-signature: t=$ts,v1=$sig" -d "$1"; }
 event() { # type object-json [livemode, default true: the live path] [created, default now]
   echo "{\"id\":\"evt_$RANDOM\",\"object\":\"event\",\"api_version\":\"2024-12-18.acacia\",\"created\":${4:-$(date +%s)},\"livemode\":${3:-true},\"type\":\"$1\",\"data\":{\"object\":$2}}"; }
 fncode() { # name jwt-or-empty body -> "<http status> <error or ok>"
@@ -176,6 +182,14 @@ check "a second stripe-charge finds nothing pending" "0" "$(fn stripe-charge "$T
 check "registration not paid before the webhook" "f" "$(sql "select paid from public.registrations where id='$REG'")"
 PI=$(sql "select stripe_payment_intent_id from public.payments where id='$PAY'")
 OBJ="{\"id\":\"$PI\",\"object\":\"payment_intent\",\"status\":\"succeeded\"}"
+# A write that fails is not answered 200 (audit 2026-10-12): Stripe must send
+# the event again, or the row sits at Processing for good. The ledger is made
+# unwritable for the function's role, the event is refused with 500 and the row
+# is unchanged; with the grant back, Stripe's retry lands it.
+sql "revoke update on public.payments from service_role" >/dev/null
+check "a failed ledger write answers 500, so Stripe retries" "500" "$(webhookcode "$(event payment_intent.succeeded "$OBJ")")"
+check "and the row is untouched" "processing" "$(sql "select status from public.payments where id='$PAY'")"
+sql "grant update on public.payments to service_role" >/dev/null
 webhook "$(event payment_intent.succeeded "$OBJ")" >/dev/null
 check "payment_intent.succeeded -> succeeded" "succeeded" "$(sql "select status from public.payments where id='$PAY'")"
 check "the signed event's livemode is the one kept" "t" "$(sql "select livemode from public.payments where id='$PAY'")"

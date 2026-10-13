@@ -52,7 +52,7 @@ struct MyClinicsView: View {
                         .brandFont(.body)
                         .foregroundStyle(Brand.textSecondary)
                         .multilineTextAlignment(.center)
-                    NavigationLink { ClinicsView() } label: {
+                    NavigationLink { ClinicsView(embedded: true) } label: {
                         FilledButtonLabel("View Open Clinics")
                     }
                     .buttonStyle(.plain)
@@ -173,15 +173,9 @@ extension MyClinicsView {
             .foregroundStyle(pastOutcomeColor(row))
     }
 
-    private func pastOutcome(_ row: PastClinic) -> String {
-        if row.status == .canceled { return row.lateCancel == true ? "Canceled late" : "Canceled" }
-        if row.noShow == true { return "No-show" }
-        if let cents = row.priceCentsCharged { return "Played, \(cents.centsAsPrice)" }
-        return "Played"
-    }
+    private func pastOutcome(_ row: PastClinic) -> String { row.outcome }
 
     private func pastOutcomeColor(_ row: PastClinic) -> Color {
-        if row.status == .canceled || row.noShow == true { return Brand.Status.canceled.ink }
-        return Brand.Status.youreIn.ink
+        row.outcomeIsPlayed ? Brand.Status.youreIn.ink : Brand.Status.canceled.ink
     }
 }

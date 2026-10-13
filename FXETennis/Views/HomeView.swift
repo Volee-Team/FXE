@@ -138,7 +138,7 @@ struct HomeView: View {
                                         openList(openNow(at: Date()))
                                     }
                                 } else {
-                                    NavigationLink { ClinicsView() } label: {
+                                    NavigationLink { ClinicsView(embedded: true) } label: {
                                         FilledButtonLabel("View Open Clinics", icon: "figure.tennis")
                                     }
                                     .buttonStyle(.plain)

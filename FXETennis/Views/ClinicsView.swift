@@ -48,7 +48,10 @@ final class ClinicsViewModel {
             // an invitation can be for a clinic weeks out. Found 2026-09-28,
             // when Home listed one of Maria's two You're In! clinics.
             let beyond = Self.heldBeyondList(fetchedClinics, held: live.map(\.clinicId))
-            let extra = beyond.isEmpty ? [] : try await ClinicRepository.clinics(ids: beyond)
+            // By date, not by id: the id list grew with every finished clinic
+            // (audit 2026-10-12). `beyond` still decides whether to ask at all.
+            let wanted = Set(beyond)
+            let extra = beyond.isEmpty ? [] : try await ClinicRepository.beyondHorizon().filter { wanted.contains($0.id) }
             self.clinics = Self.merged(fetchedClinics, extra)
             self.myRegistrationsByClinic = Dictionary(
                 live.map { ($0.clinicId, $0) }, uniquingKeysWith: { a, _ in a }
@@ -103,34 +106,46 @@ struct ClinicsView: View {
 
     private var isMember: Bool { session.activePlayer?.isMember ?? false }
 
+    /// Pushed from Home or My Clinics, the screen already sits in their
+    /// stack; a second NavigationStack drew two bars (audit 2026-10-12).
+    var embedded = false
+
+    init(embedded: Bool = false) { self.embedded = embedded }
+
     var body: some View {
-        NavigationStack {
-            ZStack {
-                CourtBackdrop()
-                Group {
-                    if model.loading && model.clinics.isEmpty {
-                        ScrollView { PlaceholderClinicCards().padding(Brand.Spacing.pageMargin) }
-                            .scrollDisabled(true)
-                    } else if let err = model.loadError, model.clinics.isEmpty {
-                        emptyState(err)
-                    } else if model.clinics.isEmpty {
-                        emptyState("No clinics scheduled yet.")
-                    } else {
-                        list
-                    }
+        if embedded {
+            content
+        } else {
+            NavigationStack { content }
+        }
+    }
+
+    private var content: some View {
+        ZStack {
+            CourtBackdrop()
+            Group {
+                if model.loading && model.clinics.isEmpty {
+                    ScrollView { PlaceholderClinicCards().padding(Brand.Spacing.pageMargin) }
+                        .scrollDisabled(true)
+                } else if let err = model.loadError, model.clinics.isEmpty {
+                    emptyState(err)
+                } else if model.clinics.isEmpty {
+                    emptyState("No clinics scheduled yet.")
+                } else {
+                    list
                 }
             }
-            .crispTopEdge()
-            .bannerTitle("Clinics")
-            .task { await model.load() }
-            // A "Remind me" moves or goes with what this list says (RegistrationReminders).
-            .reconcilesReminders(clinics: model.clinics, registered: Set(model.myRegistrationsByClinic.keys),
-                                 isMember: isMember)
-            .refreshable { await model.load() }
-            .reloadOnForeground { await model.load() }
-            .sheet(item: $explaining) { clinic in
-                ClinicExplainerSheet(clinic: clinic)
-            }
+        }
+        .crispTopEdge()
+        .bannerTitle("Clinics")
+        .task { await model.load() }
+        // A "Remind me" moves or goes with what this list says (RegistrationReminders).
+        .reconcilesReminders(clinics: model.clinics, registered: Set(model.myRegistrationsByClinic.keys),
+                             isMember: isMember)
+        .refreshable { await model.load() }
+        .reloadOnForeground { await model.load() }
+        .sheet(item: $explaining) { clinic in
+            ClinicExplainerSheet(clinic: clinic)
         }
     }
 
@@ -285,12 +300,15 @@ struct ClinicCard: View {
             .accessibilityIdentifier("clinicCard.name")
     }
 
+    /// A clinic Tara canceled reads Canceled whatever the player held: a green
+    /// You're In! on a canceled clinic said the opposite of the banner (audit
+    /// 2026-10-12).
     @ViewBuilder private var chip: some View {
-        if let reg = registration {
+        if clinic.isCanceled {
+            StatusChip(.canceled)
+        } else if let reg = registration {
             StatusChip(reg.status.display)
                 .statusChipMotion()
-        } else if clinic.isCanceled {
-            StatusChip(.canceled)
         }
     }
 

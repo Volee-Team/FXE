@@ -78,6 +78,24 @@ enum ClinicRepository {
             .value
     }
 
+    /// Every clinic starting past `upcoming()`'s five-week edge. The caller
+    /// keeps the ones the player holds. Asked by date, not by id: every
+    /// finished clinic a player ever held used to go into an id list on the
+    /// URL, which grows with history until the gateway refuses it (audit
+    /// 2026-10-12). Clinics that far out are few; finished ones are never
+    /// listed by clinics_public at all.
+    static func beyondHorizon() async throws -> [ClinicPublic] {
+        let horizon = Calendar.current.date(byAdding: .day, value: 35, to: .now) ?? .now
+        return try await supabase
+            .from("clinics_public")
+            .select()
+            .gt("starts_at", value: ISO8601DateFormatter().string(from: horizon))
+            .order("starts_at", ascending: true)
+            .limit(200)
+            .execute()
+            .value
+    }
+
     static func upcoming() async throws -> [ClinicPublic] {
         let horizon = Calendar.current.date(byAdding: .day, value: 35, to: .now) ?? .now
         return try await supabase
@@ -117,8 +135,23 @@ struct PastClinic: Codable, Identifiable, Sendable {
     let lateCancel: Bool?
     let priceCentsCharged: Int?
     let paid: Bool
+    /// Tara canceled the clinic (20261013000001); nil from an older server.
+    var clinicCanceled: Bool? = nil
 
     var id: UUID { registrationId }
+
+    /// What Past says about this clinic. A clinic Tara canceled says so,
+    /// whatever was held (audit 2026-10-12: it read "Played, $18").
+    var outcome: String {
+        if clinicCanceled == true { return "Canceled" }
+        if status == .canceled { return lateCancel == true ? "Canceled late" : "Canceled" }
+        if noShow == true { return "No-show" }
+        if let cents = priceCentsCharged { return "Played, \(cents.centsAsPrice)" }
+        return "Played"
+    }
+
+    /// Red for anything not played; green for a clinic played.
+    var outcomeIsPlayed: Bool { outcome.hasPrefix("Played") }
 
     enum CodingKeys: String, CodingKey {
         case name, category, status, paid
@@ -130,6 +163,7 @@ struct PastClinic: Codable, Identifiable, Sendable {
         case noShow = "no_show"
         case lateCancel = "late_cancel"
         case priceCentsCharged = "price_cents_charged"
+        case clinicCanceled = "clinic_canceled"
     }
 }
 
