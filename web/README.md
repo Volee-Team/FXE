@@ -1,12 +1,11 @@
 # FXE Tennis — Web Admin
 
-Tara's laptop surface. **Needs no Apple account**, which is the whole reason it
-exists right now: the iOS app is stuck behind Developer Program enrollment and
-she can use this today.
+Tara's laptop surface. **Needs no Apple account**: she opens a bookmark.
 
 Approved as the laptop half of a split admin surface (`docs/web-admin.md`,
-`docs/archive/for-tara.md` question 1). The phone app keeps the courtside work; this does
-weekly setup.
+question 1 of her first list, now `docs/archive/for-tara.md`; every question
+since lives in `docs/questions-for-tara.md`). The phone app keeps the
+courtside work; this does weekly setup.
 
 ## What she can do here
 
@@ -21,15 +20,32 @@ weekly setup.
 * **Court sheet** on each clinic card: `sheet.html`, the You're In! players by
   court with their ratings, to print instead of the handwritten sheet
 * A player's history beside the name in every Player Pool and on the Players
-  tab: "12 played · 1 no-show · 2 late cancels", or "New"
-* Invite from the Player Pool, mark no-shows, cancel an invitation. (The Paid toggle and "Remind unpaid" are gated on `zelle_allowed`, which decision 0013 set to `false`: the card is the only way to pay, so neither renders today.)
+  tab: "12 played, 5 canceled (2 late), 1 no-show", or "New" (decision 0040)
+* On each roster: courts, **Add player** (a walk-up), invite from the Player
+  Pool, cancel an invitation, Remove, Came / No-show, **Late cancel** for
+  someone who told her, and the player's private note under the name
+  (decision 0039). A late cancel stays in the Canceled list with a red **Late
+  cancellation** flag, and **Waive** with Undo drops its fee while no charge is
+  taken (decision 0040)
+* After a clinic, while payments are on: **Charge $N** on each row that owes,
+  one person at a time (decision 0037), with Declined or No card beside it.
+  (The Paid toggle and "Remind unpaid" are gated on `zelle_allowed`, which
+  decision 0013 set to `false`: the card is the only way to pay, so neither
+  renders today.)
 * Message any audience on a clinic, starting from one of her **saved messages**
   if she likes (her own text, kept with Save this message; decision 0030)
 * **Action Needed** at the top: players asking in after the 3-hour close (Put
-  them in / No room) and cancellations or invitation replies she has not seen
-* **Money** on its own tab: the four counts, expected / collected / still owed,
-  and a line per clinic. Three tabs across the top: This week · Players · Money;
-  the last one opened is remembered
+  them in / No room), cancellations or invitation replies she has not seen, a
+  clinic that ended and is not charged yet, a declined card (with Resolved),
+  and an open dispute
+* **Players** tab: search, member and active switches, her private note per
+  player, the Pro box (decision 0025), a one-time Reset link for a member who
+  cannot sign in (decision 0017), Review links, and the QR code for the app
+  with how often it was opened
+* **Money** tab: the board report (Download CSV, Print, Foxcroft's share),
+  Charged / Declined / Not charged yet, Payouts from Stripe, the card-payments
+  list with Refund, and a line per clinic. Three tabs across the top: This
+  week, Players, Money; the last one opened is remembered
 * Forgot password? on the sign-in card, landing on `reset.html`
 * Canceled clinics are hidden until "Show canceled" is ticked; they stay in
   the database (archive, never delete)
@@ -54,7 +70,7 @@ get committed aimed at the wrong project. Sign in as `tara@fxe.test` /
 ## Test it
 
 49 Playwright tests (`cat web/tests/*.spec.mjs | grep -cE '^\s*test\('`,
-2026-09-28) walk this page the way Tara does, against the LOCAL stack on a
+2026-10-12) walk this page the way Tara does, against the LOCAL stack on a
 fresh seed. They are the only automated check on the web admin,
 so they run in CI on every push (`web-browser-tests` in `probes.yml`).
 
@@ -87,40 +103,39 @@ git add web/vendor web/package.json web/package-lock.json
 `bash scripts/vendor-supabase-js.sh --check` is what CI runs: it rebuilds the
 file from the installed package and compares it byte for byte.
 
-## Deploy it (free, ~5 minutes)
+## Deploy it
 
-There is no build step and no server — just the static files in this folder.
+There is no build step and no server, just the static files in this folder.
 
 **Live at <https://fxe-tennis-admin.vercel.app>** (Vercel project
-`fxe-tennis-admin`, deployed 2026-08-28). Redeploy after changes with
-`cd web && npx vercel --prod`. Do NOT connect the Git repo to Vercel: previews
-would point at Tara's live data, and the repo root is not this folder.
+`fxe-tennis-admin`, first deployed 2026-08-28). Deploy only with this, from
+the repo root:
 
-**Vercel**
+```bash
+bash scripts/deploy-web.sh
+```
 
-1. `npm i -g vercel` (once)
-2. `cd web && vercel --prod`
-3. Accept the defaults. It prints a URL. Send that to Tara.
-
-**Or Netlify:** drag the `web/` folder onto <https://app.netlify.com/drop>.
-
-**Or Cloudflare Pages**, which is what `docs/web-admin.md` originally specified.
-Any static host works; nothing here depends on the platform.
+It deploys to Vercel production, then fetches every live page, script and
+stylesheet and compares it with this folder byte for byte, deploying once
+more if the first deploy silently did nothing (three times in September a
+plain deploy printed nothing and changed nothing). It exits red if the
+live site still differs, and it checks that `.vercelignore` keeps the test
+tooling off the site. Do NOT connect the Git repo to Vercel: previews would
+point at Tara's live data, and the repo root is not this folder.
 
 Anything not on `localhost` talks to the hosted project automatically.
 
-## Before Tara can actually use it
+## How Tara got in
 
-~~Two things~~ **Nothing — as of 2026-09-01 the path is fully open.** Hosted has
-every migration, and sign-up exists in this page ("First time? Create your
-account"). Her email self-promotes to admin at account creation
-(`bootstrap_first_admin`, 20260828000001), so the whole bootstrap is: she opens
-the live URL, creates her account, and builds her week from templates. Her real
-clinics enter through this page, never a hand-written INSERT, so the path itself
-gets exercised.
+Sign-up exists in this page ("First time? Create your account"). Her email
+self-promotes to admin at account creation (`bootstrap_first_admin`,
+20260828000001), so the whole bootstrap is: she opens the live URL, creates
+her account, and builds her week from templates. Her real clinics enter
+through this page, never a hand-written INSERT, so the path itself gets
+exercised (checklist D5).
 
-**Password reset** works on hosted: `https://fxe-tennis-admin.vercel.app/reset.html`
-was added to the Supabase redirect allow-list on 2026-09-01 (`docs/backlog.md`).
+**Password reset** on hosted lands on `https://fxe-tennis-admin.vercel.app/reset.html`,
+which is on the Supabase redirect allow-list (checklist D2, D11).
 If the URL ever changes, add the new one there first: Supabase silently falls
 back to the Site URL for anything not on that list.
 
@@ -137,11 +152,13 @@ fails the build if it does.
 
 ## Design
 
-Colours, radii and spacing come from `tokens.css`, transcribed from
-`FXETennis/Resources/Brand.swift`, so the web admin and the phone app cannot
-drift into looking like two different products. `tokens.css` sat on palette A
-for two weeks after `Brand.swift` moved to B; **Brand.swift is the source of
-truth**, change it there first.
+Kat's style guide, `docs/style-guide.md`, is the source of truth for style
+(Alex, 2026-09-22). `FXETennis/Resources/Brand.swift` carries it into code,
+and `tokens.css` follows `Brand.swift`: colours, radii and spacing are
+transcribed from it, so the web admin and the phone app cannot drift into
+looking like two different products. `tokens.css` once sat on palette A for
+two weeks after `Brand.swift` moved to B, so a style change goes into the
+guide's mapping and `Brand.swift` first, then here.
 
 Status chips use the locked terminology (**You're In!**, **Player Pool**,
 **Response Needed**, **Canceled**) and pair colour with the label, never colour

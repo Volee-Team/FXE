@@ -118,7 +118,7 @@ a brand new member does not know, and the alternative to a "?" is putting a
 paragraph on every row, which contradicts the standing rule that player screens
 must never feel like long blocks of writing.
 
-**Status: BUILT, 2026-08-16.** The "?" sits on every clinic card and opens a
+**In the app since 2026-08-16.** The "?" sits on every clinic card and opens a
 sheet with the description; a 105 clinic additionally shows her definition of
 the format. Verified on the simulator the day it landed.
 
@@ -131,7 +131,7 @@ Kept here so it is not re-invented by someone who does not know it was quoted.
 | Where | Copy | Source |
 |---|---|---|
 | Profile setup | "Are you currently a Foxcroft East Racquet & Swim Club member?" | Developer Guide, Screen 4 |
-| Profile setup | "Need Help?" (the rating explainer link) | Developer Guide, Screen 4 |
+| Profile setup | "Need Help?" (the rating explainer link), now "Rating Guide" | Developer Guide, Screen 4; renamed with her yes (question 69, decision 0024) |
 | Sign-up | "Clinic updates come through the app. Keep notifications on so you don't miss them." | Developer Guide, Screen 3 |
 
 ## Locked terminology
@@ -148,7 +148,8 @@ Never substitute a synonym. Full table in `docs/archive/design-system.md`.
 Verbatim from Tara's message of 2026-09-16 (decision 0012). The policy text is
 the player-facing rule and ships word for word. The two sentences are hers
 too; she said "you draft, I edit" and then wrote them, so they ship as written
-and are marked for her edit. Question 46 flags the card sentence.
+and are marked for her edit. Question 46 flagged the card sentence; she
+rewrote it on 2026-09-21 (decision 0013, below).
 
 **Cancellation policy**
 
@@ -201,14 +202,17 @@ option. Everyone using the app has to input a credit card"*), which now sit
 behind `zelle_allowed` on both admin surfaces. The "Late, courtesy used."
 notification suffix is still in `cancel_registration` but unreachable:
 `courtesy_cancel_days = 0` makes `courtesy_available()` false, so the branch
-never fires (kept per hard rule 4). The player-facing payment card on Clinic
-Details still renders her Zelle line unconditionally (`ClinicDetailView.swift`,
-`paymentCard`); gating it is a backlog row.
+never fires (kept per hard rule 4). The Zelle line is gone from every player
+screen since decision 0015 §8 (the payment card on each clinic's page was the
+last one; `grep -rn paymentCard FXETennis` finds nothing, 2026-10-12); her
+string stays in `app_settings.payment_instructions`, which only the admin's
+unpaid reminder reads, and that reminder is not drawn while `zelle_allowed` is
+false (decision 0013).
 
 Her policy text above is therefore superseded on three lines: **3 hours**
 where it says 4, no courtesy paragraph, and no emergency-email paragraph. She
-has not rewritten the block itself; question 56 asks for the new text, and
-until then the app shows only her two sentences, not the block.
+has not rewritten the block itself. Question 56 asked for the new text and was
+withdrawn on 2026-09-27; the app shows only her two sentences, not the block.
 
 ## The Adult Tennis Participation Waiver (2026-09-21)
 
@@ -284,11 +288,13 @@ listed she kept. Applied verbatim:
 | After a late request | She will let you know asap if there is room in this clinic | **She will let you know as soon as possible if there is room in this clinic** |
 | Profile, card section | Your card will only be charged after the clinic you attended, late cancellations, or no-shows. ... | **Your card will only be charged after a clinic you attended, a late cancellation or no-show. Cancel at least 3 hours before clinic and you will not be charged.** |
 
-Marked Change without her own words, so ours until she says otherwise (round
-four of the review page, questions 69 and 70; `docs/copy-review.md` §K):
-"Need Help?" is now "Rating Guide"; "Set by Tara" is now "Only Tara can change
-this."; the charge summary is now sentences; "Still owed" is now "Not charged
-yet".
+Marked Change without her own words, so ours until she said otherwise (round
+four of the review page; `docs/copy-review.md` §K): "Need Help?" became
+"Rating Guide", which she kept (question 69, decision 0024); "Set by Tara"
+became "Only Tara can change this.", and she then asked for the caption to go
+("Remove “set my Tara” from view by user.", question 70, decision 0024), so
+Edit details shows membership with no caption; the charge summary became
+sentences; "Still owed" became "Not charged yet".
 
 ## Her words of 2026-10-12 (decision 0040)
 
@@ -302,9 +308,12 @@ yet".
 
 1. ~~The NTRP rating guide~~ **CLOSED 2026-08-27**: *"Rating guide is good
    where it's at if it's volee material."*
-2. **Notification wording**, question 14. Tone settled 2026-08-27 ("First person
-   is ok. I want it to sound personal but not cheesy") — the exact words in
-   `docs/notifications.md` still deserve her eye. See `docs/copy-review.md` §E.
+2. **Notification wording**, question 20 (question 14 in the August list).
+   Her catalogue is in `docs/notifications.md` verbatim and tone is settled
+   (2026-08-27: "First person is ok. I want it to sound personal but not
+   cheesy"). Two bodies the server sends are still ours, #2 (invitation) and
+   #7 (clinic canceled): `docs/notifications.md` contradictions (a) and (d),
+   and `docs/copy-review.md` §E.
 3. ~~The Venmo / Zelle payment line~~ **CLOSED 2026-08-02** (decision 11 in
    `CLAUDE.md`): her exact string, lower-case "zelle" and no terminal period,
    lives in `app_settings.payment_instructions` and is pinned character for
@@ -312,6 +321,8 @@ yet".
    `payment_instructions()`, never hardcode it.
 5. ~~The splash line "Smart. Simple. Built for Tennis."~~ **CLOSED 2026-09-21**:
    "Let's Play." (question 55 confirms the capitalisation).
-4. **Clinic categories**, question 8. Her real schedule suggests the axis is
-   format and level ("105", "3.0+"), not "Drill / Cardio / Match Play". Worth
-   re-asking now that "105" is understood.
+4. ~~Clinic categories~~ **ANSWERED 2026-08-02** (question 11, question 8 in
+   the August list; decision 8 in `CLAUDE.md`): no list and no filter, category
+   stays free text. Her real schedule suggests the axis is format and level
+   ("105", "3.0+"), not "Drill / Cardio / Match Play"; re-asking would be a new
+   numbered question, not this line.

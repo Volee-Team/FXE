@@ -2,13 +2,16 @@
 
 Source of truth for copy: Tara, 2026-08-02.
 
-`FXETennis/Models/NotificationCopy.swift` transcribes this catalogue, but
-nothing calls it (`grep -rl 'FXENotification\|NotificationCopy\|FXEPayment' FXETennis FXETennisTests` finds only the file itself, 2026-09-28). Every
-notification that actually reaches a player is a `notifications` row written
-by a SQL RPC with its body built in SQL. Since 2026-09-28
-(`20260928000001_notifications_in_her_words.sql`) those bodies are her words
-for #1, #3, #5 and #6 and the catalogue's for #13, #14 and #15; #2 and #7 are
-still ours. See "What fires today" below before trusting the trigger column.
+`FXETennis/Models/NotificationCopy.swift` transcribes this catalogue. The app
+uses it in two places only: `RegistrationReminder.swift` (the "Remind me"
+reminder, #10's body) and `NextClinic.swift` (Siri's answer, its day, date and
+time format). `FXEPayment` in the same file has no caller (`grep -rn
+'FXENotification\|FXEPayment' FXETennis`, 2026-10-12). Every notification
+that reaches a player from the server is a `notifications` row written by a
+SQL RPC with its body built in SQL. Those bodies are her words for #1, #3, #5
+and #6, the catalogue's for #13, #14 and #15, and her 2026-09-28 words for a
+withdrawn invitation; #2 and #7 are still ours. See "What fires" below before
+trusting the trigger column.
 
 All player-facing copy below is hers, verbatim. Punctuation, capitalisation, and
 the missing terminal periods are reproduced as she wrote them. Admin-facing copy
@@ -28,11 +31,18 @@ the database layer as well. Do not add a count to a body string here.
 
 ---
 
-## What fires today (2026-09-28)
+## What fires
 
 The catalogue below is what she wrote and what should fire. This table is what
-the database does, from `pg_get_functiondef` on every function in `public`
-that calls `notify_account` (nine, enumerated by `notification_targets.sql`).
+the database does: the newest definition, across `supabase/migrations/`, of
+every function that calls `notify_account`. There are ten (re-derived
+2026-10-12 from the migration files): `cancel_clinic`, `cancel_invitation`,
+`cancel_registration`, `invite_from_pool`, `place_player`,
+`register_for_clinic`, `request_late_spot`, `resolve_late_request`,
+`respond_to_invitation`, `send_clinic_message`. `notification_targets.sql`
+names nine of them in `the_nine_known_producers_are_found`;
+`cancel_invitation` (20260928500001) is the one it does not name, though its
+enumerating checks cover it.
 Everything else in the catalogue is **not wired**, whichever the trigger
 column says. Rows marked "hers" carry her sentence character for character,
 pinned by `tests/sql/notification_copy.sql`; the others are ours, written in
@@ -46,11 +56,11 @@ her yes before it reaches a real player.
 | `invite_from_pool` | `invitation_received` | The invited player | `A spot opened in {clinic}. Accept or decline.` | 2 (different words, contradiction (a)) |
 | `cancel_clinic` | `clinic_canceled` | Every live registration | `{clinic} has been canceled.` | 7 (different words, contradiction (d)) |
 | `send_clinic_message` | `clinic_message` | The audience she picked | Her typed body, pass-through | 12 |
-| `respond_to_invitation` | `invitation_accepted_player` | The player who accepted (never #1 as well; not when Tara has canceled the clinic, where "Your spot is confirmed" would be false; a decline sends the player nothing) | #3, hers | 3 |
+| `respond_to_invitation` | `invitation_accepted_player` | The player who accepted (never #1 as well; not when Tara has canceled the clinic, where "Your spot is confirmed" would be false; a decline sends the player nothing; an Accept refused `card_required` or `card_declined` moves nothing and sends nothing, decision 0040) | #3, hers | 3 |
 | `respond_to_invitation` | `invitation_accepted` / `invitation_declined` | Every admin | `{player} accepted their spot in {clinic}.` / `{player} declined {clinic} and is back in the Player Pool.` | 13, 14 |
 | `cancel_registration` | `player_canceled` | Every admin, only when the player canceled their own spot (since 20260927100002 an admin's removal does not reach the admins; `admin_mark_late_cancel` tells nobody) | `{player} canceled {clinic}.` plus ` Late, fee applies.` on a late cancel, plus ` Note: "{cancel_note}"` when a note was left (the ` Late, courtesy used.` branch is still in the SQL but unreachable since `courtesy_cancel_days = 0`, decision 0013) | 15 |
 | `cancel_registration` | `removed_from_pool` | The player, when Tara (an admin who does not own the player) removes them from the Player Pool of a published clinic. Her removal from You're In! sends nothing. Offered since 2026-09-28: Remove on each Pool row, phone and laptop | #6, hers | 6 |
-| `cancel_invitation` | `invitation_withdrawn` | The player whose invitation Tara takes back (they go back to the Player Pool; whether they should come off the clinic instead is question 94) | Hers, verbatim, 2026-09-28 (question 79, decision 0024): `The levels didn’t line up for this clinic, so we’ve released your spot. We keep each court close in level so everyone gets a great practice. We’ll catch you at the next clinic!` | 79 |
+| `cancel_invitation` | `invitation_withdrawn` | The player whose invitation Tara takes back (they go back to the Player Pool, as Tara confirmed in question 94, decision 0040) | Hers, verbatim, 2026-09-28 (question 79, decision 0024): `The levels didn’t line up for this clinic, so we’ve released your spot. We keep each court close in level so everyone gets a great practice. We’ll catch you at the next clinic!` | 79 |
 | `request_late_spot` | `LATE_REQUEST` | Every admin | `{player} is asking to join {clinic}.` plus the quoted message if any | not in her list |
 | `resolve_late_request` | `LATE_REQUEST_APPROVED` / `LATE_REQUEST_DECLINED` | The requesting player | `You're in for {clinic}.` / `Tara couldn't fit you into {clinic} this time.` | not in her list; see finding (e) |
 
@@ -62,22 +72,22 @@ renders with `EEEE` and `h:mm a`: no padded weekday, no leading zero, and an
 registration it is about.
 
 No producer exists for 4, 9 (`publish_news` notifies nobody), 10, or 11 (a
-player's own `cancel_registration` notifies only the admins).
-`cancel_invitation` and `leave_pool` notify nobody, and neither does Tara's
-removal of someone from You're In! (no words for it, contradiction (b)). The
-payment reminder (8) is not a `notify_account` call at all: it is a clinic
-message, see below.
+player's own `cancel_registration` notifies only the admins). `leave_pool`
+notifies nobody, and neither does Tara's removal of someone from You're In!
+(question 92, decision 0040: she does not remove people from You're In!, so
+nothing is sent; her Remove after a clinic, for a sick player, tells nobody
+either). The payment reminder (8) is not a `notify_account` call at all: it is
+a clinic message, see below.
 
 Push delivery is a separate question: these rows are readable in the app's
-notification center (2026-09-02). Since 2026-09-23 every row inserted here is
-also handed to the `push` edge function, which sends the row's body verbatim
-to the recipient's phones and records `delivered_at` or `delivery_error` on
-it (decision 0008). Since 2026-09-28 the push also carries
-`category: INVITATION` on an invitation (finding (l)) and `thread-id`, the
-clinic's id, on every row about a clinic, so a clinic's notifications group
-together on the lock screen. That path is built and tested against a mock but
-sends nothing yet: it stays silent until Apple issues the signing key and the
-two vault secrets are set (`supabase/functions/README.md`).
+notification center. Every row inserted here is also handed to the `push`
+edge function, which sends the row's body verbatim to the recipient's phones
+and records `delivered_at` or `delivery_error` on it (decision 0008). The push
+also carries `category: INVITATION` on an invitation (finding (l)) and
+`thread-id`, the clinic's id, on every row about a clinic, so a clinic's
+notifications group together on the lock screen. The keys and vault secrets
+it needs are in `supabase/functions/README.md`; whether a push has been seen
+on a real lock screen is checklist C3.
 
 ---
 
@@ -94,9 +104,9 @@ player travelling out of state must still read the court time.
 | 1 | You're In | **Wired 2026-09-28.** `register_for_clinic` when the registration lands in You're In! (member priority), and `place_player` when Tara's placement puts in someone who was not already in (a published clinic that has not started; not an approved late request, which sends its own answer). **Not** on invitation accept: that is #3, finding (e). | The registering player's account | `You're all set for {clinic} on {day} at {time}. Looking forward to seeing you on court!` |
 | 2 | Invitation Received | Tara invites a player out of the Player Pool (`invite_from_pool`). Wired, but with our body, not hers: see What fires today. | The invited player's account | `Good News! A spot is available for {clinic}. Tap below to accept before it expires` |
 | 3 | Invitation Accepted | **Wired 2026-09-28.** `respond_to_invitation` on Accept, to the player, unless Tara has canceled the clinic in the meantime; Tara gets #13 either way. | The accepting player's account | `Awesome! Your spot is confirmed. See you soon!` |
-| 4 | Invitation Expired | **Not wired.** No expiry mechanism exists. See contradiction (a). | The invited player's account | `Your invitation has expired, but we hope to see you next time!` |
+| 4 | Invitation Expired | **Not wired.** No expiry mechanism exists, and taking an invitation back sends her "released your spot" words instead (question 79). See contradiction (a). | The invited player's account | `Your invitation has expired, but we hope to see you next time!` |
 | 5 | Added to Player Pool | **Wired 2026-09-28.** `register_for_clinic` when the registration lands in the Player Pool (full, or after the members' head start). Not on decline, not on invitation cancel, not on Tara placing someone into the Pool. See finding (i). | The registering player's account | `Thanks for registering! I personally create each clinic based on playing levels and will send confirmations once lineups are set ASAP` |
-| 6 | Removed from Player Pool | **Wired 2026-09-28, server half.** `cancel_registration` when Tara (an admin who does not own the player) removes someone from the Player Pool of a published clinic. A player's own cancel sends Tara #15 instead. Remove on each Pool row (phone and laptop, 2026-09-28) reaches it. See contradiction (b). | The removed player's account | `You've been removed from the Player Pool for {clinic}. Hope to see you at another clinic soon!` |
+| 6 | Removed from Player Pool | **Wired 2026-09-28.** `cancel_registration` when Tara (an admin who does not own the player) removes someone from the Player Pool of a published clinic. A player's own cancel sends Tara #15 instead. Remove on each Pool row (phone and laptop, 2026-09-28) reaches it. See contradiction (b). | The removed player's account | `You've been removed from the Player Pool for {clinic}. Hope to see you at another clinic soon!` |
 | 7 | Clinic Canceled | Tara cancels a clinic (`cancel_clinic`). Sent to You're In!, Player Pool, and Response Needed. Wired, but with our body, not hers: see What fires today and contradiction (d). | Every account with a live registration | `Unfortunately today's {clinic} has been canceled due to weather.` |
 | 8 | Payment Reminder | **Switched off 2026-09-21 (decision 0013).** Built 2026-09-01 as a `send_clinic_message` with audience `unpaid`; the Remind unpaid control is rendered on neither admin surface while `app_settings.zelle_allowed` is `false`, which it is. | Unpaid registrants | Her sentence was `Just a quick reminder for payment from {clinic} on {date}. Thank you!`. The code still holds `Just a reminder that {clinic} ({date}) hasn't been paid yet. {payment line} Thanks!` (`web/index.html`, `AdminRepository.swift`) behind the `zelle_allowed` gate. See (g). |
 | 9 | New Announcement | **Not wired.** `publish_news` notifies nobody, and News has no surface (decision 0006). | Accounts matching the post's audience | `News from FXE!` |
@@ -142,7 +152,10 @@ if a clinic name ever runs long.
 
 ## Contradictions
 
-Not resolved. Each needs a decision before the matching code is written.
+Where a later answer settled one, the section says which question and
+decision. The "Question for her" lines in (a), (c), (d) and (f) are not
+numbered in `docs/questions-for-tara.md` (checked 2026-10-12); (f) has a
+backlog row ("Offer to message players after a clinic's time is changed").
 
 ### (a) Invitations expire, and also do not expire
 
@@ -189,6 +202,13 @@ its real job, which is making people answer quickly. If invitations do sit
 unanswered in practice, option 2 is the natural Version 2 feature, and the guide
 already files it there.
 
+**Since then.** Option 1's missing notify call exists, with her own words
+instead of #4: `cancel_invitation` sends "The levels didn’t line up for this
+clinic, so we’ve released your spot..." (question 79, decision 0024;
+20260928500001), and the player goes back to the Player Pool (question 94,
+decision 0040). Nothing expires on a clock (hard rule 2). Her #2 still says
+"before it expires", so the wording question below stands.
+
 **Question for her.** Do you want invitations to genuinely run out on a clock,
 say 24 hours, or is "before it expires" just there to make people answer fast
 while you still decide by hand when to take a spot back?
@@ -233,23 +253,21 @@ longer reads in her own Action Needed as "{player} canceled."
 catalogue already carries the words for removal from the Player Pool, so Tara
 removing someone from the Pool of a published clinic now sends them #6, and a
 player canceling their own Pool entry still sends Tara #15 and never #6
-(`notification_copy.sql`). Removal from You're In! still tells the player
-nothing: her #6 covers the Pool only, and there are no words for the other.
-The server half is all there is so far: the phone offers Remove only on You're
-In! rows and the web admin not at all, so until a Pool row gets a Remove, no
-one can send #6 (`docs/backlog.md`).
+(`notification_copy.sql`). Removal from You're In! tells the player nothing:
+her #6 covers the Pool only, and question 92 (decision 0040) settled that she
+does not remove people from You're In!, so nothing is sent. Remove sits on
+every Pool row on the phone (`removeFromPoolButton` in
+`AdminClinicDetailView.swift`) and on the laptop (`web/index.html`), so #6 can
+be sent from either.
 
-**Question 79's context.** Question 79 (asked 2026-09-27) asks whether the app
-should tell a player when Tara takes them out of a clinic, takes back an
-invitation, or puts them in herself, with "nothing is sent" as the default
-until she answers. Her catalogue (2026-08-02) already has a sentence for two
-of those three: #1 for a spot in You're In! (the trigger this catalogue wrote
-for it, alongside her words, names Tara placing the player by hand), and #6
-for being taken out of the Player Pool. Those two are wired (2026-09-28), on
-the strength of her catalogue. Taking back an invitation (#4 would say
-"expired", contradiction (a)) and removal from You're In! (no words) stay
-unsent and open under 79, whose "nothing is sent" default no longer describes
-the other two.
+**Question 79's answer.** Question 79 asked whether the app should tell a
+player when Tara takes them out of a clinic, takes back an invitation, or puts
+them in herself. Her catalogue (2026-08-02) already had a sentence for two of
+those three: #1 for a spot in You're In! (including Tara placing the player by
+hand) and #6 for being taken out of the Player Pool; both are wired. For
+taking back an invitation she gave new words on 2026-09-28 (decision 0024),
+which `cancel_invitation` sends (20260928500001). Removal from You're In! is
+question 92 above.
 
 **Fixed 2026-09-21** (20260921000001). `leave_pool` used to delete the
 registration row outright, against hard rule 4; it now cancels the row
@@ -367,9 +385,9 @@ The same shape turned up when #1 was wired: `resolve_late_request` puts an
 approved late asker in through `place_player` and then sends its own answer
 (`You're in for {clinic}.`), so a plain #1 from `place_player` would have been
 a second row for the same tap. `place_player` skips #1 for a late request
-approved in the same transaction; the asker gets one row, as before. Whether
-that one row should be her #1 rather than our `You're in for {clinic}.` is
-open.
+approved in the same transaction; the asker gets one row, as before. That row
+stays `You're in for {clinic}.`, not her #1: question 90, decision 0024 ("You’re
+in for").
 
 ### (f) There is no copy for a clinic time or date change
 
@@ -407,12 +425,11 @@ so the lock-screen budget did not apply, and the Zelle line rides inside it:
 Thanks!`. Both clients read the line through the `payment_instructions()` RPC
 (`FXETennis/Data/Repositories.swift`, `web/index.html`), as CLAUDE.md requires;
 `FXEPayment.line` in `NotificationCopy.swift` is a second, unused copy of the
-same string (`grep -rn FXEPayment.line FXETennis` finds no caller) and should
-go when that file is either wired or deleted.
+same string (`grep -rn FXEPayment FXETennis` finds no caller outside the file,
+2026-10-12).
 
-**Question for her, still open for the push.** When a push exists, should the
-Zelle line ride inside it, where the lock screen will cut it off, or sit on the
-clinic page and in the message the player opens?
+**Moot since decision 0013.** Card only, `zelle_allowed` is `false`, and the
+reminder is drawn on neither admin surface, so no Zelle line reaches a push.
 
 ### (h) Notification 11 confirms an action the player just took
 
@@ -455,7 +472,7 @@ old way. Decision 13 says she explicitly does not want to manage or monitor who
 has notifications turned off, and that the admin-facing indicator must be
 removed. Two documents still specify it:
 
-- `engineering-design.md` section 4: "Tara sees a 'notifications off' marker on
+- `docs/archive/engineering-design.md` section 4: "Tara sees a 'notifications off' marker on
   the player's profile so she can text them."
 - `questions-for-tara.md` question 19, whose default was that marker, now
   overruled.
@@ -477,12 +494,13 @@ receives a push notification with Accept and Decline." Recording it here because
 it is a real implementation requirement hiding inside two words of copy, and
 because the same two words are the ones that also promise an expiry.
 
-**Server half, 2026-09-28.** The `push` function sends every
+**Both halves exist.** The `push` function sends every
 `invitation_received` row with `category: INVITATION`, pinned by
-`tests/push/run.sh`. The app half, registering that category with Accept and
-Decline actions and handling the response, is not built: no
-`UNNotificationCategory` exists under `FXETennis/` (2026-09-28). Until it is,
-iOS shows the invitation as a plain alert, which is today's behaviour.
+`tests/push/run.sh`. The app registers that category at launch with Accept and
+Decline actions and answers through `respond_to_invitation` in the background
+(`FXETennis/App/InvitationActions.swift`, unit-tested). An Accept refused for
+a missing or declined card moves nothing (decision 0040). Seeing it on a real
+lock screen is checklist C3.
 
 ### (m) "{day}" is a weekday, and a clinic can be a week away on the same one
 
@@ -494,6 +512,5 @@ placing someone a week or more ahead reads the same way. Her `{day}` is built
 as the weekday alone, as `NotificationCopy.swift` renders it; nothing here
 changes her words.
 
-**Question for her.** When the clinic is a week or more away, should the
-message name the date as well ("on Thursday, October 8 at 9:00 AM"), or is the
-day enough? Default until she answers: the day alone, as she wrote it.
+**Her answer.** Question 88, decision 0024: not relevant, nobody can sign up
+that far ahead. The day alone, as she wrote it.
