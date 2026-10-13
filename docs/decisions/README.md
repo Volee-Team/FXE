@@ -47,6 +47,7 @@ The history of what we believed is part of the record.
 | [0037](0037-charge-each-player.md) | Tara charges each person on their own tap (a green Charge per row after the clinic); Charge clinic gone from both screens; Remove means not charged | 2026-10-02 | Active |
 | [0038](0038-charlotte-time.md) | Every time in the app is Charlotte time, wherever the phone is (`ClubTime.apply()` at launch) | 2026-10-04 | Active |
 | [0039](0039-note-for-tara.md) | A private note for Tara at Register ("Only Tara sees this"): only she and the writer read it, the writer edits it until the start, not on the printed sheet | 2026-10-11 | Active |
+| [0040](0040-tara-answers-2026-10-12.md) | Tara's answers of 2026-10-12: Waive a late fee, Accept needs a card, a red "Late cancellation" flag, every cancel counted, pros skip the waiver and card | 2026-10-12 | Active |
 | [0011](0011-no-email-verification-v1.md) | No email verification in v1; hosted "Confirm email" is OFF by hand, and every new project needs the same flip | 2026-08-16 | Active |
 
 Tara's own numbered decisions (1–23, calls of 2026-08-02 and 2026-08-12) are

@@ -84,7 +84,7 @@ struct RootView: View {
                 // Unknown (nil, a check that failed) still opens the app:
                 // register_for_clinic refuses an unsigned player anyway, and
                 // its refusal brings this screen back (SessionStore.reopen).
-                if session.waiverAccepted == false && session.account?.role != "admin" {
+                if session.waiverAccepted == false && !session.skipsPlayerSteps {
                     WaiverView()
                 } else {
                     MainTabView()

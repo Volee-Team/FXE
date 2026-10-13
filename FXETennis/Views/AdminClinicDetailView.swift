@@ -131,7 +131,7 @@ final class AdminClinicModel {
         if e.contains("no_card_on_file") { return "No card on file for that player." }
         if e.contains("payments_disabled") { return "Payments are switched off." }
         if e.contains("clinic_not_over") { return "The clinic hasn't ended yet." }
-        if e.contains("not_owed") || e.contains("already_charged") { return changedUnderYou }
+        if e.contains("not_owed") || e.contains("already_charged") || e.contains("not_waivable") { return changedUnderYou }
         if e.contains("registration_not_in") || e.contains("already_canceled") { return changedUnderYou }
         return "That didn't go through. Check your connection and try again."
     }
@@ -210,7 +210,12 @@ struct AdminClinicDetailView: View {
                         rosterSection(Brand.Status.canceled, model.canceled, empty: "") { entry in
                             AnyView(HStack(spacing: Brand.Spacing.xs) {
                                 lateLabel(entry)
-                                if model.isOver() { declinedLabel(entry); chargeControl(entry) }
+                                if entry.isFeeWaived {
+                                    waivedControl(entry)
+                                } else {
+                                    if model.isOver() { declinedLabel(entry); chargeControl(entry) }
+                                    waiveButton(entry)
+                                }
                             })
                         }
                     }
@@ -568,13 +573,62 @@ struct AdminClinicDetailView: View {
         }
     }
 
-    /// "Late · Fee applies" on a late cancel in the Canceled list (the web
-    /// roster's words); nothing on any other canceled row.
+    /// Tara's red flag on a late cancel in the Canceled list (question 81):
+    /// "Late cancellation"; nothing on any other canceled row.
     @ViewBuilder private func lateLabel(_ entry: RosterEntry) -> some View {
         if let label = entry.lateLabel {
-            Text(label)
+            Label(label, systemImage: "flag.fill")
                 .brandFont(.chip)
                 .foregroundStyle(Brand.Status.canceled.ink)
+                .accessibilityIdentifier("admin.lateFlag")
+        }
+    }
+
+    /// Waive a late cancel's fee, one tap (question 106: a real emergency).
+    /// Undo is beside "Fee waived", so a mis-tap costs one more tap.
+    @ViewBuilder private func waiveButton(_ entry: RosterEntry) -> some View {
+        if entry.canWaive {
+            Button {
+                Task { await model.perform(entry.id) {
+                    try await AdminRepository.setFeeWaived(registration: entry.id, waived: true)
+                } }
+            } label: {
+                Text("Waive")
+                    .brandFont(.chip)
+                    .foregroundStyle(Brand.navy)
+                    .padding(.horizontal, Brand.Spacing.xs)
+                    .frame(minHeight: Brand.Layout.minTapTarget)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(model.busy.contains(entry.id))
+            .accessibilityIdentifier("admin.waive")
+            .accessibilityLabel("Waive \(entry.displayName)'s fee")
+        }
+    }
+
+    /// "Fee waived", with Undo.
+    private func waivedControl(_ entry: RosterEntry) -> some View {
+        HStack(spacing: Brand.Spacing.xs) {
+            Text("Fee waived")
+                .brandFont(.chip)
+                .foregroundStyle(Brand.textSecondary)
+                .accessibilityIdentifier("admin.feeWaived")
+            Button {
+                Task { await model.perform(entry.id) {
+                    try await AdminRepository.setFeeWaived(registration: entry.id, waived: false)
+                } }
+            } label: {
+                Text("Undo")
+                    .brandFont(.chip)
+                    .foregroundStyle(Brand.navy)
+                    .padding(.horizontal, Brand.Spacing.xs)
+                    .frame(minHeight: Brand.Layout.minTapTarget)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(model.busy.contains(entry.id))
+            .accessibilityIdentifier("admin.unwaive")
         }
     }
 

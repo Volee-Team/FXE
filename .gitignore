@@ -33,3 +33,9 @@ DerivedData/
 # log!!"). The hooks still write it locally; only this README is tracked.
 docs/prompt-log/*
 !docs/prompt-log/README.md
+
+# Files dropped at the repo root that must never be committed (2026-10-12):
+# the signed Apple authority letter carries Tara's signature, and R writes
+# its history here. The repo is public.
+/*.pdf
+.Rhistory

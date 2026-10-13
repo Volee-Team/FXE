@@ -210,7 +210,7 @@ test.describe("player history", () => {
       await signIn(page, TARA);
       const card = page.locator("#clinics .card", { hasText: "Tuesday Ladies" });
       const rob = card.locator(".row", { hasText: "Rob Delgado" }).locator("[data-history]");
-      await expect(rob).toHaveText("1 played, 1 no-show, 1 late cancel", { timeout: 15_000 });
+      await expect(rob).toHaveText("1 played, 1 canceled (1 late), 1 no-show", { timeout: 15_000 });
       await expect(rob).toHaveAttribute("title", /^Last played \w{3} \d{1,2}, \d{4}$/);
       await expect(card.locator(".row", { hasText: "Dana Okonkwo" }).locator("[data-history]")).toHaveText("New");
       // Only the Player Pool carries it on a clinic card.
@@ -219,7 +219,7 @@ test.describe("player history", () => {
       await page.getByRole("tab", { name: "Players" }).click();
       await page.getByLabel("Search players by name").fill("Rob");
       await expect(page.locator("[data-player-row]", { hasText: "Rob Delgado" }).locator("[data-history]"))
-        .toHaveText("1 played, 1 no-show, 1 late cancel");
+        .toHaveText("1 played, 1 canceled (1 late), 1 no-show");
     } finally {
       for (const r of made) await db.del(`registrations?id=eq.${r.id}`);
       for (const c of [played, missed, late]) await db.del(`clinics?id=eq.${c.id}`);

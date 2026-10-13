@@ -28,7 +28,7 @@ Y = True  # Tara's own words, tagged on the page
 # Bump it when items are inserted, removed or reordered, so old answers stay
 # in their own row instead of landing on the wrong item. Rewording an item in
 # place keeps its position and needs no bump.
-PAGE_VERSION = "5"
+PAGE_VERSION = "6"
 
 # Round four (2026-09-27, decision 0016): ONLY what is new or changed since her
 # 2026-09-22 answers, and only the questions still open. Round three repeated
@@ -39,6 +39,10 @@ PAGE_VERSION = "5"
 # Round five (2026-09-29): only what is new since her round-four answers of
 # 2026-09-28 (decision 0024), and only the questions still open (73, 92 to
 # 100). Round four's items are in git (the commit before this one).
+# Round six (2026-10-12): she answered every round-five question by text that
+# day (decision 0040), so this round has no Questions tab at all, only the
+# words she has not seen (the history line is gone: she approved its new
+# wording, question 105) and the laptop tasks (the build 7 look is gone).
 SECTIONS = [
  [
   "For players",
@@ -68,28 +72,15 @@ SECTIONS = [
    ["Copy to next week", "A button on This week: next week's clinics made from this week's, as drafts only you can see until you Publish each one", False],
    ["Copied 5 clinics to next week as drafts.", "What you see after copying (or \"Nothing new to copy.\" if they are already there)", False],
    ["Court sheet", "A link on each clinic: that clinic's players grouped by court, ready to print (\"No court yet\" for anyone without one)", False],
-   ["12 played, 1 no-show, 2 late cancels", "Beside each name in the Player Pool and on Players, so choosing from the Pool takes one look. \"New\" for someone who has never played", False],
    ["Saved", "In Message: messages you send often, kept in your words and chosen in one tap. \"Save this message\" keeps the one you just wrote", False],
    ["Pro", "A box on each player on the Players tab. Tick it to make them a pro", False]
   ]
  ]
 ]
 
-QUESTIONS = [
- ["Foxcroft's share", "The report shows Foxcroft's share of what players actually paid by card that month, late-cancel and no-show fees included, before Stripe's fee; a refund comes off the month of the clinic. It also shows the same share of full clinic prices, in case they count it that way. The share is 10% until you change it (see Try it). Is that what they count?"],
- ["Taking someone out of You're In!", "When you take someone out of You're In! yourself, should they get a message? Your \"released your spot\" words fit an invitation you take back, but not someone who asked you to drop them. If we don't hear otherwise: nothing is sent."],
- ["A member's guest: the words", "When a member brings a guest, what should the app tell the member about being charged? You wrote they should be told they \"will be charged for their guest\". Your exact sentence, please."],
- ["After you take an invitation back", "The player gets your \"released your spot\" message and goes back into the Player Pool for that clinic. Should they come off the clinic altogether instead? If we don't hear otherwise: back into the Pool."],
- ["A guest's waiver", "Every player signs your waiver in the app. A guest who never installs the app never signs it. Should the member sign for their guest, should the guest sign a paper waiver at the club, or can a guest not play until they have signed?"],
- ["Pros and the waiver", "Do your pros sign your waiver and add a card, like any member? If we don't hear otherwise: yes."],
- ["Pros marking No-show", "When a pro marks someone No-show or a late cancellation, do you want a notification? If we don't hear otherwise: no, you see it on the roster."],
- ["A pro's note", "Can a pro add a short note when they mark a late cancellation (only you read it)? If we don't hear otherwise: yes, optional."],
- ["After you charge", "After you have charged a clinic, can a pro still change who came or who canceled late? If we don't hear otherwise: no, only you."],
- ["Who marked it", "If someone disputes a No-show, do you need to know whether you or a pro marked it? If we don't hear otherwise: not recorded."]
-]
+QUESTIONS = []
 
 TASKS = [
- ["See the new look", "On your phone, TestFlight build 7: the gator in colour, bigger, over a smaller TENNIS, and the navy banner across the top of every page. Anything still off?"],
  ["Set Foxcroft's share", "Once your deal is final: on your laptop, Money tab, Board report, type the share in Foxcroft share % (for example 8) and click Save. The report uses it from then on, and only you see it."],
  ["Copy a week", "On your laptop, This week: click Copy to next week, then Publish each copy you want to keep (Cancel the ones you don't; nobody sees a copy you never published)."],
  ["Print a court sheet", "Set courts on a clinic, then click Court sheet on it and Print. Is it what you'd hand out?"],
@@ -127,7 +118,7 @@ body { margin:0; }
 <div class="wrap">
 <header class="top">
   <h1>Tara, only what's new</h1>
-  <p class="lede">Your changes through September 29 are in the app, including the new logo and the navy banner. This is only what is new or changed since then, and the questions still open. Tap Keep, or Change and write it your way. Your answers save as you go.</p>
+  <p class="lede">Your answers of October 12 are in the app. This is only the words still waiting on you, and a few things to try on your laptop. Tap Keep, or Change and write it your way. Your answers save as you go.</p>
   <p class="sync" id="sync" aria-live="polite"></p>
 </header>
 
@@ -352,7 +343,13 @@ def web_page():
     css = TEMPLATE[TEMPLATE.index("<style>"):TEMPLATE.index("</style>") + len("</style>")]
     # "</" inside a JSON script block would end the block early; JSON allows the escape.
     blob = json.dumps(data).replace("</", "<\\/")
-    return WEB_TEMPLATE.replace("@@CSS@@", css).replace("@@DATA@@", blob)
+    page = WEB_TEMPLATE.replace("@@CSS@@", css).replace("@@DATA@@", blob)
+    # No questions this round: no Questions tab to open onto nothing.
+    if not QUESTIONS:
+        tab = '  <button role="tab" data-tab="questions" aria-selected="false">Questions</button>\n'
+        assert tab in page
+        page = page.replace(tab, "")
+    return page
 
 
 def main():

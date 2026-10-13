@@ -123,6 +123,8 @@ struct RegistrationAdmin: Codable, Identifiable, Sendable {
     let hasCard: Bool?
     /// The player's private note to Tara, from Register (decision 0039).
     var playerNote: String? = nil
+    /// Tara waived this late cancel's fee (question 106, decision 0040).
+    var feeWaivedAt: Date? = nil
 
     enum CodingKeys: String, CodingKey {
         case id, status, paid
@@ -138,6 +140,7 @@ struct RegistrationAdmin: Codable, Identifiable, Sendable {
         case chargeStatus = "charge_status"
         case hasCard = "has_card"
         case playerNote = "player_note"
+        case feeWaivedAt = "fee_waived_at"
     }
 
     /// A charge that is pending, processing or went through. The server's rule
@@ -172,12 +175,22 @@ struct RosterEntry: Identifiable, Sendable {
         return parts.joined(separator: ", ")
     }
 
-    /// A late cancel on the Canceled list reads the way the web roster reads
-    /// it: "Late: fee applies", or "Late: courtesy" when the courtesy was
-    /// used (switched off since decision 0013). Nil for any other row.
+    /// A late cancel on the Canceled list: Tara's red flag, in her words
+    /// (question 81, 2026-10-12: "a red flag or something that says 'late
+    /// cancellation'"). The name stays on her list so she can decide later
+    /// whether to charge. Nil for any other row.
     var lateLabel: String? {
         guard registration.status == .canceled, registration.lateCancel == true else { return nil }
-        return registration.courtesyUsed == true ? "Late: courtesy" : "Late: fee applies"
+        return "Late cancellation"
+    }
+
+    /// Tara waived the fee (question 106).
+    var isFeeWaived: Bool { registration.feeWaivedAt != nil }
+
+    /// Waive is offered on a late cancel with no charge pending, processing
+    /// or taken (refund first); the server re-checks (admin_set_fee_waived).
+    var canWaive: Bool {
+        lateLabel != nil && registration.courtesyUsed != true && !registration.hasLiveCharge && !isFeeWaived
     }
 
     /// The player's note to Tara, quoted, on any row that has one.
@@ -365,6 +378,12 @@ enum AdminRepository {
         let queued: Queued = try await supabase.rpc("admin_charge_player", params: P(p_registration: registration)).execute().value
         let settled: StripeChargeAnswer? = try? await supabase.functions.invoke("stripe-charge", options: .init(method: .post))
         return settled?.processed?[queued.payment_id.uuidString.lowercased()]
+    }
+
+    /// Waives (or restores) a late cancel's fee (question 106, decision 0040).
+    static func setFeeWaived(registration: UUID, waived: Bool) async throws {
+        struct P: Encodable { let p_registration: UUID; let p_waived: Bool }
+        _ = try await supabase.rpc("admin_set_fee_waived", params: P(p_registration: registration, p_waived: waived)).execute()
     }
 
     /// Tara records a late cancellation for someone who told her (a text an

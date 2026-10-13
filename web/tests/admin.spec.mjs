@@ -507,6 +507,37 @@ test.describe("the player's note", () => {
   });
 });
 
+// Tara, 2026-10-12 (decision 0040): a late cancel keeps the name on her
+// list with a red "Late cancellation" (question 81), and she can waive the
+// fee for a real emergency (question 106), with Undo.
+test.describe("late cancellation", () => {
+  test("the red flag stays on the list; Waive and Undo round-trip through the server", async ({ page, request }) => {
+    const db = service(request);
+    const TUESDAY = "d0000000-0000-0000-0000-000000000001";
+    const reg = await db.insert("registrations", { clinic_id: TUESDAY, player_id: ROB_P, status: "canceled", source: "self",
+      price_cents_charged: 2300, was_member: false, duration_minutes: 60, late_cancel: true,
+      canceled_at: new Date().toISOString(), cancel_note: "sick kid" });
+    try {
+      await signIn(page, TARA);
+      const card = page.locator("#clinics .card", { hasText: "Tuesday Ladies" });
+      const rob = card.locator(".row", { hasText: "Rob Delgado" });
+      await expect(rob.locator(`[data-late-flag="${reg.id}"]`)).toHaveText("Late cancellation", { timeout: 15_000 });
+      await rob.getByRole("button", { name: "Waive" }).click();
+      await expect(rob.locator(`[data-fee-waived="${reg.id}"]`)).toHaveText("Fee waived", { timeout: 15_000 });
+      let [row] = await db.get(`registrations?id=eq.${reg.id}&select=fee_waived_at`);
+      expect(row.fee_waived_at).not.toBeNull();
+      await rob.getByRole("button", { name: "Undo" }).click();
+      await expect(rob.getByRole("button", { name: "Waive" })).toBeVisible({ timeout: 15_000 });
+      [row] = await db.get(`registrations?id=eq.${reg.id}&select=fee_waived_at`);
+      expect(row.fee_waived_at).toBeNull();
+      // Still on her list, flagged, the whole time.
+      await expect(rob.locator(`[data-late-flag="${reg.id}"]`)).toHaveText("Late cancellation");
+    } finally {
+      await db.del(`registrations?id=eq.${reg.id}`);
+    }
+  });
+});
+
 test.describe("fix round", () => {
   test("a late request for a clinic off this week's list still names its clinic", async ({ page, request }) => {
     const db = service(request);

@@ -469,12 +469,15 @@ const ntrp = (r) => r == null ? "—" : Number(r).toFixed(1);
 // there is nothing yet, and after "played" only the parts that are not zero.
 // PHONE: PlayerHistory.line in FXETennis/Models/PlayerHistory.swift says the same.
 const plural = (n, one) => `${n} ${one}${n === 1 ? "" : "s"}`;
+// Tara's example (question 105, 2026-10-12): "12 played, 5 canceled (2 late),
+// 1 no-show". `canceled` counts every cancel, late ones included.
 function historyLine(h) {
   if (!h) return "";
-  if (!h.played && !h.no_shows && !h.late_cancels) return "New";
+  const cancels = Math.max(h.canceled ?? h.late_cancels ?? 0, h.late_cancels ?? 0);
+  if (!h.played && !h.no_shows && !cancels) return "New";
   const parts = [`${h.played} played`];
+  if (cancels) parts.push(h.late_cancels ? `${cancels} canceled (${h.late_cancels} late)` : `${cancels} canceled`);
   if (h.no_shows) parts.push(plural(h.no_shows, "no-show"));
-  if (h.late_cancels) parts.push(plural(h.late_cancels, "late cancel"));
   return parts.join(", ");
 }
 const lastPlayed = (h) => h && h.last_played_at
@@ -543,6 +546,7 @@ function friendly(e) {
   if (m.includes("no_card_on_file")) return "No card on file for that player.";
   if (m.includes("already_charged")) return "That one is already charged.";
   if (m.includes("not_owed")) return "That just changed. Here's the latest.";
+  if (m.includes("not_waivable")) return "That just changed. Here's the latest.";
   if (m.includes("already_refunded")) return "That one is already refunded.";
   if (m.includes("card_required")) return "That player has no card on file.";
   if (m.includes("clinic_not_over")) return "The clinic hasn't ended yet.";
@@ -1193,7 +1197,11 @@ async function loadClinics() {
       ${section("pool", r => c.status !== "canceled" ? `<button class="small primary" data-invite="${r.id}">Invite</button><button class="small" data-remove="${r.id}">Remove</button>` : "")}
       ${section("response_needed", r => `<button class="small" data-uninvite="${r.id}">Cancel invite</button>`)}
       ${section("canceled", r => r.late_cancel
-        ? `<span class="chip canc" title="Canceled inside ${cutoffHours} hours">Late</span><span class="muted">${r.courtesy_used ? "Courtesy" : "Fee applies"}${r.cancel_note ? ": “" + esc(r.cancel_note) + "”" : ""}</span>${r.courtesy_used ? "" : chargeOne(r)}`
+        // Tara's red flag (question 81): the name stays on her list, and she
+        // charges (once the clinic ends) or waives (question 106) later.
+        ? `<span class="chip canc" data-late-flag="${r.id}" title="Canceled inside ${cutoffHours} hours">Late cancellation</span>${r.cancel_note ? `<span class="muted">“${esc(r.cancel_note)}”</span>` : ""}${r.fee_waived_at
+            ? `<span class="muted" data-fee-waived="${r.id}">Fee waived</span><button class="small" data-unwaive="${r.id}">Undo</button>`
+            : `${r.courtesy_used ? "" : chargeOne(r)}${!r.courtesy_used && !liveCharge(r) ? `<button class="small" data-waive="${r.id}">Waive</button>` : ""}`}`
         : "")}
     </div>`;
   };
@@ -1258,6 +1266,10 @@ document.addEventListener("click", async (e) => {
   if (b.dataset.uninvite) return run(() => call("cancel_invitation",  { p_registration: b.dataset.uninvite }));
   if (b.dataset.paid)     return run(() => call("set_paid", { p_registration: b.dataset.paid, p_paid: b.dataset.now !== "true" }));
   if (b.dataset.noshow)   return run(() => call("admin_set_no_show", { p_registration: b.dataset.noshow, p_no_show: b.dataset.now !== "true" }));
+  // A late cancel's fee waived, or put back (question 106). One click: Undo
+  // sits beside "Fee waived".
+  if (b.dataset.waive)    return run(() => call("admin_set_fee_waived", { p_registration: b.dataset.waive, p_waived: true }));
+  if (b.dataset.unwaive)  return run(() => call("admin_set_fee_waived", { p_registration: b.dataset.unwaive, p_waived: false }));
   // One person's fee (decision 0037): a pending row, then stripe-charge.
   // The roster reloads either way, so the row shows where the fee stands
   // (Paid, Failed, or Pending if Stripe could not be reached), and any

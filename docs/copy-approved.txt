@@ -84,6 +84,7 @@ FXE Tennis does not share your personal information with third parties for marke
 FXE Tennis, LLC
 FXE Tennis, Tara's Review
 FXE-Tennis-QR.png
+Fee waived
 Fees at clinic prices
 First and last name
 First time? Create your account
@@ -112,6 +113,7 @@ Label
 Last updated: September 27, 2026
 Late cancel
 Late cancel \(player.name)
+Late cancellation
 Leave Player Pool
 Length (minutes)
 Length must be more than 0 minutes.
@@ -283,7 +285,10 @@ Turn on notifications
 Type at least two letters of a name.
 Type it again
 USTA \(level.label)
+Undo
 View Open Clinics
+Waive
+Waive \(entry.displayName)'s fee
 Waiver
 We collect only the information necessary to provide and improve our Services. This includes your name, email address, phone number, your self-reported club membership status, your tennis rating, an optional note to your coach, and the record of the clinics you register for, attend, cancel, or miss. If you add a payment card, the card is collected and stored by our payment processor, Stripe; we store only the card's brand and last four digits. If you allow notifications, we store the device token that lets us send them. We do not collect your location.
 We have obtained your consent.
@@ -307,8 +312,8 @@ You can still ask Tara to fit you in.
 You're not registered for any clinics this week
 Your answer
 Your answers as text
+Your answers of October 12 are in the app. This is only the words still waiting on you, and a few things to try on your laptop. Tap Keep, or Change and write it your way. Your answers save as you go.
 Your card will only be charged after a clinic you attended, a late cancellation or no-show. Cancel at least 3 hours before clinic and you will not be charged.
-Your changes through September 29 are in the app, including the new logo and the navy banner. This is only what is new or changed since then, and the questions still open. Tap Keep, or Change and write it your way. Your answers save as you go.
 Your next FXE Tennis clinic and your status in it.
 Your tennis rating
 asking to get in
