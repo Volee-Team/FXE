@@ -85,10 +85,37 @@ final class DeclinedCardTests: XCTestCase {
 
     // MARK: - the card step
 
-    private func account(declined: Bool, admin: Bool = false) -> Account {
+    private func account(declined: Bool, admin: Bool = false, role: String? = nil, card: Bool = true) -> Account {
         Account(id: UUID(), firstName: "Maria", lastName: "Alvarez", email: "maria@fxe.test", phone: nil,
-                accountType: "adult", role: admin ? "admin" : "member", cardBrand: "visa", cardLast4: "4242",
+                accountType: "adult", role: role ?? (admin ? "admin" : "member"),
+                cardBrand: card ? "visa" : nil, cardLast4: card ? "4242" : nil,
                 cardDeclinedAt: declined ? Date() : nil, cardDeclineCode: declined ? "insufficient_funds" : nil)
+    }
+
+    // Tara's question 96 (2026-10-12): pros sign no waiver and add no card.
+    func testAProIsNeverAskedForACard() {
+        let session = SessionStore()
+        session.cardsRequired = true
+        session.account = account(declined: false, role: "pro", card: false)
+        XCTAssertTrue(session.skipsPlayerSteps)
+        XCTAssertFalse(session.cardStepDue)
+        session.cardChangeRequested = true
+        XCTAssertFalse(session.cardStepShown)
+    }
+
+    func testAMemberWithNoCardIsStillAsked() {
+        let session = SessionStore()
+        session.cardsRequired = true
+        session.account = account(declined: false, card: false)
+        XCTAssertFalse(session.skipsPlayerSteps)
+        XCTAssertTrue(session.cardStepDue)
+    }
+
+    // Tara's question 107: Accept needs a card; from the lock screen the
+    // refusal reads as it does on the clinic page.
+    func testAcceptFromTheLockScreenWithNoCardSaysToAddOne() {
+        let refusal = PostgrestError(code: "P0001", message: "card_required")
+        XCTAssertEqual(InvitationActions.plan(after: .failed(refusal)).notice, "Add a card on your Profile to register.")
     }
 
     func testADeclinedCardAloneDoesNotTakeOverTheApp() {

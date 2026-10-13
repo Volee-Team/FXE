@@ -27,6 +27,7 @@ admin_resolve_held_payment	{"p_outcome":"x","p_payment":"00000000-0000-0000-0000
 admin_review_responses	{}
 admin_save_message_template	{"p_body":"x"}
 admin_set_board_share_percent	{"p_percent":1}
+admin_set_fee_waived	{"p_registration":"00000000-0000-0000-0000-000000000000","p_waived":false}
 admin_set_membership	{"p_is_member":false,"p_player":"00000000-0000-0000-0000-000000000000"}
 admin_set_no_show	{"p_no_show":false,"p_registration":"00000000-0000-0000-0000-000000000000"}
 admin_set_player_note	{"p_body":"x","p_player":"00000000-0000-0000-0000-000000000000"}

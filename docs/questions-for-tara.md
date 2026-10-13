@@ -380,7 +380,7 @@ new and changed words and these questions, nothing else.
 *HALF ANSWERED 2026-09-28 (decision 0024): the guest always pays the non-member price, billed to the member who brings them, through an "Invite a friend" button that shares the app or asks her to add the friend by name. Flow in `docs/guests.md`; the sentence telling the member they will be charged is question 93.*
 
 **73. The board's 10% (was 58, 67, 68). The report shows 10% of what players actually paid by card that month, late-cancel and no-show fees included, before Stripe's fee, and a refund comes off the month of the clinic. Right?**
-*Default: as stated, which is what is built. Status: open, asked 2026-09-27.*
+*Default: as stated, which is what is built. Status: answered 2026-10-12: "Correct" (decision 0040).*
 
 **74. Back-to-back 105s (was 60 to 63). As built: a non-member who holds any spot in a 105 that day (Player Pool included) cannot take a second 105 that day until 48 hours before the first one starts, clock time; only 105s count; they see "Non-members can take one 105 a day until 48 hours before." Right, and are those the words?**
 *ANSWERED 2026-09-28 (decision 0024): "Correct." As built.*
@@ -406,7 +406,7 @@ new and changed words and these questions, nothing else.
 *ANSWERED 2026-09-28 (decision 0024): "Once always". As built.*
 
 **81. When a player texts you inside 3 hours that they can't come and you tap Late cancel, the full fee applies, the same as a late cancel in the app, and a plain Remove stays free. Right?**
-*Default: yes, as built (her own words, 2026-09-22: pros "can label them as no show, late cancellation"). Status: open, asked 2026-09-27 (not on the page: confirms her own words).*
+*Default: yes, as built (her own words, 2026-09-22: pros "can label them as no show, late cancellation"). Status: answered 2026-10-12: keep the name on her list with a red "Late cancellation" flag and decide later; built (decision 0040).*
 
 **82. If you cancel a clinic (say for rain), should anyone who had already canceled late for it still be charged?**
 *ANSWERED 2026-09-28 (decision 0024): "Never charged". As built.*
@@ -418,13 +418,13 @@ new and changed words and these questions, nothing else.
 *ANSWERED 2026-09-28 (decision 0024): "Let it go." As built.*
 
 **85. Clinics charged during the test weeks, before real money is switched on: charged again for real after the switch?**
-*Default: no, test charges stay as they are. Status: open, asked 2026-09-27 (not on the page: nobody is charged in the test weeks unless she chooses to).*
+*Default: no, test charges stay as they are. Status: answered 2026-10-12: "Yes" (decision 0040).*
 
 **86. After you charge a clinic, should Stripe email each player a receipt?**
 *ANSWERED 2026-09-28 (decision 0024): "No receipts".*
 
 **87. On the laptop, This week starts fresh every Sunday; last week's clinics move under Show earlier, except one you still need to charge. Right, or keep last week visible through Monday?**
-*Default: as built. Status: open, asked 2026-09-27 (not on the page).*
+*Default: as built. Status: answered 2026-10-12: "Yes" (decision 0040).*
 
 ## P. From wiring her notification words and the Payouts card (added 2026-09-28, decisions 0021 and 0022)
 
@@ -443,42 +443,42 @@ new and changed words and these questions, nothing else.
 ## Q. After round four (added 2026-09-28, decision 0024)
 
 **92. When you take someone out of You're In! yourself, should they get a message? Your "released your spot" words fit an invitation you take back, but not someone who asked you to drop them.**
-*Default: nothing is sent for a removal from You're In! until you give the words. Status: open, asked 2026-09-28.*
+*Default: nothing is sent for a removal from You're In! until you give the words. Status: answered 2026-10-12: she does not take people out of You're In!; nothing sent, as built (decision 0040).*
 
 **93. When a member brings a guest, what should the app tell the member about being charged? You wrote that they should be told they "will be charged for their guest".**
-*Default: nothing is built until you give the sentence (the guest feature waits on it). Status: open, asked 2026-09-28.*
+*Default: nothing is built until you give the sentence (the guest feature waits on it). Status: answered 2026-10-12: "Your card will be charged for your guests clinic rate", kept for the guest feature (decision 0040).*
 
 **94. When you take an invitation back, the player now gets your words ("…so we’ve released your spot… We’ll catch you at the next clinic!"). Today they also go back into the Player Pool for that clinic. Should they come off the clinic altogether instead?**
-*Default: back into the Player Pool, as Cancel Invite has always done, until you say. Status: open, asked 2026-09-28.*
+*Default: back into the Player Pool, as Cancel Invite has always done, until you say. Status: answered 2026-10-12: back to the Pool, as built (decision 0040).*
 
 **95. Every player signs your waiver in the app before they can sign up. A guest a member brings, who never installs the app, never signs it. Should the member sign for their guest, should the guest sign a paper waiver at the club, or can a guest not play until they have signed?**
-*Default: the guest feature is not built until you answer (`docs/guests.md`). Status: open, asked 2026-09-28.*
+*Default: the guest feature is not built until you answer (`docs/guests.md`). Status: answered 2026-10-12: none for now, not an issue (decision 0040).*
 
 ## R. Your pros (added 2026-09-28, decision 0025)
 
 The pro login is built as you described: pros see who is coming to that day's clinics and mark Came, No-show or a late cancellation, and nothing about money. Five small things it had to decide; each has the answer we built, so "yes" is enough.
 
 **96. Do your pros sign your waiver and add a card, like any member, when they sign up?**
-*Default: yes, a pro is a member who also has the Today screen. Status: open, asked 2026-09-28.*
+*Default: yes, a pro is a member who also has the Today screen. Status: answered 2026-10-12: "No", built: pros skip the waiver and the card step (decision 0040).*
 
 **97. When a pro marks someone No-show or a late cancellation, do you want a notification?**
-*Default: no, you see it on the roster and it is charged when you tap Charge clinic. Status: open, asked 2026-09-28.*
+*Default: no, you see it on the roster and it is charged when you tap Charge clinic. Status: answered 2026-10-12: "No" (decision 0040).*
 
 **98. Can a pro add a short note when they mark a late cancellation (only you read it)?**
-*Default: yes, optional, the same as your own note. Status: open, asked 2026-09-28.*
+*Default: yes, optional, the same as your own note. Status: answered 2026-10-12: "Yes", as built (decision 0040).*
 
 **99. After you have charged a clinic, can a pro still change who came or who canceled late?**
-*Default: no, only you can then; the pro sees that it is locked. Status: open, asked 2026-09-28.*
+*Default: no, only you can then; the pro sees that it is locked. Status: answered 2026-10-12: "No" (decision 0040).*
 
 **100. If someone disputes a No-show, do you need to know whether you or a pro marked it?**
-*Default: not recorded today (it would take a small change to keep). Status: open, asked 2026-09-28.*
+*Default: not recorded today (it would take a small change to keep). Status: answered 2026-10-12: "No" (decision 0040).*
 
 ## S. Foxcroft's share (added 2026-09-29)
 
 Tara, 2026-09-29: *"Sorry I pay Foxcroft 10% of revenue. But asking I pay them 8% revenue instead since stripe will take 2.9% of every transaction. So when the app records how much I owe them I'm hoping it's 7 or 8% and not 10%"*
 
 **101. When Foxcroft agrees a number, what is it? You can also set it yourself: Money tab, Board report, "Foxcroft share %", then Save.**
-*Default: 10 until you change it (built 2026-09-29, `20260929000004`; only you can see or change it). Status: open, asked 2026-09-29.*
+*Default: 10 until you change it (built 2026-09-29, `20260929000004`; only you can see or change it). Status: open: a meeting with Foxcroft on 2026-10-12, "Hoping it's 8%"; she sets it herself (decision 0040).*
 
 ## T. Half a clinic (added 2026-10-03)
 
@@ -499,18 +499,18 @@ Tara, 2026-10-04: *"I wanna make sure that the app can keep track of how many pe
 Already built (decision 0027 §1): beside every Player Pool name, only to you, "12 played, 1 no-show, 2 late cancels". It does not yet count cancels made in good time.
 
 **105. Should that line also count every cancel, early ones too, e.g. "12 played, 5 canceled (2 late), 1 no-show"?**
-*Default: yes, on the Pool line and on each player's page in Players. Status: open, asked 2026-10-04.*
+*Default: yes, on the Pool line and on each player's page in Players. Status: answered 2026-10-12: "Yes", built (decision 0040).*
 
 ## V. Two money edges from the 2026-10-04 review
 
 **106. If someone cancels late and you decide not to charge them (a family emergency), should you be able to clear that fee?** Today you can take a sick player off the roster so they are never charged, but someone who already canceled late cannot be taken off, so their fee stays on your "not charged yet" list.
-*Default: yes, a "Waive" button beside a late cancel, after the clinic. Status: open, asked 2026-10-04.*
+*Default: yes, a "Waive" button beside a late cancel, after the clinic. Status: answered 2026-10-12: "Yes", built: Waive with Undo (decision 0040).*
 
 **107. When someone in the Player Pool accepts your invitation from their lock screen, should they need a card saved first, like everyone who registers?** Today someone who joined the Pool before cards were required could accept without one, and then there is nothing to charge after the clinic.
-*Default: yes, accepting asks for a card the same way registering does. Status: open, asked 2026-10-04.*
+*Default: yes, accepting asks for a card the same way registering does. Status: answered 2026-10-12: "Yes", built (decision 0040).*
 
 **108. When you refund someone, is it always the whole fee, or do you sometimes give part back?**
-*Default: the whole fee only, as today. Status: open, asked 2026-10-06.*
+*Default: the whole fee only, as today. Status: answered 2026-10-12: "Whole", as built (decision 0040).*
 
 ## W. The note when they register (added 2026-10-11, decision 0039)
 

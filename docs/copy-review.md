@@ -830,6 +830,20 @@ Sign the waiver first., Add a card on your Profile to register., the 105
 placeholder, her "beat you to the punch" line). They are in the snapshot now,
 so a change to any of them goes through review.
 
+## Tara's answers of 2026-10-12: Waive, the red flag, the history line — awaiting Alex
+
+Decision 0040. "Late cancellation" and the history wording are hers; three
+plain words are mine.
+
+| ✓ | Words | Where | Whose |
+|---|---|---|---|
+| — | Late cancellation | the red flag on a late cancel, phone and laptop roster | **Tara's** (question 81) |
+| — | 12 played, 5 canceled (2 late), 1 no-show | the Pool's history line, phone and laptop | **Tara's** example (question 105) |
+| ☐ | Waive | beside a late cancel's fee | Chrome, mine |
+| ☐ | Fee waived | after Waive | Chrome, mine |
+| ☐ | Undo | beside "Fee waived" | Chrome, mine |
+| ☐ | Waive (name)'s fee | VoiceOver's name for the Waive button | Chrome, mine |
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148

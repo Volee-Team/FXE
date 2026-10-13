@@ -290,6 +290,14 @@ four of the review page, questions 69 and 70; `docs/copy-review.md` §K):
 this."; the charge summary is now sentences; "Still owed" is now "Not charged
 yet".
 
+## Her words of 2026-10-12 (decision 0040)
+
+| Where | Her words | Built |
+|---|---|---|
+| A late cancel on her roster, phone and laptop (question 81) | **Late cancellation** | Yes, a red flag |
+| The Player Pool's history line (question 105, her approved example) | **12 played, 5 canceled (2 late), 1 no-show** | Yes |
+| A member bringing a guest (question 93) | **Your card will be charged for your guests clinic rate** | No: the guest feature waits (question 95). Kept verbatim, "guests" without the apostrophe as she wrote it |
+
 ## Still open with Tara
 
 1. ~~The NTRP rating guide~~ **CLOSED 2026-08-27**: *"Rating guide is good

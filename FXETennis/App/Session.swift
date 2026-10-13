@@ -116,9 +116,12 @@ final class SessionStore {
     /// Payments are on and a card is required (app_settings), so onboarding
     /// asks for a card after the waiver.
     var cardsRequired = false
+    /// Tara and her pros never see the waiver or the card step: she is
+    /// exempt on the server, and her pros "No" (question 96, 2026-10-12).
+    var skipsPlayerSteps: Bool { account?.isAdmin == true || account?.isPro == true }
     /// The onboarding card step is due: cards required, none saved, a player.
     var cardStepDue: Bool {
-        cardsRequired && account != nil && account?.hasCard != true && account?.isAdmin != true
+        cardsRequired && account != nil && account?.hasCard != true && !skipsPlayerSteps
     }
     /// Register or Accept was refused for a declined card (decision 0024):
     /// the card step opens so a new card can be saved. Unlike the onboarding
@@ -130,7 +133,7 @@ final class SessionStore {
     /// cancelling all still work; only Register and Accept are refused.
     var cardStepShown: Bool {
         cardStepDue
-            || (cardChangeRequested && account?.isCardDeclined == true && account?.isAdmin != true)
+            || (cardChangeRequested && account?.isCardDeclined == true && !skipsPlayerSteps)
     }
     var players: [PlayerProfile] = []
     var activePlayer: PlayerProfile?

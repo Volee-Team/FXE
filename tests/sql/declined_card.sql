@@ -530,7 +530,10 @@ begin
     get stacked diagnostics v_hint = pg_exception_hint;
   end;
   perform set_config('role', 'postgres', true);
-  insert into _probe_result values ('and_an_accept_stays_refused_in_plain_words', 'card_declined|generic_decline', err || '|' || v_hint);
+  -- Since Tara's question 107 (2026-10-12, decision 0040) Accept asks for a
+  -- card first, exactly as Register does just above: still refused, now for
+  -- the same reason the clinic page gives.
+  insert into _probe_result values ('and_an_accept_stays_refused_in_plain_words', 'card_required|', err || '|' || v_hint);
 
   -- ================================ only while cards are required
   -- Dana's late-cancel fee is declined (real money this time); with
