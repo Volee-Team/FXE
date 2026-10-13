@@ -23,6 +23,15 @@
 #      and every NNNN the README links exists.
 #   3. Every numbered question in docs/questions-for-tara.md carries a status
 #      line (*ANSWERED / DEFERRED / OVERRULED / SUPERSEDED / Default ...*).
+#   3b. A question a decision record answers is not still open in
+#      docs/questions-for-tara.md. A decision's answer table is one whose
+#      header is "| # | Her answer |"; each row's first number is the
+#      question. Rows the record itself calls open ("Still open", "**Open**",
+#      "(no answer)") are skipped. In questions-for-tara.md the question's
+#      block must carry a closing word (ANSWERED, CONFIRMED, SUPERSEDED,
+#      WITHDRAWN, MERGED, MOVED, CLOSED, DEFERRED, OVERRULED, in capitals or
+#      as "Status: answered ...") and must not say "Status: open". Added 2026-10-12, when the docs audit found questions
+#      answered in decisions 0024 and 0040 still listed as open.
 #   4. docs/.last-doc-audit is recent: a warning past 21 days, a failure past
 #      45. The audit is the human-shaped check this script cannot do.
 #
@@ -36,6 +45,10 @@ fail() { echo "  FAIL  $*"; FAIL=1; }
 
 # ---------------------------------------------------------------- derived ----
 PROBES=$(ls tests/sql/*.sql | wc -l | tr -d ' ')
+# The shell probes (the races and the 200-request rush) are a separate count:
+# "plus eleven race probes" sat in the checklist while there were fourteen
+# (2026-10-12).
+SHPROBES=$(ls tests/sql/*.sh | wc -l | tr -d ' ')
 UNIT=$(cat FXETennisTests/*.swift | grep -c 'func test')
 UITESTS=$(cat FXETennisUITests/*.swift | grep -c 'func test')
 # Every spec file: the browser suite has been more than admin.spec.mjs since
@@ -43,7 +56,7 @@ UITESTS=$(cat FXETennisUITests/*.swift | grep -c 'func test')
 # keep a stale total looking consistent.
 PLAYWRIGHT=$(cat web/tests/*.spec.mjs | grep -cE '^\s*test\(')
 MIGRATIONS=$(ls supabase/migrations/*.sql | wc -l | tr -d ' ')
-echo "Derived now: probes=$PROBES unit=$UNIT xcuitests=$UITESTS playwright=$PLAYWRIGHT migrations=$MIGRATIONS"
+echo "Derived now: probes=$PROBES shell-probes=$SHPROBES unit=$UNIT xcuitests=$UITESTS playwright=$PLAYWRIGHT migrations=$MIGRATIONS"
 
 # ------------------------------------------------------------ 1. counts ----
 DOCS="docs/roadmap.md docs/whats-next.md docs/architecture.md docs/launch-checklist.md README.md web/README.md supabase/functions/README.md"
@@ -65,12 +78,17 @@ check_count() { # label regex expected
   grep -iE "$re" "$TMP" \
     | grep -viE 'as of 20[0-9][0-9]|\bwas [0-9]|\bthen [0-9]|at the time|used to|previously|→' \
     | while IFS= read -r line; do
-        n=$(echo "$line" | grep -oiE "$re" | head -1 | grep -oE '[0-9]+' | head -1)
+        n=$(echo "$line" | grep -oiE "$re" | head -1 | awk '{print tolower($1)}')
+        case $n in one) n=1;; two) n=2;; three) n=3;; four) n=4;; five) n=5;; six) n=6;; seven) n=7;;
+          eight) n=8;; nine) n=9;; ten) n=10;; eleven) n=11;; twelve) n=12;; thirteen) n=13;; fourteen) n=14;;
+          fifteen) n=15;; sixteen) n=16;; esac
+        n=$(echo "$n" | grep -oE '[0-9]+' | head -1)
         [ "$n" = "$want" ] || echo "  FAIL  $label: doc says $n, repo has $want :: ${line%%:*}:$(echo "$line" | cut -d: -f2)"
       done
 }
 {
 check_count "probes"      '\b[0-9]+ (sql )?probes?\b'                       "$PROBES"
+check_count "shell probes" '\b([0-9]+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen) (race|shell|concurrency) probes?\b' "$SHPROBES"
 check_count "unit tests"  '\b[0-9]+ (swift )?unit tests?\b'                 "$UNIT"
 check_count "XCUITests"   '\b[0-9]+ (xcuitests?|ui tests?)\b'               "$UITESTS"
 check_count "Playwright"  '\b[0-9]+ (playwright|browser) tests?\b'          "$PLAYWRIGHT"
@@ -109,6 +127,48 @@ awk '
   END { if (q != "" && !seen) print "  FAIL  " q " has no status or default line" }
 ' docs/questions-for-tara.md | tee "$TMP.q"
 grep -q FAIL "$TMP.q" && FAIL=1; rm -f "$TMP.q"
+
+# ------------------------- 3b. answered in a decision, open in the list ----
+python3 - <<'PY' | tee "$TMP.qa"
+import re, glob
+answered = {}
+for f in sorted(glob.glob("docs/decisions/[0-9][0-9][0-9][0-9]-*.md")):
+    in_table = False
+    for line in open(f, encoding="utf-8"):
+        if re.match(r"^\|\s*#\s*\|\s*Her answer\s*\|", line):
+            in_table = True
+            continue
+        if in_table and not line.startswith("|"):
+            in_table = False
+        if not in_table or line.startswith("|---"):
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        m = re.match(r"(\d+)", cells[0])
+        if not m:
+            continue
+        rest = " ".join(cells[1:])
+        if re.search(r"Still open|\*\*Open\*\*|\(no answer\)", rest):
+            continue
+        answered.setdefault(int(m.group(1)), f.split("/")[-1][:4])
+blocks, cur = {}, None
+for line in open("docs/questions-for-tara.md", encoding="utf-8"):
+    m = re.match(r"^\*\*(\d+)\.", line)
+    if m:
+        cur = int(m.group(1))
+        blocks[cur] = ""
+    elif line.startswith("#"):
+        cur = None
+    if cur is not None:
+        blocks[cur] += line
+CLOSED = re.compile(r"\b(ANSWERED|CONFIRMED|SUPERSEDED|WITHDRAWN|MERGED|MOVED|CLOSED|DEFERRED|OVERRULED)\b|(?i:status:\s*(answered|closed|withdrawn|merged|moved|superseded))")
+for q, dec in sorted(answered.items()):
+    b = blocks.get(q)
+    if b is None:
+        continue
+    if not CLOSED.search(b) or re.search(r"Status:\s*open", b, re.I):
+        print(f"  FAIL  question {q} is answered in decision {dec} but still open in docs/questions-for-tara.md")
+PY
+grep -q FAIL "$TMP.qa" && FAIL=1; rm -f "$TMP.qa"
 
 # ------------------------------------------------------- 4. audit age ----
 if [ -f docs/.last-doc-audit ]; then
