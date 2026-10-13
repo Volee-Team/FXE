@@ -7,8 +7,8 @@ How this file works, so it can be trusted:
 1. **If something is left to do before launch, it is a row here, and only
    here.** Other files hold the detail a row links to: `docs/for-alex.md`
    (click-by-click steps for Alex's rows), `docs/questions-for-tara.md` (the
-   questions' wording), `docs/mvp.md` (notes for the MVP call),
-   `docs/backlog.md` (bugs that do not block launch). `docs/whats-next.md`
+   questions' wording), `docs/archive/mvp.md` (notes for the MVP call),
+   `docs/backlog.md` (bugs that do not block launch). `docs/archive/whats-next.md`
    describes the state of the app and holds no tasks. (Alex, 2026-09-27: *"i
    like having one thing to totally trust"*.)
 2. **Every row has an owner and a status.** Owner in brackets: [Alex],
@@ -107,7 +107,7 @@ What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision
 | D3 | Supabase plan: the free tier pauses after a quiet week and has no point-in-time recovery; Pro is $25 a month | [Alex] | **DECIDE** [Alex] before real members |
 | D4 | Restore drill (a backup nobody has restored is not a backup) | [me] | **DONE 2026-09-12**; next due 2026-10-12 |
 | D5 | Tara's real templates and clinics in hosted, through the admin site | [Tara] | **DONE 2026-10-11**: her real clinics are on hosted (Coed "105", Ladies All Level, Ladies 3.0+, Queen City, Ladies Beginner 2.5, Men's 3.0+, 2026-10-04 to 2026-10-07, read through the management API); none after 2026-10-07 yet |
-| D6 | Crash reporting and error alerts | [me]/[Alex] | **OPEN** (`docs/practice-ideas.md` idea 2) |
+| D6 | Crash reporting and error alerts | [me]/[Alex] | **OPEN** (`docs/archive/practice-ideas.md` idea 2) |
 | D7 | Rate limits on the public functions and sign-up | [me] | **LATER**: low risk at club scale |
 | D8 | Drop the dead `clinics.price_cents` column | [me] | **LATER** |
 | D9 | Data export for Tara | [me] | **LATER** (v1.1) |
@@ -154,7 +154,7 @@ Missing kinds of testing, in the order they matter:
 
 | ID | Item | Owner | Status |
 |---|---|---|---|
-| G1 | The MVP call (`docs/mvp.md`): payments in or out, push in or out | [Alex]+[Kat]+[Tara] | **DONE 2026-09-27**: Alex: payments fully live for the party (A11) and push fully working (C3), *"we want everything 100% functional + even better"* |
+| G1 | The MVP call (`docs/archive/mvp.md`): payments in or out, push in or out | [Alex]+[Kat]+[Tara] | **DONE 2026-09-27**: Alex: payments fully live for the party (A11) and push fully working (C3), *"we want everything 100% functional + even better"* |
 | G2 | Tara's answers through the review page, **round four**: only what is new since her 2026-09-22 answers (15 words, questions 69 to 79, three tasks). Her 09-22 answers were read on 2026-09-27 (decision 0016); `review-watch.yml` now opens an issue whenever she saves | [Alex] sends, [Tara] answers | **OPEN**: send the link once round four is deployed (`docs/for-alex.md` §5). Question 75 (how members hear about the app) blocks launch |
 | G3 | Kat's calls: the tab bar colour, the green text contrast, the green line under the header; and her earlier "tag spec" line (release tags, answered by C10, or analytics tags, not built; `docs/kat-due-diligence.md`) | [Kat] | **DONE 2026-10-01**: keep the system tab bar, the darker green for text, keep the green line (decision 0036); her "tag spec" line is answered by the release tags (C10) |
 | G4 | Alex's ticks in `docs/copy-review.md` (sections G to J and the older open rows) | [Alex] | **OPEN** |

@@ -39,3 +39,7 @@ docs/prompt-log/*
 # its history here. The repo is public.
 /*.pdf
 .Rhistory
+
+# A one-off claude.ai build of Tara's review page (2026-10-12). The live page
+# is web/review.html; the first one is history in docs/archive/tara-review/.
+docs/tara-review/

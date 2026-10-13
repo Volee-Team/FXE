@@ -7,7 +7,7 @@ last reconciled against source on 2026-09-12, not from memory.
 Regenerate any time: `python3 scripts/extract-copy.py --report`
 
 **Tara reviews the same words on her own page** (2026-09-18): `python3
-scripts/build-tara-review.py` writes `docs/tara-review/index.html`, a
+scripts/build-tara-review.py` writes `docs/archive/tara-review/index.html`, a
 phone-first page with every user-visible string, where it appears in plain
 language, and Keep or Change with a box for her wording; her own sentences are
 marked "Your words". It also carries the open questions (52 to 57 since the round-two republish

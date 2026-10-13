@@ -59,7 +59,7 @@ MIGRATIONS=$(ls supabase/migrations/*.sql | wc -l | tr -d ' ')
 echo "Derived now: probes=$PROBES shell-probes=$SHPROBES unit=$UNIT xcuitests=$UITESTS playwright=$PLAYWRIGHT migrations=$MIGRATIONS"
 
 # ------------------------------------------------------------ 1. counts ----
-DOCS="docs/roadmap.md docs/whats-next.md docs/architecture.md docs/launch-checklist.md README.md web/README.md supabase/functions/README.md"
+DOCS="docs/roadmap.md docs/architecture.md docs/launch-checklist.md README.md web/README.md supabase/functions/README.md"
 TMP=$(mktemp); trap 'rm -f "$TMP"' EXIT
 for f in $DOCS; do [ -f "$f" ] && awk -v F="$f" '{print F ":" NR ":" $0}' "$f"; done > "$TMP"
 # CLAUDE.md above the changelog only

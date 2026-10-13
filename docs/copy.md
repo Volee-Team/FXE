@@ -25,7 +25,7 @@ than normalised.
 
 Source: Tara to Alex, 2026-08-15, by text.
 
-"105" appeared five times in her real weekly schedule (`docs/taras-real-week.md`)
+"105" appeared five times in her real weekly schedule (`docs/archive/taras-real-week.md`)
 with no definition anywhere in the spec or the Developer Guide, so it was
 question 1 back to her. Her answer:
 
@@ -136,7 +136,7 @@ Kept here so it is not re-invented by someone who does not know it was quoted.
 
 ## Locked terminology
 
-Never substitute a synonym. Full table in `docs/design-system.md`.
+Never substitute a synonym. Full table in `docs/archive/design-system.md`.
 
 **You're In!** · **Player Pool** · **Response Needed** · **Canceled** ·
 **Action Needed** · **My Clinics**
@@ -174,7 +174,7 @@ and are marked for her edit. Question 46 flags the card sentence.
 
 ## Her review of every word (2026-09-21, decision 0013)
 
-Her first pass through `docs/tara-review/index.html`, pasted back by Alex.
+Her first pass through `docs/archive/tara-review/index.html`, pasted back by Alex.
 Everything not listed here she marked keep. Applied verbatim, including
 punctuation and the missing periods:
 

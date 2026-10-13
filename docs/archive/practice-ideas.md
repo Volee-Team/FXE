@@ -1,3 +1,5 @@
+Archived 2026-10-12. Current source: `docs/roadmap.md`. A snapshot, kept as history: each idea is either built or a Parked row there.
+
 # Tools and practices worth adopting, and the ones not worth it yet
 
 Living file. Alex, 2026-09-26: *"can we use jev?? + other ideas to be

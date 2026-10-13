@@ -1,3 +1,5 @@
+Archived 2026-10-12. Current source: `docs/roadmap.md`. A snapshot, kept as history: guests are parked (decision 0040, question 95); the design notes below stand for when they come back.
+
 # Guests: a member brings a friend
 
 Status: **designed, not built** (2026-09-28). It moves money and has a legal

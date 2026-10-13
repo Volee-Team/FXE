@@ -1,3 +1,5 @@
+Archived 2026-10-12. Current source: `docs/copy.md`. A snapshot, kept as history: Tara's clinic descriptions are there; her real clinics are on hosted (checklist D5).
+
 # Tara's real week, and the workflow the app is replacing
 
 **Source:** email Tara sent 2026-08-08, forwarded to Alex, captured here

@@ -1,3 +1,5 @@
+Archived 2026-10-12. Current source: `docs/launch-checklist.md`. A snapshot, kept as history: the MVP call happened 2026-09-27 (row G1); what is left is a row there.
+
 # MVP: what is critical, and what is not
 
 Draft for Tara, Kat and Alex to argue with (Alex, 2026-09-22: *"we need to

@@ -1,3 +1,5 @@
+Archived 2026-10-12. Current source: `docs/backlog.md`. A snapshot, kept as history: the 2026-09-02 walk-through; anything still open from it is a backlog row.
+
 # Feature review, 2026-09-02
 
 Every screen on both surfaces, walked as Tara and as a player, after the day's

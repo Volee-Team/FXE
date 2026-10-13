@@ -52,7 +52,7 @@ most important thing to understand here, and it is section 5.
 
 | Area | State |
 |---|---|
-| Postgres schema, RLS, narrow views, RPCs | **Built**, 63 migrations. Which of them are on hosted is `supabase migration list --linked`, recorded after each push in `docs/whats-next.md` (49 of 49 paired on 2026-09-28); `20260928500001_uninvite_message.sql` goes with its PR, and `20260928800001_player_history.sql` and `20260928800002_copy_week.sql` with theirs (decision 0027), `20260929000001_canceled_drafts_stay_hidden.sql` and `20260929000002_unpublished_clinics_stay_quiet.sql` (a clinic never published is never shown or mentioned to a player) |
+| Postgres schema, RLS, narrow views, RPCs | **Built**, 63 migrations. Which of them are on hosted is `supabase migration list --linked`, recorded after each push in `docs/archive/whats-next.md` (49 of 49 paired on 2026-09-28); `20260928500001_uninvite_message.sql` goes with its PR, and `20260928800001_player_history.sql` and `20260928800002_copy_week.sql` with theirs (decision 0027), `20260929000001_canceled_drafts_stay_hidden.sql` and `20260929000002_unpublished_clinics_stay_quiet.sql` (a clinic never published is never shown or mentioned to a player) |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | **Built**, enumerated by probes |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | **Built** |
 | SQL probe suite (46 probes; the suite prints its own total) + concurrency probe, in CI | **Built** |
@@ -690,7 +690,7 @@ one. `web/saved-messages.js` holds all of it.
 
 Added 2026-09-21: **Tara's review page lives here too.** `web/review.html`
 is the second target of `scripts/build-tara-review.py` (the first is the
-claude.ai artifact in `docs/tara-review/`, unchanged): the same three tabs,
+claude.ai artifact in `docs/archive/tara-review/`, unchanged): the same three tabs,
 opened as `review.html?t=<token>`, saving her answers to `review_responses`
 through the `review-submit` edge function 1.5 s after every change and when
 the page goes to the background, with a one-line status (Saving, Saved,
@@ -891,7 +891,7 @@ card on file, 0010 the cancellation honor system, 0011 no email verification in
 v1, 0012 the cancellation policy and charging, 0013 Tara's 2026-09-21 review: no
 courtesy, 3 hours, card only, the waiver, deletion that keeps history),
 `docs/roadmap.md` (plan of record),
-`docs/whats-next.md` (what is blocked and on whom), `docs/backlog.md`,
+`docs/archive/whats-next.md` (what is blocked and on whom), `docs/backlog.md`,
 `docs/copy.md` (Tara's words), `docs/web-admin.md`, `docs/notifications.md`,
 and `CLAUDE.md` (the working rules and the changelog).
 

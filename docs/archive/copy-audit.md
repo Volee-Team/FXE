@@ -1,3 +1,5 @@
+Archived 2026-10-12. Current source: `docs/copy-review.md`. A snapshot, kept as history: the 2026-08-16 inventory; Alex's live checklist is there and Tara's words are in docs/copy.md.
+
 # Copy audit: every word in the app that Tara did not write
 
 **Purpose:** `docs/copy.md` holds the copy Tara wrote. This file holds the
@@ -122,7 +124,7 @@ the database** (`pg_get_functiondef` over every `notify_account` caller,
 
 ## 4. Locked, do not touch
 
-Terminology fixed by `CLAUDE.md` and `docs/design-system.md`. Changing any of
+Terminology fixed by `CLAUDE.md` and `docs/archive/design-system.md`. Changing any of
 these is a decision, not an edit.
 
 **You're In!** · **Player Pool** · **Response Needed** · **Canceled** ·

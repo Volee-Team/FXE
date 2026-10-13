@@ -5,7 +5,7 @@ exists right now: the iOS app is stuck behind Developer Program enrollment and
 she can use this today.
 
 Approved as the laptop half of a split admin surface (`docs/web-admin.md`,
-`docs/for-tara.md` question 1). The phone app keeps the courtside work; this does
+`docs/archive/for-tara.md` question 1). The phone app keeps the courtside work; this does
 weekly setup.
 
 ## What she can do here

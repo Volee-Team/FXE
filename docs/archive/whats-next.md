@@ -1,3 +1,5 @@
+Archived 2026-10-12. Current source: `docs/launch-checklist.md`. A snapshot, kept as history: the "State today" block at its top replaces this page.
+
 # State of the app
 
 **This file holds no tasks.** Everything left to do before launch, with its
@@ -45,7 +47,7 @@ admin's Players tab.
 - **Forgot password:** the app side works, but the email never reaches a
   member. Hosted has no email sender of its own, and Supabase's built-in one
   delivers only to the Supabase project's own team (checklist D1). Found
-  2026-09-27; this page and `docs/mvp.md` had said it worked.
+  2026-09-27; this page and `docs/archive/mvp.md` had said it worked.
 - **Card payments:** built and deployed; the switch is off (A9), and the real
   card sheet has only ever run against Stripe's mock, never Stripe itself (A2).
 - **Push on the lock screen:** built and deployed; waits on Apple's key (C3).
@@ -70,7 +72,7 @@ Tara's words; her Resolved clears a decline from her lists.
 `docs/decisions/0007`.
 
 * What "105" is — 2026-08-15, in `docs/copy.md`
-* Her real weekly list — the Aug 9-14 email IS it, in `docs/taras-real-week.md`
+* Her real weekly list — the Aug 9-14 email IS it, in `docs/archive/taras-real-week.md`
 * Clinic descriptions — 2026-08-15, in `docs/copy.md`
 * **Queen City eligibility** — not enforced, and the ambiguity is resolved
   (2026-08-28): *"Queen City means our FXE Queen City team. No nonmembers or

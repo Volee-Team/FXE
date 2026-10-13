@@ -1,3 +1,5 @@
+Archived 2026-10-12. Current source: `docs/architecture.md`. A snapshot, kept as history: the July design derived from the Developer Guide; the system as built is there.
+
 # FXE Tennis v1: Engineering Design
 
 > **Historical (written 2026-07, before any code).** Kept as the record of what we intended. The live description is `docs/architecture.md`; decisions since are in `docs/decisions/`. Known-wrong sections are marked inline as `> **2026-09-12:** ...`.
@@ -395,4 +397,4 @@ Numbered to match `for-tara.md`: the admin surface (1), registration timing rule
 
 None of these block starting on §1 through §10, which are the foundation and the parts that are expensive to change later.
 
-> **2026-09-12:** All answered by 2026-08-27; see the header of `docs/for-tara.md` and `docs/decisions/`.
+> **2026-09-12:** All answered by 2026-08-27; see the header of `docs/archive/for-tara.md` and `docs/decisions/`.

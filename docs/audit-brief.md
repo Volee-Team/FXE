@@ -16,8 +16,8 @@ the tests and the workflows, and compare every checkable claim in the docs
 against them.
 
 Scope, in this order: `CLAUDE.md` above `## Changelog`; `docs/roadmap.md`;
-`docs/whats-next.md`; `docs/backlog.md`; `docs/launch-checklist.md`;
-`docs/architecture.md`; `docs/web-admin.md`; `docs/design-system.md`;
+`docs/archive/whats-next.md`; `docs/backlog.md`; `docs/launch-checklist.md`;
+`docs/architecture.md`; `docs/web-admin.md`; `docs/archive/design-system.md`;
 `docs/notifications.md`; `docs/copy.md`, `docs/copy-review.md`;
 `docs/questions-for-tara.md`; `docs/decisions/*.md`; `README.md`,
 `web/README.md`, `supabase/functions/README.md`; `.claude/agents/*.md`.

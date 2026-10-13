@@ -310,7 +310,7 @@ Each of these is a decision, not an oversight.
 
 ## 9. Tara's review page (added 2026-09-21)
 
-`web/review.html` is the page from `docs/tara-review/` (the claude.ai
+`web/review.html` is the page from `docs/archive/tara-review/` (the claude.ai
 artifact of 2026-09-18) rebuilt on this site, because the artifact could
 only keep her answers in the phone's localStorage and she had to redo them
 once when the browser lost them. Both pages come from one generator,

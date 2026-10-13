@@ -53,7 +53,7 @@ The history of what we believed is part of the record.
 Tara's own numbered decisions (1–23, calls of 2026-08-02 and 2026-08-12) are
 tabled in CLAUDE.md; a bare "decision 17" in a record means that list. Not yet
 recorded here: the 2026-08-15 admin-tab call (`MainTabView.swift` header) and
-the 2026-08-28 Queen City label answer (`docs/whats-next.md`).
+the 2026-08-28 Queen City label answer (`docs/archive/whats-next.md`).
 
 **Keeping this index complete is part of writing the record.** 0005 sat
 unindexed from the day it was written until 2026-08-13, which meant the one place

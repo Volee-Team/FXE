@@ -83,7 +83,7 @@ causes, all worth remembering because two are the same mistake:
    nothing. `ClinicsView:84` had it right; Home drifted in `8357fb9`.
 3. The status assertion compared against visible chip text, but `StatusChip`
    collapses to one accessibility element publishing its **VoiceOver** label. It
-   now asserts the documented strings from `docs/design-system.md`, which pins
+   now asserts the documented strings from `docs/archive/design-system.md`, which pins
    the accessibility contract too.
 
 ### Web admin ✅ — LIVE at `fxe-tennis-admin.vercel.app` (2026-08-28)
@@ -117,7 +117,7 @@ her email to admin, so the bootstrap is entirely hers.
 
 ### Ship ⬜
 
-**Dates (2026-09-22):** internal TestFlight is live through John's account (decision 0014). Next: Tara, Kat and Alex define the MVP-critical list (`docs/mvp.md`), a testing group, then full launch hoped for the launch party on **2026-10-16**.
+**Dates (2026-09-22):** internal TestFlight is live through John's account (decision 0014). Next: Tara, Kat and Alex define the MVP-critical list (`docs/archive/mvp.md`), a testing group, then full launch hoped for the launch party on **2026-10-16**.
 
 Split by what actually gates what. An **internal** TestFlight round (Tara added
 as an App Store Connect user on our own team) needs far less than an external
@@ -201,7 +201,7 @@ started or starting now.
 | Saved passwords offered for the club's site and app together | The LLC's team id in a file on the admin site (associated domains) |
 | Clinic day on the Lock Screen (a Live Activity: "Tonight 7:00, You're In!") | After launch; needs push live |
 | Placeholders shaped like the list while it loads, instead of a spinner | Nothing; small (folds into Instant open) |
-| Invite a friend: send the app, or ask Tara to write a guest in (her idea, question 72) | The install link (checklist I6) and Tara's questions 93 and 95 (`docs/guests.md`) |
+| Invite a friend: send the app, or ask Tara to write a guest in (her idea, question 72) | The install link (checklist I6) and Tara's questions 93 and 95 (`docs/archive/guests.md`) |
 | Your season on Profile: clinics played, from the Past list | The words are Tara's |
 | The forecast for the hour you play | Tara first: it names the club's town |
 | Share a clinic with a friend | Tara: she hides FXE from non-members, so this is her call first |
@@ -227,7 +227,7 @@ a decision for her.
 | ⬜ | **Every cancel on a player's history line** (Tara, 2026-10-04): today it shows late cancels and no-shows; she wants all cancels counted, to weigh who she invites from the Pool. Question 105. Not started |
 | ⬜ | A Sunday-night email: next week's sign-ups, cards to chase, requests waiting on her (needs the club's mail sender) |
 | ⬜ | More for two of her pros, when she asks ("Eventually", question 71) |
-| ⬜ | Guests billed to the member (question 72): designed in `docs/guests.md`, waits on questions 93 and 95 |
+| ⬜ | Guests billed to the member (question 72): designed in `docs/archive/guests.md`, waits on questions 93 and 95 |
 
 **Answered in round four and built:** a Contact Tara link (76), no Stripe
 receipts (86: "No receipts").

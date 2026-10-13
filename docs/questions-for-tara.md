@@ -377,7 +377,7 @@ new and changed words and these questions, nothing else.
 *ANSWERED 2026-09-28 (decision 0024): only she sees everything; pros see who is coming to that day's clinics, mark Came / No-show and late cancellations, never invite from the Pool, never see anything financial. Four pros named (kept on hosted, not here: the repo is public). "Eventually I will have [one pro] see more and [another pro] see more" (the two names are on hosted with the rest).*
 
 **72. Guests who don't have the app. You wrote the member who brings them gets charged. Proposed: you (or a pro) add the guest to the clinic from the laptop, pick which member brought them, and after the clinic that member's card is charged the guest's fee. Which price does the guest pay, member or non-member? Do they take a spot like anyone else?**
-*HALF ANSWERED 2026-09-28 (decision 0024): the guest always pays the non-member price, billed to the member who brings them, through an "Invite a friend" button that shares the app or asks her to add the friend by name. Flow in `docs/guests.md`; the sentence telling the member they will be charged is question 93.*
+*HALF ANSWERED 2026-09-28 (decision 0024): the guest always pays the non-member price, billed to the member who brings them, through an "Invite a friend" button that shares the app or asks her to add the friend by name. Flow in `docs/archive/guests.md`; the sentence telling the member they will be charged is question 93.*
 
 **73. The board's 10% (was 58, 67, 68). The report shows 10% of what players actually paid by card that month, late-cancel and no-show fees included, before Stripe's fee, and a refund comes off the month of the clinic. Right?**
 *Default: as stated, which is what is built. Status: answered 2026-10-12: "Correct" (decision 0040).*
@@ -452,7 +452,7 @@ new and changed words and these questions, nothing else.
 *Default: back into the Player Pool, as Cancel Invite has always done, until you say. Status: answered 2026-10-12: back to the Pool, as built (decision 0040).*
 
 **95. Every player signs your waiver in the app before they can sign up. A guest a member brings, who never installs the app, never signs it. Should the member sign for their guest, should the guest sign a paper waiver at the club, or can a guest not play until they have signed?**
-*Default: the guest feature is not built until you answer (`docs/guests.md`). Status: answered 2026-10-12: none for now, not an issue (decision 0040).*
+*Default: the guest feature is not built until you answer (`docs/archive/guests.md`). Status: answered 2026-10-12: none for now, not an issue (decision 0040).*
 
 ## R. Your pros (added 2026-09-28, decision 0025)
 
@@ -538,5 +538,5 @@ version 2) saves as she types once it is deployed.
 
 ### How 43 to 51 were sent
 
-Not as this file. On 2026-09-18 they went to Tara as the Questions tab of her review page (`docs/tara-review/index.html`, published privately at https://claude.ai/artifact/1H3fCuvG7pkc9scTAJmfkL for Alex to share), in the plainer wording that page uses. Her answers come back as one pasted text; record them here with a date and a decision number, as 0007 and 0012 were.
+Not as this file. On 2026-09-18 they went to Tara as the Questions tab of her review page (`docs/archive/tara-review/index.html`, published privately at https://claude.ai/artifact/1H3fCuvG7pkc9scTAJmfkL for Alex to share), in the plainer wording that page uses. Her answers come back as one pasted text; record them here with a date and a decision number, as 0007 and 0012 were.
 
