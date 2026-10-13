@@ -1,6 +1,6 @@
 # Privacy Policy, FXE Tennis app
 
-**Status: DRAFT for Alex and Tara. Not published. Not linked from the app.**
+**Status: published 2026-09-27 at https://fxe-tennis-admin.vercel.app/privacy.html, after Tara approved it, and linked from Profile in the app (Privacy Policy).**
 
 Decision 16 (2026-08-02): the privacy policy reuses Volee's. Decision 0012
 §13 (2026-09-16): it can live on fersc.com. This is Volee's policy

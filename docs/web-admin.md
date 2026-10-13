@@ -1,6 +1,6 @@
 # Web Admin: Architecture Decision Record
 
-**Status:** BUILT and LIVE at `fxe-tennis-admin.vercel.app` (2026-08-28),
+**As built:** live at `fxe-tennis-admin.vercel.app` since 2026-08-28,
 with these recorded deviations from the plan below: plain HTML + supabase-js
 instead of Vite/React (one user, five screens, zero build step; the
 reasoning is in commit dd55e36 and stands until the surface outgrows it), with
@@ -8,16 +8,38 @@ supabase-js vendored in `web/vendor/` at an exact pinned version since
 2026-09-27 (it came from esm.sh at a floating `@2` until then;
 `scripts/vendor-supabase-js.sh`); the
 folder is `web/`, not `web-admin/`; the host is Vercel, not Cloudflare Pages,
-deployed by hand with `vercel --prod` and deliberately not connected to the
-repo (`web/README.md`); there is no `_headers` file and no CSP; there is no
-generated `db.types.ts` and no `dist/` for CI to grep. The architecture
-arguments below (static SPA, no server, RPC-only authority) all still hold and
-are what the shipped page does. Verified 2026-09-21: `ls web` shows
-`index.html`, `reset.html`, `review.html`, `config.js`, `tokens.css` plus the
-Playwright tooling.
+deployed only with `bash scripts/deploy-web.sh` (it deploys, then compares
+every live page, script and stylesheet with the working tree byte for byte)
+and deliberately not connected to the repo (`web/README.md`); there is no
+`_headers` file and no CSP; there is no generated `db.types.ts` and no
+`dist/` for CI to grep. The architecture arguments below (static SPA, no
+server, RPC-only authority) all still hold and are what the shipped page does.
+
+`ls web web/app web/tests` on 2026-10-12: the pages `index.html` (the admin),
+`reset.html`, `review.html` (section 9), `privacy.html`, `sheet.html` (the
+court sheet, decision 0027), `qr.html` (Tara's printable QR card) and
+`web/app/index.html` with `web/app/target.js` (the one link the QR code says,
+forwarding to the install link); the modules `config.js`, `week.js`,
+`read.js`, `saved-messages.js`, `tokens.css` and `vendor/supabase-js.js`;
+the images `gator.png`, `gator-tile.png`, `app-qr.svg`, `app-qr.png`; and the
+Playwright tooling (`package.json`, `playwright.config.mjs`, `tests/` with
+`admin`, `pages`, `saved-messages`, `tools` and `week` specs), which
+`web/.vercelignore` keeps off the site.
+
+What the admin page does today, on top of the plan below: per-person
+**Charge $N** on each row that owes after a clinic (`admin_fees_due`,
+`admin_charge_player`, then `stripe-charge`; decision 0037, which removed
+Charge clinic); **Waive** with Undo on a late cancel holding no charge, and the
+red **Late cancellation** flag that keeps the name on her list
+(`admin_set_fee_waived`, decision 0040); the player's **note** under the name
+(decision 0039); the **Pro** box on the Players tab (`admin_set_pro`, decision
+0025; a pro who signs in here is turned away like a member); the **Court
+sheet**, **Copy to next week** and the history line (decision 0027); Payouts,
+dispute alerts and the board report on the Money tab; Reset link and Review
+links on the Players tab. `docs/architecture.md` section 8 has the detail.
 **Date:** 2026-08-02
 **Decision owner:** Alex
-**Approved by:** Tara (split admin surface, per `for-tara.md` question 1)
+**Approved by:** Tara (split admin surface, per `docs/archive/for-tara.md` question 1)
 
 ---
 
@@ -34,7 +56,7 @@ The database is already built and locked down. When this was written, three migr
 * `supabase/migrations/20260728000002_helpers_views_rls.sql`
 * `supabase/migrations/20260728000003_rpcs.sql`
 
-The schema has since grown to 27 migrations (`ls supabase/migrations | wc -l`, 2026-09-12); the security model is unchanged.
+The schema has since grown to 63 migrations (`ls supabase/migrations | wc -l`, 2026-10-12); the security model is unchanged.
 
 The security model is settled and this document does not reopen it. Clients have no direct table access to `clinics`, `registrations`, `player_notes`, `clinic_templates`, `clinic_messages`, `clinic_message_recipients`, or `news_posts`. Reads go through narrow views. Writes go through `SECURITY DEFINER` RPCs that call `require_admin()`, which calls `is_admin()`, which reads `accounts.role` for `auth.uid()`.
 
@@ -129,7 +151,7 @@ select exists (
 
 The web app reads `accounts.role` once at startup (`web/index.html`, the `sb.from("accounts")` select) to decide whether to render the admin UI or an "access denied" panel. **That read is cosmetic.** It controls pixels, not permissions. If someone patched the JavaScript to skip the check, they would see the admin chrome and every single request behind it would fail in the database. This distinction is worth stating in a code comment at the call site, because the next person to read it will assume it is the gate.
 
-The admin views work the same way. `clinics_admin` and `registrations_admin` select an explicit column list from their base table `where public.is_admin()` (explicit since 20260816000001, because `select *` in a view is expanded once at creation and went stale; `registrations_admin` also computes `has_card` and `charge_status` since 20260912000003). Postgres views default to `security_invoker = false`, so they execute with the owner's rights and can read base tables the client cannot. **The `where public.is_admin()` predicate is therefore the entire access control on those views.** Delete it and the view leaks the full roster to every authenticated player. That is worth an explicit probe assertion, not just a comment.
+The admin views work the same way. `clinics_admin` and `registrations_admin` select an explicit column list from their base table `where public.is_admin()` (explicit since 20260816000001, because `select *` in a view is expanded once at creation and went stale; `registrations_admin` also computes `has_card` and `charge_status` since 20260912000003, and carries `player_note` since 20261011000001 and `fee_waived_at` since 20261012000001). Postgres views default to `security_invoker = false`, so they execute with the owner's rights and can read base tables the client cannot. **The `where public.is_admin()` predicate is therefore the entire access control on those views.** Delete it and the view leaks the full roster to every authenticated player. That is worth an explicit probe assertion, not just a comment.
 
 ### Why the same gate covers both surfaces
 
@@ -287,36 +309,37 @@ Each of these is a decision, not an oversight.
 * **No offline support, no service worker, no PWA install.** The phone is the offline-tolerant surface.
 * **No realtime subscriptions.** One admin means nothing changes underneath her except a player registering or answering an invitation. As built, the page reloads its data after each action; there is no focus refetch and no refresh button (`grep -c visibilitychange web/index.html` is 0). Realtime on RLS-protected tables also needs publication configuration that would have to be audited against the information-hiding rules, which is real work for a benefit of "the number updates without clicking."
 * **No admin-side push or email.** Notifications reach her phone. The laptop page is opened deliberately.
-* **No multi-admin UI, no roles beyond `member` and `admin`, no permission editor.** `accounts.role` already supports a second admin as an `UPDATE` statement. Do not build a screen for it before a second admin exists.
+* **No multi-admin UI, no permission editor.** `accounts.role` already supports a second admin as an `UPDATE` statement. Do not build a screen for it before a second admin exists. **Revised 2026-09-28 (decision 0025):** a third role, `pro`, exists, and the Players tab's Pro box (`admin_set_pro`) switches an account between member and pro and nothing else; no screen makes an admin.
 * **No CSV import, no charts; one CSV export.** The Money tab is the one report: `revenue_summary()`, `revenue_by_clinic`, and the `payments_ledger` list (2026-09-01, 2026-09-12). The data is in Postgres and can be queried directly if a one-off question comes up. **Revised 2026-09-26:** Tara asked for "a report on the app I can upload and send to the board for their 10% back of the program", so the Money tab now opens with a **Board report** card: From / To (default last month in New York), Run, a summary (members and non-members attended with distinct people in brackets, clinics, fees at clinic prices, collected by card, 10% of each) from `admin_board_report`, the per-clinic table from `admin_board_report_clinics`, **Download CSV** (the per-clinic rows plus a totals row, `fxe-board-report-<from>-to-<to>.csv`, built in the browser as a Blob; cells quoted and a leading `= + - @` defused against spreadsheet formula injection) and **Print** (a `@media print` block that shows the report and nothing else). The page formats; every number is the database's. The 10% base is question 58. Failed rows in the card-payments list now read "Declined: <reason>" from Stripe's code (`payments.failure_code`: `insufficient_funds` is "Insufficient funds (NSF)", `expired_card` "Card expired", and so on; an unknown code shows as itself, no code falls back to Stripe's sentence), with the player's name in bold. That name is the account holder's: PaymentSheet does not collect the name printed on the card.
-* **Payment processing, revised twice.** Zelle is off: `app_settings.zelle_allowed` is `false` since decision 0013 (2026-09-21), so the Paid checkbox and Remind unpaid are rendered on neither admin surface. Card charging is one tap per clinic, Charge clinic (decision 0012), plus Refund on the Money tab; both exist only while `app_settings.payments_enabled` is true, which it is not yet (decision 0009).
-* **No print stylesheet or printable court sheet.** Flagged as the most likely first request after launch, because a paper sheet on a clipboard is a real thing at tennis clubs. Cheap to add later, roughly a `@media print` block. Not built until asked. (2026-09-26: the first print stylesheet exists, for the board report only; the court sheet still has none.)
+* **Payment processing, revised twice.** Zelle is off: `app_settings.zelle_allowed` is `false` since decision 0013 (2026-09-21), so the Paid checkbox and Remind unpaid are rendered on neither admin surface. Card charging was one tap per clinic, Charge clinic (decision 0012); since decision 0037 (2026-10-02) it is one Charge $N per owing row after the clinic, with Waive on a late cancel (decision 0040) and Refund on the Money tab. The charge buttons exist only while `app_settings.payments_enabled` is true; switching it on is checklist A9.
+* **No print stylesheet or printable court sheet.** Flagged as the most likely first request after launch, because a paper sheet on a clipboard is a real thing at tennis clubs. **Revised:** the board report prints (2026-09-26), and `web/sheet.html` is the court sheet (decision 0027, 2026-09-28): the You're In! players by court with their ratings, then No court yet, and a Print button the printout leaves out. Late cancels and players' notes are not on it (decision 0040; question 110).
 * **No undo, no audit log, no change history.** `canceled_at`, `canceled_by`, `invited_at`, and `responded_at` already record the transitions that matter. A general audit trail is a different project.
 * **No touch or keyboard drag-and-drop.** The dropdown covers both, permanently.
 * **No dark mode, no theming, no internationalization.** Navy and cream, English, as specified in `CLAUDE.md`.
 * **No component library and no design system package.** Plain CSS custom properties in one `tokens.css`, matching the iOS palette by hand. Seven screens do not amortize a design system.
-* **No test framework for the web UI.** The invariants that matter are in Postgres and are covered by `tests/run-probes.sh`. A React component test suite for a one-user internal tool is effort spent in the wrong place. This is a deliberate trade and it should be revisited the moment a second admin or a second developer appears. **Superseded 2026-09-02:** 12 Playwright tests (`grep -c 'test(' web/tests/admin.spec.mjs`) walk the page as Tara against a fresh seed, in the `web-browser-tests` CI job.
+* **No test framework for the web UI.** The invariants that matter are in Postgres and are covered by `tests/run-probes.sh`. A React component test suite for a one-user internal tool is effort spent in the wrong place. This is a deliberate trade and it should be revisited the moment a second admin or a second developer appears. **Superseded 2026-09-02:** Playwright tests in `web/tests/` (five spec files; the runner prints the count) walk the page as Tara against a fresh seed, in the `web-browser-tests` CI job.
 
 ---
 
 ## 8. Open questions
 
 * **Custom domain now or later?** Defaulting to the `*.pages.dev` URL. Trivial to change.
-* **Do PR preview deploys get their own Supabase project, or are they disabled?** Must be resolved before the first pull request, not after. **Resolved:** the repo is not connected to Vercel; deploys are manual `vercel --prod` from `web/`, so there are no previews (`web/README.md`).
+* **Do PR preview deploys get their own Supabase project, or are they disabled?** Must be resolved before the first pull request, not after. **Resolved:** the repo is not connected to Vercel, so there are no previews; every deploy is `bash scripts/deploy-web.sh` from the repo root (`web/README.md`).
 * **Does Tara want the court board grouped by anything within a court,** for example rating or age, or is a flat list per court correct? Assuming flat until told otherwise.
-* **Adult rating value list** is still open in `for-tara.md` question 6 and blocks the Player Directory filter UI, though not the rest of the screen. **Resolved 2026-08-02:** NTRP 2.0 to 5.0 in half steps, stored as `numeric(2,1)` (CLAUDE.md decisions 6+7).
+* **Adult rating value list** was open in `docs/archive/for-tara.md` question 6 and blocks the Player Directory filter UI, though not the rest of the screen. **Resolved 2026-08-02:** NTRP 2.0 to 5.0 in half steps, stored as `numeric(2,1)` (CLAUDE.md decisions 6+7).
 
 ---
 
 ## 9. Tara's review page (added 2026-09-21)
 
-`web/review.html` is the page from `docs/tara-review/` (the claude.ai
-artifact of 2026-09-18) rebuilt on this site, because the artifact could
-only keep her answers in the phone's localStorage and she had to redo them
-once when the browser lost them. Both pages come from one generator,
-`scripts/build-tara-review.py` (`--target artifact` / `--target web`; no
-flag builds both), from one data block, so the words she reviews cannot
-differ between them.
+`web/review.html` is the live review page. It is the claude.ai artifact of
+2026-09-18 rebuilt on this site, because the artifact could only keep her
+answers in the phone's localStorage and she had to redo them once when the
+browser lost them; the artifact's old rounds are history in
+`docs/archive/tara-review/`. One generator, `scripts/build-tara-review.py`,
+writes `web/review.html` by default (since 2026-10-12); `--target artifact`
+or `--target both` still builds the old page from the same data block, so the
+words she reviews cannot differ between them.
 
 How it works, and why it is shaped this way:
 

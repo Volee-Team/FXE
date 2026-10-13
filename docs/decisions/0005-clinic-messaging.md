@@ -2,6 +2,8 @@
 
 **Date:** 2026-08-12 · **Status:** Active
 
+**Superseded in part (forward note added 2026-10-12):** built with five audiences, not three: Everyone, You're In!, Player Pool, Response Needed and Unpaid, matching the `message_audience` enum (CLAUDE.md, decision 20). Unpaid is hidden while `zelle_allowed` is false. Tara asked for the three below; the extra two are the enum's, kept (hard rule 4).
+
 ## Decision
 
 Each clinic has a message thread. Tara composes; players read. The composer

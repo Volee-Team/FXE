@@ -2,6 +2,8 @@
 
 **Date:** 2026-09-12 · **Status:** Active; §1's Zelle fallback superseded by 0013 §3 (2026-09-21) · **Supersedes:** the "Stripe in v1.1" half of 0003 (the "Zelle + a report for v1" half stays true until this ships)
 
+**Superseded in part (forward note added 2026-10-12):** §1's Zelle fallback by 0013 §3 (card only); the charge timing by 0012 (after the clinic, on Tara's tap) and 0037 (one tap per person, not per clinic); the policy settings are Tara's answers in 0012 and 0013, no longer pending.
+
 ## What Tara asked for
 
 2026-09-12: *"I definitely need the payment structure. I think on the app. I've

@@ -34,7 +34,7 @@ TABLE = [  # launch-checklist rows: first cell pattern -> number
     (r"^\| Web admin browser tests", pw),
     (r"^\| XCUITests", ui),
 ]
-DOCS = ["docs/roadmap.md", "docs/whats-next.md", "docs/architecture.md", "docs/launch-checklist.md",
+DOCS = ["docs/roadmap.md", "docs/architecture.md", "docs/launch-checklist.md",
         "README.md", "web/README.md", "supabase/functions/README.md"]
 
 dry = "--dry" in sys.argv

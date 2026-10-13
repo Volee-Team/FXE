@@ -2,6 +2,8 @@
 
 **Date:** 2026-09-27 · **Status:** Active (defaults until Tara answers questions 80 to 84) · **Source:** the MVP audit of 2026-09-27 (build-now items 2, 5, 6, 13), built on branch `money-integrity`, fixed on `fix-sql` after adversarial review · **Supersedes:** decision 0010 §6 ("Tara's own removals are never late")
 
+**Answered (forward note added 2026-10-12):** the defaults waiting on questions 80 to 84 were confirmed: 80, 82, 83 and 84 in 0024, 81 in 0040 (a late cancel stays on her list with a red flag).
+
 ## What we chose
 
 1. **One fee per player per clinic.** A fee is *live* while pending, processing,
