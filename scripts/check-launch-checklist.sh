@@ -23,7 +23,11 @@ LIST="${1:-docs/launch-checklist.md}"
 STEPS="${2:-docs/for-alex.md}"
 python3 - "$LIST" "$STEPS" <<'PY'
 import re, sys, datetime, os
-today = datetime.date.fromisoformat(os.environ["TODAY"]) if os.environ.get("TODAY") else datetime.date.today()
+# The club's date, not the runner's: CI runs in UTC, which is already
+# tomorrow from 8 PM in Charlotte (decision 0038: Charlotte time everywhere).
+from zoneinfo import ZoneInfo
+today = (datetime.date.fromisoformat(os.environ["TODAY"]) if os.environ.get("TODAY")
+         else datetime.datetime.now(ZoneInfo("America/New_York")).date())
 lst, steps = sys.argv[1], sys.argv[2]
 text = open(lst, encoding="utf-8").read()
 bad = []
