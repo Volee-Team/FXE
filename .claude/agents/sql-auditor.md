@@ -51,6 +51,18 @@ narrow views, never by the UI.
   `has_function_privilege('authenticated', 'public.f(args)', 'execute')` is true
   and the body does not open with `require_admin()`.
 - Nothing location-shaped may enter `app_settings`.
+- **A player's note to Tara** (`registrations.player_note`, decision 0039,
+  `20261011000001`) is readable by exactly two readers: Tara through
+  `registrations_admin` (`where is_admin()`) and the writer through
+  `my_registrations` (`owns_player`). Not a pro (`pro_today()` names its
+  columns and the note is not one), not another player, not anon, and never
+  as a count. Only the owner writes it: `register_for_clinic` keeps a note
+  only when the caller owns the player (Tara registering someone stores
+  none), and `set_my_registration_note` is a conditional update on her own
+  live spot until the start. `delete_my_account` blanks it. Any new view,
+  RPC return value or edge function that carries the column is a finding
+  unless it is one of those two readers. Pinned by
+  `tests/sql/registration_note.sql`.
 - Pinned by `tests/sql/information_hiding.sql`; a new player-facing relation
   needs a row there.
 
@@ -75,6 +87,36 @@ grant does nothing), `WITH CHECK` on the policy, and the trigger backstops
 `guard_account_privilege_columns` / `guard_player_owner_column`. Every
 `admin_*` RPC starts with `perform public.require_admin()`. Any new column of
 that shape gets the same three layers.
+
+**3b. The pro role (decision 0025, `20260928600001`).** A pro is an account
+whose `role` is `pro`, asked by `is_pro()` (false once deleted). `is_admin()`
+is unchanged: Tara is the only admin. No policy, view or grant mentions a
+pro, so from every table and view a pro reads exactly what a member reads.
+A pro's reach is three functions, each gated by `require_pro()`:
+- `pro_today()`: today's clinics by the New York date, published and not
+  canceled, and per You're In! row only the registration id, first and last
+  name, court, `no_show` and `late_cancel`. Never the Player Pool, Response
+  Needed, a canceled row, another day, a price, the Paid flag, a charge, a
+  card, a note (Tara's `player_notes` or the player's `player_note`), a
+  phone, an email or the capacity. The column list is the contract.
+- `pro_set_no_show()` and `pro_mark_late_cancel()`: Tara's two transitions
+  through the shared internal `registration_set_no_show` /
+  `registration_mark_late_cancel`, refused on any clinic that is not today's.
+  They return nothing.
+- **No money, not even through a refusal.** Once any row of a clinic holds a
+  live fee, every pro mark on that clinic answers `clinic_locked`
+  (`pro_clinic_locked()`), charged rows and uncharged alike, re-checked after
+  the row lock (`tests/sql/pro_mark_race.sh`). A refusal that differs per
+  player tells a pro who was charged.
+- A pro never invites, places, messages, charges, refunds, reads notes or
+  sees money. Any new function a pro can reach that returns a registrations
+  row, a price, a paid flag or a count is a finding (the rejected design
+  returned Tara's whole row to pros).
+- Only Tara changes a role, and only between member and pro
+  (`admin_set_pro`, conditional; refuses an admin, a deleted account and
+  her own). The account trigger `guard_account_privilege_columns` refuses
+  any other role change whoever makes it (hard rule 8's backstop).
+- Pinned by `tests/sql/pro_role.sql` and `tests/sql/pro_mark_race.sh`.
 
 **4. Grants (hard rule 11).** Supabase's default privileges mean every new
 table and every new view is born with INSERT, UPDATE, DELETE, TRUNCATE for
@@ -125,7 +167,9 @@ operation run twice safely? Clients retry.
   registration.
 - Archive, never delete (hard rule 4): `is_active`, `canceled_at`,
   `archived_at`. A `DELETE` on a business row is a finding unless a decision
-  record says otherwise (`leave_pool` is a known open exception).
+  record says otherwise. `leave_pool` archives too since `20260921000001`
+  (a conditional `status = 'canceled'` with `canceled_at`, decision 0013);
+  its first version (`20260728000003`) deleted the row.
 - No index on `clinics.category`, on purpose (decision 8): an index is a promise
   to filter, and Tara said not to.
 - `select *` in a view is expanded once at creation and goes stale on the next
@@ -139,6 +183,10 @@ webhook-only. Nothing charges while `app_settings.payments_enabled` is
 missing note (0012 §1); it marks `late_cancel` inside `cancel_cutoff_hours`
 (3, decision 0013 §2) and `courtesy_used` only while `courtesy_cancel_days() > 0`,
 which is `0` today. Pool drop-outs and Tara's removals are never late.
+Tara charges one person per tap (`admin_charge_player`, decision 0037), and
+who owes is defined once, in `money_rows()`; `admin_fees_due`, the Money tab
+and Action Needed read it rather than copying its rule. A pro never reaches
+any of it (3b).
 
 ## How to report
 

@@ -4,9 +4,11 @@
 of these edits in the app, go w the style guide! write down, this is source
 of truth for style!!"*). Written by Kat, delivered 2026-09-22 as
 "FXE Tennis — Style Guide.pdf" (three pages); transcribed here verbatim,
-then the mapping onto the code and the places where the code cannot follow
-it yet. `docs/design-system.md` and `FXETennis/Resources/Brand.swift` follow
-this file; `web/tokens.css` follows `Brand.swift`.
+then the mapping onto the code, Kat's answers to where the code could not
+follow it (decision 0036), and the status colours and accessibility rules
+(folded in from the retired design-system doc on 2026-10-12).
+`FXETennis/Resources/Brand.swift` follows this file; `web/tokens.css`
+follows `Brand.swift`.
 
 ## Kat's guide, verbatim
 
@@ -94,39 +96,75 @@ control.
 | Buttons / nav rows | `NavRowLabel` (28pt radius, 56pt tall, icon slot, label, chevron); `FilledButtonLabel` = navy row, `OutlinedButtonLabel` = white row, so every existing call site picked the shape up |
 | Greeting block | Home: the greeting in `greeting`, then "Let's Play." in `greetingAccent` gator-green, centered under the header; sign-in: "Let's Play." alone under the header |
 | Spacing / radius | `Brand.Spacing.pageMargin` 24, `Brand.Radius.lg` 28 / `md` 16 / `sm` 8; web tokens the same |
+| Text green | `Brand.courtText` `#446A30` for green **text** ("Let's Play." on Home and sign-in, the active tab's label); `Brand.court` `#4F7A38` stays for the header's line, the logo and every fill (Kat, 2026-10-01, decision 0036) |
 
-## Where the code cannot follow it yet, for Kat
+## Kat's calls, answered (decision 0036, 2026-10-01)
 
-1. **Tab bar fill.** iOS 26 draws the tab bar as floating glass and ignores a
-   solid navy fill from the toolbar-background APIs (tried: the bar went
-   frosted with white glyphs, unreadable). Shipped: the system bar, active
-   item in gator-green, inactive in navy-900, radius and floating from the
-   system. A true navy bar means replacing the system tab bar with our own;
-   say the word and it is a day's work.
-2. **Contrast, measured** (WCAG, against porcelain and the gradient's warm
-   end): navy-900 text 14.9:1 / 13.6:1; gator-green "Let's Play" at 23px
-   medium italic **4.42:1 / 4.05:1**, just under the 4.5:1 floor for text
-   below 24px; gator-green active tab label at 12px on navy **3.37:1**. Both
-   are exactly what the guide asks for and are shipped as asked; a shade
-   darker green for text (for example #446A30: 5.51:1 on porcelain, 5.04:1 at the gradient's warm end, recomputed 2026-09-27) would clear the floor
-   without changing the look. Kat's call.
-3. **Tara's gradient.** Her standing ask (*"some kind of color variation, not
-   just pure white"*, 2026-09-22) stays: pages run from porcelain to a warmer
-   porcelain (`Brand.surfaceWarm` #EAE6DF). The guide names a flat porcelain
-   page; if that was deliberate, one token change removes the gradient.
-4. **Line heights and 0.2px tracking** are not set explicitly on iOS; the
-   fonts' own metrics apply.
-5. **The header's arch: settled 2026-09-26.** Built as an arch on
-   2026-09-22, rejected by Alex (*"legit ugly"*) and then by Kat (*"I'm not
-   wild about the swoopy thing. I think I just like the straight line
-   across."*). Now straight, with the guide's green line kept straight at
-   4pt. Open for Kat: keep the green line, or navy straight into the photo
-   the way Tara's mockup shows it (one number, `lineWidth` in
-   `BrandHeader.swift`).
-6. **The status bar over navy** reads in dark text on a phone in light mode
-   (the time and battery are black on navy). SwiftUI has no per-screen
-   status-bar style; fixing it means a small UIKit bridge. Noted in
-   `docs/backlog.md`.
+Her three answers to the places the code could not follow the guide:
+*"1. Keep it. 2. Use the darker green 3. I prefer the green line tbh"*.
+
+1. **Tab bar: the system's.** iOS 26 draws the tab bar as floating glass and
+   ignores a solid navy fill. It stays the system bar: outlined icon and
+   label, green for the active tab, navy for the rest.
+2. **Green text: the darker green.** Her gator-green `#4F7A38` measures
+   4.42:1 on porcelain, under the 4.5:1 floor for small text, so text uses
+   `Brand.courtText` `#446A30` (5.51:1 on porcelain, recomputed 2026-10-12
+   with the WCAG formula); fills keep `#4F7A38`.
+3. **The green line under the navy header stays**, straight, 4 points, under
+   every page's banner (decision 0033). The arch was rejected on 2026-09-26
+   by Alex and Kat.
+
+Not set explicitly: line heights and the 0.2px tab-label tracking (the
+fonts' own metrics apply). Tara's cream-to-warmer-cream gradient stays on top
+of the guide (`Brand.surfaceGradient`, ending at `Brand.surfaceWarm`
+`#EAE6DF`); a flat porcelain page would be one token. The status bar is white
+on every screen since 2026-09-29 (`INFOPLIST_KEY_UIStatusBarStyle` in
+`project.yml`).
+
+## Status colours and accessibility
+
+Folded in from `docs/archive/design-system.md` on 2026-10-12 and re-derived
+from `FXETennis/Resources/Brand.swift` (`Brand.Status`, `StatusChip`). This
+file owns them now.
+
+**Status is never conveyed by colour alone.** Every status carries its
+locked label and an SF Symbol, and the only way to draw one is `StatusChip`,
+which renders the symbol, the label and the colours together and reads one
+VoiceOver label. Reading `Status.ink` to tint a bare dot is the failure this
+type exists to prevent. The chip wraps rather than truncates, so "Response
+Needed" survives the largest Larger Text size.
+
+| Status (locked label) | Symbol | Ink | Tint | Ink on tint | Ink on porcelain | VoiceOver |
+|---|---|---|---|---|---|---|
+| You're In! | `checkmark.circle.fill` | `#2C5A3E` forest | `#E7F0E7` | 6.83:1 | 6.99:1 | "Status: you're in" |
+| Player Pool | `hourglass` | `#7A5E24` brass | `#F5EBD8` | 5.14:1 | 5.34:1 | "Status: in the Player Pool" |
+| Response Needed | `exclamationmark.circle.fill` | `#1F4E5A` deep teal | `#DDEEF0` | 7.65:1 | 8.04:1 | "Status: response needed" |
+| Canceled | `xmark.circle.fill` | `#992E22` brick red | `#F6DED9` | 5.91:1 | 6.66:1 | "Status: canceled" |
+
+Ratios computed 2026-10-12 with the WCAG 2.1 relative-luminance formula; every
+pair clears 4.5:1. `CLAUDE.md`'s "Visual direction" names the intent (green,
+orange, yellow, red). The code keeps green and red, makes orange a brass dark
+enough to read, and makes Response Needed deep teal rather than yellow,
+because no yellow ink reaches 4.5:1 on a light ground and teal never reads as
+the same hue as the brass. The symbol shapes (check, hourglass, exclamation,
+cross) carry the meaning for anyone who cannot tell the hues apart.
+
+The other accessibility rules the code follows:
+
+- **Tap targets**: `Brand.Layout.minTapTarget` 44 points is a floor;
+  `comfortableTapTarget` 52 for primary actions (the app is used standing on
+  a court). Nav rows are 56 tall.
+- **Larger Text**: every type style grows with the iPhone's setting
+  (`.brandFont`, corrected 2026-09-27). Spacing does not scale, on purpose;
+  wrap a gap in `@ScaledMetric` where it must track the text.
+- **Icons always beside a text label**, never alone.
+- **Apple's accessibility audit runs as a UI test** on the player's, Tara's
+  and the pro's main screens (decision 0023); `scripts/measure-contrast.py`
+  measures a finding from the screenshot before it is accepted.
+- **Light mode only.** No dark tokens exist, and the app locks the light
+  appearance (`INFOPLIST_KEY_UIUserInterfaceStyle` in `project.yml`). New
+  colours go into `Brand.swift` and `web/tokens.css` together, never as a
+  call-site literal.
 
 ## When the guide changes
 

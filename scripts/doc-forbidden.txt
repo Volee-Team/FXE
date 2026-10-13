@@ -1,0 +1,24 @@
+# doc-forbidden.txt: instructions a live doc must never give, read by
+# scripts/check-doc-status.sh. Each was a real way to hurt production.
+#
+# One rule per line, four fields separated by " ;; ":
+#   pattern ;; also-required (or -) ;; excuse ;; why
+# All three are Python regular expressions, matched case-insensitively against
+# one line of a live doc. A line fails when it matches `pattern`, matches
+# `also-required` (unless that is `-`), and does NOT match `excuse`. The
+# excuse is for lines that name the thing in order to forbid it or to point
+# at the sanctioned tool instead.
+#
+# Live docs are the ones check-doc-status.sh lists in its header: docs/
+# outside archive/, decisions/ and prompt-log/, the READMEs, the agent briefs,
+# and CLAUDE.md above its changelog.
+
+# A bare Vercel deploy printed nothing and changed nothing three times
+# (2026-09-12, 09-21, 09-22). scripts/deploy-web.sh deploys and then proves
+# the live site matches the working tree; nothing else may be the instruction.
+vercel (--prod|deploy) ;; - ;; deploy-web\.sh|never[^.]{0,30}vercel|instead of[^.]{0,20}vercel|printed nothing ;; deploy only with bash scripts/deploy-web.sh, which verifies the live site byte for byte
+
+# apply_migration stamped the hosted ledger with its own version on
+# 2026-08-13 and made the next db push re-apply a migration. Hosted is written
+# by `supabase db push` and nothing else (CLAUDE.md, Build & Run).
+apply_migration ;; hosted|production|remote|linked ;; \blocal\b|never[^.]{0,30}apply_migration|db push ;; hosted gets supabase db push, never apply_migration

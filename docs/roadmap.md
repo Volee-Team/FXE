@@ -4,75 +4,82 @@ What is in each version, what is deliberately not, and where Tara's ideas go
 when they arrive mid-build. **When she asks for something, it lands here first.**
 Nothing gets built straight off a text message.
 
-Statuses: ✅ done · 🔨 in progress · ⬜ not started · ❓ needs a decision
+**This file carries no status.** Alex, 2026-10-12: *"we have tons of docs and
+some are becoming outdated and we need a SOLID system and ASOT to stick to"*.
+Status lives in four places only: `docs/launch-checklist.md` (work, LATER
+included), `docs/backlog.md` (bugs), `docs/questions-for-tara.md` (questions)
+and `docs/decisions/README.md` (decisions). A row here says one of three
+things:
+
+| Says | Means |
+|---|---|
+| **built** | On `main`. `docs/architecture.md` names every table, function, screen and test behind it, and CI fails if one is missing there |
+| **checklist X** | Scheduled before launch. Row X of the launch checklist carries the status |
+| nothing | An idea nobody has scheduled. Where it depends on something outside our hands, the row says what |
+
+Re-check a "built" against the code whenever you touch a row. On 2026-08-13
+this file said "not started" for an iOS app that eight commits had already
+delivered: **a roadmap that lies in the optimistic direction wastes a day; one
+that lies in the pessimistic direction hides finished work and gets it
+rebuilt.**
 
 ---
 
-## v1 — the version that replaces the notebook
+## v1: the version that replaces the notebook
 
 The bar: Tara stops running her program from texts, a spreadsheet, and a
 handwritten court sheet. Nothing more.
 
-### Backend ✅
+### Backend
 
-| | |
+| Feature | |
 |---|---|
-| ✅ | Accounts, players, clinics, templates, registrations |
-| ✅ | Service-week registration windows (member Thursday 8 AM, public Friday 8 AM) |
-| ✅ | Member priority, capacity, Player Pool |
-| ✅ | Invitations: Tara invites by hand, player accepts or declines, never auto-promoted |
-| ✅ | Cancellations both sides, archive never delete |
-| ✅ | Information hiding enforced in Postgres, not the UI |
-| ✅ | Privilege-escalation fix and attack probe |
-| ✅ | Pricing by membership × length, snapshotted onto the registration |
-| ✅ | `revenue_summary()` — the four numbers and the money |
-| ✅ | Court assignment 1–5, admin only |
-| ✅ | Clinic messages with audience targeting |
-| ✅ | News with audience and unread tracking |
-| ✅ | Automated SQL probe suite + a concurrency probe (19 probes as of 2026-09-16; the suite prints its own total), green in CI on every push |
+| Accounts, players, clinics, templates, registrations | built (`20260728000001_core_schema.sql`) |
+| Service-week registration windows (member Thursday 8 AM, public Friday 8 AM) | built (decision 0001, `registration_window_rule.sql`) |
+| Member priority, capacity, Player Pool | built (`register_for_clinic`, `capacity_race.sh`) |
+| Invitations: Tara invites by hand, player accepts or declines, never auto-promoted | built (`place_player`, `respond_to_invitation`) |
+| Cancellations both sides, archive never delete | built (`cancel_registration`, `cancel_clinic`) |
+| Information hiding enforced in Postgres, not the UI | built (`information_hiding.sql`) |
+| Privilege-escalation fix and attack probe | built (`privilege_escalation.sql`) |
+| Pricing by membership and length, snapshotted onto the registration | built (decision 0002) |
+| `revenue_summary()`: the four numbers and the money | built |
+| Court assignment 1 to 5, admin only | built (`assign_court`) |
+| Clinic messages with audience targeting | built (`send_clinic_message`, `clinic_messaging.sql`) |
+| News with audience and unread tracking | built on the server (`my_news`); no screen, by decision 0006 |
+| The SQL probe suite plus the race probes, green in CI on every push | built (`bash tests/run-probes.sh` prints its own totals) |
 
-### iOS app 🔨
+### iOS app
 
-Status corrected 2026-08-13. This section read "not started" for every row while
-`docs/architecture.md` in the same repo said "Built" and eight commits on
-2026-08-12 had delivered a walkable player flow. **A roadmap that lies in the
-optimistic direction wastes a day; one that lies in the pessimistic direction
-hides finished work and gets it rebuilt.** Re-check this table against the code
-whenever you touch it.
-
-| | |
+| Feature | |
 |---|---|
-| ✅ | Xcode project, brand tokens from Tara's palette, the gator mark, **and the app icon** (real crossed-racquets mark on navy, 2026-08-16; CI fails if it ever goes missing) |
-| ✅ | Sign in AND sign up (2026-08-15): profile screen with Tara's Screen-4 copy, `create_my_account`, `.needsProfile` routing, sign-up regression UI test |
-| ✅ | Profile: populated after sign-up, NTRP "?" explainer, and **Edit details** (2026-09-02): name, phone, rating. Membership stays Tara's to correct |
-| ✅ | Browse clinics: "Registration opens" state (2026-08-12), date floor (2026-08-28, finished clinics vanish), closed state with "Message Tara" (2026-08-28), week grouping (2026-09-01, This week / Next week / Week of …), five-week horizon (2026-09-02) |
-| ✅ | Clinic details: name, day, time, price for *this* player, description, Zelle/Venmo line, message board |
-| ✅ | Register / Cancel / Leave Player Pool |
-| ✅ | Accept or decline an invitation |
-| ✅ | **The bell** (2026-09-02): notification center behind the Home bell, badge from unread count, per-row and mark-all read, state in the database |
-| ✅ | **My Clinics** (2026-09-02): "View All Clinics" opens a screen of the player's own clinics, grouped by week, each with its status chip; the empty state hands off to the open list |
-| ✅ | **Admin tab** (2026-08-15): Action Needed, rosters, invite from Player Pool, mark paid, message audiences |
-| ✅ | **Late requests** (2026-08-28): registration closes 3h before start; inside the window a player can Message Tara to ask in |
-| ✅ | Confirmation dialogs on all destructive taps (2026-08-28) |
-| 🔨 | **Push, the client half** (2026-09-02, decision 0008): permission sheet with Tara's Screen-3 line, `aps-environment` entitlement, APNs registration on every signed-in launch, `register_device` / `unregister_device` RPCs (11-check probe), unregister on sign out. **Not built:** the sender (edge function + webhook) and the APNs key, which only the Apple Developer account can issue. Token delivery was not observable on the simulator (apsd held no sandbox token); the RPC path is probe-tested |
-| ⏸ | News. Model and repository exist, no screen. **Deferred**: decision 21 cut the tab (see `docs/decisions/0006`) |
+| Xcode project, brand tokens, the gator mark and the app icon (CI fails if the icon goes missing) | built |
+| Sign in and sign up: profile screen with Tara's Screen-4 copy, `create_my_account` | built |
+| Profile: NTRP "?" explainer, Edit details (name, phone, rating); membership stays Tara's to correct | built |
+| Browse clinics: "Registration opens" state, finished clinics drop off, closed state with "Message Tara", week grouping, five-week horizon | built |
+| Clinic details: name, day, time, price for *this* player, description, message board | built |
+| Register, Cancel, Leave Player Pool | built |
+| Accept or decline an invitation | built |
+| The bell: notification center, unread badge, read state in the database | built |
+| My Clinics, grouped by week, each with its status chip; Past under it | built |
+| Manage tab for Tara: Action Needed, rosters, invite from the Player Pool, message audiences | built |
+| Late requests: registration closes 3 hours before start; inside that a player can ask Tara | built (`request_late_spot`) |
+| Confirmation dialogs on destructive taps | built |
+| Push notifications on the lock screen | checklist C3 |
+| News screen | Not in v1: decision 21 cut the tab (decision 0006). The model and repository stay |
 
-### Test health 🔨
+### Test health
 
-Tracked here because it was red for days without anyone noticing, which is
-itself the finding.
+Counts are not written here; the suites print their own and
+`bash scripts/check-doc-claims.sh` derives them. What exists: the SQL probe
+suite, the Playwright browser suite, the Stripe pipeline against stripe-mock
+(`tests/stripe/run.sh`), the push harness (`tests/push/`), Swift unit tests,
+and XCUITests for player, admin and pro flows. The XCUITests run on a laptop
+through `scripts/run-ui-tests.sh` before each TestFlight build, not in CI
+(decided 2026-09-18, launch checklist §F option 3); the `ui-test-record` CI
+job checks that a green run is recorded.
 
-| | |
-|---|---|
-| ✅ | SQL probe suite: 19 probes as of 2026-09-12 (the suite prints its own total), plus the concurrency probe. Green in CI on every push |
-| ✅ | **Web admin browser tests** (2026-09-02): 12 Playwright tests as of 2026-09-12 walk Tara's side against a fresh seed (sign-in and the non-admin door, prices, walk-up, courts, the Zelle controls hidden while the card is the only way to pay, directory note round-trip, cancel clinic, template archive and restore, Money counts, the card-payments ledger, payments off). Run in CI on every push |
-| ✅ | **Stripe pipeline against a mock** (2026-09-12): `tests/stripe/run.sh`, 27 checks from SetupIntent through webhook, charge, refund and decline, with the switch off proving nothing charges. Runs in CI on every PR |
-| ✅ | **Admin XCUITests** (2026-09-02): four flows on Tara's side of the phone: register → court → unpaid reminder → paid; Player Pool → invite → the player's own Accept (hard rule 2 end to end); directory note round-trip; cancel clinic with confirmation. The phone's UI suite is now 13 tests, 8 player + 5 admin (Remove from clinic added 2026-09-10) |
-| ✅ | Unit tests: 23 as of 2026-09-12, covering the pure logic the probes cannot see (price formatting, member rate selection, NTRP bucketing, service-week edges, the cancel cutoff (parameterised; the live setting is 3 hours, decision 0013)) |
-| ⬜ | **XCUITests do not run in CI.** The `ios-ui-tests` job is built and stays green with a notice until three CI secrets exist. Decided 2026-09-18 (§F option 3): no `fxe-ci` project; the suite runs on a laptop before each TestFlight build and the run goes in the changelog |
-
-The XCUITest suite was 0 of 4, not the "2 of 4" claimed in `ed88c1f`. Three
-causes, all worth remembering because two are the same mistake:
+**History worth keeping.** The XCUITest suite was 0 of 4 on 2026-08-14, not the
+"2 of 4" claimed in `ed88c1f`. Three causes, two of them the same mistake:
 
 1. `FXETennisTests/` was empty, so the target built an `.xctest` with no
    executable and **every** `xcodebuild test` exited 65 regardless of the UI
@@ -83,125 +90,103 @@ causes, all worth remembering because two are the same mistake:
    nothing. `ClinicsView:84` had it right; Home drifted in `8357fb9`.
 3. The status assertion compared against visible chip text, but `StatusChip`
    collapses to one accessibility element publishing its **VoiceOver** label. It
-   now asserts the documented strings from `docs/design-system.md`, which pins
+   now asserts the documented strings from `docs/archive/design-system.md`, which pins
    the accessibility contract too.
 
-### Web admin ✅ — LIVE at `fxe-tennis-admin.vercel.app` (2026-08-28)
+### Web admin, at `fxe-tennis-admin.vercel.app`
 
 Tara's weekly setup, on a laptop (her call, 2026-08-02). Sign-up self-promotes
 her email to admin, so the bootstrap is entirely hers.
 
-| | |
+| Feature | |
 |---|---|
-| ✅ | Sign in / first-time sign up; create + edit + publish clinics; windows and prices derived automatically |
-| ✅ | Templates: "Start from a template" picker and save-as-template — a clinic in ~3 clicks |
-| ✅ | Rosters: You're In! / Player Pool / Response Needed, invite, cancel invite, paid toggle |
-| ✅ | Message players by audience (Everyone / You're In! / Player Pool / Response Needed / Unpaid). **Five, not the three of decision 0005; the enum's extra two are kept, Unpaid hidden while `zelle_allowed` is false** |
-| ✅ | **Walk-up "Add player"**: forgiving search, one tap to You're In! |
-| ✅ | **Cancel clinic** (2026-09-02), web (two clicks, five seconds apart) and iOS (More menu with a confirmation). `cancel_clinic` had waited since July for a caller; it notifies everyone live |
-| ✅ | **Court dropdown on every roster row** (2026-09-01), web and iOS, re-arrangeable any time. You're In! reads in court order, so the list is the court sheet. `assign_court` had waited since July for a caller |
-| ✅ | **One-tap unpaid reminder** (2026-09-01), web and iOS. **Not rendered since 2026-09-21: gated on `zelle_allowed`, which decision 0013 set false.** Body is the clinic name, its date and Tara's own payment line; the audience is resolved server-side |
-| ✅ | **Money** (2026-09-01): the four numbers, expected / collected / still owed, and a per-clinic line. Web only; `revenue_summary()` + the `revenue_by_clinic` view |
-| ✅ | **Player directory** (2026-09-01), web and iOS: forgiving search, private notes, membership correction, deactivate/reactivate. Notes travel only through admin-only RPCs (20260902000002, 14-check probe, red first) |
-| ✅ | **Action Needed** (2026-09-01): late requests with Put them in / No room, and unread cancellations and invitation replies with Seen. Web and iOS (iOS shows late requests on the roster) |
-| ✅ | **Forgot password?** (2026-09-01) on both sign-in screens, landing on `web/reset.html`. Reset URL added to the hosted redirect list 2026-09-01, verified 2026-09-10 |
-| ✅ | **Three tabs** (2026-09-10): This week · Players · Money, the last tab remembered per browser, because Tara's first question on a Monday is money |
-| ✅ | **Show canceled** (2026-09-10): canceled clinics hidden by default behind a one-line count and a toggle; nothing deleted (hard rule 4) |
-| ✅ | **Template archive and restore** (2026-09-10): `admin_set_template_archived`, a Templates card with Archive / Show archived / Restore, and the picker lists only live ones. 10-check probe, red first |
-| ✅ | **"Edited <date>" under every note** (2026-09-12): `admin_player_note_edited` returns the note's `updated_at`, so a note from March no longer reads like one from yesterday |
-| ✅ | **Card payments on the Money tab** (2026-09-12): `payments_ledger` listed newest first, or "No card payments yet." while `payments_enabled` is false |
-| ✅ | ~~Charge fee / Charge late cancel~~ **Refund** (2026-09-12; the per-row charge buttons were replaced on 2026-09-16 by one tap per clinic, below): Tara's tap on the roster row, rendered only while `payments_enabled` is true; the late-cancel note shows always |
-| ✅ | **Tara's cancellation policy** (2026-09-16, decision 0012): one courtesy late cancellation per 90 days applied by the app; no-shows marked on the roster (web and phone); **Charge clinic**, one tap after a clinic ends, charges every attendee the clinic fee and every no-show and non-courtesy late cancel the full fee, skipping and counting anyone without a card; a card is required to register once payments are on; her policy text and her two sentences verbatim; rating and phone required at sign-up; a note at level entry only she reads. Nothing charges until `payments_enabled` and question 43 | **Superseded in part by decision 0013: no courtesy (`courtesy_cancel_days` 0) and a 3-hour cutoff; the columns and functions stay as a switch.**
-| ✅ | **Her review of every word** (2026-09-21, decision 0013): no courtesy (`courtesy_cancel_days` 0), 3-hour cutoff, card only (`zelle_allowed` false hides Paid and Remind unpaid), her wording on 14 strings, the waiver signed in the app before the first spot, Delete my account keeping history, the level note on the player page too
-| ✅ | **Past under My Clinics** (2026-09-21): `my_past_clinics`, the player's own finished clinics and outcomes (played and price, no-show, canceled); the notifications-off line on Home; the targeted-message probe
+| Sign in and first-time sign up; create, edit and publish clinics; windows and prices derived automatically | built |
+| Templates: "Start from a template" and save-as-template; archive and restore | built (`admin_set_template_archived`) |
+| Rosters: You're In!, Player Pool, Response Needed; invite, cancel invite | built |
+| Message players by audience. **Five audiences, not the three of decision 0005**; the enum's extra two are kept, Unpaid hidden while `zelle_allowed` is false | built |
+| Walk-up "Add player": forgiving search, one tap to You're In! | built |
+| Cancel clinic, web (two clicks) and phone (More menu with a confirmation); everyone live is told | built |
+| Court dropdown on every roster row, web and phone; You're In! reads in court order | built |
+| One-tap unpaid reminder, web and phone. Not rendered while `zelle_allowed` is false (decision 0013) | built |
+| Money: the four numbers, per-clinic lines, the card-payments ledger, payouts and disputes (decision 0021), the board report (question 73, decision 0040) | built |
+| Player directory, web and phone: search, private notes with "Edited <date>", membership correction, deactivate | built |
+| Action Needed: late requests, cancellations and invitation replies | built |
+| Forgot password on both sign-in screens, landing on `web/reset.html`; Tara's own reset link (decision 0017) | built |
+| Three tabs: This week, Players, Money; canceled clinics behind Show canceled | built |
+| Tara's cancellation policy as decision 0013 left it: no courtesy, 3-hour cutoff, no-shows marked, card required, the waiver before the first spot, Delete my account keeping history | built (decisions 0012, 0013) |
+| Past under My Clinics, the notifications-off line on Home | built (`my_past_clinics`) |
 
-### Ship ⬜
+### Ship
 
-**Dates (2026-09-22):** internal TestFlight is live through John's account (decision 0014). Next: Tara, Kat and Alex define the MVP-critical list (`docs/mvp.md`), a testing group, then full launch hoped for the launch party on **2026-10-16**.
-
-Split by what actually gates what. An **internal** TestFlight round (Tara added
-as an App Store Connect user on our own team) needs far less than an external
-one, and conflating the two is what made this section look like a wall.
+The dates and the critical path are in `docs/launch-checklist.md`: the launch
+party is 2026-11-06 (decision 0024). Internal TestFlight goes through John's
+account (decision 0014).
 
 Alex, 2026-08-19: *"we're not in a big rush, I can do it as an org from the start"*: the LLC account from day one, no personal-account TestFlight shortcut, and John's Volee login (which Alex holds) is not used for FXE.
 
-**Gates an internal TestFlight build:**
-
-| | |
+| Step | |
 |---|---|
-| ✅ | ~~App icon~~ Done 2026-08-16; CI gate keeps it |
-| ⬜ | **`DEVELOPMENT_TEAM`** in `project.yml` — waiting on the Apple LLC enrollment (in review; docs submitted) |
-| ⬜ | Distribution certificate and provisioning profile on the build machine |
-| ⬜ | App Store Connect app record; the bundle id is still the placeholder `com.fxetennis.app` |
-| ✅ | ~~Sign-up that produces a usable account~~ Done 2026-08-15, regression-tested |
-| 🔨 | Tara's real clinics in hosted — the path is open (live web admin + her self-promoting sign-up, 2026-09-01); the step is hers |
-| ✅ | **Privacy manifest** (`PrivacyInfo.xcprivacy` under FXETennis/Resources), 2026-09-12, PR #37 on `main`. Apple rejects builds that touch required-reason APIs without one |
-| ✅ | **Account deletion in the app** (2026-09-21, decision 0013 §5): `delete_my_account()` scrubs name, phone, email, card and devices and keeps history; the `delete-account` edge function soft-deletes the sign-in; Delete my account on Profile behind a spelled-out confirmation |
-
-**Gates an external round and App Store release, but NOT an internal one:**
-
-| | |
-|---|---|
-| ✅ | FXE Tennis, LLC exists. **D-U-N-S 11-654-7195**, registered, address on file with D&B |
-| 🔨 | Apple Developer Program enrollment as the LLC — **in review**: fersc.com email accepted, ID + business docs submitted |
-| ✅ | ~~A website at the entity's domain~~ fersc.com accepted by Apple |
-| ⬜ | Privacy policy live on a URL. (Waiver wording: done, her September 2026 text ships in `waivers`, decision 0013) |
-| ⬜ | Beta App Review, then the App Store listing |
+| App icon, sign-up that makes a usable account | built |
+| Privacy manifest | checklist C4 |
+| Account deletion in the app | checklist C5 |
+| Tara's real clinics in hosted, through the admin site | checklist D5 |
+| Apple Developer Program enrollment as FXE Tennis, LLC (D-U-N-S 11-654-7195; website fersc.com) | checklist C1 |
+| `DEVELOPMENT_TEAM`, certificates, the App Store Connect record, the LLC's bundle id | checklist C2, C12 |
+| Privacy policy on a URL | checklist C6 |
+| External TestFlight, Beta App Review, the App Store listing, Apple's review account | checklist C11, C7, C13 |
+| The soft launch and Tara's email to members | checklist G7, G8 |
 
 ---
 
-## v1.1 — the next one
+## v1.1: the next one
 
-| | |
+| Feature | |
 |---|---|
-| 🔨 | **Stripe, card on file** (decision 0009, 2026-09-12). Built: schema (Stripe customer + card summary on accounts, a `payments` ledger with RLS), `admin_charge_registration` / `admin_refund_payment`, the ledger-drives-Paid trigger, policy as `app_settings`, 21-check probe. `payments_enabled` is false until Alex's Stripe test keys exist (Q27–Q37 are all answered: decisions 0010, 0012, 0013). Also built: the three edge functions, the card screen on Profile (PaymentSheet), `payments_ledger` and its read-only list on the Money tab, the 3-hour honor-system cancel (decisions 0010, 0013), Charge/Refund as Tara's tap on the web (hidden while the switch is off), and the stripe-mock harness in CI. Next, once Alex adds Stripe test keys: end-to-end with test cards. Once Tara answers: Charge and Refund buttons on the roster and Money tab, refunds on her cancel, her card-entry sentence. Target October 1 |
-| ⬜ | **Juniors.** Deferred by Tara to November or the spring session (decision 0007 §6). Enum values already in the schema so this is UI work, not a migration |
-| ⬜ | Parent accounts managing children, junior age groups |
-| 🔨 | Duplicate an entire week and adjust dates: Copy this week to next week, as drafts (2026-09-28, Tara's tools below) |
-| ✅ | Add to Calendar (2026-09-28, decision 0023: nothing about where goes into the entry) |
-| ⬜ | Attendance check-in |
+| **Stripe, card on file** (decision 0009): schema, ledger, edge functions, the card screen, Tara's per-person Charge (decision 0037), refunds on the laptop, the stripe-mock harness in CI | built. Turning it on and going live: checklist A2, A9, A10, A11, A13, A14 |
+| **Juniors.** Deferred by Tara to November or the spring session (decision 0007 §6). The enum value is already in the schema, so this is UI work, not a migration | |
+| Parent accounts managing children, junior age groups | |
+| Duplicate a week: Copy to next week, as drafts she checks and publishes | built (`admin_copy_week`, decision 0027) |
+| Add to Calendar (nothing about where goes into the entry) | built (decision 0023) |
+| Attendance check-in | built as Came and No-show on the roster (`admin_set_no_show`) and the pros' Today screen (decision 0025) |
+| Data export for Tara | checklist D9 |
 
 ---
 
 ## Player-facing polish: the wow list (Alex, 2026-09-27)
 
 Alex: *"wow things need to be very user facing, not for tara and kat"*, and
-*"WE WANT EXTRA FEATURES NOT JUST MVP"*. Built means merged and in the next
-TestFlight build; ideas are not scheduled until Alex picks them.
+*"WE WANT EXTRA FEATURES NOT JUST MVP"*. Ideas are not scheduled until Alex
+picks them.
 
-**Built 2026-09-28** (decisions 0022, 0023):
-
-| | |
+| Feature | |
 |---|---|
-| ✅ | Accept and Decline right on an invitation's notification, without opening the app (appears once push is live) |
-| ✅ | Tara's own words on every notification the club sends, the same on the lock screen and in the bell |
-| ✅ | Add to Calendar on a clinic you're in |
-| ✅ | Remind me: a notification at the moment registration opens to you |
-| ✅ | A tap you can feel when you land a spot; the status changes smoothly |
-| ✅ | Text that grows with the iPhone's Larger Text setting, live; Apple's accessibility audit on every main screen |
-| ✅ | A readable clock over the navy screens; page titles in the club's serif; outlined icons |
-| ✅ | Return moves through sign-in and the profile form |
+| Accept and Decline right on an invitation's notification | built (decision 0023) |
+| Tara's own words on every notification the club sends, the same on the lock screen and in the bell | built (decision 0022) |
+| Add to Calendar on a clinic you're in | built (decision 0023) |
+| Remind me: a notification at the moment registration opens to you | built (decision 0023) |
+| A tap you can feel when you land a spot; the status changes smoothly | built (decision 0023) |
+| Text that grows with Larger Text, live; Apple's accessibility audit on every main screen | built |
+| A readable clock over the navy screens; page titles in the club's serif; outlined icons | built |
+| Return moves through sign-in and the profile form | built |
+| "Hey Siri, when's my next clinic?", and your next clinic in Spotlight (App Intents) | built (`NextClinicIntent.swift`) |
+| Instant open: the last load shown at once and refreshed behind it, so the app also works with no signal at the courts | built (decision 0028) |
+| Placeholders shaped like the list while it loads, instead of a spinner | built |
+| Your clinics in your calendar automatically (a subscribed feed; times only, never where) | built (decision 0029, `calendar-feed`) |
 
-**Found and fixed walking the app for the build 5 demo (2026-09-28)**: a
-clinic you hold more than five weeks out was on no screen at all; titles
-scrolled under ghosted content on iOS 26 (a solid edge now); Delete my
-account moved to the foot of Profile.
+Found while walking the app for the build 5 demo, which was sent to Alex on
+2026-09-28, and fixed the same day: a clinic you hold more than five weeks out
+was on no screen at all; titles scrolled under ghosted content on iOS 26 (a
+solid edge now, `scripts/check-title-edge.sh`); Delete my account moved to the
+foot of Profile.
 
-**Ideas, not built** (each says what it waits on). The full list with
-reasons is the build 5 demo page Alex was sent on 2026-09-28; "Next" means
-started or starting now.
+**Ideas, not scheduled:**
 
-| Idea | Waits on |
+| Idea | Depends on |
 |---|---|
-| "Hey Siri, when's my next clinic?", and your next clinic in Spotlight (App Intents) | Next. Nothing; the answer is data plus the locked status words, listed for Alex's tick |
-| Instant open: the last load shown at once and refreshed behind it, so the app also works with no signal at the courts | Next. Nothing; the cache is per account and wiped at sign-out |
-| Your clinics in your calendar automatically (a subscribed feed that adds and removes on its own; times only, never where) | A private link per player, which is a credential: design and an sql-auditor pass first |
 | A Home Screen widget: your next clinic and its time | The LLC's bundle id (checklist C12): a widget needs an App Group, tied to the id |
 | Sign in with Apple: one tap, no password to forget | The LLC's Apple account (a Services ID) and Supabase's Apple provider |
 | Saved passwords offered for the club's site and app together | The LLC's team id in a file on the admin site (associated domains) |
-| Clinic day on the Lock Screen (a Live Activity: "Tonight 7:00, You're In!") | After launch; needs push live |
-| Placeholders shaped like the list while it loads, instead of a spinner | Nothing; small (folds into Instant open) |
-| Invite a friend: send the app, or ask Tara to write a guest in (her idea, question 72) | The install link (checklist I6) and Tara's questions 93 and 95 (`docs/guests.md`) |
+| Clinic day on the Lock Screen (a Live Activity: "Tonight 7:00, You're In!") | Push live (checklist C3); after launch |
 | Your season on Profile: clinics played, from the Past list | The words are Tara's |
 | The forecast for the hour you play | Tara first: it names the club's town |
 | Share a clinic with a friend | Tara: she hides FXE from non-members, so this is her call first |
@@ -211,26 +196,31 @@ started or starting now.
 The app organizes; she decides. Each of these saves her time without making
 a decision for her.
 
-| | |
+| Feature | |
 |---|---|
-| 🔨 | **Pros** (question 71, decision 0024): her pros see that day's clinics and who is in them, mark Came, No-show and late cancels; never anything financial, never an invitation. Only she makes someone a pro |
-| 🔨 | **A declined card blocks sign-up until a new card is saved** (question 78), and **Resolved** on a declined card she won't chase (question 83) |
-| 🔨 | **A court sheet to print**, in place of the handwritten one |
-| 🔨 | **A player's history at a glance** (clinics played, no-shows, late cancels) on her directory and beside each name in the Player Pool |
-| 🔨 | **Copy this week to next week**, as drafts she checks and publishes (the v1.1 row "Duplicate an entire week") |
-| 🔨 | Her saved messages (decision 0030, on build 6): sentences she sends often, kept in her words, sent in one tap |
-| 🔨 | **Charge each person on their own tap** (2026-10-02, decision 0037): a green Charge $18 beside every name once a clinic ends, phone and laptop; Remove means not charged; Charge clinic retired from both screens |
-| 🔨 | **A private note for Tara at Register** (Tara, 2026-10-11, decision 0039): a box above Register with her example ("please put me on court with my friend Jane") and "Only Tara sees this"; she reads it beside the name on her roster, phone and laptop. Only she and the writer can read it (enforced in the database, `tests/sql/registration_note.sql`). Built on branch `registration-note`; not on the printed court sheet until question 110; questions 109 to 112 open |
-| ⬜ | **Refunds from her phone, and partial refunds** (Alex, 2026-10-06). Today a refund is the laptop's Money tab (whole amount, once, two clicks) or Stripe's own dashboard, which the webhook records. Two gaps: the phone has no Refund at all, yet tells her "Already charged: refund it first" when she removes a charged player (a dead end on the phone); and a refund is all or nothing. A partial amount is her policy call (question 108). Server already has `admin_refund_payment`; the phone needs a Refund beside Charged on the roster, and a partial refund needs an amount on the RPC plus its probe. Not started |
-| ⬜ | **Charge half for a clinic cut short** (Tara, 2026-10-03, "maybe three times a year"; **answered 2026-10-04: one switch, everyone half, no-shows and late cancels full**): questions 102 to 104; the server already takes an amount (`admin_charge_registration`'s `p_amount_cents`), so this is a switch on the clinic plus the button's price. Not started |
-| ⬜ | **Everything from her phone** (Tara, 2026-10-02, via Alex: *"EVERYTHING she possibly can from her phone ... in a perfect world get rid of the dashboard"*; Alex: not top priority). Laptop-only today: new / edit clinic and publish, templates and Copy to next week, add a walk-up, the Money tab (ledger, refunds, payouts, disputes), a player's reset link, the board report and the court sheet (a share sheet on the phone, not a printer). Every one is a screen over a server function that already exists; about three or four sessions. The laptop stays as her backup |
-| ⬜ | **Every cancel on a player's history line** (Tara, 2026-10-04): today it shows late cancels and no-shows; she wants all cancels counted, to weigh who she invites from the Pool. Question 105. Not started |
-| ⬜ | A Sunday-night email: next week's sign-ups, cards to chase, requests waiting on her (needs the club's mail sender) |
-| ⬜ | More for two of her pros, when she asks ("Eventually", question 71) |
-| ⬜ | Guests billed to the member (question 72): designed in `docs/guests.md`, waits on questions 93 and 95 |
+| **Pros** (question 71, decisions 0024 and 0025): her pros see that day's clinics and who is in them, mark Came, No-show and late cancels; never anything financial, never an invitation. Only she makes someone a pro. Pros skip the waiver and the card step (question 96, decision 0040) | built (`pro_role.sql`, `ProTodayView.swift`) |
+| **A declined card blocks sign-up until a new card is saved** (question 78), and **Resolved** on a declined card she won't chase (question 83) | built (decision 0026) |
+| **A court sheet to print**, in place of the handwritten one | built (`web/sheet.html`, decision 0027) |
+| **A player's history at a glance** on her directory and beside each name in the Player Pool; every cancel counted, "12 played, 5 canceled (2 late), 1 no-show" (question 105) | built (`admin_player_history`, decisions 0027 and 0040) |
+| **Copy this week to next week**, as drafts | built (`admin_copy_week`, decision 0027) |
+| Her saved messages: sentences she sends often, kept in her words, sent in one tap | built (decision 0030) |
+| **Charge each person on their own tap** (2026-10-02): a green Charge $18 beside every name once a clinic ends, phone and laptop; Remove means not charged; Charge clinic retired from both screens | built (decision 0037) |
+| **Waive** a late-cancel fee, with Undo, and the red "Late cancellation" flag that keeps the name on her list (questions 81 and 106) | built (decision 0040) |
+| **Accept needs a saved card** while cards are required, as Register does (question 107) | built (decision 0040) |
+| **A private note for Tara at Register** (Tara, 2026-10-11): a box above Register with her example ("please put me on court with my friend Jane") and "Only Tara sees this"; she reads it beside the name on her roster, phone and laptop. Only she and the writer can read it, enforced in the database. Not on the printed court sheet unless she says so (question 110) | built (decision 0039, `tests/sql/registration_note.sql`) |
 
-**Answered in round four and built:** a Contact Tara link (76), no Stripe
-receipts (86: "No receipts").
+**Asked for, not scheduled:**
+
+| Idea | Note |
+|---|---|
+| **Refunds from her phone** (Alex, 2026-10-06) | A refund today is the laptop's Money tab (whole amount, once, two clicks) or Stripe's own dashboard, which the webhook records. The phone has no Refund, yet tells her "Already charged: refund it first" when she removes a charged player, which is a dead end on the phone. `admin_refund_payment` exists; the phone needs a Refund beside Charged on the roster. Refunds stay whole (question 108, decision 0040) |
+| **Charge half for a clinic cut short** (Tara, 2026-10-03, "maybe three times a year") | Her rule (questions 102 to 104): one switch on the clinic, everyone half, no-shows and late cancels full. The server already takes an amount (`admin_charge_registration`'s `p_amount_cents`), so this is a switch on the clinic plus the button's price |
+| **Everything from her phone** (Tara, 2026-10-02, via Alex: *"EVERYTHING she possibly can from her phone ... in a perfect world get rid of the dashboard"*; Alex: not top priority) | Laptop-only today: new and edit clinic and publish, templates and Copy to next week, add a walk-up, the Money tab (ledger, refunds, payouts, disputes), a player's reset link, the board report and the court sheet (a share sheet on the phone, not a printer). Every one is a screen over a server function that already exists; about three or four sessions. The laptop stays as her backup |
+| A Sunday-night email: next week's sign-ups, cards to chase, requests waiting on her | The club's mail sender |
+| More for two of her pros, when she asks ("Eventually", question 71) | |
+
+Settled in round four and built: a Contact Tara link (question 76), no Stripe
+receipts (question 86: "No receipts"; the Stripe setting is checklist A14).
 
 ---
 
@@ -290,27 +280,45 @@ should start with a decision record and the second-club probes, not code.
 Do not start before 2026-11-06.
 
 
-Multiple admins or coaches. Reminder for unanswered invitations. Schedule
-conflict warnings. Advanced player search. Multiple locations.
+Also for v2: multiple admins, reminders for unanswered invitations, schedule
+conflict warnings, advanced player search, multiple locations.
 
 ---
 
-## Parked — raised but not scheduled
+## Parked: raised but not scheduled
 
-- **Analytics: an `events` table, no third-party SDK** (promised to Kat's list on 2026-08-15, never built). Whether her "tagged / tag spec / what tool" meant release tags or analytics tagging is unresolved; `docs/kat-due-diligence.md` row 8. If analytics, it is a Tara question first (what she wants to know) and a privacy line in the policy second.
-- **UTR / USTA APIs** (Kat's list): never explored; the NTRP scale is self-reported. A Tara question before any integration.
-- **Recording Tara's calls and FaceTimes so the transcript reaches the model** (Alex, 2026-08-15). Not answered, not built; a consent and storage question before it is a feature.
-- **The model texting Tara directly during the day** (Alex, 2026-08-15). Same day; the answer is the relay through Alex (hard rule 14) until she asks for it.
-
-Things Tara has mentioned that are real but have no version yet. Parked is not
-rejected; it means nobody has decided when.
+Parked is not rejected; it means nobody has decided when.
 
 | Idea | Raised | Note |
 |---|---|---|
-| Saturday clinics | 2026-08-02 | **Answered 2026-09-21 (decision 0013, question 49): "Yes. But no Saturday clinics."** The Sunday–Saturday service week is confirmed as built; Saturday is theoretical |
-| Short holiday weeks | 2026-08-10 | **Answered 2026-09-21 (decision 0013, question 50): yes, the Thursday still anchors to that week's Sunday.** Holiday-morning timing (8:00 on Christmas Day) is still open |
+| **Guests: a member brings a friend** | 2026-09-22 (question 72) | Parked by Tara, 2026-10-12 (question 95, decision 0040): *"Until this becomes an issue, none of the above. If someone brings a guest, I hope the guest gets the app and this isn't ongoing."* A guest gets the app like anyone. When it comes back, the design is in `docs/archive/guests.md` (rows below) |
+| Guests, path 1: Invite a friend sends the app | 2026-09-28 (question 72) | The friend signs up as a non-member with their own card and waiver. Needs the install link (checklist I6) |
+| Guests, path 2: Tara writes the friend in, billed to the member at the non-member price | 2026-09-28 (question 72) | A guest is a `players` row owned by the member's account with an `is_guest` flag; a `guest_requests` row like a late request; Tara's approval places them with `place_player`. Her sentence for the member is recorded (question 93): "Your card will be charged for your guests clinic rate". Open design point: a guest who never installs the app never signs the waiver |
+| Analytics: an `events` table, no third-party SDK | 2026-08-15 (Kat's list) | Whether her "tagged / tag spec / what tool" meant release tags or analytics tagging is unresolved (`docs/kat-due-diligence.md` row 8). If analytics, it is a Tara question first (what she wants to know) and a privacy line in the policy second |
+| UTR / USTA APIs | Kat's list | Never explored; the NTRP scale is self-reported. A Tara question before any integration |
+| Recording Tara's calls and FaceTimes so the transcript reaches the model | 2026-08-15 (Alex) | A consent and storage question before it is a feature |
+| The model texting Tara directly during the day | 2026-08-15 (Alex) | The answer is the relay through Alex (hard rule 14) until she asks for it |
+| Holiday mornings: does registration still open at 8:00 on Christmas Eve and Christmas Day? | 2026-08-10 | Short weeks are settled (question 50, decision 0013); the holiday morning is not yet a numbered question in `docs/questions-for-tara.md` |
 | Category field | 2026-08-02 | She was unsure what it meant and said no filtering is needed. Column exists, deliberately unindexed, no UI |
-| What the club actually needs | 2026-08-10 | Report gives counts by membership × length plus the total. Not confirmed that this is what she hands them |
+| Saturday clinics | 2026-08-02 | Settled by decision 0013 (question 49): "Yes. But no Saturday clinics." The Sunday-to-Saturday week stands; Saturday is theoretical |
+
+### Practices and tools (from `docs/archive/practice-ideas.md`, 2026-09-26)
+
+Alex: *"can we use jev?? + other ideas to be catching up w all the new
+tools/workflows/be best SWE as possible??"*
+
+| Idea | Note |
+|---|---|
+| Jev, a small model for yes/no decisions (copy gate chrome-or-voice, "does this diff touch a hard rule?") | Not now. Every rule here is enforced by a deterministic check, and a model's yes/no is weaker evidence than those (hard rule 12); it would also send code to another vendor. Revisit after launch if the copy gate's false alarms become a chore |
+| A screenshot tour as a UI test: one XCUITest that walks every screen and keeps a PNG of each | Kat and Tara would review every screen from one folder after each build. Only the pro flow keeps screenshots today (`FXETennisUITests/ProFlowUITests.swift`) |
+| Crash and error reporting | Checklist D6. MetricKit reports into `app_diagnostics` (decision 0035), on the local branch `crash-reports` |
+| Tighter branch protection on `main` (no admin bypass, hosted smoke required) | Checklist G6 |
+| A git tag per TestFlight build | built: every upload since the second has a `v0.1.0-*` tag (`git tag --list 'v0.1.0*'`). The rule is checklist C10 |
+| Supabase Pro (no pause, point-in-time recovery, $25 a month) | Checklist D3 |
+| Dependabot | built: `.github/dependabot.yml`, and security alerts on (checklist G6) |
+| Post-compaction replay of Alex's last prompts | built (`.claude/hooks/session-start.sh`, 2026-09-23) |
+| The hosted signed-out smoke test in CI | built (`scripts/hosted-smoke.sh`, 2026-09-22) |
+| Doc claims, paths, inventory and status checked in CI | built (`scripts/check-doc-claims.sh` and its siblings, from 2026-09-13) |
 
 ---
 

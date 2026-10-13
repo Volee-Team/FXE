@@ -2,6 +2,8 @@
 
 **Date:** 2026-09-28 · **Status:** Active; three points below are for Tara or Alex · **Source:** the lead's brief for branch `tara-tools`. Tara runs the program from texts, a spreadsheet and a handwritten court sheet; the laptop is where she does weekly setup and court assignment (her decision 1, CLAUDE.md). Each tool saves her time and decides nothing: the app organizes, Tara decides.
 
+**Point 1 below is fixed (forward note added 2026-10-12):** a canceled draft no longer reaches players: `published_at`, stamped by `publish_clinic`, and `clinics_public` shows a canceled clinic only if it was ever published (`20260929000001`, then `20260929000002` for a player Tara had placed in a draft).
+
 ## What we chose
 
 1. **A player's history beside the name, so choosing from the Player Pool

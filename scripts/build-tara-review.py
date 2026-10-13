@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build Tara's review page: docs/tara-review/index.html.
+"""Build Tara's review page: web/review.html (and, on request, the old claude.ai page).
 
 Every user-visible string, where it appears in plain language, Keep or Change,
 the open questions for Tara, and a try-it list for the web admin. The list is
@@ -7,9 +7,9 @@ curated by hand from `python3 scripts/extract-copy.py --report` (the extractor
 cannot see ternaries or SQL notification bodies), so edit SECTIONS below when
 copy changes, run this, and republish the artifact (see docs/copy-review.md).
 
-    python3 scripts/build-tara-review.py                    # both targets
-    python3 scripts/build-tara-review.py --target artifact  # docs/tara-review/index.html only
-    python3 scripts/build-tara-review.py --target web       # web/review.html only
+    python3 scripts/build-tara-review.py                    # web/review.html (the default since 2026-10-12)
+    python3 scripts/build-tara-review.py --target artifact  # docs/tara-review/index.html, gitignored
+    python3 scripts/build-tara-review.py --target both      # both
 
 Two targets from one data block. The artifact (claude.ai) keeps answers in
 the phone's localStorage and Tara texts the summary to Alex. The web target
@@ -18,6 +18,12 @@ review.html?t=<token>, and saves to our database through the review-submit
 edge function as she types (20260921000010). The web page renders its items
 from a JSON block so the copy gate sees only its chrome: the items ARE the
 copy under review, already in docs/copy-approved.txt or Tara's own words.
+
+Since 2026-10-12 the default is the web target only. Every round since the
+second ran on the admin site; the 2026-09-18 artifact is kept as history in
+docs/archive/tara-review/, and a fresh artifact build lands in the
+gitignored docs/tara-review/ for a one-off claude.ai publish, so it can
+never sit in docs/ looking current.
 """
 import html, json, pathlib, sys
 
@@ -353,9 +359,9 @@ def web_page():
 
 
 def main():
-    target = sys.argv[sys.argv.index("--target") + 1] if "--target" in sys.argv else "both"
+    target = sys.argv[sys.argv.index("--target") + 1] if "--target" in sys.argv else "web"
     if target not in ("artifact", "web", "both"):
-        sys.exit(f"unknown --target {target}: artifact, web, or omit for both")
+        sys.exit(f"unknown --target {target}: web (the default), artifact, or both")
     total = sum(len(s[2]) for s in SECTIONS)
     if target in ("artifact", "both"):
         out = ROOT / "docs" / "tara-review" / "index.html"

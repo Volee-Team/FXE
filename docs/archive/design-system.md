@@ -1,3 +1,5 @@
+Archived 2026-10-12. Current source: `docs/style-guide.md`. A snapshot, kept as history: its status colours and accessibility rules were folded in there; Brand.swift is the code.
+
 # FXE Tennis Design System
 
 > **Superseded by `docs/style-guide.md` on 2026-09-22.** Kat's guide is the source of truth; the tokens below were palette B and are kept as the record of what shipped before it. Where they disagree, the guide and `Brand.swift` win.

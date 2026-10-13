@@ -1,3 +1,5 @@
+Archived 2026-10-12. Current source: `docs/questions-for-tara.md`. A snapshot, kept as history: the August list as first sent to Tara; every question's status is there.
+
 # FXE Tennis: A Few Questions Before We Build
 
 > Sent 2026-08-02; kept as the record of what was asked. Answered on the

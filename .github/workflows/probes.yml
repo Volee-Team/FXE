@@ -541,17 +541,33 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      # Full history and every branch: check-doc-status.sh asks whether a
+      # branch a doc names is already merged into origin/main.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Every repo path a doc names exists
         run: bash scripts/check-doc-paths.sh
-      # Counts match the repo, decisions are indexed, every Tara question has
-      # a status, and the human audit is not overdue (warning at 21 days,
-      # failure at 45). 2026-09-13.
+      # Status lives in four files and every other doc points at a row
+      # (2026-10-12). What the history can prove stale fails: a build older
+      # than the last two on a line that is not DONE, a merged branch still
+      # named as in flight, a forbidden instruction (scripts/doc-forbidden.txt).
+      - name: No stale build, merged branch or forbidden instruction in a live doc
+        run: bash scripts/check-doc-status.sh
+      # Every file under docs/ is registered in CLAUDE.md's table, and every
+      # archived one says so on its first line (2026-10-12).
+      - name: Every doc is registered or archived
+        run: bash scripts/check-doc-registry.sh
+      # Counts match the repo (SQL and shell probes), decisions are indexed,
+      # every Tara question has a status, a question a decision answered is
+      # not still open, and the human audit is not overdue (warning at 21
+      # days, failure at 45). 2026-09-13; the last two checks 2026-10-12.
       - name: Counts, index, question statuses, audit age
         run: bash scripts/check-doc-claims.sh
       # The launch checklist is the one list Alex trusts (2026-09-27): every
       # row has an owner and a status word, a DONE has its date, the steps
-      # file points only at real rows, and the list was re-derived within 21 days.
+      # file points only at real rows, the list was re-derived within 21
+      # days, and no row is past its due date (2026-10-12).
       - name: Launch checklist is trustworthy
         run: bash scripts/check-launch-checklist.sh
       # Every navigation title sits on a solid edge (crispTopEdge), or iOS 26
