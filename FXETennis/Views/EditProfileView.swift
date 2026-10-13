@@ -28,9 +28,13 @@ struct EditProfileView: View {
     /// Return moves first name to last name to phone, as at sign-up.
     private enum TypedField { case firstName, lastName, phone }
 
+    /// Phone and rating are required at sign-up (decision 0012), so editing
+    /// cannot clear them either (audit 2026-10-12).
     private var canSave: Bool {
         !firstName.trimmingCharacters(in: .whitespaces).isEmpty
             && !lastName.trimmingCharacters(in: .whitespaces).isEmpty
+            && !phone.trimmingCharacters(in: .whitespaces).isEmpty
+            && rating != nil
             && !saving
     }
 

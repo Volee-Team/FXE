@@ -474,6 +474,12 @@ struct ClinicDetailView: View {
             EmptyView()
         } else if let reg = model.registration {
             switch reg.status {
+            // Once the clinic has started there is nothing to cancel: a tap
+            // mid-clinic was recorded as a late cancel and moved her off the
+            // roster she was standing on (audit 2026-10-12). The page redraws
+            // at the start (upcomingMoments), so the button goes on the second.
+            case .in_ where now >= clinic.startsAt:
+                EmptyView()
             case .in_:
                 if CancelPolicy.isInsideCutoff(startsAt: clinic.startsAt, cutoffHours: cutoffHours, now: now) {
                     // Same button, different path: the server refuses a late
