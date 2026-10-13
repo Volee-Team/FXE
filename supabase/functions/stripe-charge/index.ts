@@ -76,6 +76,21 @@ async function handle(req: Request): Promise<Response> {
       .eq("id", row.id).eq("status", "pending").select("id");
     if (!claimed || claimed.length === 0) continue;
 
+    // A charge for a clinic canceled after it was queued is never sent.
+    // cancel_clinic cancels the pending rows itself (20261013000001); this
+    // covers a row claimed in the instant between (audit 2026-10-12).
+    if (row.kind !== "refund") {
+      const { data: reg } = await admin.from("registrations")
+        .select("clinic_id, clinics(status)").eq("id", row.registration_id).maybeSingle();
+      const clinicStatus = (reg as { clinics?: { status?: string } } | null)?.clinics?.status;
+      if (clinicStatus === "canceled") {
+        await admin.from("payments").update({ status: "canceled", failure_reason: "clinic_canceled" })
+          .eq("id", row.id).eq("status", "processing");
+        results[row.id] = "canceled";
+        continue;
+      }
+    }
+
     try {
       if (row.kind === "refund") {
         const { data: orig } = await admin.from("payments")
