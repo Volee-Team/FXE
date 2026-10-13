@@ -158,7 +158,7 @@ in different modes (`keyModesAgree` in `stripe-setup-intent`).
 3. Stripe, **API keys**: copy the **Publishable key** (`pk_live_…`). Set
    `STRIPE_PUBLISHABLE_KEY` to it. **Save**.
 4. Stripe, Workbench → **Webhooks** → **Create an event destination**.
-   Events from **Your account**, API version the default. Tick these eight:
+   Events from **Your account**, API version the default. Tick these nine:
    - `setup_intent.succeeded`
    - `payment_intent.succeeded`
    - `payment_intent.payment_failed`
@@ -167,6 +167,7 @@ in different modes (`keyModesAgree` in `stripe-setup-intent`).
    - `charge.dispute.created`
    - `charge.dispute.updated`
    - `charge.dispute.closed`
+   - `payment_method.detached` (a card removed in Stripe's dashboard; without it the app keeps showing the removed card)
    **Continue** → **Webhook endpoint** → **Continue**. Endpoint URL, exactly:
    `https://amnaxvznkadkgzdxzegw.supabase.co/functions/v1/stripe-webhook`.
    Create it.
@@ -184,7 +185,7 @@ in different modes (`keyModesAgree` in `stripe-setup-intent`).
    hosted. Payments go on only after that and after Apple approves the
    external build (checklist A9).
 
-The eight events match the `case` lines in
+The nine events match the `case` lines in
 `supabase/functions/stripe-webhook/index.ts`; an event not ticked never
 reaches the app.
 

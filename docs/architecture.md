@@ -573,7 +573,8 @@ customer is after the live swap, is replaced and its stale card summary
 cleared), `stripe-webhook` (the only writer of card summaries and
 ledger outcomes; records the signed event's `livemode`, and attaches a payment
 event that beat stripe-charge to the row named in the PaymentIntent's
-metadata), `stripe-charge` (each pending row becomes one off-session
+metadata; clears the card summary when `payment_method.detached` names the
+card on file, 2026-10-13), `stripe-charge` (each pending row becomes one off-session
 PaymentIntent or Refund, idempotency key per row, claim-then-call so a crash
 never double-charges; only a decline, a request Stripe refused or our own
 refusal marks a row failed, while anything that may have reached Stripe goes

@@ -524,6 +524,25 @@ check "a request Stripe refused is failed, with its sentence and no decline code
 check "and blocks nobody" "NULL" "$(declined "$DANA")"
 sql "delete from public.notifications where entity_id in (select id from public.registrations where clinic_id='$DC_OPEN'); delete from public.registrations where clinic_id='$DC_OPEN'" >/dev/null
 
+# ---- 17. A card removed in Stripe's dashboard (payment_method.detached,
+# 2026-10-13). The summary is cleared only when the removed card is the one on
+# file for that customer; the app then asks for a card again instead of Tara
+# charging one that is gone. After a detach Stripe sends customer null and the
+# old customer under previous_attributes.
+detach() { # customer brand last4 [type, default card] -> the event
+  echo "{\"id\":\"evt_$RANDOM\",\"object\":\"event\",\"api_version\":\"2024-12-18.acacia\",\"created\":$(date +%s),\"livemode\":true,\"type\":\"payment_method.detached\",\"data\":{\"object\":{\"id\":\"pm_$RANDOM\",\"object\":\"payment_method\",\"type\":\"${4:-card}\",\"customer\":null,\"card\":{\"brand\":\"$2\",\"last4\":\"$3\"}},\"previous_attributes\":{\"customer\":\"$1\"}}}"; }
+kencard() { sql "select coalesce(card_brand,'')||' '||coalesce(card_last4,'')||' '||(card_added_at is not null) from public.accounts where id='$KEN'"; }
+card "$KEN" cus_detach_ken
+check "a different card of hers removed: the summary stays" "True" "$(webhook "$(detach cus_detach_ken visa 1111)" | field "['received']")"
+check "  still visa 4242" "visa 4242 true" "$(kencard)"
+webhook "$(detach cus_someone_else visa 4242)" >/dev/null
+check "the same card on another customer: hers stays" "visa 4242 true" "$(kencard)"
+webhook "$(detach cus_detach_ken visa 4242 us_bank_account)" >/dev/null
+check "a bank account removed: the card stays" "visa 4242 true" "$(kencard)"
+check "her card on file removed: accepted" "True" "$(webhook "$(detach cus_detach_ken visa 4242)" | field "['received']")"
+check "  and the summary is cleared, so the app asks for a card" "  false" "$(kencard)"
+check "  the customer is kept (a new card goes on the same one)" "cus_detach_ken" "$(sql "select stripe_customer_id from public.accounts where id='$KEN'")"
+
 # ---- 13. The key swap (stripe_cutover_to_live, 20260927200001), end to end
 #          through the API as the lead would run it (service_role; the SQL
 #          editor as postgres is the other way). It refuses while live money

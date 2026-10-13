@@ -16,6 +16,8 @@
 //   charge.dispute.created / .updated / .closed
 //                                   -> the dispute columns on the disputed fee
 //                                      (stripe_record_dispute, 20260928200001)
+//   payment_method.detached         -> clears the card summary when the removed
+//                                      card is the one on file (2026-10-13)
 // Every ledger write also records the event's livemode (20260927200001): the
 // signed event is Stripe's word on which mode the money moved in, and test
 // mode is never counted as money.
@@ -142,6 +144,29 @@ async function handle(req: Request): Promise<Response> {
     case "charge.dispute.updated":
     case "charge.dispute.closed": {
       await recordDispute(event.data.object as Stripe.Dispute, event);
+      break;
+    }
+    case "payment_method.detached": {
+      // A card removed in the Stripe dashboard (or by Stripe) left the app's
+      // summary saying "•••• 4242", so Tara would tap Charge on a card that
+      // no longer exists, and the player was never asked for a new one
+      // (backlog, 2026-10-04). After a detach the object's customer is null;
+      // Stripe puts the old one in previous_attributes. The summary is cleared
+      // only when the removed card is the one it describes (brand and last
+      // four), so removing a second card leaves the first alone. Rejected:
+      // asking Stripe for the customer's remaining cards and showing one of
+      // them; stripe-mock always answers with one card, so the "none left"
+      // path could never be shown red. Clearing on a match errs safe: at worst
+      // a player with two cards is asked to add one again.
+      const pm = event.data.object as Stripe.PaymentMethod;
+      const prev = (event.data as { previous_attributes?: { customer?: string | null } }).previous_attributes;
+      const customerId = prev?.customer ?? null;
+      if (pm.type !== "card" || !customerId || !pm.card?.last4) break;
+      ok(await admin.from("accounts")
+        .update({ card_brand: null, card_last4: null, card_added_at: null })
+        .eq("stripe_customer_id", customerId)
+        .eq("card_last4", pm.card.last4)
+        .eq("card_brand", pm.card.brand ?? ""));
       break;
     }
     default:

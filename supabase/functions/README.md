@@ -46,7 +46,10 @@ The webhook endpoint in Stripe's dashboard sends only the events ticked on
 it. Besides the five payment and refund events, `stripe-webhook` records
 chargebacks from `charge.dispute.created`, `charge.dispute.updated` and
 `charge.dispute.closed` (2026-09-28): tick those on the test endpoint and on
-the live one, or no dispute ever reaches the app (checklist A12).
+the live one, or no dispute ever reaches the app (checklist A12). And
+`payment_method.detached` (2026-10-13): a card removed in the Stripe dashboard
+clears the app's card summary, so the player is asked for a card again rather
+than Tara charging one that is gone. Nine events in all on the live endpoint.
 
 The restricted live key, every permission and why (re-derived from every
 Stripe call in these functions, 2026-10-04): **Write** Customers (create,
