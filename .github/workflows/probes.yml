@@ -581,7 +581,7 @@ jobs:
       - name: Every titled screen has a solid top edge
         run: bash scripts/check-title-edge.sh
       # Two builders once picked the same migration version (2026-09-28).
-      - name: No two migrations share a version
+      - name: No two migrations share a version, and new ones are newest
         run: bash scripts/check-migration-versions.sh
 
   copy-gate:

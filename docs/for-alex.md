@@ -192,11 +192,19 @@ in different modes (`keyModesAgree` in `stripe-setup-intent`).
    `received`. A **400** with `bad_signature` means the `whsec_…` in step 5
    is not this endpoint's.
 7. Tell the model **"live keys in"** and the response code. The model checks
-   the three names (`supabase secrets list`), runs the cutover that forgets
-   every sandbox card (`stripe_cutover_to_live`, so everyone adds a real
-   one; no new build), then one real charge and refund on your own card on
-   hosted. Payments go on only after that and after Apple approves the
-   external build (checklist A9).
+   the three names (`supabase secrets list`), then merges and pushes the
+   cutover migration that forgets every sandbox card (branch
+   `golive-cutover`; everyone adds a real card; no new build).
+8. Prove the live account with a small real charge made in Stripe's own
+   dashboard on your card (**Payments** → **Create payment**, $1), then
+   refund it there. The app cannot make this first charge: with payments
+   off no card can be saved, and only clinics that end after payments go on
+   are ever charged (go-live review, 2026-10-13). The rehearsal (§1a) has
+   already run every path of the app's own code against real Stripe.
+9. Payments go on (branch `golive-payments-on`) after Apple approves the
+   external build and you say go (checklist A9). The app's first real
+   charge is then the first clinic that ends after that, and the model
+   watches it.
 
 The nine events match the `case` lines in
 `supabase/functions/stripe-webhook/index.ts`; an event not ticked never
