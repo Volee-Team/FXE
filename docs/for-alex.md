@@ -129,15 +129,28 @@ minutes, with the model.
    Why each one is needed is in `supabase/functions/README.md` (re-derived
    from every Stripe call in our functions).
 4. **Create key**. Stripe shows an `rk_test_…` key. Copy it.
-5. Paste it into the file the model names when you start, save, and close
-   it. Never paste it into the chat. The file is never one git tracks.
-6. Once only: install the Stripe CLI (`brew install stripe/stripe-cli/stripe`)
-   and run `stripe login`, which opens the browser to approve. It lets
-   Stripe's sandbox send webhooks to the model's local copy.
-7. Tell the model **"rehearsal key saved"**. It runs `docs/stripe-e2e-test.md`
-   on its local copy against real Stripe test mode: save a card, a charge
-   after a clinic, a refund, a declined card and a 3-D Secure card.
-8. When it passes, the live keys are next (§1b).
+5. On **API keys**, copy the sandbox's **Publishable key** (`pk_test_…`) too:
+   the app refuses to set up a card unless both keys are from the same mode.
+6. Open a new file at the repo root named `.env.stripe-rehearsal` (git
+   ignores every `.env.*`; checked) with exactly two lines, and save it:
+   ```
+   STRIPE_SECRET_KEY=rk_test_...
+   STRIPE_PUBLISHABLE_KEY=pk_test_...
+   ```
+   Never paste either into the chat.
+7. Once only: install the Stripe CLI (`brew install stripe/stripe-cli/stripe`)
+   and run `stripe login` **in the same sandbox**, which opens the browser
+   to approve. It forwards Stripe's webhooks to the local copy, and it plays
+   the phone's card sheet when the script saves a card.
+8. Tell the model **"rehearsal key in"**. It runs
+   `bash tests/stripe/rehearsal.sh` (written 2026-10-13): the app's own
+   functions, holding only that key, against Stripe's real sandbox. Save a
+   card, a charge after a clinic, a refund, a card that saves and then
+   declines, a bank demanding 3-D Secure on a charge made while the member is
+   away, a chargeback, Tara's payouts, and deleting an account. A missing
+   permission shows by name in the function log it prints. The script
+   refuses any live key.
+9. When it passes, the live keys are next (§1b).
 
 ## 1b. Live keys (checklist A10)
 
