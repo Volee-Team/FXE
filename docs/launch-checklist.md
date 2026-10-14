@@ -42,7 +42,7 @@ How this file works, so it can be trusted:
 ## State today (re-derived 2026-10-13)
 
 - **Code:** `main` carries build 11, tag `v0.1.0-rc11` (PR #96, `355f546`:
-  the 2026-10-12 audit fixes on top of build 10's note at Register and
+  the 2026-10-12 audit fixes on top of the note at Register and
   Tara's 2026-10-12 answers). Branch `prelive-1013` is the next PR (crash
   reports, the card-removed webhook, the secret scan, the clinic page for
   staff) and becomes build 12.
@@ -73,8 +73,8 @@ needs only Apple's beta review, and payments go through Stripe, not Apple.
 
 1. **The review account exists** (C13): Alex signs up "App Review" in the
    TestFlight app, so it lands on hosted, and gives John the login. [Alex]
-2. **Build 10 to External Testing on John's account** (C8, C11): the tag
-   `v0.1.0-rc10` exists (merged 2026-10-12); John archives it,
+2. **Build 11 to External Testing on John's account** (C8, C11): the tag
+   `v0.1.0-rc11` exists (merged 2026-10-13); John archives it,
    uploads as App Store Connect (not Internal Only) and submits External
    Testing. Apple's beta review takes about 1 to 2 days. [me, John, Apple]
 3. **Real payments on** (A13, A10, A14, then A9), after Apple approves 2: a
