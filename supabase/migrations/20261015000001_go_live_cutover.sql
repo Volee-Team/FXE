@@ -19,6 +19,12 @@
 -- the code from the state they were written against (backlog, live review
 -- B3, 2026-10-04). tests/sql/golive_state.sql fails if those seed lines go.
 --
+-- The file's version is a placeholder: rename it to the date it merges
+-- (scripts/check-migration-versions.sh refuses a migration older than main's
+-- newest), or db push refuses it as out of order. Never run the cutover by
+-- hand in the SQL editor as well: this migration would then fail
+-- (already_live) and block every later db push until repaired.
+--
 -- Payments stay OFF here. Switching them on is the next migration, after one
 -- real charge and refund on Alex's card (checklist A9).
 
