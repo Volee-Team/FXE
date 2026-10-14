@@ -246,6 +246,40 @@ reservemycourt.com ($500/yr) until v2; Alex can get an FXE member account
 there to study it. White-labelling later means nothing FXE-specific hard-coded
 where a setting would do (the payment instructions, the club name, the logo).
 
+### Kat's ask: white label, multi-tenant (2026-10-12, group text)
+
+> What would it take to make FXE a white label multi tenant app? Meaning- I
+> want pros to be able to download, set up and manage clinics/lessons and give
+> me canned reporting. Also, allow payment integrator of choice.
+
+Tara: *"This is the breakthrough"*. Not started; nothing below is decided.
+Engineering sketch, so the conversation starts from the real cost:
+
+1. **A `clubs` table and `club_id` on every row** (25 tables today). Every RLS
+   policy, owner-rights view and RPC (125 functions) gains "and it is my club";
+   `is_admin()` becomes "admin *of this club*". This is the whole job, and the
+   probe suite is what makes it safe: `information_hiding.sql` and the attack
+   probes get a second club and assert nothing crosses.
+2. **One app, a club code to join**, not one App Store build per club (Apple's
+   guideline 4.3 rejects template clones). Branding (name, logo, colours,
+   Tara-style copy) moves from `Brand.swift` and `app_settings` into a per-club
+   row.
+3. **Self-serve setup for a pro**: create a club, become its admin, invite
+   players. Today the first admin is made by hand.
+4. **Payments: Stripe Connect first**, each club its own connected account, so
+   money never passes through us. "Integrator of choice" means an adapter
+   layer behind `stripe-charge`; worth building only when a second provider is
+   actually asked for.
+5. **Canned reporting**: the board report and Money tab per club, plus a
+   cross-club view for whoever runs the platform.
+6. **Lessons** are a new product line (private 1:1 booking), not a clinic
+   setting.
+
+Rough size: items 1 to 3 are a few weeks of focused work after launch, and
+should start with a decision record and the second-club probes, not code.
+Do not start before 2026-11-06.
+
+
 Also for v2: multiple admins, reminders for unanswered invitations, schedule
 conflict warnings, advanced player search, multiple locations.
 

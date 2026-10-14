@@ -36,7 +36,7 @@ rest. Re-read this page at the dress rehearsal and the day before.
 | 9 | **Tara's real week was not in the app**, so the first thing members saw was an empty list | Copy to next week makes a week from the last one in two clicks (decision 0027). Her real clinics are on hosted (D5) | The week of the rehearsal and the party's week published in time (section 3) |
 | 10 | **A bad build reached members and could not be taken back** | TestFlight keeps earlier builds: a tester can reinstall the previous one from the TestFlight app; every upload is tagged (C10) | Never upload a build the day before the party. The last build is the one the rehearsal used |
 | 11 | **Someone could see what they should not** (a court, a count, another member) | Enforced in the database (hard rule 1), pinned by `information_hiding.sql` and checked on production every night by `hosted-watch.yml` (2026-10-01) | Nothing open |
-| 12 | **The database was lost or corrupted** | Nightly encrypted backup (D10), restored in a monthly drill (D4) | Repeat the restore drill the week before the party, so the backup is known good on data that matters |
+| 12 | **The database was lost or corrupted** | Nightly encrypted backup (D10), restored in a monthly drill (D4) | Repeat the restore drill the week before the party, so the backup is known good on data that matters. Learned 2026-10-12: drop the restore target's own `auth` schema first (`drop schema auth cascade`); restoring onto the Supabase image's older auth tables brings back 0 sign-ins with no error |
 | 13 | **Nobody knew who to call** | This page | Section 3 |
 
 ## 2. The dress rehearsal (game day), target the week of 2026-10-26

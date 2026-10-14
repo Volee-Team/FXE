@@ -541,7 +541,7 @@ Five things the app does today that nobody has asked you about. Each has the
 answer we would pick, so "yes" is enough.
 
 **113. You change a clinic's length after people have signed up (say 60 to 90 minutes). Do the people already in pay the new price, or the price they signed up at?**
-*Default: the new price. Status: open, asked 2026-10-12.*
+*Default: the price they signed up at (that is what the app does today; the new price applies to anyone who signs up after the change). Status: open, asked 2026-10-12.*
 
 **114. Someone deletes their account less than 3 hours before a clinic they are in. Is that a late cancellation, with the fee?**
 *Default: yes, the same as any late cancel. Status: open, asked 2026-10-12.*

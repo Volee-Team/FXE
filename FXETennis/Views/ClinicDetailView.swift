@@ -44,15 +44,32 @@ final class ClinicDetailModel {
     /// index on (clinic, player) while pending, so a double tap is refused
     /// server-side regardless.
     var lateRequestSent = false
+    /// The clinic as the server has it now. The page is opened with the copy
+    /// the list had; a pull or coming back to the app used to reload only the
+    /// registration, so a canceled clinic kept its Register button and a moved
+    /// start kept the old cutoff (audit 2026-10-12).
+    var freshClinic: ClinicPublic?
 
     /// Ask Tara to fit this player in after registration has closed.
     ///
     /// Not a registration: `request_late_spot` creates a request she approves or
     /// declines, because hard rule 2 says only she puts anyone in a clinic.
     func requestLateSpot(clinicId: UUID, playerId: UUID) async throws {
-        _ = try await RegistrationRepository.requestLateSpot(
-            clinicId: clinicId, playerId: playerId, message: nil)
+        do {
+            _ = try await RegistrationRepository.requestLateSpot(
+                clinicId: clinicId, playerId: playerId, message: nil)
+        } catch {
+            // Asked already (the page was left and opened again): the one
+            // pending request per clinic is a unique index, so this is the
+            // answer that says Tara has it, not a race (audit 2026-10-12).
+            guard Self.isAlreadyAsked(error) else { throw error }
+        }
         lateRequestSent = true
+    }
+
+    nonisolated static func isAlreadyAsked(_ error: Error) -> Bool {
+        let text = String(describing: error)
+        return text.contains("23505") || text.contains("duplicate key")
     }
 
     /// `keepingNotice`: a reload nobody on this page asked for (a push, an
@@ -61,6 +78,8 @@ final class ClinicDetailModel {
         do {
             let regs = try await RegistrationRepository.mine()
             registration = regs.first { $0.clinicId == clinicId && $0.status != .canceled }
+            // Leniently: no answer keeps the copy the page opened with.
+            if let current = try? await ClinicRepository.clinic(id: clinicId) { freshClinic = current }
             messages = try await ClinicRepository.messages(clinicId: clinicId)
             // A load that worked clears an old "Couldn't reach the server"
             // (review, 2026-09-27: it stayed after a pull that succeeded).
@@ -127,6 +146,20 @@ final class ClinicDetailModel {
         // You're In! chip read as losing (review, 2026-10-04).
         if text.contains("already_registered") {
             return FailureOutcome(notice: nil, reopens: nil)
+        }
+        // Refusals that are not races, in words that say what happened
+        // (audit 2026-10-12: each read "someone beat you to the punch").
+        if text.contains("registration_not_open") {
+            return FailureOutcome(notice: "Registration isn't open yet.", reopens: nil)
+        }
+        if text.contains("clinic_full") {
+            return FailureOutcome(notice: "That clinic is full now.", reopens: nil)
+        }
+        if text.contains("clinic_already_started") {
+            return FailureOutcome(notice: "Registration has closed for this clinic.", reopens: nil)
+        }
+        if text.contains("clinic_not_found") {
+            return FailureOutcome(notice: "That just changed. Here's the latest.", reopens: nil)
         }
         // The note could not be saved: the clinic started, or the spot is
         // gone (decision 0039). Not a race for a seat.
@@ -227,9 +260,17 @@ struct ClinicDetailView: View {
     /// saved on its own once she holds a spot.
     @State private var noteDraft = ""
     @FocusState private var noteFocused: Bool
-    let clinic: ClinicPublic
+    /// The copy the page was opened with; `clinic` is the fresher one once loaded.
+    private let initialClinic: ClinicPublic
+    private var clinic: ClinicPublic { model.freshClinic ?? initialClinic }
     let isMember: Bool
     var onChanged: () async -> Void = {}
+
+    init(clinic: ClinicPublic, isMember: Bool, onChanged: @escaping () async -> Void = {}) {
+        self.initialClinic = clinic
+        self.isMember = isMember
+        self.onChanged = onChanged
+    }
 
     @Environment(SessionStore.self) private var session
     /// Accept and Decline stack at the accessibility text sizes.
@@ -346,7 +387,11 @@ struct ClinicDetailView: View {
             Text(clinic.name)
                 .brandFont(.display)
                 .foregroundStyle(Brand.navy)
-            if let reg = model.registration {
+            // Canceled by Tara outranks the spot she held (audit 2026-10-12).
+            if clinic.isCanceled {
+                StatusChip(.canceled)
+                    .accessibilityIdentifier("clinic.statusChip")
+            } else if let reg = model.registration {
                 StatusChip(reg.status.display)
                     .statusChipMotion()
                     .accessibilityIdentifier("clinic.statusChip")
@@ -444,6 +489,12 @@ struct ClinicDetailView: View {
             EmptyView()
         } else if let reg = model.registration {
             switch reg.status {
+            // Once the clinic has started there is nothing to cancel: a tap
+            // mid-clinic was recorded as a late cancel and moved her off the
+            // roster she was standing on (audit 2026-10-12). The page redraws
+            // at the start (upcomingMoments), so the button goes on the second.
+            case .in_ where now >= clinic.startsAt:
+                EmptyView()
             case .in_:
                 if CancelPolicy.isInsideCutoff(startsAt: clinic.startsAt, cutoffHours: cutoffHours, now: now) {
                     // Same button, different path: the server refuses a late

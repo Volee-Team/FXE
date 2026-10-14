@@ -461,7 +461,13 @@ jobs:
   ios-ui-tests:
     name: iOS UI tests on a CI project
     needs: ios-changes
-    if: needs.ios-changes.outputs.ios == 'true'
+    # Pull requests only. The concurrency group below keeps one job running
+    # and ONE waiting; a third arrival cancels the waiting one rather than
+    # queueing behind it. With a push run and a PR run per commit, two quick
+    # pushes cancelled a PR's run on 2026-10-13 and the required check blocked
+    # the merge with every other check green. One run per commit fixes it;
+    # the push event gets "skipped", which a required check accepts.
+    if: github.event_name == 'pull_request' && needs.ios-changes.outputs.ios == 'true'
     runs-on: macos-15
     timeout-minutes: 45
     # One project, one seed: two PRs resetting it at once would corrupt each

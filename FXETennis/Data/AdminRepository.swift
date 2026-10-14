@@ -443,6 +443,25 @@ enum AdminRepository {
         try await supabase.rpc("admin_money_disputes").execute().value
     }
 
+    /// Every held charge, however old (the laptop's ledger shows 50 rows;
+    /// a held one slid off it within days, audit 2026-10-12).
+    static func heldCharges() async throws -> [HeldCharge] {
+        try await supabase
+            .from("payments_ledger")
+            .select("id,amount_cents,first_name,last_name,clinic_name,clinic_starts_at")
+            .eq("status", value: "processing")
+            .in("failure_reason", values: ["retry_window_passed", "idempotency_error"])
+            .order("created_at", ascending: true)
+            .execute()
+            .value
+    }
+
+    /// What Tara found in Stripe: "succeeded" or "canceled".
+    static func resolveHeld(payment: UUID, outcome: String) async throws {
+        struct P: Encodable { let p_payment: UUID; let p_outcome: String }
+        _ = try await supabase.rpc("admin_resolve_held_payment", params: P(p_payment: payment, p_outcome: outcome)).execute()
+    }
+
     /// Whether the Zelle/Venmo path exists (app_settings.zelle_allowed).
     /// False since decision 0013: the card is the only way to pay, so the
     /// Paid toggle and the unpaid reminder are not rendered.
@@ -799,6 +818,31 @@ struct MoneyDecline: Decodable, Identifiable, Sendable {
 /// A card payment the cardholder's bank is taking back, still open
 /// (admin_money_disputes, 20260928200001). Tara answers it in Stripe's
 /// dashboard by the respond-by date; a lost one is subtracted from Charged.
+/// A charge held for a person (20260927300003): Stripe may or may not have
+/// taken it, and only Tara, looking in Stripe, can say which.
+struct HeldCharge: Decodable, Identifiable, Sendable {
+    let id: UUID
+    let amountCents: Int
+    let firstName: String?
+    let lastName: String?
+    let clinicName: String?
+    let clinicStartsAt: Date?
+
+    var displayName: String {
+        let n = "\(firstName ?? "") \(lastName ?? "")".trimmingCharacters(in: .whitespaces)
+        return n.isEmpty ? "Unknown player" : n
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case amountCents = "amount_cents"
+        case firstName = "first_name"
+        case lastName = "last_name"
+        case clinicName = "clinic_name"
+        case clinicStartsAt = "clinic_starts_at"
+    }
+}
+
 struct MoneyDispute: Decodable, Identifiable, Sendable {
     let paymentId: UUID
     let clinicId: UUID

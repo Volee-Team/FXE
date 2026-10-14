@@ -267,10 +267,10 @@ The full runbook is `docs/testflight.md`.
 
 ## 4a. The review account, then build 10 to External Testing (checklist C8, C11, C13)
 
-**Build 10 is the tag `v0.1.0-rc10`**, made when the `build-10` branch
-merges: Tara's note box at Register (decision 0039) and her 2026-10-12
-answers (decision 0040). The tag is made only after the UI suite is green
-on iOS 17, 18 and 26 for that code.
+**Build 10 is the tag `v0.1.0-rc10`** on `main` (`88a1871`, PR #94, merged
+2026-10-12): Tara's note box at Register (decision 0039) and her 2026-10-12
+answers (decision 0040). It was tagged after the UI suite was green on
+iOS 17, 18 and 26 for that code.
 
 **A. The App Review account (you, about 3 minutes; checklist C13).** Apple's
 beta reviewer is a person who installs the build, and the app shows nothing

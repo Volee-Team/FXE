@@ -88,11 +88,18 @@ final class AdminClinicModel {
             let poolIds = Array(Set(pool.map(\.registration.playerId)))
             let rows = (try? await AdminRepository.playerHistory(players: poolIds)) ?? []
             history = Dictionary(rows.map { ($0.playerId, $0) }, uniquingKeysWith: { first, _ in first })
-            // Leniently too: without it no row offers a charge, and the
-            // roster still works.
-            let due = (try? await AdminRepository.feesDue(clinic: clinic.id)) ?? []
-            feesDue = Dictionary(due.map { ($0.registrationId, $0) }, uniquingKeysWith: { first, _ in first })
-            error = nil
+            // Leniently, so the roster still works, but said: with no line, a
+            // failed read looked exactly like nobody owing (audit 2026-10-12).
+            // The laptop's words for the same.
+            var chargesLine: String?
+            do {
+                let due = try await AdminRepository.feesDue(clinic: clinic.id)
+                feesDue = Dictionary(due.map { ($0.registrationId, $0) }, uniquingKeysWith: { first, _ in first })
+            } catch {
+                feesDue = [:]
+                chargesLine = "Couldn't load charges."
+            }
+            error = chargesLine
         } catch {
             self.error = "Couldn't load the roster. Pull to refresh."
         }
@@ -746,6 +753,12 @@ struct AdminClinicDetailView: View {
             Label("Charged", systemImage: "checkmark.circle.fill")
                 .brandFont(.chip)
                 .foregroundStyle(Brand.Status.youreIn.ink)
+                .accessibilityIdentifier("admin.charged")
+        } else if entry.registration.chargeStatus == "refunded" {
+            // A full refund (registrations_admin, 20261013000001).
+            Text("Refunded")
+                .brandFont(.chip)
+                .foregroundStyle(Brand.textSecondary)
                 .accessibilityIdentifier("admin.charged")
         } else if entry.registration.hasLiveCharge {
             // Queued or with Stripe, not answered yet.

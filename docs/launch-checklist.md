@@ -41,18 +41,18 @@ How this file works, so it can be trusted:
 
 ## State today (re-derived 2026-10-12)
 
-- **Code:** `main` is PR #93 (`bbf31f1`, Tara's 2026-10-12 answers,
-  decision 0040, on top of her note at Register, decision 0039). The build
-  number goes to 10 on the open branch `build-10`; the tag `v0.1.0-rc10` is
-  made when it merges (the newest tag is `v0.1.0-rc9`).
+- **Code:** `main` carries build 10, tag `v0.1.0-rc10` (PR #94, `88a1871`:
+  Tara's 2026-10-12 answers, decision 0040, on top of her note at Register,
+  decision 0039). The audit fixes (`20261013000001`) are the next PR and
+  become build 11.
 - **On testers' phones:** the last upload tagged in git is `v0.1.0-tf7`; no
   upload of build 8 or 9 was reported (C8).
-- **Hosted:** 63 migrations through `20261012000001`, 63 of 63 paired on
+- **Hosted:** 63 of the repo's 64 migrations, through `20261012000001`, 63 of 63 paired on
   2026-10-12 (Alex's session, `supabase migration list --linked`; not re-run
   for this file). **Payments are off**: no migration sets `payments_enabled`
   to true (A9).
-- **Tests:** 46 SQL probes plus 14 shell probes (races and the 200-request
-  rush), 254 unit tests, 25 XCUITests (green on iOS 26.2, 18.6 and 17.5 on
+- **Tests:** 47 SQL probes plus 14 shell probes (races and the 200-request
+  rush), 264 unit tests, 25 XCUITests (green on iOS 26.2, 18.6 and 17.5 on
   2026-10-13 UTC, `docs/ui-test-runs.log`), 49 browser tests.
 - **Waiting on others:** Apple's answer on the LLC (C1), John's upload of
   build 10 and Apple's beta review (C8, C11), the live Stripe keys (A10),
@@ -72,8 +72,8 @@ needs only Apple's beta review, and payments go through Stripe, not Apple.
 
 1. **The review account exists** (C13): Alex signs up "App Review" in the
    TestFlight app, so it lands on hosted, and gives John the login. [Alex]
-2. **Build 10 to External Testing on John's account** (C8, C11): tag
-   `v0.1.0-rc10` when the `build-10` branch merges; John archives it,
+2. **Build 10 to External Testing on John's account** (C8, C11): the tag
+   `v0.1.0-rc10` exists (merged 2026-10-12); John archives it,
    uploads as App Store Connect (not Internal Only) and submits External
    Testing. Apple's beta review takes about 1 to 2 days. [me, John, Apple]
 3. **Real payments on** (A13, A10, A14, then A9), after Apple approves 2: a
@@ -146,7 +146,7 @@ What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision
 | D1 | **A real email sender, so "Forgot password?" reaches members** | [Alex] | **DONE 2026-09-27**: Gmail `fxetennis.app@gmail.com` with an app password as custom SMTP; read back through the management API (`smtp_host` smtp.gmail.com, port 465, sender "FXE Tennis"). Delivery confirmed by Alex 2026-10-01: *"the reset emails came in just took a while"* |
 | D2 | Reset page allow-listed as a redirect on hosted | [Alex] | **DONE 2026-09-01**; verified 2026-09-27 (`uri_allow_list` is `https://fxe-tennis-admin.vercel.app/reset.html`) |
 | D3 | Supabase plan: the free tier pauses after a quiet week and has no point-in-time recovery; Pro is $25 a month | [Alex] | **DECIDE** [Alex] before real members |
-| D4 | Restore drill (a backup nobody has restored is not a backup) | [me] | **OPEN, overdue**: monthly; the last drill was 2026-09-12, next due 2026-10-12 |
+| D4 | Restore drill (a backup nobody has restored is not a backup) | [me] | **DONE 2026-10-12**: last night's encrypted backup restored into a bare Postgres, the whole migration ledger and all 9 sign-ins back, after dropping the image's own `auth` schema first (restoring onto it gave 0 users). Monthly; next due 2026-11-02, the week before the party (runbook row 12) |
 | D5 | Tara's real templates and clinics in hosted, through the admin site | [Tara] | **DONE 2026-10-11**: her real clinics are on hosted (Coed "105", Ladies All Level, Ladies 3.0+, Queen City, Ladies Beginner 2.5, Men's 3.0+, 2026-10-04 to 2026-10-07, read through the management API); none after 2026-10-07 yet |
 | D6 | Crash reporting and error alerts: MetricKit crash and hang reports into `app_diagnostics` through `report_app_diagnostic` (decision 0035) | [me]/[Alex] | **OPEN**: built on the local branch `crash-reports`, not merged; Alex approved its privacy-policy sentence 2026-10-03. Its two migrations (`20261001000001`, `20261001000002`) predate migrations already on hosted, so they need new timestamps when it merges |
 | D7 | Rate limits on the public functions and sign-up | [me] | **LATER**: low risk at club scale |
@@ -167,28 +167,27 @@ observer.
 
 | Layer | Runs where | Count (derived 2026-10-12 unless dated) | Gap |
 |---|---|---|---|
-| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 46 probes plus 14 shell probes (the races and the 200-request rush); the suite prints its own check total | none known |
+| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 47 probes plus 14 shell probes (the races and the 200-request rush); the suite prints its own check total | none known |
 | Stripe pipeline against stripe-mock | every PR | 94 checks as of 2026-09-28 | real Stripe behaviour waits on A13 |
 | Push pipeline against a mock APNs | every PR | 57 checks as of 2026-09-28 | real APNs waits on C3 |
 | Web admin browser tests (Playwright, real sign-in) | every PR | 49 | a cold-start flake after a local reset (backlog) |
-| Swift unit tests (pure logic) | every PR | 254 | fine |
+| Swift unit tests (pure logic) | every PR | 264 | fine |
 | Hosted signed-out smoke (`scripts/hosted-smoke.sh`) | every PR, read-only against production | 162 targets as of 2026-10-11, including a browser preflight to each function the web admin calls | only the signed-out side |
 | XCUITests, player and admin flows, and Apple's accessibility audit | **local only** (section F) | 25 | run on a laptop before every TestFlight build, on iOS 17, 18 and 26 (`docs/ui-test-runs.log`) |
 | Copy gate, secret scan (now Stripe keys too), migration immutability, icon gate, doc checks | every PR | – | none |
-| Nightly backup and consent purge | nightly | – | the restore drill is overdue (D4) |
+| Nightly backup and consent purge | nightly | – | restored by hand monthly (D4, last 2026-10-12) |
 
 Missing kinds of testing, in the order they matter:
 
 1. **UI tests in CI**: deliberately deferred 2026-09-18 (section F); until then the laptop run before each TestFlight build is the control.
-2. **A restore drill** (D4).
-3. **Real-device pass** (C9).
-4. **Accessibility pass**: Apple's accessibility audit runs as a UI test on the player's, Tara's and the pro's main screens (decision 0023); still missing, VoiceOver walked by a person on every screen and Larger Text at the largest size on a real phone.
-5. **Offline and bad network**: airplane mode on every action; the app should say "Couldn't…" and keep state. Build: a UI test with a stubbed network is expensive; a manual checklist first.
-6. **Time-zone and DST**: the window rule has probes across DST; the app's week grouping has unit tests. Missing: a probe on the 3-hour cutoff across a DST change (add to `late_cancellation.sql`).
-7. **Load at club scale**: 200 signed-in requests through the API at once (`tests/sql/rush_via_api.sh`, 2026-10-01); a season publish of 60 clinics has never been listed on a phone. Build: seed 60 clinics locally once and screenshot Home and Clinics.
-8. **Security review of the edge functions** with the `sql-auditor` agent and an adversarial pass: call every function as anon, as a player, as a player with a forged body.
-9. **Dependency audit**: `npm audit` for the web tests. Swift packages: Stripe SDK pinned exactly 2026-09-12 (PR #37); supabase-swift was already exact.
-10. **Copy review with Tara**: rounds one to five answered (decisions 0013, 0016, 0024, 0040); round six is G2.
+2. **Real-device pass** (C9).
+3. **Accessibility pass**: Apple's accessibility audit runs as a UI test on the player's, Tara's and the pro's main screens (decision 0023); still missing, VoiceOver walked by a person on every screen and Larger Text at the largest size on a real phone.
+4. **Offline and bad network**: airplane mode on every action; the app should say "Couldn't…" and keep state. Build: a UI test with a stubbed network is expensive; a manual checklist first.
+5. **Time-zone and DST**: the window rule has probes across DST; the app's week grouping has unit tests. Missing: a probe on the 3-hour cutoff across a DST change (add to `late_cancellation.sql`).
+6. **Load at club scale**: 200 signed-in requests through the API at once (`tests/sql/rush_via_api.sh`, 2026-10-01); a season publish of 60 clinics has never been listed on a phone. Build: seed 60 clinics locally once and screenshot Home and Clinics.
+7. **Security review of the edge functions** with the `sql-auditor` agent and an adversarial pass: call every function as anon, as a player, as a player with a forged body.
+8. **Dependency audit**: `npm audit` for the web tests. Swift packages: Stripe SDK pinned exactly 2026-09-12 (PR #37); supabase-swift was already exact.
+9. **Copy review with Tara**: rounds one to five answered (decisions 0013, 0016, 0024, 0040); round six is G2.
 
 
 ## G. People, decisions and content

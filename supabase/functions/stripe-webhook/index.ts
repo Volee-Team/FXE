@@ -38,6 +38,16 @@ import { isMissingCustomer } from "../_shared/stripe-errors.ts";
 
 Deno.serve(async (req) => { try { return await handle(req); } catch (e) { const m = String((e as Error).message ?? e); return json({ error: m }, m === "stripe_not_configured" ? 503 : 500); } });
 
+// A database write that failed must not be answered 200: Stripe would never
+// send the event again, and the row would sit at Processing with nothing to
+// move it (audit 2026-10-12). Throwing reaches Deno.serve's catch, which
+// answers 500, and Stripe retries the event for up to three days; every
+// write here is safe to repeat.
+function ok<T extends { error: unknown }>(r: T): T {
+  if (r.error) throw new Error("db_write_failed: " + JSON.stringify(r.error));
+  return r;
+}
+
 async function handle(req: Request): Promise<Response> {
   const sig = req.headers.get("stripe-signature");
   const secret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
@@ -79,11 +89,11 @@ async function handle(req: Request): Promise<Response> {
         if (isMissingCustomer(e)) break;
         throw e;
       }
-      await admin.from("accounts").update({
+      ok(await admin.from("accounts").update({
         card_brand: pm.card?.brand ?? null,
         card_last4: pm.card?.last4 ?? null,
         card_added_at: new Date().toISOString(),
-      }).eq("stripe_customer_id", customerId);
+      }).eq("stripe_customer_id", customerId));
       break;
     }
     case "payment_intent.succeeded": {
@@ -214,13 +224,13 @@ function mode(event: Stripe.Event): { livemode?: boolean } {
 // PaymentIntent's metadata, storing the id on the way. Never a refund row, and
 // never a row that already carries a different PaymentIntent.
 async function recordPaymentOutcome(pi: Stripe.PaymentIntent, outcome: Record<string, unknown>) {
-  const { data: byId } = await admin.from("payments").update(outcome)
-    .eq("stripe_payment_intent_id", pi.id).select("id");
+  const { data: byId } = ok(await admin.from("payments").update(outcome)
+    .eq("stripe_payment_intent_id", pi.id).select("id"));
   if (byId && byId.length) return;
   const mine = pi.metadata?.fxe_payment_id;
   if (!mine) return;   // not a PaymentIntent this app made
-  await admin.from("payments").update({ stripe_payment_intent_id: pi.id, ...outcome })
-    .eq("id", mine).neq("kind", "refund").is("stripe_payment_intent_id", null);
+  ok(await admin.from("payments").update({ stripe_payment_intent_id: pi.id, ...outcome })
+    .eq("id", mine).neq("kind", "refund").is("stripe_payment_intent_id", null));
 }
 
 // One Stripe refund into the ledger. Three cases, in this order:
@@ -243,28 +253,28 @@ async function recordRefund(r: Stripe.Refund, live: { livemode?: boolean }) {
     : (r.status === "failed" || r.status === "canceled") ? { status: "failed", failure_reason: r.failure_reason ?? r.status, ...live }
     : null;
 
-  const { data: known } = await admin.from("payments").select("id").eq("stripe_refund_id", r.id);
+  const { data: known } = ok(await admin.from("payments").select("id").eq("stripe_refund_id", r.id));
   if (known && known.length) {
-    if (outcome) await admin.from("payments").update(outcome).eq("stripe_refund_id", r.id);
+    if (outcome) ok(await admin.from("payments").update(outcome).eq("stripe_refund_id", r.id));
     return;
   }
 
   const mine = r.metadata?.fxe_payment_id;
   if (mine) {
-    await admin.from("payments").update({ stripe_refund_id: r.id, ...(outcome ?? live) })
-      .eq("id", mine).eq("kind", "refund").is("stripe_refund_id", null);
+    ok(await admin.from("payments").update({ stripe_refund_id: r.id, ...(outcome ?? live) })
+      .eq("id", mine).eq("kind", "refund").is("stripe_refund_id", null));
     return;
   }
 
   if (r.status !== "succeeded") return;   // recorded when it clears
   const piId = typeof r.payment_intent === "string" ? r.payment_intent : r.payment_intent?.id;
   if (!piId) return;
-  const { data: orig } = await admin.from("payments")
+  const { data: orig } = ok(await admin.from("payments")
     .select("id, registration_id, account_id, amount_cents, currency")
-    .eq("stripe_payment_intent_id", piId).neq("kind", "refund").maybeSingle();
+    .eq("stripe_payment_intent_id", piId).neq("kind", "refund").maybeSingle());
   if (!orig) return;   // not a charge this app made
   const whole = r.amount >= orig.amount_cents;
-  const { data: ins } = await admin.from("payments").upsert({
+  const { data: ins } = ok(await admin.from("payments").upsert({
     registration_id: orig.registration_id,
     account_id: orig.account_id,
     kind: "refund",
@@ -274,8 +284,8 @@ async function recordRefund(r: Stripe.Refund, live: { livemode?: boolean }) {
     stripe_refund_id: r.id,
     status: whole ? "processing" : "succeeded",   // never 'pending': stripe-charge would refund it again
     ...live,
-  }, { onConflict: "stripe_refund_id", ignoreDuplicates: true }).select("id");
+  }, { onConflict: "stripe_refund_id", ignoreDuplicates: true }).select("id"));
   if (whole && ins && ins.length) {
-    await admin.from("payments").update({ status: "succeeded" }).eq("id", ins[0].id);
+    ok(await admin.from("payments").update({ status: "succeeded" }).eq("id", ins[0].id));
   }
 }

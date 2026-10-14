@@ -649,6 +649,14 @@ async function loadActionNeeded(clinics, byPlayer, owed, stale = () => false) {
     .in("type", ["player_canceled", "invitation_declined", "invitation_accepted"])
     .order("created_at", { ascending: false }).limit(30);
   if (stale()) return;
+  // Held charges (20260927300003): Stripe may or may not have taken them, and
+  // only Tara, looking in Stripe, can say. Until 2026-10-12 they were only on
+  // the Money tab's newest 50 rows, and a busy week pushed them off it (audit).
+  // Every held row, however old, is listed here until she answers.
+  const { data: heldRows } = await sb.from("payments_ledger")
+    .select("id,amount_cents,first_name,last_name,clinic_name,clinic_starts_at")
+    .eq("status", "processing").in("failure_reason", HELD).order("created_at");
+  if (stale()) return;
 
   // Money work (20260927100003): a clinic that has ended with players Charge
   // clinic would charge now (only while payments are on, since the tap is
@@ -675,6 +683,13 @@ async function loadActionNeeded(clinics, byPlayer, owed, stale = () => false) {
         <span class="muted">${esc(d.clinic_name)} on ${fmtDate(d.clinic_starts_at)}${d.failure_code ? ": " + esc(declineLabel(d.failure_code)) : ""}</span></span>
       <span class="name">${money(d.amount_cents)}</span>
       ${d.payment_id ? `<button class="small" data-resolvedecline="${d.payment_id}">Resolved</button>` : ""}
+    </div>`),
+    ...(heldRows || []).map(h => `<div class="row" data-held-action="${h.id}">
+      <span class="grow">${esc((h.first_name || "") + " " + (h.last_name || ""))}<br>
+        <span class="muted">${h.clinic_name ? esc(h.clinic_name) + (h.clinic_starts_at ? " on " + fmtDate(h.clinic_starts_at) : "") + ": " : ""}Check this charge in Stripe.</span></span>
+      <span class="name">${money(h.amount_cents)}</span>
+      <button class="small" data-resolve="${h.id}" data-outcome="succeeded">Went through</button>
+      <button class="small" data-resolve="${h.id}" data-outcome="canceled">Did not go through</button>
     </div>`),
     ...disputes.map(d => `<div class="row" data-dispute="${d.payment_id}">
       <span class="grow">${esc(d.first_name + " " + d.last_name)} disputed a charge<br>
@@ -754,7 +769,7 @@ async function loadMoney() {
 // this list is empty and says so. Zelle payments are not in this ledger; they
 // are the Paid checkbox on the roster.
 const KIND = { clinic_fee: "Clinic fee", late_cancel: "Late cancel", no_show: "No-show", refund: "Refund" };
-const PAY_STATUS = { pending: "Pending", processing: "Processing", succeeded: "Paid", failed: "Failed", canceled: "Canceled" };
+const PAY_STATUS = { pending: "Pending", processing: "Processing", succeeded: "Paid", failed: "Failed", canceled: "Canceled", refunded: "Refunded" };
 // Stripe's decline codes (payments.failure_code, 20260926000010) in words.
 // Tara, 2026-09-26: "reason codes ... (i.e. NSF, Card Expired, Etc)". The
 // database keeps Stripe's code; a code not listed here shows as itself.

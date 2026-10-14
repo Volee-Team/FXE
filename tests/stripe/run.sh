@@ -95,6 +95,12 @@ webhook() { # payload [secret]
   sig=$(printf '%s.%s' "$ts" "$payload" | openssl dgst -sha256 -hmac "$secret" | sed 's/^.* //')
   curl -s -X POST "$API/functions/v1/stripe-webhook" -H "Content-Type: application/json" \
        -H "stripe-signature: t=$ts,v1=$sig" -d "$payload"; }
+webhookcode() { # payload -> the HTTP status the webhook answered
+  local ts sig
+  ts=$(date +%s)
+  sig=$(printf '%s.%s' "$ts" "$1" | openssl dgst -sha256 -hmac "$WHSEC" | sed 's/^.* //')
+  curl -s -o /dev/null -w '%{http_code}' -X POST "$API/functions/v1/stripe-webhook" -H "Content-Type: application/json" \
+       -H "stripe-signature: t=$ts,v1=$sig" -d "$1"; }
 event() { # type object-json [livemode, default true: the live path] [created, default now]
   echo "{\"id\":\"evt_$RANDOM\",\"object\":\"event\",\"api_version\":\"2024-12-18.acacia\",\"created\":${4:-$(date +%s)},\"livemode\":${3:-true},\"type\":\"$1\",\"data\":{\"object\":$2}}"; }
 fncode() { # name jwt-or-empty body -> "<http status> <error or ok>"
@@ -176,6 +182,14 @@ check "a second stripe-charge finds nothing pending" "0" "$(fn stripe-charge "$T
 check "registration not paid before the webhook" "f" "$(sql "select paid from public.registrations where id='$REG'")"
 PI=$(sql "select stripe_payment_intent_id from public.payments where id='$PAY'")
 OBJ="{\"id\":\"$PI\",\"object\":\"payment_intent\",\"status\":\"succeeded\"}"
+# A write that fails is not answered 200 (audit 2026-10-12): Stripe must send
+# the event again, or the row sits at Processing for good. The ledger is made
+# unwritable for the function's role, the event is refused with 500 and the row
+# is unchanged; with the grant back, Stripe's retry lands it.
+sql "revoke update on public.payments from service_role" >/dev/null
+check "a failed ledger write answers 500, so Stripe retries" "500" "$(webhookcode "$(event payment_intent.succeeded "$OBJ")")"
+check "and the row is untouched" "processing" "$(sql "select status from public.payments where id='$PAY'")"
+sql "grant update on public.payments to service_role" >/dev/null
 webhook "$(event payment_intent.succeeded "$OBJ")" >/dev/null
 check "payment_intent.succeeded -> succeeded" "succeeded" "$(sql "select status from public.payments where id='$PAY'")"
 check "the signed event's livemode is the one kept" "t" "$(sql "select livemode from public.payments where id='$PAY'")"
@@ -538,6 +552,17 @@ check "the next card setup makes a new customer" "cus_ stored" "${NEW:0:4} $([ "
 check "the swap runs once" "already_live" "$(cutover | field "['message']")"
 
 # ---- 6. Switched off again, nothing new can be charged
+# A charge queued for a clinic canceled afterwards is never sent (audit
+# 2026-10-12). Written straight into the ledger, around cancel_clinic, to
+# reach the one place stripe-charge itself has to check: it must claim the
+# row and cancel it, with no PaymentIntent.
+CX=$(sql "insert into public.clinics (name, audience, category, description, starts_at, ends_at, member_opens_at, public_opens_at, internal_capacity, status, duration_minutes, published_at) values ('HARNESS RAINED OUT', 'coed', 'Clinic', 'h', now() - interval '3 hours', now() - interval '2 hours', now() - interval '5 days', now() - interval '4 days', 8, 'canceled', 60, now() - interval '5 days') returning id" | head -1)
+RX=$(sql "insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes) values ('$CX', '$MARIA_P', 'in', 'self', 1800, true, 60) returning id" | head -1)
+PX=$(sql "insert into public.payments (registration_id, account_id, kind, amount_cents, status) values ('$RX', '$MARIA', 'clinic_fee', 1800, 'pending') returning id" | head -1)
+fn stripe-charge "$TARA_JWT" '{}' >/dev/null
+check "a charge for a canceled clinic is never sent" "canceled clinic_canceled none" "$(sql "select status||' '||coalesce(failure_reason,'')||' '||coalesce(stripe_payment_intent_id,'none') from public.payments where id='$PX'")"
+sql "delete from public.payments where id='$PX'; delete from public.registrations where id='$RX'; delete from public.clinics where id='$CX'" >/dev/null
+
 sql "update public.app_settings set value='false' where key='payments_enabled'" >/dev/null
 BODY="{\"p_registration\":\"$REG\",\"p_kind\":\"no_show\"}"
 check "payments_disabled once the switch is off" "payments_disabled" "$(rpc admin_charge_registration "$TARA_JWT" "$BODY" | field "['message']")"
