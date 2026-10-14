@@ -57,10 +57,10 @@ most important thing to understand here, and it is section 5.
 
 | Area | What exists |
 |---|---|
-| Postgres schema, RLS, narrow views, RPCs | 64 migrations (`ls supabase/migrations`), the newest `20261013000001_audit_fixes.sql`. 63 are on hosted: Alex's `supabase migration list --linked` on 2026-10-12 showed 63 of 63 paired; the 64th goes with the audit-fixes PR. Re-check with that command after any push; this line is not the record |
+| Postgres schema, RLS, narrow views, RPCs | 65 migrations (`ls supabase/migrations`), the newest `20261013000001_audit_fixes.sql`. 63 are on hosted: Alex's `supabase migration list --linked` on 2026-10-12 showed 63 of 63 paired; the 64th goes with the audit-fixes PR. Re-check with that command after any push; this line is not the record |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | Enumerated by probes (section 5) |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | Section 7 |
-| Probe suite: 47 SQL probes and 14 shell probes (races and the API rush); the suite prints its own total | Runs in CI on every push (section 9) |
+| Probe suite: 48 SQL probes and 14 shell probes (races and the API rush); the suite prints its own total | Runs in CI on every push (section 9) |
 | iOS: sign-in, sign-up with profile, the waiver and card steps, password reset, three tabs | In the app |
 | iOS: browse by week, per-viewer pricing, register / cancel (inside the 3-hour cutoff the full fee applies; the note is optional) / leave pool / respond, closed-clinic "Message Tara", the bell, My Clinics, profile edit, card on file | In the app |
 | iOS: a private note for Tara at Register, editable on the player's own live spot until the start (decision 0039) | In the app |
@@ -739,7 +739,7 @@ revealing the same summary text the page's Copy my answers produces.
 
 ## 9. Testing and CI
 
-**SQL probes** in `tests/sql/`, 47 SQL probes, each printing PASS/FAIL rows,
+**SQL probes** in `tests/sql/`, 48 SQL probes, each printing PASS/FAIL rows,
 plus 14 shell probes that race transactions or call the API. `tests/run-probes.sh` prints its
 own total and fails on silent SQL errors or a probe with zero assertions.
 Every migration that adds a rule adds a probe that is **red first**.
