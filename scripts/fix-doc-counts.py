@@ -16,10 +16,15 @@ import pathlib, re, subprocess, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 out = subprocess.run(["bash", "scripts/check-doc-claims.sh"], cwd=ROOT, capture_output=True, text=True).stdout
-m = re.search(r"Derived now: probes=(\d+) unit=(\d+) xcuitests=(\d+) playwright=(\d+) migrations=(\d+)", out)
-if not m:
-    sys.exit("check-doc-claims.sh printed no 'Derived now' line")
-probes, unit, ui, pw, mig = m.groups()
+# Read the line as key=value pairs, not as one fixed sequence: the
+# 2026-10-12 docs overhaul added shell-probes= to it, the fixed regex
+# stopped matching, and this helper refused to run (found 2026-10-13).
+m = re.search(r"Derived now:(.*)", out)
+derived = dict(re.findall(r"([a-z-]+)=(\d+)", m.group(1))) if m else {}
+missing = [k for k in ("probes", "unit", "xcuitests", "playwright", "migrations") if k not in derived]
+if missing:
+    sys.exit("check-doc-claims.sh's 'Derived now' line lacks: " + ", ".join(missing))
+probes, unit, ui, pw, mig = (derived[k] for k in ("probes", "unit", "xcuitests", "playwright", "migrations"))
 
 EXCUSE = re.compile(r"as of 20\d\d|\bwas \d|\bthen \d|at the time|used to|previously|→", re.I)
 NOUNS = [

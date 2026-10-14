@@ -52,7 +52,7 @@ How this file works, so it can be trusted:
   for this file). **Payments are off**: no migration sets `payments_enabled`
   to true (A9).
 - **Tests:** 47 SQL probes plus 14 shell probes (races and the 200-request
-  rush), 264 unit tests, 25 XCUITests (green on iOS 26.2, 18.6 and 17.5 on
+  rush), 265 unit tests, 26 XCUITests (green on iOS 26.2, 18.6 and 17.5 on
   2026-10-13 UTC, `docs/ui-test-runs.log`), 49 browser tests.
 - **Waiting on others:** Apple's answer on the LLC (C1), John's upload of
   build 10 and Apple's beta review (C8, C11), the live Stripe keys (A10),
@@ -171,9 +171,9 @@ observer.
 | Stripe pipeline against stripe-mock | every PR | 94 checks as of 2026-09-28 | real Stripe behaviour waits on A13 |
 | Push pipeline against a mock APNs | every PR | 57 checks as of 2026-09-28 | real APNs waits on C3 |
 | Web admin browser tests (Playwright, real sign-in) | every PR | 49 | a cold-start flake after a local reset (backlog) |
-| Swift unit tests (pure logic) | every PR | 264 | fine |
+| Swift unit tests (pure logic) | every PR | 265 | fine |
 | Hosted signed-out smoke (`scripts/hosted-smoke.sh`) | every PR, read-only against production | 162 targets as of 2026-10-11, including a browser preflight to each function the web admin calls | only the signed-out side |
-| XCUITests, player and admin flows, and Apple's accessibility audit | **local only** (section F) | 25 | run on a laptop before every TestFlight build, on iOS 17, 18 and 26 (`docs/ui-test-runs.log`) |
+| XCUITests, player and admin flows, and Apple's accessibility audit | **local only** (section F) | 26 | run on a laptop before every TestFlight build, on iOS 17, 18 and 26 (`docs/ui-test-runs.log`) |
 | Copy gate, secret scan (now Stripe keys too), migration immutability, icon gate, doc checks | every PR | – | none |
 | Nightly backup and consent purge | nightly | – | restored by hand monthly (D4, last 2026-10-12) |
 
@@ -239,16 +239,16 @@ each checked by an independent reviewer or the sql-auditor, then merged on
 | I4 | Payouts and chargebacks on the Money tab (H7, decision 0021); the Action Needed crash on the first declined card fixed | [me] | **DONE 2026-09-28**, with H7 |
 | I5 | Tara's questions from this round: 79 narrowed, 88 to 90 new | [Tara] | **DONE 2026-09-28**: answered in round four (decision 0024); 92 to 95 are the next round's |
 | I6 | The QR code for members (question 75): it points at `/app` on the admin site, which forwards to the install link, so the printed card never changes; Tara's printable card under Players → QR code for the app | [me]/[Alex] | **OPEN**: live 2026-09-28 (`deploy-web.sh` matched byte for byte; `/app`, `qr.html` and `app-qr.png` answer 200, `/app` reads "Not available yet."). Waits only on the TestFlight public link: Alex sends it, the model sets `web/app/target.js` and redeploys |
-| I7 | Build 6 for players: instant open (decision 0028), Siri and Spotlight, Subscribe in Calendar (0029), every held clinic on Home, clean titles, placeholders, a declined card that says why (0026) | [me] | **DONE 2026-09-29**: PR #81 merged on 27 green checks; locally `Executed 232 tests, with 0 failures` (unit) and all 25 UI tests (the declined-card one run with the local service key); tagged `v0.1.0-rc6` |
+| I7 | Build 6 for players: instant open (decision 0028), Siri and Spotlight, Subscribe in Calendar (0029), every held clinic on Home, clean titles, placeholders, a declined card that says why (0026) | [me] | **DONE 2026-09-29**: PR #81 merged on 27 green checks; locally `Executed 232 tests, with 0 failures` (unit) and all 22 UI tests at the time (the declined-card one run with the local service key); tagged `v0.1.0-rc6` |
 | I8 | Build 6 for Tara: pros and their Today screen (0025), Resolved (0026), saved messages (0030), a player's history, Copy to next week and the court sheet (0027); a clinic never published never reaches a player (20260929000001/2) | [me] | **DONE 2026-09-29**: `supabase db push` 60 of 60 paired, the six functions redeployed, `deploy-web.sh` matched byte for byte, `hosted-smoke.sh` 156 targets, 0 open |
 | I9 | Tara's questions 92 to 100 and 73 on round five of her review page | [me]/[Alex] | **DONE 2026-10-12**: answered by text (decision 0040), all but 101 (Foxcroft's share, her meeting) |
 
 ## F. The CI Supabase project (Alex asked 2026-09-12; corrected 2026-09-13; decided 2026-09-18)
 
-**Decided 2026-09-18: option 3.** Alex: *"nahh unless we really need it no more money for now."* No CI project, no Pro plan. The 25 XCUITests run on a laptop before every TestFlight build and the run is pasted into the changelog entry for that build; the `ios-ui-tests` job stays green with its notice until the three settings exist, so switching later is a dashboard visit and two secrets, nothing in the repo. Revisit when the first paying member exists (D3 wants point-in-time recovery then anyway). The rest of this section is kept as the record of why.
+**Decided 2026-09-18: option 3.** Alex: *"nahh unless we really need it no more money for now."* No CI project, no Pro plan. The 26 XCUITests run on a laptop before every TestFlight build and the run is pasted into the changelog entry for that build; the `ios-ui-tests` job stays green with its notice until the three settings exist, so switching later is a dashboard visit and two secrets, nothing in the repo. Revisit when the first paying member exists (D3 wants point-in-time recovery then anyway). The rest of this section is kept as the record of why.
 
 
-Alex gave the go-ahead on 2026-09-13 ("exact steps for me or can you do it all?"); the create was attempted the same day and refused, see below. Would it help a lot? Yes: it is the only way to run the 25 XCUITests on every PR, which is the layer that walks the app like a member does. The macOS runner has no Docker, so it cannot host the local stack; a small hosted project it can reset to the seed is the practical answer. Everything on our side is built and waiting (2026-09-13): the Debug app accepts `FXE_SUPABASE_URL` / `FXE_SUPABASE_ANON_KEY`, the UI tests forward them, and the `ios-ui-tests` job resets the project with `supabase db reset --db-url` and runs the suite with one retry. The job stays green with a notice until the secrets exist.
+Alex gave the go-ahead on 2026-09-13 ("exact steps for me or can you do it all?"); the create was attempted the same day and refused, see below. Would it help a lot? Yes: it is the only way to run the 26 XCUITests on every PR, which is the layer that walks the app like a member does. The macOS runner has no Docker, so it cannot host the local stack; a small hosted project it can reset to the seed is the practical answer. Everything on our side is built and waiting (2026-09-13): the Debug app accepts `FXE_SUPABASE_URL` / `FXE_SUPABASE_ANON_KEY`, the UI tests forward them, and the `ios-ui-tests` job resets the project with `supabase db reset --db-url` and runs the suite with one retry. The job stays green with a notice until the secrets exist.
 
 **Does it use the Volee slot? Yes, and Alex was right.** The 2026-09-12 version of this section said the free plan is two projects per organization. It is two active free projects per *user* across every org they own: `supabase projects create fxe-ci` on 2026-09-13 was refused with "Alex-Epstein (2 project limit)", because Volee and `fxe-tennis` already fill it. Three ways out, cheapest first:
 
