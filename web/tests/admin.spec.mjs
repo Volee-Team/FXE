@@ -609,14 +609,21 @@ test.describe("fix round", () => {
     // The next load's clinic read is held back and answers an empty week; a
     // second load starts meanwhile and reads normally. The empty answer
     // arrives last, and must not be drawn.
-    let held = false;
+    // The second load starts only once the first one's read is caught, so
+    // the held read is always the OLDER load's. Started together, the newer
+    // load's read could arrive first on a slow runner, be the one held, and
+    // the app would rightly draw the newest answer, empty (CI, 2026-10-14).
+    let held = false, caught;
+    const firstCaught = new Promise(r => { caught = r; });
     await page.route("**/rest/v1/clinics_admin*", async (route) => {
       if (held) return route.continue();
       held = true;
+      caught();
       await new Promise(r => setTimeout(r, 2500));
       return route.fulfill({ status: 200, contentType: "application/json", headers: { "content-range": "*/0" }, body: "[]" });
     });
     await page.getByLabel("Show canceled").check();
+    await firstCaught;
     await page.getByLabel("Show canceled").uncheck();
     await page.waitForTimeout(4000);
     await expect(cards.first()).toBeVisible();
