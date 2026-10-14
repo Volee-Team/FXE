@@ -22,14 +22,16 @@ scan() {
   local out rc
   out=$(git grep -n $flags -E "$pattern" -- "$@" 2>&1); rc=$?
   case $rc in
-    0) echo "::error::$label"; printf '%s\n' "$out" | cut -c1-80; FAIL=1 ;;
+    # File and line only: the matched text is the secret, and a public
+    # Actions log outlives any history rewrite.
+    0) echo "::error::$label"; printf '%s\n' "$out" | cut -d: -f1,2; FAIL=1 ;;
     1) ;;
     *) echo "::error::The check for \"$label\" could not run (git grep exit $rc): $out"; FAIL=1 ;;
   esac
 }
 
-# Any .env that is not the committed template.
-envs=$(git ls-files | grep -E '^\.env' | grep -v '^\.env\.example$')
+# Any .env, at any depth, that is not a committed template.
+envs=$(git ls-files | grep -E '(^|/)\.env' | grep -vE '(^|/)\.env\.example$')
 if [ -n "$envs" ]; then
   echo "::error::A .env file is tracked by git:"; printf '%s\n' "$envs"; FAIL=1
 fi
@@ -64,9 +66,11 @@ scan "Something shaped like a bank routing number is tracked:" "-i" \
   'routing (number|no\.?)[ :#]*[0-9]{6,}' \
   ':!.github/workflows/*' ':!scripts/secret-scan.sh'
 
-# A password assigned a real value in a tracked file.
+# A password assigned a real value in a tracked file, as `password = "..."`
+# or `password: "..."` (JS, JSON, YAML; 2026-10-13). The tests and the seed
+# sign in with the local stack's seed password, which is not a secret.
 scan "Possible hard-coded password:" "" \
-  "(PASSWORD|password) *= *[\"'][^\"']{6,}" \
-  ':!*.md' ':!tests/*' ':!supabase/seed.sql' ':!.github/workflows/*' ':!scripts/secret-scan.sh'
+  "(PASSWORD|password)[\"']? *[:=] *[\"'][^\"']{6,}" \
+  ':!*.md' ':!tests/*' ':!web/tests/*' ':!supabase/seed.sql' ':!.github/workflows/*' ':!scripts/secret-scan.sh'
 
 [ "$FAIL" -eq 0 ] && echo "No secrets found." || exit 1

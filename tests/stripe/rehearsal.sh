@@ -28,7 +28,7 @@ ROOT=$(pwd)
 API=http://127.0.0.1:54321
 DB=${FXE_DB_CONTAINER:-supabase_db_FXE-Tennis}
 ENVF=$ROOT/.env.stripe-rehearsal
-WORK=$(mktemp -d -t fxe-rehearsal)
+WORK=$(mktemp -d "${TMPDIR:-/tmp}/fxe-rehearsal.XXXXXX")
 FAILED=0
 
 say() { printf '%s\n' "$*"; }
@@ -78,9 +78,16 @@ sleep 3
 ANON=$(supabase status -o env 2>/dev/null | grep '^ANON_KEY' | cut -d= -f2 | tr -d '"')
 printf 'STRIPE_SECRET_KEY=%s\nSTRIPE_PUBLISHABLE_KEY=%s\nSTRIPE_WEBHOOK_SECRET=%s\n' "$SK" "$PK" "$WHSEC" > "$WORK/env"
 supabase functions serve --env-file "$WORK/env" > "$WORK/serve.log" 2>&1 & SERVE_PID=$!
-for i in $(seq 1 60); do grep -q 'Using supabase-edge-runtime' "$WORK/serve.log" && break; sleep 1; done
+up=""
+for i in $(seq 1 60); do
+  code=$(curl -s -o /dev/null -w '%{http_code}' -X POST "$API/functions/v1/stripe-webhook")
+  [ "$code" = "400" ] && { up=1; break; }   # no_signature: the function is serving
+  sleep 1
+done
+[ -n "$up" ] || { say "The functions never came up:"; tail -20 "$WORK/serve.log"; exit 2; }
 stripe listen --forward-to "$API/functions/v1/stripe-webhook" > "$WORK/listen.log" 2>&1 & LISTEN_PID=$!
 for i in $(seq 1 30); do grep -q 'Ready' "$WORK/listen.log" && break; sleep 1; done
+grep -q 'Ready' "$WORK/listen.log" || { say "stripe listen never got ready:"; cat "$WORK/listen.log"; exit 2; }
 sleep 2
 
 TARA=11111111-1111-1111-1111-111111111111
@@ -104,7 +111,10 @@ save_card() {
   out=$(fn stripe-setup-intent "$1" '{}')
   seti=$(echo "$out" | field "['setupIntentClientSecret']" | sed 's/_secret_.*//')
   cus=$(echo "$out" | field "['customerId']")
-  [ -n "$seti" ] || { say "  setup-intent answered: $(echo "$out" | head -c 300)"; }
+  if [ -z "$seti" ]; then
+    echo "  setup-intent answered: $(echo "$out" | head -c 300)" >&2   # stderr: stdout is the customer id
+    return 1
+  fi
   stripe_api post "/v1/setup_intents/$seti/confirm" -d "payment_method=$3" >/dev/null
   echo "$cus"
 }
@@ -123,7 +133,11 @@ PAY=$(rpc admin_charge_registration "$TARA_JWT" "{\"p_registration\":\"$REG\",\"
 fn stripe-charge "$TARA_JWT" '{}' >/dev/null
 wait_for "the charge succeeded (PaymentIntents write)" "select status from public.payments where id='$PAY'" "succeeded"
 check "Stripe recorded it in test mode" "f" "$(sql "select livemode from public.payments where id='$PAY'")"
-check "the registration reads paid" "t" "$(sql "select paid from public.registrations where id='$REG'")"
+# A test-mode payment never marks a registration paid (20260927200001:
+# payments_sync_registration_paid skips livemode false), and every sandbox
+# event is livemode false. The paid flag itself is pinned by run.sh, whose
+# events are live.
+check "a sandbox payment does not mark the registration paid" "f" "$(sql "select paid from public.registrations where id='$REG'")"
 PI=$(sql "select stripe_payment_intent_id from public.payments where id='$PAY'")
 check "Stripe has 1800 cents on that PaymentIntent" "1800 succeeded" "$(stripe_api payment_intents retrieve "$PI" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['amount_received'], d['status'])")"
 
@@ -131,17 +145,29 @@ check "Stripe has 1800 cents on that PaymentIntent" "1800 succeeded" "$(stripe_a
 REF=$(rpc admin_refund_payment "$TARA_JWT" "{\"p_payment\":\"$PAY\"}" | field "['id']")
 fn stripe-charge "$TARA_JWT" '{}' >/dev/null
 wait_for "the refund succeeded (Refunds write, Charges read)" "select status from public.payments where id='$REF'" "succeeded"
-check "the registration is no longer paid" "f" "$(sql "select paid from public.registrations where id='$REG'")"
 
-# ---- 4. A card that saves and is then declined (Tara's real case)
+# ---- 3b. A card removed in Stripe (payment_method.detached): the payload's
+# shape, previous_attributes.customer, is documented only by example, so
+# this is the one check that proves the field is really there.
+PM_M=$(sql "select coalesce(card_payment_method_id,'') from public.accounts where id='$MARIA'")
+check "the summary knows which card it is" "pm_" "${PM_M:0:3}"
+stripe_api post "/v1/payment_methods/$PM_M/detach" >/dev/null
+wait_for "removing it in Stripe clears the summary" "select coalesce(card_last4,'')||'|'||coalesce(card_payment_method_id,'') from public.accounts where id='$MARIA'" "|"
+
+# ---- 4. A card that saves and is then declined (Tara's real case). Not
+# pm_card_chargeDeclined (4000...0002): Stripe refuses to attach issuer-
+# decline cards at all. 4000...0341 attaches, then every charge fails.
 KEN_JWT=$(jwt ken@fxe.test)
-save_card "$KEN_JWT" "$KEN" pm_card_chargeDeclined >/dev/null
+save_card "$KEN_JWT" "$KEN" pm_card_chargeCustomerFail >/dev/null
 wait_for "the declining card saved fine" "select coalesce(card_last4,'') from public.accounts where id='$KEN'" "0341"
 REG_K=$(reg "$CLINIC3" "$KEN_P" 1800)
 PAY_K=$(rpc admin_charge_registration "$TARA_JWT" "{\"p_registration\":\"$REG_K\",\"p_kind\":\"clinic_fee\"}" | field "['id']")
 fn stripe-charge "$TARA_JWT" '{}' >/dev/null
-wait_for "the charge failed, with Stripe's decline code" "select status||' '||coalesce(failure_code,'') from public.payments where id='$PAY_K'" "failed generic_decline"
-check "Ken's card is marked declined, so the app asks for a new one" "generic_decline" "$(sql "select coalesce(card_decline_code,'') from public.accounts where id='$KEN'")"
+# Stripe does not document 0341's decline code; any code at all is right,
+# and the one it gave is printed for the record.
+wait_for "the charge failed, with a decline code" "select status||' '||(coalesce(failure_code,'')<>'') from public.payments where id='$PAY_K'" "failed true"
+say "        (Stripe's code: $(sql "select coalesce(failure_code,'none') from public.payments where id='$PAY_K'"))"
+check "Ken's card is marked declined, so the app asks for a new one" "true" "$(sql "select (coalesce(card_decline_code,'')<>'')::text from public.accounts where id='$KEN'")"
 
 # ---- 5. A bank demanding 3-D Secure on a charge made while the member is away.
 # Attached directly (a setup would itself demand the bank's page); the
@@ -176,6 +202,7 @@ U_OUT=$(curl -s "$API/auth/v1/signup" -H "apikey: $ANON" -H "Content-Type: appli
 U=$(echo "$U_OUT" | field "['user']['id']"); U_JWT=$(echo "$U_OUT" | field "['access_token']")
 rpc create_my_account "$U_JWT" '{"p_first_name":"Rehearsal","p_last_name":"Person","p_phone":"5550100","p_is_member":false,"p_adult_rating":3.5,"p_level_note":null}' >/dev/null
 CUS_U=$(save_card "$U_JWT" "$U" pm_card_visa)
+wait_for "the card is on file before deleting" "select coalesce(card_last4,'') from public.accounts where id='$U'" "4242"
 OUT=$(fn delete-account "$U_JWT" '{}')
 check "delete-account deleted the customer in Stripe" "deleted" "$(echo "$OUT" | field "['stripe']")"
 check "Stripe agrees" "True" "$(stripe_api customers retrieve "$CUS_U" | field "['deleted']")"
