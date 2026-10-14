@@ -39,23 +39,24 @@ How this file works, so it can be trusted:
 
 ---
 
-## State today (re-derived 2026-10-12)
+## State today (re-derived 2026-10-13)
 
-- **Code:** `main` carries build 10, tag `v0.1.0-rc10` (PR #94, `88a1871`:
-  Tara's 2026-10-12 answers, decision 0040, on top of her note at Register,
-  decision 0039). The audit fixes (`20261013000001`) are the next PR and
-  become build 11.
+- **Code:** `main` carries build 11, tag `v0.1.0-rc11` (PR #96, `355f546`:
+  the 2026-10-12 audit fixes on top of build 10's note at Register and
+  Tara's 2026-10-12 answers). Branch `prelive-1013` is the next PR (crash
+  reports, the card-removed webhook, the secret scan, the clinic page for
+  staff) and becomes build 12.
 - **On testers' phones:** the last upload tagged in git is `v0.1.0-tf7`; no
   upload of build 8 or 9 was reported (C8).
-- **Hosted:** 63 of the repo's 66 migrations, through `20261012000001`, 63 of 63 paired on
-  2026-10-12 (Alex's session, `supabase migration list --linked`; not re-run
-  for this file). **Payments are off**: no migration sets `payments_enabled`
+- **Hosted:** every migration through `20261013000001`, 64 of 64 paired on
+  2026-10-13 (`supabase migration list --linked` after the push); the two
+  crash-report migrations on `prelive-1013` go with that PR. **Payments are off**: no migration sets `payments_enabled`
   to true (A9).
 - **Tests:** 48 SQL probes plus 15 shell probes (races and the 200-request
   rush), 283 unit tests, 26 XCUITests (green on iOS 26.2, 18.6 and 17.5 on
   2026-10-13 UTC, `docs/ui-test-runs.log`), 49 browser tests.
 - **Waiting on others:** Apple's answer on the LLC (C1), John's upload of
-  build 10 and Apple's beta review (C8, C11), the live Stripe keys (A10),
+  build 11 and Apple's beta review (C8, C11), the live Stripe keys (A10),
   Tara's question 101 (Foxcroft's share) and 109 to 112 (the note).
 
 ---
@@ -131,10 +132,10 @@ What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision
 | C5 | Delete my account in the app, history kept (guideline 5.1.1(v)) | [me] | **DONE 2026-09-21**; `delete-account` deployed the same day |
 | C6 | Privacy policy at a public URL | [Tara] | **DONE 2026-09-27**: Tara approved it ("looks good"), contact fersctennispro@gmail.com; published at `https://fxe-tennis-admin.vercel.app/privacy.html` (verified by `deploy-web.sh`) and linked from Profile in the app (build 4) |
 | C7 | App Store listing: name, subtitle, description in Tara's words, screenshots, age rating, support URL, review notes with a test account | [Alex]+[me] | **BLOCKED** on C1, or on C11's path |
-| C8 | TestFlight **build 10** from the tag `v0.1.0-rc10` (Tara's note box at Register, decision 0039, and her 2026-10-12 answers, decision 0040; green on iOS 17, 18 and 26 before the tag) | [John] | **OPEN**: decision 0040 merged 2026-10-12 (PR #93); the build number goes to 10 on the open branch `build-10`, tagged `v0.1.0-rc10` when it merges (`git tag` shows `v0.1.0-rc9` as the newest, 2026-10-12); John uploads it as App Store Connect, not Internal Only (`docs/testflight.md`). Build 9 was never reported uploaded; build 10 replaces it |
+| C8 | TestFlight **build 11** from the tag `v0.1.0-rc11` (build 10's note at Register and Tara's 2026-10-12 answers, plus the 2026-10-12 audit fixes; green on iOS 17, 18 and 26 before the tag) | [John] | **OPEN**: tagged 2026-10-13 on `355f546` (`git ls-remote --tags origin v0.1.0-rc11`); John uploads it as App Store Connect, not Internal Only (`docs/testflight.md`). Builds 9 and 10 were never reported uploaded; 11 replaces both |
 | C9 | Real-device pass: the two simulator flakes checked on an iPhone | [Alex]/[me] | **BLOCKED** on C8 |
-| C10 | An annotated git tag at every TestFlight build and upload | [me]/[John] | **OPEN**: `v0.1.0-rc4` to `rc9` exist, and upload tags were made for builds 2, 5 and 7 only (`git tag`, 2026-10-12). Next: `v0.1.0-rc10` on merge, `v0.1.0-tf10` when John's upload of build 10 is processed |
-| C11 | External TestFlight on John's account with a public link, through Apple's beta review, with no testers invited until the soft launch (G7) | [Alex]/[John] | **OPEN**: not yet submitted; John uploads build 10 as App Store Connect and submits External Testing (`docs/testflight.md`, `docs/for-alex.md`). The privacy URL it needs is live (C6) |
+| C10 | An annotated git tag at every TestFlight build and upload | [me]/[John] | **OPEN**: `v0.1.0-rc4` to `rc11` exist, and upload tags were made for builds 2, 5 and 7 only (`git tag`, 2026-10-13). Next: `v0.1.0-tf11` when John's upload of build 11 is processed |
+| C11 | External TestFlight on John's account with a public link, through Apple's beta review, with no testers invited until the soft launch (G7) | [Alex]/[John] | **OPEN**: not yet submitted; John uploads build 11 as App Store Connect and submits External Testing (`docs/testflight.md`, `docs/for-alex.md`). The privacy URL it needs is live (C6) |
 | C12 | Bundle id for the LLC's app. `com.fxetennis.app` is tied to John's account now: Apple transfers only apps with at least one App Store release, and a TestFlight upload locks the id to that account. The LLC's app will need a new id, and testers install it fresh (their accounts carry over; they live on our server) | [Alex] | **DECIDE** [Alex] before the first LLC build |
 | C13 | How Apple's reviewer signs in: one real account called App Review, made through the app's own sign-up with an address Alex controls, left out of the board report; while keys are sandbox the review notes give Stripe's 4242 test card | [Alex] | **OPEN** [Alex]: decided 2026-10-06. The account Alex made on 2026-10-01 was made on a local build and never reached hosted (not there when checked 2026-10-06); it must be made in the TestFlight app, which talks to hosted |
 
@@ -221,7 +222,7 @@ launch" items are in `docs/backlog.md`.
 | H5 | Push, the app's half: banner while open, a tap opens the clinic, the badge clears (branch `push-client`) | [me] | **DONE 2026-09-27** (PR #75, `997cc65`) |
 | H6 | Password reset without email (D13) and the scanner-proof reset page (branch `admin-reset-link`) | [me] | **DONE 2026-09-27** (PR #73) |
 | H7 | **Payouts on the Money tab** (the balance, the next deposit and its date; Tara's "when will $ be in my account") and dispute alerts in Action Needed, so Tara never needs the Stripe dashboard day to day | [me] | **DONE 2026-09-28.** On hosted: `supabase migration list --linked` pairs `20260928200001`; `supabase functions list` shows `stripe-payouts` v1 and `stripe-webhook` v8 ACTIVE; the live `index.html` carries the Payouts card (`curl ... | grep -c Payouts`: 5) |
-| H8 | Walk on a real phone what the simulator could not: a push tapped with the app in the background, the Home spinner on a slow connection, Accept and Decline on the lock screen, a haptic | [Alex]/[me] | **OPEN**: on build 10 (C8), once push is seen (C3) |
+| H8 | Walk on a real phone what the simulator could not: a push tapped with the app in the background, the Home spinner on a slow connection, Accept and Decline on the lock screen, a haptic | [Alex]/[me] | **OPEN**: on build 11 (C8), once push is seen (C3) |
 
 ## I. Polish for the party (2026-09-28)
 
