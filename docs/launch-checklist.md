@@ -47,11 +47,11 @@ How this file works, so it can be trusted:
   become build 11.
 - **On testers' phones:** the last upload tagged in git is `v0.1.0-tf7`; no
   upload of build 8 or 9 was reported (C8).
-- **Hosted:** 63 of the repo's 64 migrations, through `20261012000001`, 63 of 63 paired on
+- **Hosted:** 63 of the repo's 65 migrations, through `20261012000001`, 63 of 63 paired on
   2026-10-12 (Alex's session, `supabase migration list --linked`; not re-run
   for this file). **Payments are off**: no migration sets `payments_enabled`
   to true (A9).
-- **Tests:** 47 SQL probes plus 14 shell probes (races and the 200-request
+- **Tests:** 48 SQL probes plus 14 shell probes (races and the 200-request
   rush), 264 unit tests, 25 XCUITests (green on iOS 26.2, 18.6 and 17.5 on
   2026-10-13 UTC, `docs/ui-test-runs.log`), 49 browser tests.
 - **Waiting on others:** Apple's answer on the LLC (C1), John's upload of
@@ -167,7 +167,7 @@ observer.
 
 | Layer | Runs where | Count (derived 2026-10-12 unless dated) | Gap |
 |---|---|---|---|
-| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 47 probes plus 14 shell probes (the races and the 200-request rush); the suite prints its own check total | none known |
+| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 48 probes plus 14 shell probes (the races and the 200-request rush); the suite prints its own check total | none known |
 | Stripe pipeline against stripe-mock | every PR | 94 checks as of 2026-09-28 | real Stripe behaviour waits on A13 |
 | Push pipeline against a mock APNs | every PR | 57 checks as of 2026-09-28 | real APNs waits on C3 |
 | Web admin browser tests (Playwright, real sign-in) | every PR | 49 | a cold-start flake after a local reset (backlog) |
