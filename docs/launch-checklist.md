@@ -47,7 +47,7 @@ How this file works, so it can be trusted:
   become build 11.
 - **On testers' phones:** the last upload tagged in git is `v0.1.0-tf7`; no
   upload of build 8 or 9 was reported (C8).
-- **Hosted:** 63 of the repo's 65 migrations, through `20261012000001`, 63 of 63 paired on
+- **Hosted:** 63 of the repo's 66 migrations, through `20261012000001`, 63 of 63 paired on
   2026-10-12 (Alex's session, `supabase migration list --linked`; not re-run
   for this file). **Payments are off**: no migration sets `payments_enabled`
   to true (A9).
