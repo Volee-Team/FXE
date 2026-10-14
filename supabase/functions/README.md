@@ -100,32 +100,30 @@ of the swap. It refuses a second run (`already_live`) and any run after a live
 payment exists (`live_payments_exist`). Since 2026-10-13 it runs through a
 migration, like every other write to hosted, never by hand in the SQL editor
 (a hand run would make that migration fail with `already_live` and block every
-later `db push` until repaired). Two held draft PRs carry the go-live, in this
-order (checklist A10, then A9):
+later `db push` until repaired). Two migrations carry the go-live, in this
+order (checklist A10, then A9): `20261014000004_go_live_cutover.sql` and
+`20261014000005_payments_on.sql`, pushed together on 2026-10-14 once the live
+keys were in:
 
 1. Payments are already off (`payments_enabled` is `'false'` on hosted until
    step 4), so no card sheet or card step can open while the keys change.
 2. Swap `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY` and `STRIPE_WEBHOOK_SECRET`
    to the live values, with the webhook endpoint made in live mode (nine
    events, `docs/for-alex.md` §1b).
-3. Merge and `db push` the cutover migration (branch `golive-cutover`,
-   renamed to its merge date first: `scripts/check-migration-versions.sh`
-   refuses a migration older than `main`'s newest). It answers
+3. `db push` the cutover migration. It answers
    `accounts_cleared, payments_canceled, payments_marked_test, live_since`:
    every account's Stripe customer and card summary cleared (the card step
    then asks everyone), every ledger row still pending or processing canceled
    (`live_cutover`), every row whose mode was never recorded marked test mode,
    and `app_settings.stripe_live_since` written, after which the Money tab's
    card list hides test rows. The board report never counts them either way.
-4. After Alex's go: merge and `db push` the payments-on migration (branch
-   `golive-payments-on`), which sets `payments_enabled` and
+4. After Alex's go: `db push` the payments-on migration, which sets `payments_enabled` and
    `payments_enabled_at` together and refuses to run before the cutover.
    Never `payments_enabled` alone: with no switch-on moment nothing is ever
    owed and every Charge is refused (`clinic_before_payments`).
 
 `supabase/seed.sql` puts both back locally and in CI after every reset, since
-a migration replays everywhere (the `golive_state` probe on branch
-`golive-cutover`).
+a migration replays everywhere (`tests/sql/golive_state.sql`).
 
 The functions also heal on their own if step 3 is late: a customer the live key
 cannot find is treated as none by `stripe-setup-intent` (a new one) and by
