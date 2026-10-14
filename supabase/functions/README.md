@@ -124,7 +124,8 @@ order (checklist A10, then A9):
    owed and every Charge is refused (`clinic_before_payments`).
 
 `supabase/seed.sql` puts both back locally and in CI after every reset, since
-a migration replays everywhere (`tests/sql/golive_state.sql`).
+a migration replays everywhere (the `golive_state` probe on branch
+`golive-cutover`).
 
 The functions also heal on their own if step 3 is late: a customer the live key
 cannot find is treated as none by `stripe-setup-intent` (a new one) and by
