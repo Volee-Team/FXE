@@ -37,6 +37,11 @@ fi
 #   3. `git push` while the doc checks CI runs would fail. 2026-10-12: the
 #      checks ran green, then the build number moved to 11, and one check reads
 #      it; CI went red on a line the local run never saw. About 11 seconds.
+#      Its limit: a PreToolUse hook sees the tree BEFORE the command runs, so
+#      `edit && commit && git push` in one command is checked on the old
+#      files (2026-10-13: a build bump and its push in one command passed,
+#      and the stale "build 10" lines it created reached CI). Push in a
+#      command of its own.
 if printf '%s' "$cmd" | grep -qE '(^|&&|\|\||;|\|)[[:space:]]*git push'; then
   root=$(git rev-parse --show-toplevel 2>/dev/null)
   if [ -n "$root" ] && [ -f "$root/scripts/check-doc-status.sh" ]; then
