@@ -71,8 +71,13 @@ final class AccessibilityAuditUITests: XCTestCase {
         // part of the photo. 8.03:1 from that run's own attached screenshot,
         // measured at its true 2x scale (scripts/measure-contrast.py had
         // assumed 3x and read the card title instead; fixed the same day).
+        // The Clinics tab's week heading, the same style over the same photo,
+        // followed on 2026-10-13 (iPhone SE, iOS 18.6): "NEXT WEEK", 6.6:1
+        // both from the run's app screenshot at frame (24, 287, 70.5, 15)
+        // and from the element screenshot Apple attached. Which headings
+        // show depends on the date, so the finding comes and goes.
         if issue.auditType == .contrast,
-           ["roster.count", "today.count", "roster.dateLine", "week.heading"].contains(e.identifier) { return true }
+           ["roster.count", "today.count", "roster.dateLine", "week.heading", "clinics.week"].contains(e.identifier) { return true }
         // iOS 17 only: a clinic card's name and status chip on My Clinics are
         // called "partially unsupported" for Dynamic Type. Seen growing on the
         // iPhone 15 (iOS 17.5) at accessibility-extra-large, 2026-10-01: the
