@@ -25,15 +25,16 @@ missing = [k for k in ("probes", "unit", "xcuitests", "playwright", "migrations"
 if missing:
     sys.exit("check-doc-claims.sh's 'Derived now' line lacks: " + ", ".join(missing))
 probes, unit, ui, pw, mig = (derived[k] for k in ("probes", "unit", "xcuitests", "playwright", "migrations"))
+shell = derived.get("shell-probes")
 
 EXCUSE = re.compile(r"as of 20\d\d|\bwas \d|\bthen \d|at the time|used to|previously|→", re.I)
 NOUNS = [
-    (r"\b\d+( (?:sql |SQL )?probes?)\b", probes),
+    (r"\b\d+( (?:sql |SQL )?probes?)\b(?<!shell probes)", probes),
     (r"\b\d+( (?:swift |Swift )?unit(?: |\n)tests?)\b", unit),
     (r"\b\d+((?: |\n)(?:XCUITests?|UI tests?))\b", ui),
     (r"\b\d+( (?:Playwright|browser) tests?)\b", pw),
     (r"\b\d+( migrations?)\b", mig),
-]
+] + ([(r"\b\d+( shell probes?)\b", shell)] if shell else [])
 TABLE = [  # launch-checklist rows: first cell pattern -> number
     (r"^\| Swift unit tests", unit),
     (r"^\| Web admin browser tests", pw),

@@ -44,7 +44,7 @@ The history of what we believed is part of the record.
 | [0032](0032-gator-in-colour.md) | The gator mark in colour (green gator, cream racquets) before testers, as Tara asked; every copy generated from one source file by `scripts/make-logo-assets.py` | 2026-09-29 | Active |
 | [0033](0033-navy-banner-and-wordmark.md) | The navy banner on every titled page (Kat), white serif titles and bar buttons, white status bar app-wide; the gator larger over a smaller TENNIS (Tara) | 2026-09-29 | Active |
 | [0034](0034-no-middle-dots.md) | No middle dots between words anywhere a person reads: "at" for times, commas for lists, "on" and a colon for a clinic and its reason | 2026-10-01 | Active |
-| 0035 | Crash and hang reports through MetricKit into `app_diagnostics` | 2026-10-01 | Reserved: the record is on the local branch `crash-reports`, not merged (checklist D6) |
+| [0035](0035-crash-reports.md) | Crash and hang reports through Apple's MetricKit into our own `app_diagnostics`, no third-party SDK; 64 KB and 20 a day per account; tied to the account for at most a day, kept 90 days; an admin reads them without the account, nobody else | 2026-10-01 | Active |
 | [0036](0036-kats-style-calls.md) | Kat's calls: keep the system tab bar, the darker green (#446A30) for text only, keep the green line under the header | 2026-10-01 | Active |
 | [0037](0037-charge-each-player.md) | Tara charges each person on their own tap (a green Charge per row after the clinic); Charge clinic gone from both screens; Remove means not charged | 2026-10-02 | Active |
 | [0038](0038-charlotte-time.md) | Every time in the app is Charlotte time, wherever the phone is (`ClubTime.apply()` at launch) | 2026-10-04 | Active |

@@ -47,12 +47,12 @@ How this file works, so it can be trusted:
   become build 11.
 - **On testers' phones:** the last upload tagged in git is `v0.1.0-tf7`; no
   upload of build 8 or 9 was reported (C8).
-- **Hosted:** 63 of the repo's 64 migrations, through `20261012000001`, 63 of 63 paired on
+- **Hosted:** 63 of the repo's 66 migrations, through `20261012000001`, 63 of 63 paired on
   2026-10-12 (Alex's session, `supabase migration list --linked`; not re-run
   for this file). **Payments are off**: no migration sets `payments_enabled`
   to true (A9).
-- **Tests:** 47 SQL probes plus 14 shell probes (races and the 200-request
-  rush), 265 unit tests, 26 XCUITests (green on iOS 26.2, 18.6 and 17.5 on
+- **Tests:** 48 SQL probes plus 15 shell probes (races and the 200-request
+  rush), 283 unit tests, 26 XCUITests (green on iOS 26.2, 18.6 and 17.5 on
   2026-10-13 UTC, `docs/ui-test-runs.log`), 49 browser tests.
 - **Waiting on others:** Apple's answer on the LLC (C1), John's upload of
   build 10 and Apple's beta review (C8, C11), the live Stripe keys (A10),
@@ -148,7 +148,7 @@ What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision
 | D3 | Supabase plan: the free tier pauses after a quiet week and has no point-in-time recovery; Pro is $25 a month | [Alex] | **DECIDE** [Alex] before real members |
 | D4 | Restore drill (a backup nobody has restored is not a backup) | [me] | **DONE 2026-10-12**: last night's encrypted backup restored into a bare Postgres, the whole migration ledger and all 9 sign-ins back, after dropping the image's own `auth` schema first (restoring onto it gave 0 users). Monthly; next due 2026-11-02, the week before the party (runbook row 12) |
 | D5 | Tara's real templates and clinics in hosted, through the admin site | [Tara] | **DONE 2026-10-11**: her real clinics are on hosted (Coed "105", Ladies All Level, Ladies 3.0+, Queen City, Ladies Beginner 2.5, Men's 3.0+, 2026-10-04 to 2026-10-07, read through the management API); none after 2026-10-07 yet |
-| D6 | Crash reporting and error alerts: MetricKit crash and hang reports into `app_diagnostics` through `report_app_diagnostic` (decision 0035) | [me]/[Alex] | **OPEN**: built on the local branch `crash-reports`, not merged; Alex approved its privacy-policy sentence 2026-10-03. Its two migrations (`20261001000001`, `20261001000002`) predate migrations already on hosted, so they need new timestamps when it merges |
+| D6 | Crash reporting and error alerts: MetricKit crash and hang reports into `app_diagnostics` through `report_app_diagnostic` (decision 0035) | [me]/[Alex] | **OPEN**: merged into branch `prelive-1013` on 2026-10-13 for build 12, its migrations renumbered past hosted's newest (`20261014000001`, `20261014000002`; neither redefines a function changed since 10-01), and the privacy sentence Alex approved on 2026-10-03 ("crash report looks great") added to the policy. Not yet seen end to end on a device: MetricKit does not deliver on the simulator |
 | D7 | Rate limits on the public functions and sign-up | [me] | **LATER**: low risk at club scale |
 | D8 | Drop the dead `clinics.price_cents` column | [me] | **LATER** |
 | D9 | Data export for Tara | [me] | **LATER** (v1.1) |
@@ -167,11 +167,11 @@ observer.
 
 | Layer | Runs where | Count (derived 2026-10-12 unless dated) | Gap |
 |---|---|---|---|
-| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 47 probes plus 14 shell probes (the races and the 200-request rush); the suite prints its own check total | none known |
+| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 48 probes plus 15 shell probes (the races and the 200-request rush); the suite prints its own check total | none known |
 | Stripe pipeline against stripe-mock | every PR | 94 checks as of 2026-09-28 | real Stripe behaviour waits on A13 |
 | Push pipeline against a mock APNs | every PR | 57 checks as of 2026-09-28 | real APNs waits on C3 |
 | Web admin browser tests (Playwright, real sign-in) | every PR | 49 | a cold-start flake after a local reset (backlog) |
-| Swift unit tests (pure logic) | every PR | 265 | fine |
+| Swift unit tests (pure logic) | every PR | 283 | fine |
 | Hosted signed-out smoke (`scripts/hosted-smoke.sh`) | every PR, read-only against production | 162 targets as of 2026-10-11, including a browser preflight to each function the web admin calls | only the signed-out side |
 | XCUITests, player and admin flows, and Apple's accessibility audit | **local only** (section F) | 26 | run on a laptop before every TestFlight build, on iOS 17, 18 and 26 (`docs/ui-test-runs.log`) |
 | Copy gate, secret scan (now Stripe keys too), migration immutability, icon gate, doc checks | every PR | – | none |
