@@ -108,7 +108,15 @@ import re, sys
 t = sys.stdin.read()
 t = re.sub(r"\b\d{3}-\d{2}-\d{4}\b", "[redacted id number]", t)
 t = re.sub(r"(?i)\b(ssn|social security)[^\n]*", r"\1 [redacted]", t)
-t = re.sub(r"(?i)\b(routing|account|acct|iban|card)( number| no\.?| #)?[ :#]*\d[\d -]{6,}", r"\1 [redacted]", t)
+t = re.sub(r"(?i)\b(routing|account|acct|iban|card)( number| no\.?| #)?[ :#\s]*\d[\d -]{6,}", r"\1 [redacted]", t)
+# 2026-10-14: a bank page puts the label on one line and the number on the
+# next ("Account Number\n5533..."), which the line above missed, and nothing
+# caught a SWIFT code. Any bare run of 9 to 17 digits is now redacted (a bank
+# account or ABA routing number; a phone without separators too, harmlessly),
+# and so is a SWIFT/BIC code, by label or by its shape (a digit in it).
+t = re.sub(r"(?<![\w.-])(?!20\d{12}(?!\d))\d{9,17}(?![\w.-])", "[redacted number]", t)  # a migration version (20 + 12 digits) is kept
+t = re.sub(r"(?i)\b(swift|bic)( code)?[\s:#]*[A-Z0-9]{8,11}\b", r"\1 [redacted]", t)
+t = re.sub(r"\b[A-Z]{6}\d[A-Z0-9](?:[A-Z0-9]{3})?\b", "[redacted SWIFT]", t)
 t = re.sub(r"\b(?:\d[ -]?){13,19}\b", "[redacted long number]", t)
 # Keys and secrets (2026-09-27, before Alex set up Stripe): this log is
 # committed to a public repository, so a key pasted into a prompt would be
