@@ -514,6 +514,7 @@ The local Supabase dev image segfaults the Postgres backend when a role without 
 * The model merges its own PRs once every check is green, keeping the guardrails (2026-09-01).
 * Warn Alex before starting a UI test run: it disconnects the Claude simulator panel he may be watching (2026-10-12).
 * Run a full error audit unprompted before a big merge (independent reviewers with narrow briefs, as on 2026-10-04), not only when asked (2026-10-12).
+* **A status is re-derived, never recalled** (2026-10-16). Before any "Still open" list or any "X is/isn't done", run `scripts/live-status.sh` (hosted switches, money, cards, secrets, migrations, PRs, tags, plus `docs/live-facts.md` for what no script can see) and build the list from its output. When Alex says he did something, move it to done in the same turn and verify it (browser, read-only, if it lives in a dashboard); write a dashboard fact into `docs/live-facts.md` with its date. Earned when the list told Alex to link Tara's bank and make the first charge, both done earlier that session: the open-items memory was stale and was repeated instead of checked.
 * Status words live in four files only (`docs/launch-checklist.md`, `docs/backlog.md`, `docs/questions-for-tara.md`, `docs/decisions/README.md`); every other doc points at a row ID. A retired doc moves to `docs/archive/` with the banner `Archived YYYY-MM-DD. Current source: <file>.` (2026-10-12, enforced by `scripts/check-doc-status.sh` and `scripts/check-doc-registry.sh`).
 
 ---
@@ -705,6 +706,7 @@ does not name, and on any file in `docs/archive/` without its banner.
 | `docs/audit-brief.md` | The brief for the periodic human docs audit |
 | `docs/.last-doc-audit` | The date of the last human docs audit, read by `scripts/check-doc-claims.sh` |
 | `docs/ui-test-runs.log` | One line per full green UI run, per iOS version, with the code fingerprint (`scripts/run-ui-tests.sh`) |
+| `docs/live-facts.md` | Facts no script can read (Stripe dashboard settings, Apple, people's replies), each with how and when it was verified; printed by `scripts/live-status.sh` |
 | `docs/ntrp-chart.md` | The NTRP rating chart, shared with Volee |
 | `docs/legal/` | The privacy policy as published |
 | `docs/brand/` | Tara's artwork, the one source `scripts/make-logo-assets.py` makes every logo from |
