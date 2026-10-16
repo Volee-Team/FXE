@@ -50,6 +50,7 @@ The history of what we believed is part of the record.
 | [0038](0038-charlotte-time.md) | Every time in the app is Charlotte time, wherever the phone is (`ClubTime.apply()` at launch) | 2026-10-04 | Active |
 | [0039](0039-note-for-tara.md) | A private note for Tara at Register ("Only Tara sees this"): only she and the writer read it, the writer edits it until the start, not on the printed sheet | 2026-10-11 | Active |
 | [0040](0040-tara-answers-2026-10-12.md) | Tara's answers of 2026-10-12: Waive a late fee, Accept needs a card, a red "Late cancellation" flag, every cancel counted, pros skip the waiver and card | 2026-10-12 | Active |
+| [0041](0041-registration-by-clinic-type.md) | Tara's email of 2026-10-15: card after the clinic list, "Waitlist", 105 vs other clinics, 1-hour offers that expire with pushes to both sides, 2.5 approval for 3.0+ clinics | 2026-10-16 | Active |
 
 Tara's own numbered decisions (1–23, calls of 2026-08-02 and 2026-08-12) are
 tabled in CLAUDE.md; a bare "decision 17" in a record means that list. Not yet
