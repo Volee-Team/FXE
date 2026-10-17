@@ -1,0 +1,31 @@
+-- 20261014000004_go_live_cutover.sql
+--
+-- THE STRIPE KEY SWAP (checklist A10). Merge and push this ONLY at the moment
+-- the live keys go into Supabase's secrets, never before: from here on every
+-- sandbox card the app knew is forgotten, and every member adds a real card
+-- at their next registration (card_required).
+--
+-- stripe_cutover_to_live() (20260927200001, probed by stripe_live_cutover.sql)
+-- does the work: clears every Stripe customer and card summary, cancels
+-- ledger rows still pending or processing, marks rows with no recorded mode
+-- as test mode, and records app_settings.stripe_live_since. It refuses a
+-- second run (already_live) and refuses once any live payment exists
+-- (live_payments_exist), so a push that should not happen fails instead of
+-- wiping real cards.
+--
+-- A migration replays on every local and CI reset. supabase/seed.sql runs
+-- after the migrations and puts the pre-live state back (stripe_live_since
+-- removed), so the probes, the Stripe harness and the UI tests keep testing
+-- the code from the state they were written against (backlog, live review
+-- B3, 2026-10-04). tests/sql/golive_state.sql fails if those seed lines go.
+--
+-- The file's version is a placeholder: rename it to the date it merges
+-- (scripts/check-migration-versions.sh refuses a migration older than main's
+-- newest), or db push refuses it as out of order. Never run the cutover by
+-- hand in the SQL editor as well: this migration would then fail
+-- (already_live) and block every later db push until repaired.
+--
+-- Payments stay OFF here. Switching them on is the next migration, after one
+-- real charge and refund on Alex's card (checklist A9).
+
+select * from public.stripe_cutover_to_live();

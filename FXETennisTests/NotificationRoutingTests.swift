@@ -194,6 +194,22 @@ final class NotificationRoutingTests: XCTestCase {
         XCTAssertEqual(NotificationRouter.presentationOptions(signedIn: true), [.banner, .list, .sound])
     }
 
+    /// The flag that rule reads is written by SessionStore.phase's didSet.
+    /// A banner with the app open never appeared on the simulator
+    /// (backlog, 2026-10-03), so this pins the wiring, not only the rule:
+    /// every phase change reaches the router, both ways.
+    @MainActor func testSigningInAndOutReachesTheRouter() {
+        let session = SessionStore()
+        session.phase = .signedIn
+        XCTAssertTrue(NotificationRouter.shared.signedIn, "Signed in, yet the router would hide every banner")
+        session.phase = .signedOut
+        XCTAssertFalse(NotificationRouter.shared.signedIn, "Signed out, yet the router would show the last account's banners")
+        session.phase = .needsProfile
+        XCTAssertFalse(NotificationRouter.shared.signedIn)
+        session.phase = .signedIn
+        XCTAssertTrue(NotificationRouter.shared.signedIn)
+    }
+
     /// The rule: a tapped push stays pending until its screen is on screen.
     /// Only then is it marked read.
     func testATapIsShownOnlyWhenNothingElseIsPresented() {

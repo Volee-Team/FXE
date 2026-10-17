@@ -554,6 +554,47 @@ test.describe("fix round", () => {
     }
   });
 
+  test("a refunded charge reads Refunded and offers no second Refund; an unrefunded one keeps its button", async ({ page, request }) => {
+    // Found on the first real charge (2026-10-14): Alex charged himself $23
+    // and refunded it; the charge kept reading "Paid" with a live Refund
+    // button, and the refund line read "Paid" too.
+    const db = service(request);
+    await db.patch("app_settings?key=eq.payments_enabled", { value: "true" });
+    await db.patch("app_settings?key=eq.payments_enabled_at", { value: daysAgo(5) });
+    const clinic = await db.insert("clinics", pastClinic("Browser Refund Clinic", 2));
+    try {
+      const reg = (player) => db.insert("registrations",
+        { clinic_id: clinic.id, player_id: player, status: "in", source: "admin", price_cents_charged: 2300, was_member: false, duration_minutes: 60 });
+      const dana = await reg(DANA_P), ken = await reg(KEN_P);
+      const refunded = await db.insert("payments", { registration_id: dana.id, account_id: DANA_ACCT, kind: "clinic_fee", amount_cents: 2300, status: "succeeded" });
+      await db.insert("payments", { registration_id: dana.id, account_id: DANA_ACCT, kind: "refund", amount_cents: 2300, status: "succeeded", refunds_payment_id: refunded.id });
+      const kept = await db.insert("payments", { registration_id: ken.id, account_id: KEN_ACCT, kind: "clinic_fee", amount_cents: 2300, status: "succeeded" });
+
+      await signIn(page, TARA);
+      await page.getByRole("tab", { name: "Money" }).click();
+      const ledger = page.locator("#ledger");
+      await expect(ledger).toContainText("Card payments");
+      const row = (id) => ledger.locator(".row").filter({ has: page.locator(`[data-refund="${id}"]`) });
+      // The unrefunded charge still offers Refund...
+      await expect(ledger.locator(`[data-refund="${kept.id}"]`)).toHaveCount(1, { timeout: 15_000 });
+      // ...the refunded one does not, and says so.
+      await expect(ledger.locator(`[data-refund="${refunded.id}"]`)).toHaveCount(0);
+      const danaRows = ledger.locator(".row").filter({ hasText: "Dana" });
+      await expect(danaRows).toHaveCount(2);
+      await expect(danaRows.filter({ hasText: "Clinic fee" })).toContainText("Refunded");
+      await expect(danaRows.filter({ hasText: "Refund" }).filter({ hasText: "−$23" })).toContainText("Refunded");
+      await expect(danaRows.filter({ hasText: "Paid" })).toHaveCount(0);
+    } finally {
+      const regs = await request.fetch(`${stackEnv().API_URL}/rest/v1/registrations?clinic_id=eq.${clinic.id}&select=id`,
+        { headers: { apikey: stackEnv().SERVICE_ROLE_KEY, Authorization: `Bearer ${stackEnv().SERVICE_ROLE_KEY}` } }).then(r => r.json());
+      if (regs.length) await db.del(`payments?registration_id=in.(${regs.map(r => r.id).join(",")})`);
+      await db.del(`registrations?clinic_id=eq.${clinic.id}`);
+      await db.del(`clinics?id=eq.${clinic.id}`);
+      await db.patch("app_settings?key=eq.payments_enabled", { value: "false" });
+      await db.patch("app_settings?key=eq.payments_enabled_at", { value: "" });
+    }
+  });
+
   test("a held charge offers Tara the two answers; a deleted account's decline waits on the Money tab", async ({ page, request }) => {
     const db = service(request);
     await db.patch("app_settings?key=eq.payments_enabled_at", { value: daysAgo(5) });
@@ -609,14 +650,21 @@ test.describe("fix round", () => {
     // The next load's clinic read is held back and answers an empty week; a
     // second load starts meanwhile and reads normally. The empty answer
     // arrives last, and must not be drawn.
-    let held = false;
+    // The second load starts only once the first one's read is caught, so
+    // the held read is always the OLDER load's. Started together, the newer
+    // load's read could arrive first on a slow runner, be the one held, and
+    // the app would rightly draw the newest answer, empty (CI, 2026-10-14).
+    let held = false, caught;
+    const firstCaught = new Promise(r => { caught = r; });
     await page.route("**/rest/v1/clinics_admin*", async (route) => {
       if (held) return route.continue();
       held = true;
+      caught();
       await new Promise(r => setTimeout(r, 2500));
       return route.fulfill({ status: 200, contentType: "application/json", headers: { "content-range": "*/0" }, body: "[]" });
     });
     await page.getByLabel("Show canceled").check();
+    await firstCaught;
     await page.getByLabel("Show canceled").uncheck();
     await page.waitForTimeout(4000);
     await expect(cards.first()).toBeVisible();

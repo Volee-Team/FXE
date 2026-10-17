@@ -5,8 +5,8 @@ uploads TestFlight builds from his own Apple Developer account while the FXE
 Tennis, LLC enrollment sits in Apple's queue (decision 0014; checklist C1).
 Everything a build needs is on `main`; nothing lives only on Alex's machine.
 
-**The next upload is build 10, the tag `v0.1.0-rc10`** (checklist C8), made
-when the `build-10` branch merges (decision 0040 merged in PR #93). It goes up as **App Store Connect**,
+**The next upload is build 11, the tag `v0.1.0-rc11`** (checklist C8, tagged
+2026-10-13 on `355f546`, PR #96). It goes up as **App Store Connect**,
 not TestFlight Internal Only, and then to External Testing (checklist C11):
 see "External Testing" below. Archive the tag, not `main`, so John gets
 exactly the build that was tested whatever lands on `main` afterwards.
@@ -37,7 +37,7 @@ exactly the build that was tested whatever lands on `main` afterwards.
 ## Every build
 
 1. `git fetch --tags && git checkout v0.1.0-rc<build>`, the tag Alex names
-   (for build 10, `v0.1.0-rc10`). The build number is
+   (for build 11, `v0.1.0-rc11`). The build number is
    `CURRENT_PROJECT_VERSION` in `project.yml` (`MARKETING_VERSION` is 0.1.0);
    the model bumps it in the PR that makes the tag, so the tag already
    carries the right number and CI was green on it.

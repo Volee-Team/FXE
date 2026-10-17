@@ -187,8 +187,15 @@ jobs:
   # own job, not a step of keep-warm, because keep-warm is deleted the day the
   # org moves to Pro and this must not go with it. Pinned by
   # tests/sql/card_consent.sql (day 89 purges nothing, day 91 purges).
+  #
+  # Decision 0035 (2026-10-01): crash reports are tied to an account for at
+  # most a day and kept 90 days. purge_app_diagnostics() unlinks rows older
+  # than 24 hours and deletes rows older than 90 days. Its own step, so a
+  # failure in one purge is reported as that purge. Pinned by
+  # tests/sql/app_diagnostics.sql (a minute either side of 24 hours, a day
+  # either side of 90 days).
   retention:
-    name: Purge card consents 90 days after an account is deleted
+    name: Retention purges (card consents, crash reports)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -208,3 +215,19 @@ jobs:
           fi
           n=$(psql "$DB_URL" -Atc "select public.purge_expired_card_consents();")
           echo "Card consents purged (account deleted more than 90 days ago): $n"
+      - name: Unlink and purge crash reports
+        env:
+          DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$DB_URL" ]; then
+            echo "SUPABASE_DB_URL not set; skipping the purge."
+            exit 0
+          fi
+          command -v psql >/dev/null || { sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client; }
+          exists=$(psql "$DB_URL" -Atc "select count(*) from pg_proc where proname = 'purge_app_diagnostics'")
+          if [ "$exists" = "0" ]; then
+            echo "purge_app_diagnostics() is not on this database yet (migration 20261014000002 not pushed); nothing to do."
+            exit 0
+          fi
+          r=$(psql "$DB_URL" -AtF ' ' -c "select unlinked, deleted from public.purge_app_diagnostics();")
+          echo "Crash reports unlinked (older than 24 hours) and deleted (older than 90 days): $r"

@@ -293,7 +293,12 @@ struct ClinicDetailView: View {
                                                           + clinic.lateCancelMoment(cutoffHours: cutoffHours)))) { _ in
                     let now = Date()
                     VStack(spacing: Brand.Spacing.sm) {
-                        if ClinicNote.offered(status: model.registration?.status,
+                        // Register, the note, Message Tara and Remind me all need a
+                        // player. Tara and the pros have none, and Register used to
+                        // do nothing at all when they tapped it (audit 2026-10-12):
+                        // the server needs a player to register, so the controls are
+                        // simply not offered to an account without one.
+                        if hasPlayer, ClinicNote.offered(status: model.registration?.status,
                                               door: clinic.door(isMember: isMember, now: now),
                                               isCanceled: clinic.isCanceled,
                                               startsAt: clinic.startsAt, now: now) {
@@ -387,6 +392,7 @@ struct ClinicDetailView: View {
             Text(clinic.name)
                 .brandFont(.display)
                 .foregroundStyle(Brand.navy)
+                .accessibilityIdentifier("clinic.title")
             // Canceled by Tara outranks the spot she held (audit 2026-10-12).
             if clinic.isCanceled {
                 StatusChip(.canceled)
@@ -484,8 +490,12 @@ struct ClinicDetailView: View {
         }
     }
 
+    /// Whether this account can register at all: Tara and the pros have no
+    /// player profile (Session.skipsPlayerSteps), so nothing here applies.
+    private var hasPlayer: Bool { session.activePlayer != nil }
+
     @ViewBuilder private func actionArea(now: Date) -> some View {
-        if clinic.isCanceled {
+        if clinic.isCanceled || !hasPlayer {
             EmptyView()
         } else if let reg = model.registration {
             switch reg.status {

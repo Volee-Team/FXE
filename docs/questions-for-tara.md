@@ -555,6 +555,35 @@ answer we would pick, so "yes" is enough.
 **117. North Carolina sales tax: no tax is charged on clinic fees today. Do you need any?**
 *Default: none. Status: open, asked 2026-10-12.*
 
+## Y. Registration by clinic type (added 2026-10-16, decision 0041)
+
+Her email of 2026-10-15 settles most of it; these are the gaps, each with
+what is built until she answers.
+
+**118. For clinics that are not a 105, when you pick someone from the Waitlist, do they also get the 1-hour offer to accept, or are they just in?**
+*Default: the same 1-hour offer as a 105. Status: open, asked 2026-10-16.*
+
+**119. If you offer a spot less than an hour before the clinic starts, should the offer end at the clinic's start time?**
+*Default: yes, it ends at the start. Status: open, asked 2026-10-16.*
+
+**120. Does the 3.0+ approval apply to anyone rated under 3.0 (2.0 as well as 2.5)?**
+*Default: yes, anyone under 3.0. Status: open, asked 2026-10-16.*
+
+**121. Which clinics need approval: every clinic with "3.0+" in its name (Ladies 3.0+, Men's 3.0+, and a Coed 3.0+ if you ever make one)?**
+*Default: yes, any clinic named "3.0+", approved per category (Ladies, Men's, Coed separately). Status: open, asked 2026-10-16.*
+
+**122. Without approval, can a 2.5 player still join the Waitlist for a 3.0+ clinic, or only request approval?**
+*Default: only request approval; no sign-up until approved. Status: open, asked 2026-10-16.*
+
+**123. The message someone gets when you approve them: is "You're approved to attend Ladies 3.0+ clinics." right, or what would you like it to say?**
+*Default: that sentence, until you change it. Status: open, asked 2026-10-16.*
+
+**124. "Waitlist" everywhere, including the message audience you pick when you send a clinic message and older notifications?**
+*Default: yes, every place it shows. Status: open, asked 2026-10-16.*
+
+**125. When an offer expires or is declined, does that person go back on the Waitlist (keeping their original sign-up time) or off it?**
+*Default: back on the Waitlist with their original time, so you can offer again. Status: open, asked 2026-10-16.*
+
 ### How 52 to 57 are being sent
 
 Round two of the review page (2026-09-21, later): the Words tab now shows her

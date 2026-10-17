@@ -581,7 +581,7 @@ jobs:
       - name: Every titled screen has a solid top edge
         run: bash scripts/check-title-edge.sh
       # Two builders once picked the same migration version (2026-09-28).
-      - name: No two migrations share a version
+      - name: No two migrations share a version, and new ones are newest
         run: bash scripts/check-migration-versions.sh
 
   copy-gate:
@@ -609,67 +609,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      # The checks live in a script (2026-10-13) so git grep's exit status is
+      # read directly: the inline version piped into `grep -q .`, which read a
+      # pattern git grep could not compile as "clean" (the SSN check, 09-16 to
+      # 10-13). Every check was shown red alone on a planted file.
       - name: Fail on committed secrets
-        run: |
-          FAIL=0
-
-          # Any .env that is not the committed template.
-          if git ls-files | grep -E '^\.env' | grep -v '^\.env\.example$' | grep -q .; then
-            echo "::error::A .env file is tracked by git:"
-            git ls-files | grep -E '^\.env' | grep -v '^\.env\.example$'
-            FAIL=1
-          fi
-
-          # Supabase secret keys and service-role JWTs. The `sb_publishable_`
-          # keys in SupabaseClient.swift are SAFE and expected: they are the
-          # anon keys, designed to sit in a client binary. It is the secret and
-          # service_role variants that must never appear. A key is the prefix
-          # plus at least ten key characters, the same shape as the Stripe
-          # check below: supabase-js itself (web/vendor, 2026-09-27) tests
-          # whether a string starts with the bare prefix, which is not a key.
-          if git grep -nE 'sb_secret_[A-Za-z0-9_-]{10,}|service_role.{0,40}eyJ|SUPABASE_SERVICE_ROLE_KEY *= *["'"'"'][^"'"'"']' -- \
-               ':!*.md' ':!.github/workflows/*' | grep -q .; then
-            echo "::error::Possible service-role key committed:"
-            git grep -nE 'sb_secret_[A-Za-z0-9_-]{10,}|service_role.{0,40}eyJ' -- ':!*.md' ':!.github/workflows/*'
-            FAIL=1
-          fi
-
-          # Stripe secret and restricted keys and webhook signing secrets
-          # (2026-09-27, the day Alex set up Stripe). They live only in
-          # Supabase's Edge Function secrets. Docs are scanned too: the prompt
-          # log is a doc, and it is where a pasted key would land. Publishable
-          # keys (pk_) are public by design and not matched.
-          if git grep -nE '(sk|rk)_(live|test)_[A-Za-z0-9]{10,}|whsec_[A-Za-z0-9]{16,}' -- ':!.github/workflows/*' | grep -q .; then
-            echo "::error::Possible Stripe key or webhook secret committed (rotate it in Stripe, then remove it):"
-            git grep -nE '(sk|rk)_(live|test)_[A-Za-z0-9]{10,}|whsec_[A-Za-z0-9]{16,}' -- ':!.github/workflows/*' | cut -c1-60
-            FAIL=1
-          fi
-          # A reset link's token (decision 0017) is a one-hour sign-in as a member.
-          if git grep -nE 'token_hash=[0-9a-fA-F]{20,}' -- ':!.github/workflows/*' | grep -q .; then
-            echo "::error::A password-reset token is committed:"
-            git grep -nE 'token_hash=[0-9a-fA-F]{20,}' -- ':!.github/workflows/*' | cut -c1-60
-            exit 1
-          fi
-
-          # Personal identifiers. Tara sent her SSN and bank details in a
-          # message on 2026-09-16 and the prompt-log hook copied them into a
-          # tracked file before it learned to redact. Docs are scanned too.
-          if git grep -nE '\b[0-9]{3}-[0-9]{2}-[0-9]{4}\b|(?i)routing number[ :#]*[0-9]{6,}' -- ':!.github/workflows/*' | grep -q .; then
-            echo "::error::Something shaped like a Social Security or routing number is tracked:"
-            git grep -nE '\b[0-9]{3}-[0-9]{2}-[0-9]{4}\b' -- ':!.github/workflows/*' | cut -c1-80
-            FAIL=1
-          fi
-
-          # A password assigned a real value in a tracked file.
-          if git grep -nE '(PASSWORD|password) *= *["'"'"'][^"'"'"']{6,}' -- \
-               ':!*.md' ':!tests/*' ':!supabase/seed.sql' ':!.github/workflows/*' | grep -q .; then
-            echo "::error::Possible hard-coded password:"
-            git grep -nE '(PASSWORD|password) *= *["'"'"'][^"'"'"']{6,}' -- \
-              ':!*.md' ':!tests/*' ':!supabase/seed.sql' ':!.github/workflows/*'
-            FAIL=1
-          fi
-
-          [ "$FAIL" -eq 0 ] && echo "No secrets found." || exit 1
+        run: bash scripts/secret-scan.sh
 
   # A migration that has been applied to the hosted database can never be
   # edited in place, only superseded. This catches the most common way that

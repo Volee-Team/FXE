@@ -12,7 +12,7 @@ key-shaped text and the secret scan fails on it, but those are seatbelts, not
 permission.
 
 The order is the checklist's critical path (its section 0). In this file:
-the review account and John's build 10 upload (§4a), the Stripe rehearsal and
+the review account and John's build 11 upload (§4a), the Stripe rehearsal and
 live keys alongside them (§1a, §1b), the public link once Apple approves
 (§4b).
 
@@ -129,15 +129,28 @@ minutes, with the model.
    Why each one is needed is in `supabase/functions/README.md` (re-derived
    from every Stripe call in our functions).
 4. **Create key**. Stripe shows an `rk_test_…` key. Copy it.
-5. Paste it into the file the model names when you start, save, and close
-   it. Never paste it into the chat. The file is never one git tracks.
-6. Once only: install the Stripe CLI (`brew install stripe/stripe-cli/stripe`)
-   and run `stripe login`, which opens the browser to approve. It lets
-   Stripe's sandbox send webhooks to the model's local copy.
-7. Tell the model **"rehearsal key saved"**. It runs `docs/stripe-e2e-test.md`
-   on its local copy against real Stripe test mode: save a card, a charge
-   after a clinic, a refund, a declined card and a 3-D Secure card.
-8. When it passes, the live keys are next (§1b).
+5. On **API keys**, copy the sandbox's **Publishable key** (`pk_test_…`) too:
+   the app refuses to set up a card unless both keys are from the same mode.
+6. Open a new file at the repo root named `.env.stripe-rehearsal` (git
+   ignores every `.env.*`; checked) with exactly two lines, and save it:
+   ```
+   STRIPE_SECRET_KEY=rk_test_...
+   STRIPE_PUBLISHABLE_KEY=pk_test_...
+   ```
+   Never paste either into the chat.
+7. Once only: install the Stripe CLI (`brew install stripe/stripe-cli/stripe`)
+   and run `stripe login` **in the same sandbox**, which opens the browser
+   to approve. It forwards Stripe's webhooks to the local copy, and it plays
+   the phone's card sheet when the script saves a card.
+8. Tell the model **"rehearsal key in"**. It runs
+   `bash tests/stripe/rehearsal.sh` (written 2026-10-13): the app's own
+   functions, holding only that key, against Stripe's real sandbox. Save a
+   card, a charge after a clinic, a refund, a card that saves and then
+   declines, a bank demanding 3-D Secure on a charge made while the member is
+   away, a chargeback, Tara's payouts, and deleting an account. A missing
+   permission shows by name in the function log it prints. The script
+   refuses any live key.
+9. When it passes, the live keys are next (§1b).
 
 ## 1b. Live keys (checklist A10)
 
@@ -158,7 +171,7 @@ in different modes (`keyModesAgree` in `stripe-setup-intent`).
 3. Stripe, **API keys**: copy the **Publishable key** (`pk_live_…`). Set
    `STRIPE_PUBLISHABLE_KEY` to it. **Save**.
 4. Stripe, Workbench → **Webhooks** → **Create an event destination**.
-   Events from **Your account**, API version the default. Tick these eight:
+   Events from **Your account**, API version the default. Tick these nine:
    - `setup_intent.succeeded`
    - `payment_intent.succeeded`
    - `payment_intent.payment_failed`
@@ -167,6 +180,7 @@ in different modes (`keyModesAgree` in `stripe-setup-intent`).
    - `charge.dispute.created`
    - `charge.dispute.updated`
    - `charge.dispute.closed`
+   - `payment_method.detached` (a card removed in Stripe's dashboard; without it the app keeps showing the removed card)
    **Continue** → **Webhook endpoint** → **Continue**. Endpoint URL, exactly:
    `https://amnaxvznkadkgzdxzegw.supabase.co/functions/v1/stripe-webhook`.
    Create it.
@@ -178,13 +192,21 @@ in different modes (`keyModesAgree` in `stripe-setup-intent`).
    `received`. A **400** with `bad_signature` means the `whsec_…` in step 5
    is not this endpoint's.
 7. Tell the model **"live keys in"** and the response code. The model checks
-   the three names (`supabase secrets list`), runs the cutover that forgets
-   every sandbox card (`stripe_cutover_to_live`, so everyone adds a real
-   one; no new build), then one real charge and refund on your own card on
-   hosted. Payments go on only after that and after Apple approves the
-   external build (checklist A9).
+   the three names (`supabase secrets list`), then merges and pushes the
+   cutover migration that forgets every sandbox card (branch
+   `golive-cutover`; everyone adds a real card; no new build).
+8. Prove the live account with a small real charge made in Stripe's own
+   dashboard on your card (**Payments** → **Create payment**, $1), then
+   refund it there. The app cannot make this first charge: with payments
+   off no card can be saved, and only clinics that end after payments go on
+   are ever charged (go-live review, 2026-10-13). The rehearsal (§1a) has
+   already run every path of the app's own code against real Stripe.
+9. Payments go on (branch `golive-payments-on`) after Apple approves the
+   external build and you say go (checklist A9). The app's first real
+   charge is then the first clinic that ends after that, and the model
+   watches it.
 
-The eight events match the `case` lines in
+The nine events match the `case` lines in
 `supabase/functions/stripe-webhook/index.ts`; an event not ticked never
 reaches the app.
 
@@ -265,12 +287,13 @@ Build 7 was uploaded by John on 2026-09-29 (tag `v0.1.0-tf7`). Builds 8 and
 exists, so neither was recorded as uploaded. Build 10 replaces them (§4a).
 The full runbook is `docs/testflight.md`.
 
-## 4a. The review account, then build 10 to External Testing (checklist C8, C11, C13)
+## 4a. The review account, then build 11 to External Testing (checklist C8, C11, C13)
 
-**Build 10 is the tag `v0.1.0-rc10`** on `main` (`88a1871`, PR #94, merged
-2026-10-12): Tara's note box at Register (decision 0039) and her 2026-10-12
-answers (decision 0040). It was tagged after the UI suite was green on
-iOS 17, 18 and 26 for that code.
+**Build 11 is the tag `v0.1.0-rc11`** on `main` (`355f546`, PR #96, merged
+2026-10-13): Tara's note box at Register (decision 0039), her 2026-10-12
+answers (decision 0040) and the 2026-10-12 audit fixes. It was tagged after
+the UI suite was green on iOS 17, 18 and 26 for that code. Builds 9 and 10
+were never uploaded; 11 replaces both.
 
 **A. The App Review account (you, about 3 minutes; checklist C13).** Apple's
 beta reviewer is a person who installs the build, and the app shows nothing
@@ -298,19 +321,19 @@ John submits, or the reviewer stops at Add a card.
 **B. John (about 30 minutes, then Apple's 1 to 2 days; checklist C8, C11).**
 Text John something like this:
 
-> John, build 10 is ready. `git fetch --tags && git checkout v0.1.0-rc10`,
+> John, build 11 is ready. `git fetch --tags && git checkout v0.1.0-rc11`,
 > `xcodegen generate`, open the project, scheme FXETennis, destination Any
 > iOS Device, Product → Archive. Then Distribute App → **App Store Connect →
 > Upload** (not TestFlight Internal Only: that kind can never go to External
 > Testing). Once it has processed, tag it:
-> `git tag -a v0.1.0-tf10 -m "TestFlight build 10, uploaded by John"` and
-> `git push origin v0.1.0-tf10`. Full steps are in `docs/testflight.md`.
+> `git tag -a v0.1.0-tf11 -m "TestFlight build 11, uploaded by John"` and
+> `git push origin v0.1.0-tf11`. Full steps are in `docs/testflight.md`.
 
 Then, in App Store Connect:
 
 1. appstoreconnect.apple.com → Apps → FXE Tennis → **TestFlight**.
 2. External Testing → **+** → a group named `FXE Members`.
-3. Add build 10 to the group. Fill in **Test Information** (below), the
+3. Add build 11 to the group. Fill in **Test Information** (below), the
    feedback email, the contact (name, phone, email) and the sign-in for
    Apple's reviewer from A.
 4. **Submit for Review**. Apple usually answers in 1 to 2 days.

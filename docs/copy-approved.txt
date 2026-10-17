@@ -99,6 +99,7 @@ Has a note
 Home
 How we use your information
 I have read and agree to the Adult Tennis Participation Waiver and Release.
+If the app crashes, freezes or runs slowly, your phone's operating system (Apple's MetricKit) gives the app a technical report of what the app was doing at that moment: the app and iOS version, the iPhone model, and program addresses. The app sends that report to our own database and to no one else. The report is linked to your account for at most one day, only to limit how many reports one account can send, and is deleted after 90 days. It contains nothing you typed or saw, and is used only to find and fix bugs.
 If you have any concerns or questions about your data, please contact us at:
 Information collection
 International data
@@ -110,7 +111,7 @@ Keep my account
 Keep my spot
 Keep the clinic
 Label
-Last updated: September 27, 2026
+Last updated: October 13, 2026
 Late cancel
 Late cancel \(player.name)
 Late cancellation

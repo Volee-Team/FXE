@@ -27,6 +27,8 @@ We use your personal information to provide and improve the Services. By using t
 
 We collect only the information necessary to provide and improve our Services. This includes your name, email address, phone number, your self-reported club membership status, your tennis rating, an optional note to your coach, and the record of the clinics you register for, attend, cancel, or miss. If you add a payment card, the card is collected and stored by our payment processor, Stripe; we store only the card's brand and last four digits. If you allow notifications, we store the device token that lets us send them. We do not collect your location.
 
+If the app crashes, freezes or runs slowly, your phone's operating system (Apple's MetricKit) gives the app a technical report of what the app was doing at that moment: the app and iOS version, the iPhone model, and program addresses. The app sends that report to our own database and to no one else. The report is linked to your account for at most one day, only to limit how many reports one account can send, and is deleted after 90 days. It contains nothing you typed or saw, and is used only to find and fix bugs.
+
 ### How we use your information
 
 The information collected is used solely for providing the Services: clinic registration, communication from your coach about clinics, charging for clinics you attend under the club's cancellation policy, and keeping your clinic history. We do not share or sell your personal information with external parties for marketing purposes.
@@ -85,7 +87,7 @@ If you have any concerns or questions about your data, please contact us at:
 
 fersctennispro@gmail.com
 
-Last updated: September 27, 2026
+Last updated: October 13, 2026
 
 ---
 
@@ -99,3 +101,4 @@ Last updated: September 27, 2026
 6. **Data retention**: describes what the in-app deletion actually does (decision 0013 §5, "Keep their history").
 7. **Cookies**: the app has none; the admin web page keeps a session. Stated instead of Volee's generic cookie paragraph.
 8. **Contact and date**: placeholders, as in Volee's.
+9. **Crash reports** (2026-10-13, decision 0035): the paragraph after "Information collection" describes MetricKit reports to our own database. Alex approved this wording on 2026-10-03 ("crash report looks great").

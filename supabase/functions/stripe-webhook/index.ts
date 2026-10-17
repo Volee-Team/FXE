@@ -16,6 +16,9 @@
 //   charge.dispute.created / .updated / .closed
 //                                   -> the dispute columns on the disputed fee
 //                                      (stripe_record_dispute, 20260928200001)
+//   payment_method.detached         -> clears the card summary when the removed
+//                                      PaymentMethod is the one on file
+//                                      (card_payment_method_id, 2026-10-13)
 // Every ledger write also records the event's livemode (20260927200001): the
 // signed event is Stripe's word on which mode the money moved in, and test
 // mode is never counted as money.
@@ -89,11 +92,18 @@ async function handle(req: Request): Promise<Response> {
         if (isMissingCustomer(e)) break;
         throw e;
       }
+      // The PaymentMethod id says exactly which card the summary describes,
+      // so removing an older copy of the same card cannot clear it
+      // (20261014000003). Never onto a deleted account: delete_my_account
+      // scrubs the summary before delete-account forgets the customer, and a
+      // setup landing in between would write the card back (review,
+      // 2026-10-13).
       ok(await admin.from("accounts").update({
         card_brand: pm.card?.brand ?? null,
         card_last4: pm.card?.last4 ?? null,
+        card_payment_method_id: pmId,
         card_added_at: new Date().toISOString(),
-      }).eq("stripe_customer_id", customerId));
+      }).eq("stripe_customer_id", customerId).is("deleted_at", null));
       break;
     }
     case "payment_intent.succeeded": {
@@ -142,6 +152,37 @@ async function handle(req: Request): Promise<Response> {
     case "charge.dispute.updated":
     case "charge.dispute.closed": {
       await recordDispute(event.data.object as Stripe.Dispute, event);
+      break;
+    }
+    case "payment_method.detached": {
+      // A card removed in the Stripe dashboard (or by Stripe) left the app's
+      // summary saying "•••• 4242", so Tara would tap Charge on a card that
+      // no longer exists, and the player was never asked for a new one
+      // (backlog, 2026-10-04). After a detach the object's customer is null;
+      // Stripe puts the old one in previous_attributes. The summary is cleared
+      // only when the removed PaymentMethod is the one it describes
+      // (card_payment_method_id, 20261014000003): PaymentSheet makes a new
+      // PaymentMethod each time a card is saved, so a re-saved card and its
+      // older copy share brand and last four, and matching on those cleared
+      // the card still on file (review, 2026-10-13). A summary saved before
+      // the id existed falls back to brand and last four. Rejected: asking
+      // Stripe for the customer's remaining cards; stripe-mock always answers
+      // with one card, so the "none left" path could never be shown red.
+      const pm = event.data.object as Stripe.PaymentMethod;
+      const prev = (event.data as { previous_attributes?: { customer?: string | null } }).previous_attributes;
+      const customerId = prev?.customer ?? null;
+      if (pm.type !== "card" || !customerId) break;
+      const cleared = { card_brand: null, card_last4: null, card_added_at: null };
+      ok(await admin.from("accounts").update(cleared)
+        .eq("stripe_customer_id", customerId)
+        .eq("card_payment_method_id", pm.id));
+      if (pm.card?.last4) {
+        ok(await admin.from("accounts").update(cleared)
+          .eq("stripe_customer_id", customerId)
+          .is("card_payment_method_id", null)
+          .eq("card_last4", pm.card.last4)
+          .eq("card_brand", pm.card.brand ?? ""));
+      }
       break;
     }
     default:

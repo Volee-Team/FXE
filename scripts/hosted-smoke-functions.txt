@@ -1,5 +1,6 @@
 accept_waiver	{"p_app_version":"x","p_legal_name":"x","p_version":"x"}
 admin_account_ids	{}
+admin_app_diagnostics	{"p_limit":1}
 admin_app_link_visits	{}
 admin_archive_message_template	{"p_id":"00000000-0000-0000-0000-000000000000"}
 admin_board_report	{"p_from":"2026-01-01","p_to":"2026-01-01"}
@@ -83,6 +84,7 @@ pro_today	{}
 public_opens_at	{"p_starts_at":"2026-01-01T00:00:00Z"}
 publish_clinic	{"p_clinic":"00000000-0000-0000-0000-000000000000"}
 publish_news	{"p_news":"00000000-0000-0000-0000-000000000000"}
+purge_app_diagnostics	{}
 purge_expired_card_consents	{}
 record_app_link_visit	{"p_via":"x"}
 record_card_consent	{"p_app_version":"x"}
@@ -91,6 +93,7 @@ register_for_clinic	{"p_clinic":"00000000-0000-0000-0000-000000000000","p_note":
 registration_has_live_fee	{"p_registration":"00000000-0000-0000-0000-000000000000"}
 registration_mark_late_cancel	{"p_note":"x","p_registration":"00000000-0000-0000-0000-000000000000"}
 registration_set_no_show	{"p_no_show":false,"p_registration":"00000000-0000-0000-0000-000000000000"}
+report_app_diagnostic	{"p_app_version":"x","p_build":"x","p_device":"x","p_kind":"x","p_os_version":"x","p_payload":{}}
 request_late_spot	{"p_clinic":"00000000-0000-0000-0000-000000000000","p_message":"x","p_player":"00000000-0000-0000-0000-000000000000"}
 require_admin	{}
 require_pro	{}

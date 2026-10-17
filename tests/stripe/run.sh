@@ -164,6 +164,7 @@ check "a setup the app did not start is accepted" "True" "$(webhook "$(event set
 check "and leaves the card alone" "" "$(sql "select coalesce(card_brand,'') from public.accounts where id='$MARIA'")"
 check "signed setup_intent.succeeded accepted" "True" "$(webhook "$(event setup_intent.succeeded "$si")" | field "['received']")"
 check "card summary written by the webhook" "yes" "$(sql "select case when card_brand is not null and card_last4 ~ '^[0-9]{4}$' and card_added_at is not null then 'yes' else 'no' end from public.accounts where id='$MARIA'")"
+check "and which PaymentMethod it is" "pm_card_visa" "$(sql "select coalesce(card_payment_method_id,'') from public.accounts where id='$MARIA'")"
 
 # ---- 3. A charge: Tara's tap -> pending -> processing (Stripe id) -> webhook -> succeeded + paid
 REG=$(sql "with i as (insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes) values ('$CLINIC','$MARIA_P','in','self',2200,true,90) returning id) select id from i")
@@ -523,6 +524,40 @@ webhook "$(event payment_intent.payment_failed "$OBJ")" >/dev/null
 check "a request Stripe refused is failed, with its sentence and no decline code" "failed No such PaymentMethod: pm_gone NULL" "$(sql "select status||' '||failure_reason||' '||coalesce(failure_code,'NULL') from public.payments where id='$PAY16X'")"
 check "and blocks nobody" "NULL" "$(declined "$DANA")"
 sql "delete from public.notifications where entity_id in (select id from public.registrations where clinic_id='$DC_OPEN'); delete from public.registrations where clinic_id='$DC_OPEN'" >/dev/null
+
+# ---- 17. A card removed in Stripe's dashboard (payment_method.detached,
+# 2026-10-13). The summary is cleared only when the removed card is the one on
+# file for that customer; the app then asks for a card again instead of Tara
+# charging one that is gone. After a detach Stripe sends customer null and the
+# old customer under previous_attributes.
+detach() { # customer brand last4 [type, default card] [pm id, default a fresh one] -> the event
+  echo "{\"id\":\"evt_$RANDOM\",\"object\":\"event\",\"api_version\":\"2024-12-18.acacia\",\"created\":$(date +%s),\"livemode\":true,\"type\":\"payment_method.detached\",\"data\":{\"object\":{\"id\":\"${5:-pm_$RANDOM}\",\"object\":\"payment_method\",\"type\":\"${4:-card}\",\"customer\":null,\"card\":{\"brand\":\"$2\",\"last4\":\"$3\"}},\"previous_attributes\":{\"customer\":\"$1\"}}}"; }
+kencard() { sql "select coalesce(card_brand,'')||' '||coalesce(card_last4,'')||' '||(card_added_at is not null) from public.accounts where id='$KEN'"; }
+card "$KEN" cus_detach_ken
+check "a different card of hers removed: the summary stays" "True" "$(webhook "$(detach cus_detach_ken visa 1111)" | field "['received']")"
+check "  still visa 4242" "visa 4242 true" "$(kencard)"
+webhook "$(detach cus_someone_else visa 4242)" >/dev/null
+check "the same card on another customer: hers stays" "visa 4242 true" "$(kencard)"
+webhook "$(detach cus_detach_ken visa 4242 us_bank_account)" >/dev/null
+check "a bank account removed: the card stays" "visa 4242 true" "$(kencard)"
+check "her card on file removed: accepted" "True" "$(webhook "$(detach cus_detach_ken visa 4242)" | field "['received']")"
+check "  and the summary is cleared, so the app asks for a card" "  false" "$(kencard)"
+check "  the customer is kept (a new card goes on the same one)" "cus_detach_ken" "$(sql "select stripe_customer_id from public.accounts where id='$KEN'")"
+# With the PaymentMethod id on file (20261014000003) the match is exact. The
+# review's case: the same card saved twice is two PaymentMethods with one
+# brand and last four; removing the OLD copy must leave the new one.
+sql "update public.accounts set card_brand='visa', card_last4='4242', card_payment_method_id='pm_keep_ken', card_added_at=now() where id='$KEN'" >/dev/null
+webhook "$(detach cus_detach_ken visa 4242 card pm_old_ken)" >/dev/null
+check "the older copy of the same card removed: the one on file stays" "visa 4242 true" "$(kencard)"
+webhook "$(detach cus_detach_ken visa 4242 card pm_keep_ken)" >/dev/null
+check "the copy on file removed: cleared, its id with it" "  false NULL" "$(kencard) $(sql "select coalesce(card_payment_method_id,'NULL') from public.accounts where id='$KEN'")"
+# A setup that lands after delete_my_account scrubbed the account (and before
+# delete-account forgets the customer) must not write the card back.
+sql "update public.accounts set deleted_at=now() where id='$KEN'" >/dev/null
+si_k="{\"id\":\"seti_ken\",\"object\":\"setup_intent\",\"customer\":\"cus_detach_ken\",\"payment_method\":\"pm_card_visa\",\"status\":\"succeeded\",\"metadata\":{\"fxe_account_id\":\"harness\"}}"
+webhook "$(event setup_intent.succeeded "$si_k")" >/dev/null
+check "a card saved onto a deleted account is not written" "  false" "$(kencard)"
+sql "update public.accounts set deleted_at=null where id='$KEN'" >/dev/null
 
 # ---- 13. The key swap (stripe_cutover_to_live, 20260927200001), end to end
 #          through the API as the lead would run it (service_role; the SQL
