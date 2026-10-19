@@ -402,7 +402,7 @@ Then in App Store Connect → Apps → FXE Tennis → **iOS App, version 1.0.0**
 
 | Field | What to put |
 |---|---|
-| Screenshots, 6.9" display | The PNGs the model made (`docs/brand/app-store/`), in order |
+| Screenshots, 6.9" display | The PNGs the model sends Alex (1320 by 2868), in order |
 | Promotional text | (optional, leave empty) |
 | Description | Draft below, once approved |
 | Keywords | `tennis,clinic,clinics,FXE,lessons,doubles,coach` (no city: the club's location is never shown, decision 10) |
