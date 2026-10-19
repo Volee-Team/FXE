@@ -97,7 +97,7 @@ the source; the bullets after each are how they map onto what exists.
 | Card after the clinic list, before sign-up | **New** (client): the onboarding card step goes; Register and Accept open the card sheet when no card is saved. The server already refuses both without a card (`card_required`) |
 | "Waitlist" | **New**: a rename on every player screen, notification and admin label. The database keeps `pool` as the stored status |
 | 105: members first 24 h, auto-confirm to the cap; everyone else to the waitlist | **Already the rule for every clinic** (`register_for_clinic`): the cap is the clinic's capacity, 30 when she sets 30 |
-| Exact date and time each person joined the waitlist | **New** on her rosters (phone and laptop); the timestamp exists (`registrations.created_at`) |
+| Exact date and time each person joined the waitlist | **New** on her rosters (phone and laptop); the timestamp exists (`registrations.registered_at`, checked on hosted 2026-10-19) |
 | Cancellations never auto-move anyone | **Already** (hard rule 2) |
 | 105 offer push, Accept and Decline on the notification | Accept and Decline on the push **already exist** (decision 0023); her words and the 1-hour deadline are **new** |
 | Offer expires after 1 hour; Accept stops working; expiry push to the player; push to Tara on decline and on expiry | **New**: an `expires_at` on the offer, refused after it, and a once-a-minute server job that expires offers and sends both pushes |
