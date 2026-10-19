@@ -149,6 +149,7 @@ Alex, 2026-08-19: *"we're not in a big rush, I can do it as an org from the star
 | Add to Calendar (nothing about where goes into the entry) | built (decision 0023) |
 | Attendance check-in | built as Came and No-show on the roster (`admin_set_no_show`) and the pros' Today screen (decision 0025) |
 | Data export for Tara | checklist D9 |
+| **A members' website with the app's full functionality**, for the club's few Android users (call of 2026-10-19 with Tara, Kat, John and Wayne; Alex: *"not urgent this second"*, a new domain to come). Same Supabase project, same views and RPCs, so the information hiding holds by construction (hard rule 1); the web admin's sign-in and `supabase-js` are the starting point | not started |
 
 ---
 

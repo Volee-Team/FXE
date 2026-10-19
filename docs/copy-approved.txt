@@ -80,6 +80,7 @@ FXE Tennis Court Sheet
 FXE Tennis Password Reset
 FXE Tennis Privacy Policy
 FXE Tennis QR code
+FXE Tennis Support
 FXE Tennis does not share your personal information with third parties for marketing or promotional purposes. Your personal information is kept confidential and is not disclosed to outside organizations, except to the service providers that operate the Services on our behalf and as described here:
 FXE Tennis, LLC
 FXE Tennis, Tara's Review
@@ -193,6 +194,7 @@ Put in clinic
 Put them in
 QR code for fxe-tennis-admin.vercel.app/app
 QR code for the app
+Questions about the app or your clinics:
 Rating
 Rating Guide
 Rating \(bucket.label)

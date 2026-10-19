@@ -875,6 +875,17 @@ One decision inside it: today, deleting an account **does not** erase the
 signed waiver (`delete_my_account` leaves `waiver_acceptances`), so the draft
 says so. If the waiver should go too, that is a code change, not a wording one.
 
+## The App Store release (2026-10-19) — awaiting Alex
+
+For the release on John's account (decision 0042, `docs/for-alex.md` §4c).
+The listing is what a member reads before installing, so it is copy.
+
+| ✓ | Words | Where |
+|---|---|---|
+| ☐ | Support / FXE Tennis, LLC / Questions about the app or your clinics: / fersctennispro@gmail.com / Privacy Policy | `web/support.html`, the listing's Support URL (address as approved for the privacy policy, C6) |
+| ☐ | The listing description, five lines (in §4c) | App Store page |
+| ☐ | Keywords: tennis, clinic, clinics, FXE, lessons, doubles, coach (no city: decision 10) | App Store search, never shown |
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148

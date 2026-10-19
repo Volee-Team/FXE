@@ -29,6 +29,9 @@ be asked the same thing twice.
 **Kat** — product manager, joined 2026. Asks the questions a real company asks:
 architecture diagrams, data docs, how changes get approved, where bugs live.
 
+**Wayne** — joined the 2026-10-19 call with Tara, Kat and John; an ex data
+engineer helping the team.
+
 **FXE** is a member club. That is not decoration: it is why clinic location is
 hidden from players. Tara, 2026-08-02: *"I don't want it to look like it is for
 everyone and all nonmembers by listing where FXE is at."*

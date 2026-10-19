@@ -376,6 +376,98 @@ Then, in App Store Connect:
 > this build. Notifications are optional. Clinic locations are deliberately
 > not shown because this is a members' club.
 
+## 4c. App Store release on John's account, tonight (checklist C14, decision 0042)
+
+Supersedes §4a's External Testing path for tonight: the release goes straight
+to App Store review. The build is **build 12** (tag `v0.1.0-rc12`, made by
+the model after PR #97 merges green on iOS 17, 18 and 26). In order:
+
+**1. You, before John submits (about 10 minutes).**
+
+1. **The App Review account (C13)**, exactly as §4a part A, steps 1 to 7.
+   It does not exist on hosted yet (checked 2026-10-19). Payments are on, so
+   the reviewer can browse everything and Register asks for a card; that is
+   expected and the notes below say so.
+2. **Ask Tara to publish next week's clinics tonight or tomorrow** (Copy to
+   next week on her laptop). Hosted has nothing after Tuesday 10-20, and an
+   empty Clinics tab is a rejection.
+3. **Approve the listing words below** (hard rule 13: they are in front of
+   players), or send Tara's.
+
+**2. John (about 45 minutes).** Text him (your style):
+
+> build 12 is the one for the app store. git fetch --tags && git checkout v0.1.0-rc12, xcodegen generate, archive like before, Distribute App -> App Store Connect -> Upload. then in app store connect make version 1.0.0 and fill it in from the doc i'll send. screenshots are in the folder i'll airdrop
+
+Then in App Store Connect → Apps → FXE Tennis → **iOS App, version 1.0.0**:
+
+| Field | What to put |
+|---|---|
+| Screenshots, 6.9" display | The PNGs the model made (`docs/brand/app-store/`), in order |
+| Promotional text | (optional, leave empty) |
+| Description | Draft below, once approved |
+| Keywords | `tennis,clinic,clinics,FXE,lessons,doubles,coach` (no city: the club's location is never shown, decision 10) |
+| Support URL | `https://fxe-tennis-admin.vercel.app/support.html` |
+| Marketing URL | empty |
+| Version | `1.0.0` |
+| Copyright | `2026 FXE Tennis, LLC` |
+| Build | 12, once it has processed (15 to 30 minutes after upload) |
+| Sign-in required | Yes: the App Review account from step 1 |
+| Contact | John's or your name, phone and email |
+| Notes | The review notes below |
+| Version release | **Manually release this version**, so you and Tara pick the moment |
+
+**App Information:** category **Sports**; content rights: no third-party
+content; age rating: answer None to every question (4+).
+**Pricing and Availability:** Free, United States only.
+**App Privacy** (Get Started → Yes, we collect data; not used for tracking):
+
+| Data type | Linked to the user | Purpose |
+|---|---|---|
+| Name, Email Address, Phone Number | Yes | App Functionality |
+| Payment Info (Stripe's card form inside the app) | Yes | App Functionality |
+| User ID | Yes | App Functionality |
+| Other User Content (the private note to Tara at Register) | Yes | App Functionality |
+| Crash Data, Performance Data | Yes (for at most a day, privacy policy) | App Functionality |
+
+Then **Add for Review → Submit**. Apple usually answers in 1 to 2 days.
+
+**Listing description (draft for Alex or Tara to approve, not yet approved):**
+
+> FXE Tennis is the clinic app for the FXE tennis program.
+>
+> - See each week's clinics and register
+> - Join the Player Pool when a clinic is full, and accept a spot when one is offered
+> - Get clinic updates and messages from your coach
+> - Keep your clinics in My Clinics, or subscribe to them in your calendar
+> - Save a card once; you are charged after the clinics you attend
+
+**Review notes** (only Apple reads these):
+
+> This app is for a private tennis club's clinic program. Players register
+> for in-person group tennis clinics run by the club's coach.
+>
+> Sign-in: email [REVIEW ACCOUNT EMAIL] / password [REVIEW ACCOUNT PASSWORD].
+> This is a real account with the waiver already signed and no card saved.
+>
+> Home shows your clinics and what is open to you. The Clinics tab lists the
+> week's clinics; tap one for its details. Profile has My Clinics, Subscribe
+> in Calendar, Contact, Privacy Policy and Delete my account (please use a new
+> account from Create an account to try deletion).
+>
+> Registering asks for a card, saved through Stripe's form. Players are
+> charged by the coach only after an in-person clinic they attended, or for a
+> late cancellation or no-show. These are real-world services, so in-app
+> purchase does not apply (guideline 3.1.3(e)). Payments are live, so a real
+> card would be charged for a real clinic; everything else in the app can be
+> reviewed without one.
+>
+> Registration for each week opens Thursday 8:00 AM Eastern for club members
+> and Friday 8:00 AM Eastern for everyone else. Notifications are optional.
+> Clinic locations are deliberately not shown because this is a members' club.
+
+**3. After Apple approves:** you and Tara press Release. The model tags
+`v1.0.0`, and the transfer to the LLC (decision 0042) waits for C1.
+
 ## 4b. The QR code's link (checklist I6), one message
 
 The QR code Tara prints and emails points at
