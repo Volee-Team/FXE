@@ -446,6 +446,26 @@ final class AdminFlowUITests: XCTestCase {
         XCTAssertEqual(try stack.count("registrations?id=eq.\(reg)&fee_waived_at=is.null"), 1)
     }
 
+    /// J. Tara has no player profile, so the player's clinic page offers her
+    /// nothing to tap. Until 2026-10-13 it showed Register (and the note box)
+    /// on a clinic open to her, and the tap did nothing at all: the server
+    /// registers a player, and she has none. Tuesday's clinic is open to
+    /// everyone in the seed, so before the fix this page carried Register.
+    func testAdminJ_TheClinicPageOffersTaraNoDeadRegister() {
+        app.launch()
+        signIn(as: admin)
+        openClinicsTab()
+        let card = app.buttons.matching(identifier: "clinic.card")
+            .matching(NSPredicate(format: "label CONTAINS[c] %@", "Tuesday")).firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 20), "No Clinics-tab card for Tuesday")
+        card.tap()
+        XCTAssertTrue(app.staticTexts["clinic.title"].waitForExistence(timeout: 15), "The clinic page never opened")
+        // Give the page the same time a player's Register takes to appear.
+        XCTAssertFalse(app.buttons["clinic.primaryAction"].waitForExistence(timeout: 8),
+                       "The clinic page offered Tara a Register button that cannot work")
+        XCTAssertFalse(app.descendants(matching: .any)["clinic.note"].exists, "The note box was offered to Tara")
+    }
+
     // MARK: - helpers (mirrors PlayerFlowUITests; kept local so each file reads alone)
 
     private func signIn(as email: String) {

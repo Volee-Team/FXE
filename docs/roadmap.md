@@ -149,6 +149,7 @@ Alex, 2026-08-19: *"we're not in a big rush, I can do it as an org from the star
 | Add to Calendar (nothing about where goes into the entry) | built (decision 0023) |
 | Attendance check-in | built as Came and No-show on the roster (`admin_set_no_show`) and the pros' Today screen (decision 0025) |
 | Data export for Tara | checklist D9 |
+| **A members' website with the app's full functionality**, for the club's few Android users (call of 2026-10-19 with Tara, Kat, John and Wayne; Alex: *"not urgent this second"*, a new domain to come). Same Supabase project, same views and RPCs, so the information hiding holds by construction (hard rule 1); the web admin's sign-in and `supabase-js` are the starting point | not started |
 
 ---
 
@@ -245,6 +246,28 @@ club-level; clinics are one product line). Court reservations stay on
 reservemycourt.com ($500/yr) until v2; Alex can get an FXE member account
 there to study it. White-labelling later means nothing FXE-specific hard-coded
 where a setting would do (the payment instructions, the club name, the logo).
+
+### Tara's ask: FXE and Volee together (2026-10-16, group text, relayed by Alex)
+
+Alex: *"shes talking about now integrating volee with the FXE app, like having
+a tab or smth in FXE that will take you to volee, we want them to be
+together"*. Not started; the shape is not decided. Volee is John's released
+app on its own Supabase project (CLAUDE.md: FXE is not Volee); both store
+NTRP as `numeric(2,1)` on purpose, so a rating already crosses untranslated.
+Three depths, cheapest first:
+
+1. **A door (days):** a Volee tab or Home row that opens the Volee app if it
+   is installed and its App Store page if not. No shared data, no new
+   account. Works under any developer account. Needs Volee's App Store link
+   and URL scheme from John, and Tara's words for the label.
+2. **One sign-in (weeks):** one account for both. Needs both apps on the
+   same Apple team (App Groups / shared keychain) and an auth bridge between
+   the two Supabase projects, so it depends on the Volee-transfer decision.
+3. **One app (a rebuild):** Volee's features inside FXE. Not before the
+   2026-11-06 launch.
+
+Decision 21 (three tabs, no Community tab) is hers and this would revise it;
+her most recent word wins, recorded in a decision when she picks a depth.
 
 ### Kat's ask: white label, multi-tenant (2026-10-12, group text)
 

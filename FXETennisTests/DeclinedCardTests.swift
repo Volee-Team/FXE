@@ -103,12 +103,30 @@ final class DeclinedCardTests: XCTestCase {
         XCTAssertFalse(session.cardStepShown)
     }
 
-    func testAMemberWithNoCardIsStillAsked() {
+    // Decision 0041 item 1 (Tara, 2026-10-15): "Let people view clinics
+    // before requiring a credit card". No card is no wall: the step opens
+    // only when Register or Accept was refused for it, and a saved card
+    // closes it and keeps it closed.
+    func testANewMemberBrowsesFirstAndIsAskedAtRegister() {
         let session = SessionStore()
         session.cardsRequired = true
         session.account = account(declined: false, card: false)
         XCTAssertFalse(session.skipsPlayerSteps)
-        XCTAssertTrue(session.cardStepDue)
+        XCTAssertTrue(session.cardStepDue, "a card is still due")
+        XCTAssertFalse(session.cardStepShown, "but nothing stops her from looking")
+        session.cardAskRequested = true                 // Register said card_required
+        XCTAssertTrue(session.cardStepShown)
+        session.account = account(declined: false, card: true)   // the webhook saved one
+        XCTAssertFalse(session.cardStepShown)
+        XCTAssertFalse(session.cardAskRequested, "a card removed later does not reopen it unasked")
+    }
+
+    func testAProIsNotAskedEvenAfterARefusal() {
+        let session = SessionStore()
+        session.cardsRequired = true
+        session.account = account(declined: false, role: "pro", card: false)
+        session.cardAskRequested = true
+        XCTAssertFalse(session.cardStepShown)
     }
 
     // Tara's question 107: Accept needs a card; from the lock screen the

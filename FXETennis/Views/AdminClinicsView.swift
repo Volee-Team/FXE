@@ -152,8 +152,11 @@ struct AdminClinicsView: View {
     private var upcoming: [ClinicAdmin] {
         model.clinics.filter { $0.startsAt > .now && !Calendar.current.isDateInToday($0.startsAt) }
     }
+    /// Only the last 7 days (Tara, 2026-10-19: "she doesn't need to see all
+    /// past clinics just maybe the past week"). An older clinic that still
+    /// owes a fee stays in Action Needed, which reads its own list.
     private var past: [ClinicAdmin] {
-        model.clinics.filter { $0.endsAt < .now && !Calendar.current.isDateInToday($0.startsAt) }
+        model.clinics.filter { PastWeek.contains(endsAt: $0.endsAt) && !Calendar.current.isDateInToday($0.startsAt) }
             .sorted { $0.startsAt > $1.startsAt }
     }
 
@@ -180,7 +183,7 @@ struct AdminClinicsView: View {
                         section("Today", today, empty: "No clinics today.")
                         section("Upcoming", upcoming, empty: "Nothing scheduled yet.")
                         if !past.isEmpty {
-                            section("Past", Array(past.prefix(10)), empty: "")
+                            section("Past", past, empty: "")
                         }
                     }
                     .padding(Brand.Spacing.pageMargin)
@@ -476,5 +479,13 @@ private struct AdminClinicRow: View {
         clinic.startsAt.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
         + " at "
         + clinic.startsAt.formatted(.dateTime.hour().minute())
+    }
+}
+
+/// Which ended clinics Tara's Past section shows: those that ended in the
+/// last 7 days. Pure, so `PastWeekTests` can pin the edges.
+enum PastWeek {
+    static func contains(endsAt: Date, now: Date = .now) -> Bool {
+        endsAt < now && endsAt >= now.addingTimeInterval(-7 * 24 * 3600)
     }
 }

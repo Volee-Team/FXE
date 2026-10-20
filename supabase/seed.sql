@@ -241,3 +241,16 @@ begin
   end if;
   perform set_config('request.jwt.claims', '', true);
 end $$;
+
+-- ---------------------------------------------------------------- pre-live
+-- The go-live migrations (the Stripe cutover, then payments on) replay on
+-- every local and CI reset, because a migration cannot tell a laptop from
+-- production. Everything here was written against the pre-live state, so the
+-- seed, which runs after the migrations and only locally and in CI, puts it
+-- back: no record of the switch to live, payments off, no switch-on moment.
+-- On a database where the go-live migrations have not run yet these change
+-- nothing. tests/sql/golive_state.sql fails if they go (backlog, live review
+-- B3, 2026-10-04).
+delete from public.app_settings where key = 'stripe_live_since';
+update public.app_settings set value = 'false' where key = 'payments_enabled';
+update public.app_settings set value = '' where key = 'payments_enabled_at';

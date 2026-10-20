@@ -586,6 +586,48 @@ final class PlayerFlowUITests: XCTestCase {
                        "the database agrees: no registration for Dana")
     }
 
+    /// Decision 0041 item 1, Tara: "Let people view clinics before requiring
+    /// a credit card ... It stopped me from even looking." Payments on, Dana
+    /// has no card: she reaches Home and the clinic list with nothing in the
+    /// way; Register is refused, says so, and opens the card step, which
+    /// closes; nothing is registered. This is also all Apple's reviewer sees,
+    /// who has no card to add.
+    func testNoCardIsNoWallRegisterAsksForOne() throws {
+        let stack = try noCardFixture()
+        app.launch()
+        signIn(as: "dana@fxe.test")
+        XCTAssertTrue(app.staticTexts["home.greeting"].waitForExistence(timeout: 20), "Home never appeared")
+        XCTAssertFalse(app.buttons["cardStep.close"].waitForExistence(timeout: 3), "A card wall opened before she could look")
+
+        openClinicsTab()
+        let card = openClinicCard()
+        XCTAssertTrue(tapWhenReady(card), "Clinic card never became tappable")
+        let register = app.buttons["clinic.primaryAction"]
+        XCTAssertTrue(register.waitForExistence(timeout: 15))
+        XCTAssertEqual(register.label, "Register")
+        XCTAssertTrue(tapWhenReady(register))
+        let close = app.buttons["cardStep.close"]
+        XCTAssertTrue(close.waitForExistence(timeout: 15), "Register did not open the card step")
+        close.tap()
+        XCTAssertFalse(close.waitForExistence(timeout: 2) && close.isHittable, "Close did not close the step")
+
+        XCTAssertTrue(app.staticTexts["Add a card on your Profile to register."].waitForExistence(timeout: 10),
+                      "The refusal did not say why")
+        XCTAssertEqual(app.buttons["clinic.primaryAction"].label, "Register", "A refusal must not register")
+        XCTAssertEqual(try stack.count("registrations?player_id=eq.a0000000-0000-0000-0000-000000000004&status=neq.canceled"), 0,
+                       "the database agrees: no registration for Dana")
+    }
+
+    private func noCardFixture() throws -> ServiceRest {
+        guard let key = ProcessInfo.processInfo.environment["FXE_SUPABASE_SERVICE_KEY"], !key.isEmpty else {
+            throw XCTSkip("Needs the local stack's service key (TEST_RUNNER_FXE_SUPABASE_SERVICE_KEY)")
+        }
+        let stack = ServiceRest(base: ProcessInfo.processInfo.environment["FXE_SUPABASE_URL"] ?? "http://localhost:54321", key: key)
+        addTeardownBlock { try? stack.patch("app_settings?key=eq.payments_enabled", ["value": "false"]) }
+        try stack.patch("app_settings?key=eq.payments_enabled", ["value": "true"])
+        return stack
+    }
+
     /// Payments on, a card on Dana's account and a decline on it, through
     /// the local stack's REST API as service_role: no client may write any
     /// of the three (hard rule 8), which is the point of the feature. Put

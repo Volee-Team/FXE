@@ -99,6 +99,12 @@ struct RootView: View {
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { Task { await session.returnedToForeground() } }
         }
+        // Crash reports that waited for a signed-in session (decision 0035)
+        // go now, in the background; nothing on screen waits for them.
+        .task(id: session.phase) {
+            guard session.phase == .signedIn else { return }
+            Task.detached(priority: .background) { await DiagnosticsOutbox.shared.flush() }
+        }
     }
 }
 

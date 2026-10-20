@@ -2,6 +2,10 @@
 //  CardStepView.swift
 //  FXETennis
 //
+//  Since decision 0041 (2026-10-15) this is no longer an onboarding step:
+//  Tara, "It stopped me from even looking". It opens, closable, when
+//  Register or Accept is refused for no card. History below.
+//
 //  Onboarding step 2 of the Final Updates (2026-09-26): "1. Enter profile
 //  data (name, rating, etc) 2. Enter CC information w/ disclosure check box
 //  3. Then show available clinics." After the profile and the waiver, while
@@ -51,7 +55,7 @@ struct CardStepView: View {
             .toolbar {
                 if canClose {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button("Close") { session.cardChangeRequested = false }
+                        Button("Close") { session.cardChangeRequested = false; session.cardAskRequested = false }
                             .accessibilityIdentifier("cardStep.close")
                         .tint(Brand.textOnNavy)
                     }
@@ -71,9 +75,10 @@ private struct CardGate: ViewModifier {
         content
             .sheet(isPresented: Binding(
                 get: { session.waiverAccepted == true && session.cardStepShown },
-                // Only the declined-card step can be swiped away (canClose).
-                set: { if !$0 { session.cardChangeRequested = false } }
-            )) { CardStepView(canClose: !session.cardStepDue) }
+                // Every card step can be closed since decision 0041: it opens
+                // only when Register or Accept asked for it.
+                set: { if !$0 { session.cardChangeRequested = false; session.cardAskRequested = false } }
+            )) { CardStepView(canClose: true) }
     }
 }
 

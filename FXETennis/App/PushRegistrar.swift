@@ -40,6 +40,9 @@ final class PushAppDelegate: NSObject, UIApplicationDelegate, UNUserNotification
         // Accept and Decline on the invitation push (InvitationActions). iOS
         // shows no buttons for a category the app has not registered.
         UNUserNotificationCenter.current().setNotificationCategories([InvitationActions.category])
+        // Crash and hang reports (decision 0035). Early, so MetricKit can
+        // hand over what it held from the last run as soon as it likes.
+        DiagnosticsReporter.shared.start()
         return true
     }
 

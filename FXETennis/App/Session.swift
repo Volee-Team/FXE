@@ -107,22 +107,32 @@ final class SessionStore {
         // Written only when it changes: an @Observable write invalidates
         // every view that reads it (the root's card sheet) even when the
         // value is the same, and profiles load often.
-        didSet { if cardChangeRequested, account?.isCardDeclined != true { cardChangeRequested = false } }
+        didSet {
+            if cardChangeRequested, account?.isCardDeclined != true { cardChangeRequested = false }
+            if cardAskRequested, account?.hasCard == true { cardAskRequested = false }
+        }
     }
     /// nil until known; false shows the waiver over the app (decision 0013).
     var waiverAccepted: Bool?
     /// Consent on file for the current card-permission words (decision 0015).
     var cardConsent: Bool?
-    /// Payments are on and a card is required (app_settings), so onboarding
-    /// asks for a card after the waiver.
+    /// Payments are on and a card is required (app_settings). Since decision
+    /// 0041 (Tara, 2026-10-15: "It stopped me from even looking") this no
+    /// longer stops anyone at onboarding: the card is asked for when Register
+    /// or Accept needs it (`cardAskRequested`).
     var cardsRequired = false
     /// Tara and her pros never see the waiver or the card step: she is
     /// exempt on the server, and her pros "No" (question 96, 2026-10-12).
     var skipsPlayerSteps: Bool { account?.isAdmin == true || account?.isPro == true }
-    /// The onboarding card step is due: cards required, none saved, a player.
+    /// A card is due: cards required, none saved, a player. Shown only once
+    /// asked for (`cardAskRequested`), never as a wall after the waiver.
     var cardStepDue: Bool {
         cardsRequired && account != nil && account?.hasCard != true && !skipsPlayerSteps
     }
+    /// Register or Accept was refused for no card (`card_required`): the card
+    /// step opens, closable, and the player keeps browsing if they close it
+    /// (decision 0041 item 1, and Apple's reviewer, who has no card to add).
+    var cardAskRequested = false
     /// Register or Accept was refused for a declined card (decision 0024):
     /// the card step opens so a new card can be saved. Unlike the onboarding
     /// step it can be closed, and it closes itself once the webhook has
@@ -132,7 +142,7 @@ final class SessionStore {
     /// A declined card alone takes nothing over: browsing, My Clinics and
     /// cancelling all still work; only Register and Accept are refused.
     var cardStepShown: Bool {
-        cardStepDue
+        (cardStepDue && cardAskRequested)
             || (cardChangeRequested && account?.isCardDeclined == true && !skipsPlayerSteps)
     }
     var players: [PlayerProfile] = []
@@ -278,6 +288,7 @@ final class SessionStore {
         cardConsent = nil
         cardsRequired = false
         cardChangeRequested = false
+        cardAskRequested = false
     }
 
     /// Loads the account, its players and the two gates. A failure changes
@@ -348,6 +359,7 @@ final class SessionStore {
             // Fresh card summary and payments switches; the card step opens if
             // they say a card is due.
             await settle(await loadProfile())
+            if cardStepDue { cardAskRequested = true }
         case .cardDeclined:
             // The server just said the card is declined: fresh account (its
             // code for Profile), then the step, unless the reload shows the
