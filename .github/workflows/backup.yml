@@ -69,7 +69,7 @@ jobs:
 
     steps:
       # Only for .github/backup-recipient.txt; the dump itself needs no source.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # The hosted database is Postgres 17. Ubuntu's default client is older,
       # and pg_dump refuses to dump a server newer than itself, so install the
