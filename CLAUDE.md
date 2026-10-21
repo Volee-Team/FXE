@@ -697,6 +697,7 @@ does not name, and on any file in `docs/archive/` without its banner.
 | `docs/questions-for-tara.md` | Every question for Tara, numbered, with the default we would pick and the decision that answered it. **Status** |
 | `docs/decisions/` | One file per decision that would otherwise be re-litigated: what we chose, why, what we rejected, how we would know we were wrong. A record is a dated snapshot; a later one supersedes it with a forward line. The README's table is the decision **status** |
 | `docs/roadmap.md` | What is in v1, v1.1, v2, what is parked, what we are deliberately not doing. **Tara's new asks land here first**, never straight into code. Built rows point at the architecture, scheduled ones at a checklist row |
+| `docs/onboarding.md` | How a new person or a new Claude gets set up and works here, and what the repo cannot tell them (2026-10-21, for John's Claude) |
 | `docs/architecture.md` | The system as built: surfaces, the security model, the schema, the RPCs, the tests. Every schema object, probe, job and Swift file is named (`scripts/check-doc-inventory.sh`) |
 | `docs/for-alex.md` | Click-by-click steps for Alex's checklist rows, each section naming its row |
 | `docs/style-guide.md` | Kat's style guide, the source of truth for style, with the status colours and accessibility rules |

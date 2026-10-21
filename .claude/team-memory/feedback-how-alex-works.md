@@ -16,3 +16,5 @@ Collected from 2026-08-13 through 2026-09-13.
 - Replies: numbered to match his numbered asks, honest about what was not verified, a plain "what I need from you" block at the end.
 
 **Why:** these are the instructions he has repeated most. **How to apply:** default to autonomy on engineering, zero autonomy on Tara's product rules, and end every long turn with the two-line list of what only he can do. Related: [[feedback-take-more-control]], [[feedback-ask-tara-first]], [[project-accounts-and-tooling]].
+
+**One conclusion, at the end (Alex, 2026-10-21: "u need to stop doing your summaries halfway thru then u keep going...").** While working, say only what you are doing in a line. When the work is done, give one final answer: the problems found, then what needs doing and by whom. Never a summary followed by more work followed by another summary.
