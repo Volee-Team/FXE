@@ -428,6 +428,8 @@ content; age rating: answer None to every question (4+).
 | User ID | Yes | App Functionality |
 | Other User Content (the private note to Tara at Register) | Yes | App Functionality |
 | Crash Data, Performance Data | Yes (for at most a day, privacy policy) | App Functionality |
+| Purchase History (the record of every charge and refund) | Yes | App Functionality |
+| Product Interaction (Stripe's card form collects it) | No | App Functionality |
 
 Then **Add for Review → Submit**. Apple usually answers in 1 to 2 days.
 
