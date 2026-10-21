@@ -24,7 +24,7 @@ How this file works, so it can be trusted:
    with one word: **DONE** (with the date and the evidence), **OPEN**,
    **BLOCKED** (on what), **DECIDE** (whose call), or **LATER** (after launch).
 4. **A status is re-derived by command, never copied forward.** Last full
-   re-derivation: **2026-09-28**, each check named in the row. Re-derived
+   re-derivation: **2026-10-21**, by four read-only reviewers in parallel (sections A and D, C and G, H and I; State today, section 0 and E by the model), each check named in the row. Before that 2026-09-28. Re-derived
    again on 2026-10-12 (by `git`, the code and Alex's reports, each named in
    the row): the State today block, A7, A9, A10, A13, A14, C3, C8, C10, C11,
    C13, D1, D4, D6, D14, G2, G7, G8, H8, I2, I3, I9 and section E.
@@ -39,62 +39,57 @@ How this file works, so it can be trusted:
 
 ---
 
-## State today (re-derived 2026-10-17)
+## State today (re-derived 2026-10-21)
 
 - **Code:** `main` carries build 12, version 1.0.0, tag `v0.1.0-rc12`
   (PR #97 merged 2026-10-19, `2f5888d`: browse before a card, Tara's 7-day
   Past, crash reports, the card-removed webhook, the secret scan, the clinic
-  page for staff), green on iOS 26.2, 18.6 and 17.5. It is the App Store
-  release candidate (C14).
-- **On testers' phones:** the last upload tagged in git is `v0.1.0-tf7`; no
-  upload of build 8 or 9 was reported (C8).
-- **Hosted:** 69 of 69 migrations paired (`scripts/live-status.sh`,
-  2026-10-17), including the go-live pair `20261014000004/5` from
-  `prelive-1013`, pushed 2026-10-14 ahead of its merge. **Payments are live**
-  since 2026-10-14: `payments_enabled`, `payments_enabled_at` and
-  `stripe_live_since` set, one real $23 charge and its refund on Alex's card,
-  4 of 9 members with a saved card (same script). Stripe pays out daily to
-  Tara's bank (`docs/live-facts.md`).
-- **Tests:** 50 SQL probes plus 15 shell probes (races and the 200-request
-  rush), 288 unit tests, 27 XCUITests (green on iOS 26.2, 18.6 and 17.5 on
-  2026-10-13 UTC, `docs/ui-test-runs.log`), 50 browser tests.
-- **Waiting on others:** Apple's answer on the LLC (C1: not approved as of
-  2026-10-16), John's upload of build 11 and Apple's beta review (C8, C11),
-  Tara's questions 101 (Foxcroft's share), 109 to 117 and 118 to 125
-  (decision 0041, registration by clinic type).
+  page for staff), green on iOS 26.2, 18.6 and 17.5 on 2026-10-19
+  (`docs/ui-test-runs.log`, fingerprint `96d01ac99a1a364c`).
+- **At Apple:** John uploaded build 12 from that commit (his tag
+  `v0.1.0-tf12`, 2026-10-19) and submitted version 1.0.0 for App Store review
+  on his own account (decision 0042, C14), with the App Review account (C13).
+  Testers' phones are still on build 7 until it is released.
+- **Hosted:** 69 of 69 migrations paired. **Payments live** since 2026-10-14:
+  3 charges succeeded, 1 refund, 0 failed; 10 members, 4 with a saved card
+  (`scripts/live-status.sh`, 2026-10-21). No published clinic after 10-20
+  (read-only query, 2026-10-21): Tara's next week is needed while Apple
+  reviews. Stripe pays out daily to Tara's bank; receipts off
+  (`docs/live-facts.md`).
+- **Tests:** 50 SQL probes plus 15 shell probes, 288 unit tests, 27
+  XCUITests, 50 browser tests (`scripts/check-doc-claims.sh`, 2026-10-21).
+- **Waiting on others:** Apple's review of 1.0.0 (C14) and the LLC account
+  (C1); Tara: next week's clinics, questions 109 to 125 (none answered in any
+  channel the model can read, checked 2026-10-21), the Volee button words.
 
 ---
 
 ## 0. The critical path to 2026-11-06
 
 What must be true on the day, in the order it has to happen. Each item is a
-row below; this list adds nothing of its own. Re-derived 2026-10-12 (Tara:
-"when can we put it on the app store and have people testing ... with actual
-payments", decision 0040).
+row below; this list adds nothing of its own. Re-derived 2026-10-21, after
+decision 0042 (release on John's account now, move to the LLC later).
 
-Testers come first, on John's account, without waiting for the LLC: TestFlight
-needs only Apple's beta review, and payments go through Stripe, not Apple.
-
-1. **The review account exists** (C13): Alex signs up "App Review" in the
-   TestFlight app, so it lands on hosted, and gives John the login. [Alex]
-2. **Build 11 to External Testing on John's account** (C8, C11): the tag
-   `v0.1.0-rc11` exists (merged 2026-10-13); John archives it,
-   uploads as App Store Connect (not Internal Only) and submits External
-   Testing. Apple's beta review takes about 1 to 2 days. [me, John, Apple]
-3. **Real payments on**: done 2026-10-14 (A9, A10), ahead of Apple's review
-   because the build testers already have reads Stripe's key from the
-   server, so they could save a card; what is left is
-   the receipts and dispute-email settings (A14). [Alex, Tara]
-4. **The soft launch** (G7): the date and the first testers, picked by Alex
-   and Tara; the public link goes to them once Apple approves (C11). [Alex,
-   Tara, John]
-5. **Tara's email to members** with the QR code and the public link (G8, I6).
+1. **Apple approves 1.0.0** (C14): submitted 2026-10-20/21 with the review
+   account (C13). Tara keeps a week of clinics published while it is in
+   review. If Apple rejects, the model fixes and drafts the reply. [Apple,
+   Tara, me]
+2. **Release** (C14): Alex and Tara press Release (the version is set to
+   manual); the model tags `v1.0.0`. Testers move to it from the
+   App Store. [Alex, Tara, me]
+3. **Real payments**: live since 2026-10-14 (A9, A10); receipts off
+   (2026-10-21); dispute emails in Tara's own login still to check (A14).
    [Tara]
+4. **Decision 0041's server side**: 1-hour offers that expire, her pushes to
+   both sides, first come first served for clinics that are not a 105, join
+   times on her roster; built with the defaults of questions 118 to 125 until
+   she answers. [me, Tara]
+5. **Tara's email to members** with the QR code and the App Store link (G8,
+   I6). [Tara]
 6. **Push seen on a real lock screen** (C3). [Alex]
-7. **The LLC's own app** (C1, C2, C12, C7): Apple's answer on the authority
-   letter, then a new bundle id under the LLC, testers reinstall (accounts
-   and cards carry over; they live on our server), and the App Store
-   submission before the party. [Apple, Alex, me]
+7. **The move to the LLC** (C1, C12): App Transfer once Apple approves the
+   LLC account, then the LLC's APNs key on hosted. Not needed for the party.
+   [Apple, Alex, John]
 8. **Supabase Pro** (D3): deferred by Alex on 2026-10-21; the keep-warm job
    and our own nightly backup cover it until then. [Alex]
 
@@ -103,21 +98,20 @@ needs only Apple's beta review, and payments go through Stripe, not Apple.
 
 | ID | Item | Owner | Status |
 |---|---|---|---|
-| A1 | Stripe sandbox keys in Supabase's Edge Function secrets | [Alex] | **DONE 2026-09-27.** `supabase secrets list` shows `STRIPE_PUBLISHABLE_KEY`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`; a forged request to `stripe-webhook` answers `bad_signature`, so the signing secret is loaded |
+| A1 | Stripe sandbox keys in Supabase's Edge Function secrets | [Alex] | **DONE 2026-09-27** (sandbox). Replaced by live keys 2026-10-14 (A10): the secrets API shows `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY` and `STRIPE_WEBHOOK_SECRET` updated 2026-10-14T23:20 UTC (read 2026-10-21) |
 | A2 | End-to-end payment test on the real app in Stripe's sandbox, Alex's own account (`docs/stripe-e2e-test.md`, eight rows) | [Alex]+[me] | **LATER**: overtaken on 2026-10-14 by the real thing (A10: a live card saved, a $23 charge and its refund on Alex's account); it returns with A13 if the Stripe code changes |
 | A3 | Tara's payment-policy answers | [Tara] | **DONE 2026-09-21** (decisions 0012, 0013) |
 | A4 | Her policy in the code: no courtesy, 3 hours, no-shows, her one tap per clinic, card required, card permission | [me] | **DONE 2026-09-26** (20260916000001, 20260921000001, 20260926000001; probes `cancellation_policy`, `late_cancellation`, `card_consent`) |
 | A5 | Refund when she cancels a clinic | [me] | **DONE 2026-09-16**, moot: nothing is charged before a clinic ends (her answer 7) |
-| A6 | Payment history for players: the Past section of My Clinics; Stripe email receipts not decided | [me] | **LATER**: Past shipped 2026-09-21; receipts after launch |
+| A6 | Payment history for players: the Past section of My Clinics; Stripe email receipts not decided | [me] | **DONE 2026-10-21**: Past shipped 2026-09-21; no Stripe receipts by Tara's choice (question 86, "No receipts"); Stripe's successful-payment and refund emails both off (Alex 2026-10-21, `docs/live-facts.md`) |
 | A7 | Stripe live mode: activate with Tara's business and bank details, typed into Stripe's own form only; move the account's ownership to Tara | [Alex]+[Tara] | **DONE 2026-10-04**: Tara owns the account (transferred 2026-10-03); the LLC's EIN replaced the SSN in Stripe's business details; Payments and Payouts both Active (Alex, 2026-10-04). Tara has no accountant, so the SSN-or-EIN question is closed (Alex, 2026-10-05). Single-member LLC, statement descriptor FXE TENNIS, Radar Lite, tax off. Watch her email for Stripe's follow-ups |
-| A8 | Webhook destination for hosted, five events | [Alex] | **DONE 2026-09-27**, with A1 |
-| A12 | Three more webhook events for chargebacks (`charge.dispute.created`, `.updated`, `.closed`), on the test endpoint now and the live one later (decision 0021) | [Alex] | **DONE 2026-10-01** (Alex: "dispute events added", in the prompt log). Not yet seen working: the first test dispute in the sandbox is the check |
-| A9 | Switch payments on (`payments_enabled` true **and `payments_enabled_at` = now(), in the same migration**, decision 0018: nothing that ends before that moment is ever owed or charged). From that moment nobody registers or accepts an invitation without a saved card (decision 0040) | [me] | **DONE** 2026-10-14: `20261014000005_payments_on` pushed to hosted after the cutover; `scripts/live-status.sh` 2026-10-17 shows `payments_enabled` and `payments_enabled_at` set and one live charge succeeded. Alex said go before Apple's review (C11) because build 7 already reads the publishable key from the server |
+| A8 | Webhook destination for hosted, five events | [Alex] | **DONE 2026-09-27**, with A1 (sandbox). Live endpoint "FXE app" with nine events since 2026-10-14 (A10, `docs/live-facts.md`) |
+| A12 | Three more webhook events for chargebacks (`charge.dispute.created`, `.updated`, `.closed`), on the test endpoint now and the live one later (decision 0021) | [Alex] | **DONE 2026-10-01** on the test endpoint, and on the live endpoint "FXE app" since 2026-10-14 (nine events, A10). Not yet seen working: no dispute on hosted (`payments` kinds are `clinic_fee` and `refund` only, read 2026-10-21) |
+| A9 | Switch payments on (`payments_enabled` true **and `payments_enabled_at` = now(), in the same migration**, decision 0018: nothing that ends before that moment is ever owed or charged). From that moment nobody registers or accepts an invitation without a saved card (decision 0040) | [me] | **DONE** 2026-10-14: `20261014000005_payments_on` pushed to hosted after the cutover. `scripts/live-status.sh` 2026-10-21: `payments_enabled` and `payments_enabled_at` set, live charges succeeded 3 and refunds 1 (Alex's $23 test, refunded; two members at $22 on Oct 17), 0 failed, 0 waiting. Alex said go before Apple's review because build 7 already reads the publishable key from the server |
 | A10 | Live keys: a restricted key with only the permissions our code uses, a live webhook with the nine events (the ninth, `payment_method.detached`, since 2026-10-13), the three secrets swapped, and at the same moment the cutover that forgets every sandbox card so everyone adds a real one (`stripe_cutover_to_live`, `20260927200001`, built in PR #75, H2) | [me]+[Alex] | **DONE** 2026-10-14: restricted key "FXE app server", live webhook "FXE app" with nine events, three secrets set on hosted 2026-10-14 23:20 UTC, cutover `20261014000004` pushed (`stripe_live_since` set); a live `setup_intent.succeeded` wrote a card the same evening (`scripts/live-status.sh`, `docs/live-facts.md`) |
 | A11 | **Real money at the party**: payments fully live at the party (2026-11-06; it was 2026-10-16 until Tara moved it) (Alex, 2026-09-27: *"yes we want it fully done"*; promo codes "prob not"). The fallback if the live switch (A13, A10, A9) is not done by **2026-11-04**: payments stay off for the party | [Alex]+[Tara] | **DONE** 2026-10-14: payments live three weeks before the 11-04 gate (A9, A10; `scripts/live-status.sh` 2026-10-17) |
 | A13 | Rehearsal before the live switch: a restricted key in Stripe's **sandbox** carrying exactly the live key's permissions, and the model runs save a card, a charge after a clinic, a refund, a declined card and a 3-D Secure card against real Stripe test mode (a restricted key missing one permission makes saving a card fail silently; nothing has talked to real Stripe yet, only the mock). The gate for A10 | [Alex]+[me] | **LATER**: Alex skipped it on 2026-10-14 ("we dont rlly need to rehearse"); the real charge and refund on his own card stood in for it. `tests/stripe/rehearsal.sh` stays ready for a change to the Stripe code |
-| A14 | Three Stripe settings on the live account: customer receipts off (Tara: "No receipts", question 86), payouts to her bank on a Daily schedule, dispute emails on in Tara's own login | [Alex]+[Tara] | **OPEN**: payouts daily to her bank verified 2026-10-16 (`docs/live-facts.md`); receipts and dispute emails not yet checked; steps in `docs/for-alex.md` |
-
+| A14 | Three Stripe settings on the live account: customer receipts off (Tara: "No receipts", question 86), payouts to her bank on a Daily schedule, dispute emails on in Tara's own login | [Alex]+[Tara] | **OPEN**: receipts off (successful-payment and refund emails, Alex 2026-10-21) and daily payouts to her bank (2026-10-16) both verified (`docs/live-facts.md`); dispute emails in Tara's own login not yet checked; steps in `docs/for-alex.md` |
 ## B. Stripe steps
 
 One copy only: `docs/for-alex.md` §1 (done 2026-09-27; kept for live mode).
@@ -129,20 +123,19 @@ What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision
 | ID | Item | Owner | Status |
 |---|---|---|---|
 | C1 | Apple Developer Program enrollment as FXE Tennis, LLC (Apple asked for the ID, employment verification and a business document on 2026-08-26; Tara sent them) | [Tara]/[Apple] | **BLOCKED** on Apple: on 2026-10-11 Apple (case 102990597020, enrollment L6R8KDC88Y) asked for a letter giving Alex authority to bind the LLC; signed by Alex and Tara, and Alex reported it sent on 2026-10-12. Waiting on Apple |
-| C2 | Bundle id, Team ID, App Store Connect record and APNs key under the LLC | [Alex] | **BLOCKED** on C1 |
-| C3 | Push notifications on the lock screen: sender, trigger and audit columns deployed 2026-09-23 (#61); the app's half (banner while open, tap opens the clinic, badge clears, Accept and Decline on the lock screen) merged in PR #75 (H5) | [me] | **OPEN**: key in 2026-10-03. John's key `75U93U9VS6` (team `Q7NA43M86G`); `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_TOPIC`, `APNS_PRIVATE_KEY` and `PUSH_WEBHOOK_SECRET` set on hosted, and Vault `push_function_url` (58 chars) and `push_webhook_secret` (64) written through the management API, both names read back. Alex's phone is registered (1 device on his account). **Open: the first real push seen on a lock screen** [Alex] |
-| C4 | Privacy manifest | [me] | **DONE 2026-09-12** (#37) |
+| C2 | Bundle id, Team ID, App Store Connect record and APNs key under the LLC | [Alex] | **BLOCKED** on C1, and now part of C12: since decision 0042 (2026-10-19) `com.fxetennis.app`, its App Store Connect record and the listing move to the LLC by App Transfer, and the LLC's APNs key replaces John's then. Nothing is created separately under the LLC |
+| C3 | Push notifications on the lock screen: sender, trigger and audit columns deployed 2026-09-23 (#61); the app's half (banner while open, tap opens the clinic, badge clears, Accept and Decline on the lock screen) merged in PR #75 (H5) | [me] | **BLOCKED** on a new APNs key [John]+[Alex]: **no push has ever been delivered from hosted.** Of 38 attempts (2026-10-04 to 10-15), 27 failed `BadEnvironmentKeyInToken` and 11 `no_device` (read-only query 2026-10-21): John's key `75U93U9VS6` (set 2026-10-03) is not valid for Apple's production push service, which every TestFlight and App Store phone uses. Fix: a new key with environment **Sandbox & Production**, then `APNS_KEY_ID` and `APNS_PRIVATE_KEY` replaced on hosted (steps in `docs/for-alex.md` §3). The rest (trigger, Vault, `PUSH_WEBHOOK_SECRET`, 4 registered devices) is in place. The earlier "key in" was a secret set, never a push seen: hard rule 12 |
+| C4 | Privacy manifest | [me] | **OPEN**: `FXETennis/Resources/PrivacyInfo.xcprivacy` (unchanged since 2026-09-12) declares Name, Email, Phone, User ID and Payment Info; build 10 added the note to Tara (Other User Content) and build 12 crash reports (Crash Data, Performance Data), and Purchase History is declared in App Store Connect. Fix in the next build [me] |
 | C5 | Delete my account in the app, history kept (guideline 5.1.1(v)) | [me] | **DONE 2026-09-21**; `delete-account` deployed the same day |
 | C6 | Privacy policy at a public URL | [Tara] | **DONE 2026-09-27**: Tara approved it ("looks good"), contact fersctennispro@gmail.com; published at `https://fxe-tennis-admin.vercel.app/privacy.html` (verified by `deploy-web.sh`) and linked from Profile in the app (build 4) |
-| C7 | App Store listing: name, subtitle, description in Tara's words, screenshots, age rating, support URL, review notes with a test account | [Alex]+[me] | **OPEN**: drafted 2026-10-19 in `docs/for-alex.md` §4c for the release on John's account (decision 0042); the description needs Alex's or Tara's approval; support page `web/support.html`; screenshots by the model once build 12's UI runs are done |
-| C8 | TestFlight **build 11** from the tag `v0.1.0-rc11` (build 10's note at Register and Tara's 2026-10-12 answers, plus the 2026-10-12 audit fixes; green on iOS 17, 18 and 26 before the tag) | [John] | **OPEN**: tagged 2026-10-13 on `355f546` (`git ls-remote --tags origin v0.1.0-rc11`); John uploads it as App Store Connect, not Internal Only (`docs/testflight.md`). Builds 9 and 10 were never reported uploaded; 11 replaces both |
-| C9 | Real-device pass: the two simulator flakes checked on an iPhone | [Alex]/[me] | **BLOCKED** on C8 |
-| C10 | An annotated git tag at every TestFlight build and upload | [me]/[John] | **OPEN**: `v0.1.0-rc4` to `rc11` exist, and upload tags were made for builds 2, 5 and 7 only (`git tag`, 2026-10-13). Next: `v0.1.0-tf11` when John's upload of build 11 is processed |
-| C11 | External TestFlight on John's account with a public link, through Apple's beta review, with no testers invited until the soft launch (G7) | [Alex]/[John] | **OPEN**: not yet submitted; John uploads build 11 as App Store Connect and submits External Testing (`docs/testflight.md`, `docs/for-alex.md`). The privacy URL it needs is live (C6) |
+| C7 | App Store listing: name, subtitle, description in Tara's words, screenshots, age rating, support URL, review notes with a test account | [Alex]+[me] | **DONE** 2026-10-21 (Alex: "he submitted before i saw this"): John filled the listing from `docs/for-alex.md` §4c and submitted. The description went as drafted; its approval tick and the support page's are still open in `docs/copy-review.md` (G4); a change is an edit in App Store Connect |
+| C8 | TestFlight **build 11** from the tag `v0.1.0-rc11` (build 10's note at Register and Tara's 2026-10-12 answers, plus the 2026-10-12 audit fixes; green on iOS 17, 18 and 26 before the tag) | [John] | **OPEN**: build 11 was never uploaded. Build 12 (1.0.0) was uploaded by John (tag `v0.1.0-tf12` on `2f5888d`, 2026-10-19 22:42 EDT). Testers are still on build 7 (Alex). Left: John adds build 12 to the testers' TestFlight group [John] |
+| C9 | Real-device pass: the two simulator flakes checked on an iPhone | [Alex]/[me] | **OPEN** [Alex]: build 12 is uploaded (`v0.1.0-tf12`, 2026-10-19); install it from TestFlight and check the two simulator flakes on a real iPhone |
+| C10 | An annotated git tag at every TestFlight build and upload | [me]/[John] | **OPEN**: `v0.1.0-rc4` to `rc12` exist; upload tags for builds 2, 5, 7 and 12 (`v0.1.0-tf12` by John, 2026-10-19). Builds 8 to 11 were never uploaded (`git tag`, 2026-10-21); `v0.1.0-tf2` is lightweight, not annotated. Next: `v1.0.0` at the App Store release (C14) |
+| C11 | External TestFlight on John's account with a public link, through Apple's beta review, with no testers invited until the soft launch (G7) | [Alex]/[John] | **DECIDE** [Alex]: External Testing was never submitted; build 12 went straight to App Store review (decision 0042). Either submit build 12 to External Testing too for a public TestFlight link, or wait for the App Store link (C14) for G7, G8 and I6. `web/app/target.js` `INSTALL_URL` is still empty |
 | C12 | Move the app to the LLC once C1 is approved: App Transfer of `com.fxetennis.app` from John's account (possible once it has an App Store release, C14), then the LLC's APNs key on hosted | [Alex]+[John] | **BLOCKED** on C1 and C14 (decision 0042, 2026-10-19; replaces the new-bundle-id plan) |
 | C13 | How Apple's reviewer signs in: one real account called App Review, made through the app's own sign-up with an address Alex controls, left out of the board report; while keys are sandbox the review notes give Stripe's 4242 test card | [Alex] | **DONE** 2026-10-20: "App Review" made through the TestFlight app at 23:55 New York, waiver signed, no card, not a member (hosted, read-only query 2026-10-21); John holds the login for App Store Connect. It is not yet left out of the board report (backlog) |
-| C14 | **App Store release, build 12, on John's account** (decision 0042): PR #97 merged green, tag `v0.1.0-rc12`, John uploads and submits version 1.0.0 with the review account (C13) and the listing (C7); Tara has the next week's clinics published so the reviewer sees some | [me]+[John]+[Alex] | **OPEN**: decided 2026-10-19; steps in `docs/for-alex.md` |
-
+| C14 | **App Store release, build 12, on John's account** (decision 0042): PR #97 merged green, tag `v0.1.0-rc12`, John uploads and submits version 1.0.0 with the review account (C13) and the listing (C7); Tara has the next week's clinics published so the reviewer sees some | [me]+[John]+[Alex] | **OPEN**, waiting on [Apple]: build 12 uploaded (`v0.1.0-tf12`, John, 2026-10-19) and 1.0.0 submitted with the App Review account (C13) (Alex 2026-10-21). Still open: 0 upcoming published clinics on hosted (read-only query 2026-10-21) [Tara]; John's two extra App Privacy rows, not confirmed [John]. After approval, a manual Release [Alex]+[Tara] |
 ## D. Backend and operations
 
 | ID | Item | Owner | Status |
@@ -152,8 +145,8 @@ What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision
 | D2 | Reset page allow-listed as a redirect on hosted | [Alex] | **DONE 2026-09-01**; verified 2026-09-27 (`uri_allow_list` is `https://fxe-tennis-admin.vercel.app/reset.html`) |
 | D3 | Supabase plan: the free tier pauses after a quiet week and has no point-in-time recovery; Pro is $25 a month | [Alex] | **LATER**: Alex, 2026-10-21: *"ig were fine for now, we dont rlly need it yet"*. What covers the gap meanwhile: real members use it daily now, the nightly keep-warm job pings it, and the nightly encrypted backup (restore drill passed 2026-10-12, D4). Revisit if the project pauses or before a busy season |
 | D4 | Restore drill (a backup nobody has restored is not a backup) | [me] | **DONE 2026-10-12**: last night's encrypted backup restored into a bare Postgres, the whole migration ledger and all 9 sign-ins back, after dropping the image's own `auth` schema first (restoring onto it gave 0 users). Monthly; next due 2026-11-02, the week before the party (runbook row 12) |
-| D5 | Tara's real templates and clinics in hosted, through the admin site | [Tara] | **DONE 2026-10-11**: her real clinics are on hosted (Coed "105", Ladies All Level, Ladies 3.0+, Queen City, Ladies Beginner 2.5, Men's 3.0+, 2026-10-04 to 2026-10-07, read through the management API); none after 2026-10-07 yet |
-| D6 | Crash reporting and error alerts: MetricKit crash and hang reports into `app_diagnostics` through `report_app_diagnostic` (decision 0035) | [me]/[Alex] | **OPEN**: merged into branch `prelive-1013` on 2026-10-13 for build 12, its migrations renumbered past hosted's newest (`20261014000001`, `20261014000002`; neither redefines a function changed since 10-01), and the privacy sentence Alex approved on 2026-10-03 ("crash report looks great") added to the policy. Not yet seen end to end on a device: MetricKit does not deliver on the simulator |
+| D5 | Tara's real templates and clinics in hosted, through the admin site | [Tara] | **DONE 2026-10-11**: her real clinics are on hosted from 2026-10-04 to 2026-10-20 (read-only query 2026-10-21). **None scheduled after today** (`starts_at > now()` returns 0), and C14 needs next week's clinics published while the reviewer looks |
+| D6 | Crash reporting and error alerts: MetricKit crash and hang reports into `app_diagnostics` through `report_app_diagnostic` (decision 0035) | [me]/[Alex] | **OPEN**: shipped in build 12 (PR #97 merged 2026-10-19; hosted has `20261014000001` and `20261014000002`, 69 of 69 paired; the live privacy page carries the MetricKit sentence; the nightly retention job runs `purge_app_diagnostics()`). Not yet seen end to end: `app_diagnostics` has 0 rows on hosted (2026-10-21), expected until a build-12 phone reports |
 | D7 | Rate limits on the public functions and sign-up | [me] | **LATER**: low risk at club scale |
 | D8 | Drop the dead `clinics.price_cents` column | [me] | **LATER** |
 | D9 | Data export for Tara | [me] | **LATER** (v1.1) |
@@ -200,14 +193,13 @@ Missing kinds of testing, in the order they matter:
 | ID | Item | Owner | Status |
 |---|---|---|---|
 | G1 | The MVP call (`docs/archive/mvp.md`): payments in or out, push in or out | [Alex]+[Kat]+[Tara] | **DONE 2026-09-27**: Alex: payments fully live for the party (A11) and push fully working (C3), *"we want everything 100% functional + even better"* |
-| G2 | Tara's review page, **round six**: only her 14 unseen words and 5 laptop tasks, no Questions tab (page version 6, `scripts/build-tara-review.py`). Round four was answered 2026-09-28 (decision 0024) and round five's questions 2026-10-12 (decision 0040); `review-watch.yml` opens an issue whenever she saves | [Alex] sends, [Tara] answers | **OPEN**: Alex mints the round-six link (admin site, Testing tab) and texts it (`docs/for-alex.md`). Questions 109 to 112 are not on the page |
+| G2 | Tara's review page, **round six**: only her 14 unseen words and 5 laptop tasks, no Questions tab (page version 6, `scripts/build-tara-review.py`). Round four was answered 2026-09-28 (decision 0024) and round five's questions 2026-10-12 (decision 0040); `review-watch.yml` opens an issue whenever she saves | [Alex] sends, [Tara] answers | **OPEN**: no round-six link minted (hosted `review_links` newest 2026-09-28; `review_responses` page versions 2 and 4 only; page version 6 live at `/review.html`, curl 2026-10-21). Questions 109 to 125 are not on the page and none is answered in any channel the model can read. Alex mints the link (admin site, Testing) and texts it (`docs/for-alex.md` §5) |
 | G3 | Kat's calls: the tab bar colour, the green text contrast, the green line under the header; and her earlier "tag spec" line (release tags, answered by C10, or analytics tags, not built; `docs/kat-due-diligence.md`) | [Kat] | **DONE 2026-10-01**: keep the system tab bar, the darker green for text, keep the green line (decision 0036); her "tag spec" line is answered by the release tags (C10) |
 | G4 | Alex's ticks in `docs/copy-review.md` (sections G to J and the older open rows) | [Alex] | **OPEN** |
 | G5 | Tara's logo file and the original court photo | [Tara] | **DONE 2026-10-01**: the logo (the gator in colour, decision 0032, 2026-09-29) and the court photo, which is the one from her 2026-09-26 mockup, in the app since then (Alex, 2026-10-01: *"its legit in the app alr"*); a full-size original would only make it sharper |
-| G6 | GitHub: require the hosted smoke check and stop admins bypassing `main`'s protection. Dependabot alerts are already on (verified 2026-09-27) | [Alex] | **OPEN** (`docs/for-alex.md` §8) |
-| G7 | The soft launch: the date, and the first 20 to 30 testers who get the public link | [Alex]+[Tara] | **DECIDE** [Alex]+[Tara]: after Apple approves the external build (C11) |
-| G8 | Tara's email to members with the QR code and the public link (question 75, I6); we check her steps before it goes | [Tara] | **OPEN**: her words; the link exists once C11 is approved |
-
+| G6 | GitHub: require the hosted smoke check and stop admins bypassing `main`'s protection. Dependabot alerts are already on (verified 2026-09-27) | [Alex] | **DONE 2026-10-12**: `gh api repos/Volee-Team/FXE/branches/main/protection` (2026-10-21): `enforce_admins: true`, 15 required checks including the hosted smoke check. Dependabot alerts on (2026-09-27) |
+| G7 | The soft launch: the date, and the first 20 to 30 testers who get the public link | [Alex]+[Tara] | **DECIDE** [Alex]+[Tara]: the date and the first 20 to 30 testers, once Apple approves 1.0.0 (C14), or the external TestFlight build if C11 goes ahead. `web/app/target.js` `INSTALL_URL` is empty until then |
+| G8 | Tara's email to members with the QR code and the public link (question 75, I6); we check her steps before it goes | [Tara] | **OPEN**: her words (question 75 answered 2026-09-28, decision 0024). The QR link (`/app`) gets its target when 1.0.0 is released (C14), or C11's public link if that path is used |
 ## H. The MVP audit of 2026-09-27
 
 Six reviewers (member, admin, money, store, ops, messages), a skeptic per
@@ -225,9 +217,8 @@ launch" items are in `docs/backlog.md`.
 | H4 | Web admin: This week bounded to this week (plus ended, uncharged clinics), no silent loss past 1000 rows, supabase-js vendored at an exact version (branch `web-admin-bounds`) | [me] | **DONE 2026-09-27** (PR #75, `997cc65`) |
 | H5 | Push, the app's half: banner while open, a tap opens the clinic, the badge clears (branch `push-client`) | [me] | **DONE 2026-09-27** (PR #75, `997cc65`) |
 | H6 | Password reset without email (D13) and the scanner-proof reset page (branch `admin-reset-link`) | [me] | **DONE 2026-09-27** (PR #73) |
-| H7 | **Payouts on the Money tab** (the balance, the next deposit and its date; Tara's "when will $ be in my account") and dispute alerts in Action Needed, so Tara never needs the Stripe dashboard day to day | [me] | **DONE 2026-09-28.** On hosted: `supabase migration list --linked` pairs `20260928200001`; `supabase functions list` shows `stripe-payouts` v1 and `stripe-webhook` v8 ACTIVE; the live `index.html` carries the Payouts card (`curl ... | grep -c Payouts`: 5) |
-| H8 | Walk on a real phone what the simulator could not: a push tapped with the app in the background, the Home spinner on a slow connection, Accept and Decline on the lock screen, a haptic | [Alex]/[me] | **OPEN**: on build 11 (C8), once push is seen (C3) |
-
+| H7 | **Payouts on the Money tab** (the balance, the next deposit and its date; Tara's "when will $ be in my account") and dispute alerts in Action Needed, so Tara never needs the Stripe dashboard day to day | [me] | **DONE 2026-09-28.** On hosted: `supabase migration list --linked` pairs `20260928200001`; `supabase functions list` shows `stripe-payouts` v1 and `stripe-webhook` v8 ACTIVE; the live `index.html` carries the Payouts card (`curl ... | **DONE 2026-09-28.** On hosted, `20260928200001` is applied (69 of 69 paired, 2026-10-21) and the functions API shows `stripe-payouts` v7 and `stripe-webhook` v18 ACTIVE; the live `index.html` carries the Payouts card (curl, 2026-10-21) |
+| H8 | Walk on a real phone what the simulator could not: a push tapped with the app in the background, the Home spinner on a slow connection, Accept and Decline on the lock screen, a haptic | [Alex]/[me] | **OPEN**: walk it on build 12 (John's tag `v0.1.0-tf12`, 2026-10-19), after push works (C3). Hosted has never delivered a push: of 38 attempts 27 failed `BadEnvironmentKeyInToken` and 11 `no_device` (read-only query 2026-10-21) |
 ## I. Polish for the party (2026-09-28)
 
 Alex, 2026-09-27: *"do as MUCH as you possibly can w building and testing
@@ -238,12 +229,12 @@ each checked by an independent reviewer or the sql-auditor, then merged on
 
 | ID | Item | Owner | Status |
 |---|---|---|---|
-| I1 | Tara's notification catalogue in her words, from the database (#1, #3, #5, #6, #13 to #15), one message per event under a double tap (decision 0022) | [me] | **DONE 2026-09-28.** `supabase migration list --linked` pairs `20260928000001`; `push` v5 ACTIVE. Her uninvite message (decision 0024) is `20260928500001`, local only until the next push |
+| I1 | Tara's notification catalogue in her words, from the database (#1, #3, #5, #6, #13 to #15), one message per event under a double tap (decision 0022) | [me] | **DONE 2026-09-28.** On hosted, `20260928000001` and the uninvite message `20260928500001` (decision 0024) are applied, 69 of 69 paired (2026-10-21) |
 | I2 | Accept and Decline on the invitation push; Add to Calendar (nothing about where); Remind me at the player's own opening; haptics and the chip's change (decision 0023) | [me] | **DONE 2026-09-28**: merged with `polish-0928` and in every build since (`v0.1.0-rc5` onwards). Seeing the lock-screen buttons on a real phone is H8 |
-| I3 | Text anyone can read: Larger Text followed live, Apple's accessibility audit as a UI test on every main screen, the clock readable on navy, Return through the forms, page titles in the guide's serif, outlined tab icons (decision 0023) | [me] | **DONE 2026-09-28**: merged with `polish-0928`; the audit tests pass on iOS 26.2, 18.6 and 17.5 (`docs/ui-test-runs.log`, 2026-10-13 UTC) |
+| I3 | Text anyone can read: Larger Text followed live, Apple's accessibility audit as a UI test on every main screen, the clock readable on navy, Return through the forms, page titles in the guide's serif, outlined tab icons (decision 0023) | [me] | **DONE 2026-09-28**: `FXETennisUITests/AccessibilityAuditUITests.swift` on `main`; the suite passed on iOS 26.2, 18.6 and 17.5 on 2026-10-19 UTC, fingerprint `96d01ac99a1a364c`, 288 unit and 27 UI (`docs/ui-test-runs.log`) |
 | I4 | Payouts and chargebacks on the Money tab (H7, decision 0021); the Action Needed crash on the first declined card fixed | [me] | **DONE 2026-09-28**, with H7 |
 | I5 | Tara's questions from this round: 79 narrowed, 88 to 90 new | [Tara] | **DONE 2026-09-28**: answered in round four (decision 0024); 92 to 95 are the next round's |
-| I6 | The QR code for members (question 75): it points at `/app` on the admin site, which forwards to the install link, so the printed card never changes; Tara's printable card under Players → QR code for the app | [me]/[Alex] | **OPEN**: live 2026-09-28 (`deploy-web.sh` matched byte for byte; `/app`, `qr.html` and `app-qr.png` answer 200, `/app` reads "Not available yet."). Waits only on the TestFlight public link: Alex sends it, the model sets `web/app/target.js` and redeploys |
+| I6 | The QR code for members (question 75): it points at `/app` on the admin site, which forwards to the install link, so the printed card never changes; Tara's printable card under Players → QR code for the app | [me]/[Alex] | **OPEN**: live since 2026-09-28 (`/app`, `qr.html` and `app/target.js` answer 200; `/app` reads "Not available yet."; `INSTALL_URL` empty, curl 2026-10-21). Waits on the App Store link once 1.0.0 is approved (C14); Alex sends it, the model sets `web/app/target.js` and redeploys |
 | I7 | Build 6 for players: instant open (decision 0028), Siri and Spotlight, Subscribe in Calendar (0029), every held clinic on Home, clean titles, placeholders, a declined card that says why (0026) | [me] | **DONE 2026-09-29**: PR #81 merged on 27 green checks; locally `Executed 232 tests, with 0 failures` (unit) and all 22 UI tests at the time (the declined-card one run with the local service key); tagged `v0.1.0-rc6` |
 | I8 | Build 6 for Tara: pros and their Today screen (0025), Resolved (0026), saved messages (0030), a player's history, Copy to next week and the court sheet (0027); a clinic never published never reaches a player (20260929000001/2) | [me] | **DONE 2026-09-29**: `supabase db push` 60 of 60 paired, the six functions redeployed, `deploy-web.sh` matched byte for byte, `hosted-smoke.sh` 156 targets, 0 open |
 | I9 | Tara's questions 92 to 100 and 73 on round five of her review page | [me]/[Alex] | **DONE 2026-10-12**: answered by text (decision 0040), all but 101 (Foxcroft's share, her meeting) |
