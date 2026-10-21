@@ -95,8 +95,8 @@ needs only Apple's beta review, and payments go through Stripe, not Apple.
    letter, then a new bundle id under the LLC, testers reinstall (accounts
    and cards carry over; they live on our server), and the App Store
    submission before the party. [Apple, Alex, me]
-8. **Supabase Pro before real members** (D3): backups held by Supabase and
-   no pause after a quiet week. [Alex]
+8. **Supabase Pro** (D3): deferred by Alex on 2026-10-21; the keep-warm job
+   and our own nightly backup cover it until then. [Alex]
 
 ---
 ## A. Payments
@@ -150,7 +150,7 @@ What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision
 | D0 | "Confirm email" off on hosted (decision 0011) | [Alex] | **DONE**; verified 2026-09-27 through the management API (`mailer_autoconfirm` true). Re-check on any new project |
 | D1 | **A real email sender, so "Forgot password?" reaches members** | [Alex] | **DONE 2026-09-27**: Gmail `fxetennis.app@gmail.com` with an app password as custom SMTP; read back through the management API (`smtp_host` smtp.gmail.com, port 465, sender "FXE Tennis"). Delivery confirmed by Alex 2026-10-01: *"the reset emails came in just took a while"* |
 | D2 | Reset page allow-listed as a redirect on hosted | [Alex] | **DONE 2026-09-01**; verified 2026-09-27 (`uri_allow_list` is `https://fxe-tennis-admin.vercel.app/reset.html`) |
-| D3 | Supabase plan: the free tier pauses after a quiet week and has no point-in-time recovery; Pro is $25 a month | [Alex] | **DECIDE** [Alex] before real members |
+| D3 | Supabase plan: the free tier pauses after a quiet week and has no point-in-time recovery; Pro is $25 a month | [Alex] | **LATER**: Alex, 2026-10-21: *"ig were fine for now, we dont rlly need it yet"*. What covers the gap meanwhile: real members use it daily now, the nightly keep-warm job pings it, and the nightly encrypted backup (restore drill passed 2026-10-12, D4). Revisit if the project pauses or before a busy season |
 | D4 | Restore drill (a backup nobody has restored is not a backup) | [me] | **DONE 2026-10-12**: last night's encrypted backup restored into a bare Postgres, the whole migration ledger and all 9 sign-ins back, after dropping the image's own `auth` schema first (restoring onto it gave 0 users). Monthly; next due 2026-11-02, the week before the party (runbook row 12) |
 | D5 | Tara's real templates and clinics in hosted, through the admin site | [Tara] | **DONE 2026-10-11**: her real clinics are on hosted (Coed "105", Ladies All Level, Ladies 3.0+, Queen City, Ladies Beginner 2.5, Men's 3.0+, 2026-10-04 to 2026-10-07, read through the management API); none after 2026-10-07 yet |
 | D6 | Crash reporting and error alerts: MetricKit crash and hang reports into `app_diagnostics` through `report_app_diagnostic` (decision 0035) | [me]/[Alex] | **OPEN**: merged into branch `prelive-1013` on 2026-10-13 for build 12, its migrations renumbered past hosted's newest (`20261014000001`, `20261014000002`; neither redefines a function changed since 10-01), and the privacy sentence Alex approved on 2026-10-03 ("crash report looks great") added to the policy. Not yet seen end to end on a device: MetricKit does not deliver on the simulator |
