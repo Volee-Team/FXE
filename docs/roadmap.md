@@ -334,7 +334,7 @@ tools/workflows/be best SWE as possible??"*
 |---|---|
 | Jev, a small model for yes/no decisions (copy gate chrome-or-voice, "does this diff touch a hard rule?") | Not now. Every rule here is enforced by a deterministic check, and a model's yes/no is weaker evidence than those (hard rule 12); it would also send code to another vendor. Revisit after launch if the copy gate's false alarms become a chore |
 | A screenshot tour as a UI test: one XCUITest that walks every screen and keeps a PNG of each | Kat and Tara would review every screen from one folder after each build. Only the pro flow keeps screenshots today (`FXETennisUITests/ProFlowUITests.swift`) |
-| Crash and error reporting | Checklist D6. MetricKit reports into `app_diagnostics` (decision 0035), on the local branch `crash-reports` |
+| Crash and error reporting | Checklist D6. MetricKit reports into `app_diagnostics` (decision 0035), merged in build 12 (PR #97) |
 | Tighter branch protection on `main` (no admin bypass, hosted smoke required) | Checklist G6 |
 | A git tag per TestFlight build | built: every upload since the second has a `v0.1.0-*` tag (`git tag --list 'v0.1.0*'`). The rule is checklist C10 |
 | Supabase Pro (no pause, point-in-time recovery, $25 a month) | Checklist D3 |

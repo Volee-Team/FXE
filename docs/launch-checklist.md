@@ -41,11 +41,11 @@ How this file works, so it can be trusted:
 
 ## State today (re-derived 2026-10-17)
 
-- **Code:** `main` carries build 11, tag `v0.1.0-rc11` (PR #96, `355f546`:
-  the 2026-10-12 audit fixes on top of the note at Register and
-  Tara's 2026-10-12 answers). Branch `prelive-1013` is the next PR (crash
-  reports, the card-removed webhook, the secret scan, the clinic page for
-  staff) and becomes build 12.
+- **Code:** `main` carries build 12, version 1.0.0, tag `v0.1.0-rc12`
+  (PR #97 merged 2026-10-19, `2f5888d`: browse before a card, Tara's 7-day
+  Past, crash reports, the card-removed webhook, the secret scan, the clinic
+  page for staff), green on iOS 26.2, 18.6 and 17.5. It is the App Store
+  release candidate (C14).
 - **On testers' phones:** the last upload tagged in git is `v0.1.0-tf7`; no
   upload of build 8 or 9 was reported (C8).
 - **Hosted:** 69 of 69 migrations paired (`scripts/live-status.sh`,
