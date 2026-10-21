@@ -33,6 +33,13 @@ q "select count(*) filter (where kind<>'refund' and status='succeeded') as charg
 q "select count(*) filter (where card_last4 is not null and deleted_at is null) as cards, count(*) filter (where deleted_at is null and role::text='member') as members from public.accounts" |
   python3 -c "import json,sys; r=json.load(sys.stdin)[0]; print(f\"   members {r['members']}, with a saved card {r['cards']}\")" 2>/dev/null
 
+# Push delivery (2026-10-21): a key set on hosted is not a push delivered.
+# Every push had failed BadEnvironmentKeyInToken for 17 days and no status
+# list showed it, because none of them asked the notifications table.
+echo "-- Push on hosted (last 14 days)"
+q "select count(*) as total, count(delivered_at) as delivered, count(delivery_error) as errored, coalesce(string_agg(distinct delivery_error, ', '),'') as errors, coalesce(to_char(max(delivered_at) at time zone 'America/New_York','Mon DD HH12:MI AM'),'never') as last_ok, (select count(*) from public.devices) as devices from public.notifications where created_at > now() - interval '14 days'" |
+  python3 -c "import json,sys; r=json.load(sys.stdin)[0]; w='' if r['errored']==0 or r['delivered']>0 else '   PUSH IS NOT WORKING: '+r['errors']+'\n'; print(f\"{w}   sent {r['total']}, delivered {r['delivered']}, failed {r['errored']} ({r['errors'] or 'none'}), last delivered {r['last_ok']}, devices {r['devices']}\")" 2>/dev/null
+
 echo "-- Stripe secrets on hosted (last changed)"
 curl -s "https://api.supabase.com/v1/projects/$REF/secrets" -H "Authorization: Bearer $TOK" |
   python3 -c "

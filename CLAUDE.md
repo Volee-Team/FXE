@@ -518,6 +518,7 @@ The local Supabase dev image segfaults the Postgres backend when a role without 
 * Warn Alex before starting a UI test run: it disconnects the Claude simulator panel he may be watching (2026-10-12).
 * Run a full error audit unprompted before a big merge (independent reviewers with narrow briefs, as on 2026-10-04), not only when asked (2026-10-12).
 * **A status is re-derived, never recalled** (2026-10-16). Before any "Still open" list or any "X is/isn't done", run `scripts/live-status.sh` (hosted switches, money, cards, secrets, migrations, PRs, tags, plus `docs/live-facts.md` for what no script can see) and build the list from its output. When Alex says he did something, move it to done in the same turn and verify it (browser, read-only, if it lives in a dashboard); write a dashboard fact into `docs/live-facts.md` with its date. Earned when the list told Alex to link Tara's bank and make the first charge, both done earlier that session: the open-items memory was stale and was repeated instead of checked.
+* **Team memory lives in the repo** (2026-10-21, Alex: *"hell yes"* to sharing with John's Claude): `.claude/team-memory/`, one fact per file with its Why, its index printed by the session-start hook. Update the file there, never a private copy. The repo is public, so nothing private goes in.
 * Status words live in four files only (`docs/launch-checklist.md`, `docs/backlog.md`, `docs/questions-for-tara.md`, `docs/decisions/README.md`); every other doc points at a row ID. A retired doc moves to `docs/archive/` with the banner `Archived YYYY-MM-DD. Current source: <file>.` (2026-10-12, enforced by `scripts/check-doc-status.sh` and `scripts/check-doc-registry.sh`).
 
 ---
@@ -696,6 +697,7 @@ does not name, and on any file in `docs/archive/` without its banner.
 | `docs/questions-for-tara.md` | Every question for Tara, numbered, with the default we would pick and the decision that answered it. **Status** |
 | `docs/decisions/` | One file per decision that would otherwise be re-litigated: what we chose, why, what we rejected, how we would know we were wrong. A record is a dated snapshot; a later one supersedes it with a forward line. The README's table is the decision **status** |
 | `docs/roadmap.md` | What is in v1, v1.1, v2, what is parked, what we are deliberately not doing. **Tara's new asks land here first**, never straight into code. Built rows point at the architecture, scheduled ones at a checklist row |
+| `docs/onboarding.md` | How a new person or a new Claude gets set up and works here, and what the repo cannot tell them (2026-10-21, for John's Claude) |
 | `docs/architecture.md` | The system as built: surfaces, the security model, the schema, the RPCs, the tests. Every schema object, probe, job and Swift file is named (`scripts/check-doc-inventory.sh`) |
 | `docs/for-alex.md` | Click-by-click steps for Alex's checklist rows, each section naming its row |
 | `docs/style-guide.md` | Kat's style guide, the source of truth for style, with the status colours and accessibility rules |

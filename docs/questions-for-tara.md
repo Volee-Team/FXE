@@ -578,7 +578,7 @@ what is built until she answers.
 **123. The message someone gets when you approve them: is "You're approved to attend Ladies 3.0+ clinics." right, or what would you like it to say?**
 *Default: that sentence, until you change it. Status: open, asked 2026-10-16.*
 
-**124. "Waitlist" everywhere, including the message audience you pick when you send a clinic message and older notifications?**
+**124. Should the word "Waitlist" replace "Player Pool" everywhere in the app, including the list you pick from when you send a clinic message, and notifications people already received?**
 *Default: yes, every place it shows. Status: open, asked 2026-10-16.*
 
 **125. When an offer expires or is declined, does that person go back on the Waitlist (keeping their original sign-up time) or off it?**
