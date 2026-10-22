@@ -34,8 +34,9 @@ EDGE="delete-account stripe-charge stripe-setup-intent push admin-reset-link str
 # requires every function directory to be in EDGE or here. calendar-feed
 # (decision 0029) has no JWT either: its check is its own block below.
 EDGE_EXEMPT="review-submit stripe-webhook calendar-feed app-visit"
-# Called from the web admin in a browser, so they need CORS (_shared/cors.ts).
-BROWSER_EDGE="review-submit stripe-charge admin-reset-link stripe-payouts"
+# Called from the web admin or the members' website in a browser, so they
+# need CORS (_shared/cors.ts).
+BROWSER_EDGE="review-submit stripe-charge admin-reset-link stripe-payouts stripe-setup-intent delete-account"
 
 bad=0; n=0
 check() {  # kind name code
