@@ -1,5 +1,9 @@
 # FXE Tennis — Web Admin
 
+> **The members' website** is `play/` in this folder: the app's player side
+> for members on Android, at `/play/` on the same deploy (decision 0043).
+> Everything below is about Tara's admin.
+
 Tara's laptop surface. **Needs no Apple account**: she opens a bookmark.
 
 Approved as the laptop half of a split admin surface (`docs/web-admin.md`,

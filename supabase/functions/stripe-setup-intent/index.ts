@@ -15,8 +15,10 @@
 
 import { getStripe, admin, callerId, json, safeError, keyModesAgree } from "../_shared/stripe.ts";
 import { isMissingCustomer } from "../_shared/stripe-errors.ts";
+import { withCors } from "../_shared/cors.ts";
 
-Deno.serve(async (req) => { try { return await handle(req); } catch (e) { const m = safeError(e, "stripe-setup-intent"); return json({ error: m }, m === "stripe_not_configured" ? 503 : 500); } });
+// withCors: the members' website (web/play) adds a card from the browser.
+Deno.serve(withCors(async (req) => { try { return await handle(req); } catch (e) { const m = safeError(e, "stripe-setup-intent"); return json({ error: m }, m === "stripe_not_configured" ? 503 : 500); } }));
 
 async function handle(req: Request): Promise<Response> {
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
