@@ -44,7 +44,7 @@ Tara's and the pros' screens are not here: Tara has the app and the web admin.
   `CardSavePoll` does (every 2 s, about 30 s). Stripe.js loads from
   `js.stripe.com`, which Stripe requires. A bank's 3-D Secure check returns to
   `#/card-saved`.
-- **Two edge functions gained CORS** (`_shared/cors.ts`, whose allowed origin
+- **Two edge functions gained CORS** (`supabase/functions/_shared/cors.ts`, whose allowed origin
   already includes the admin site): `stripe-setup-intent` and
   `delete-account`. Both are in `BROWSER_EDGE` in `scripts/hosted-smoke.sh`.
   Nothing else about them changed. They must be redeployed for the page to

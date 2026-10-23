@@ -248,7 +248,7 @@ function renderAuth(mode = "signIn", message = "", isError = true) {
     <p class="tagline center" style="margin:12px 0 24px">Let's Play.</p>
     <form id="auth" class="stack" novalidate>
       <input type="email" id="email" autocomplete="email" placeholder="Email" aria-label="Email" required>
-      <input type="password" id="password" autocomplete="${signUp ? "new-password" : "current-password"}" placeholder="Password" aria-label="Password" required>
+      <input type="password" id="password" autocomplete="${["current-password", "new-password"][signUp ? 1 : 0]}" placeholder="Password" aria-label="Password" required>
       ${signUp ? `<p class="caption" style="margin:0">At least 6 characters.</p>` : ""}
       <p id="auth-msg" class="${isError ? "error" : "muted"}" role="status">${esc(message)}</p>
       <button class="btn primary" id="auth-go">${signUp ? "Create Account" : "Sign In"}</button>
