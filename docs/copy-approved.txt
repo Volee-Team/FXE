@@ -19,7 +19,9 @@ Ann finds Anna, Annette, Joann…
 Any personal information that we collect is stored on secure hosted servers. We are always striving to ensure a safe and convenient experience with the Services. This goes beyond our technologies to include physical, contractual, and managerial safeguards to protect your personal information.
 Apple Inc. delivers notifications to your device.
 Are you currently a Foxcroft East Racquet & Swim Club member?
+Are you currently a Foxcroft East Racquet &amp; Swim Club member?
 At least 6 characters.
+Back
 Board report
 Cancel
 Cancel Invite
@@ -30,10 +32,13 @@ Cancel my spot
 Cancel the invitation to \(entry.displayName)
 Canceled inside ${cutoffHours} hours
 Card payments
+Cards aren't set up yet.
 Charge \(due.amountCents.centsAsPrice)
 Charge \(entry.displayName) \(due.amountCents.centsAsPrice)
 Charged
+Check the box to continue
 Check this charge in Stripe.
+Check your email for a reset link. It can take a few minutes.
 Checking your reset link…
 Children's privacy
 Choose a new password
@@ -46,7 +51,9 @@ Continue
 Cookies and tracking technologies
 Copy my answers
 Copy to next week
+Couldn't delete your account.
 Couldn't find that account.
+Couldn't find your account. Sign out and sign in again.
 Couldn't load card payments.
 Couldn't load saved answers, still on this phone
 Couldn't load the numbers.
@@ -64,6 +71,7 @@ Date &amp; time
 Decline
 Declined
 Delete my account
+Delete your account? Your name, phone, email and card are removed and you are signed out. This can't be undone.
 Description (players see this under the “?”)
 Did not go through
 Disclosure of your information
@@ -99,7 +107,9 @@ Give the link a label.
 Has a note
 Home
 How we use your information
+I give permission for my card to be charged
 I have read and agree to the Adult Tennis Participation Waiver and Release.
+IMPORTANT NOTICE
 If the app crashes, freezes or runs slowly, your phone's operating system (Apple's MetricKit) gives the app a technical report of what the app was doing at that moment: the app and iOS version, the iPhone model, and program addresses. The app sends that report to our own database and to no one else. The report is linked to your account for at most one day, only to limit how many reports one account can send, and is deleted after 90 days. It contains nothing you typed or saw, and is used only to find and fix bugs.
 If you have any concerns or questions about your data, please contact us at:
 Information collection
@@ -142,9 +152,11 @@ Next Clinic
 Next clinic in \(.applicationName)
 Next deposit
 No card
+No card on file
 No card on file for that player.
 No card payments yet.
 No clinics currently open for registration
+No clinics scheduled yet.
 No clinics this week or later. Use “New clinic” to add one.
 No clinics today.
 No court
@@ -179,6 +191,7 @@ Only you can see this.
 Open FXE Tennis and sign in first.
 Open for Registration
 Our hosting provider stores the Services' data on servers in the United States.
+Participant Acknowledgment
 Password
 Payment method
 Payments are switched off.
@@ -225,6 +238,7 @@ Save note
 Save password
 Save this message
 Saved
+Saved. It may take a moment to show here.
 Saved. You can sign in with it now, on your phone or here.
 Saving\u2026
 Search by name
@@ -240,6 +254,7 @@ Sign out
 Sign the waiver first.
 Signs you out, you can finish later if needed
 Someone already handled that one.
+Something went wrong. Please try again.
 Sorry, someone beat you to the punch. Here's the latest!
 Start from a template
 Stripe
@@ -257,7 +272,10 @@ That clinic ended before card payments were on.
 That clinic is already canceled.
 That clinic is canceled.
 That clinic is full now.
+That didn't save. Check your connection and try again.
+That didn't work. Check your connection and try again.
 That didn’t save. Try again.
+That email already has an account. Sign in instead.
 That email or password didn't work.
 That is your own account.
 That just changed. Here's the latest.
@@ -272,6 +290,7 @@ The clinic hasn't ended yet.
 The fee applies.
 The information collected is used solely for providing the Services: clinic registration, communication from your coach about clinics, charging for clinics you attend under the club's cancellation policy, and keeping your clinic history. We do not share or sell your personal information with external parties for marketing purposes.
 The player's note at level entry; only you see it
+The waiver was updated. Read it again and sign.
 Third parties
 This Privacy Policy describes the policies and procedures of FXE Tennis, LLC (&quot;FXE Tennis,&quot; &quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) on the collection, use and disclosure of your information when you use the FXE Tennis application (the &quot;Services&quot;) and tells you about your privacy rights and how the law protects you.
 This cancellation is within 3 hours of clinic and the full clinic fee will apply. If an emergency, please leave a note below.
@@ -286,10 +305,13 @@ To manage your requests: to attend to and manage your requests to us. Messages s
 To provide and maintain our Services, including to monitor the usage of our Services.
 Today
 Too many attempts. Try again in a minute.
+Too many reset emails. Try again later.
 Try again
 Turn on notifications
 Type at least two letters of a name.
 Type it again
+Type your first and last name.
+USTA ${ratingLabel(r)}
 USTA \(level.label)
 Undo
 View Open Clinics

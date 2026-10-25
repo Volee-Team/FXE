@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0A1B3D">
+<title>FXE Tennis</title>
+<!--
+  The members' website (roadmap v1.1, call of 2026-10-19): the iOS app's
+  player side in a browser, for members on Android. Same Supabase project,
+  same views and RPCs as the app, so information hiding holds by
+  construction (hard rule 1): this page reads only clinics_public,
+  my_registrations, my_clinic_messages, my_past_clinics and the player's
+  own rows, and changes state only through the same RPCs.
+
+  Every word a player reads is the app's own (docs/copy-approved.txt);
+  play.js says where each came from. Tara's screens stay in the app and on
+  the web admin (../index.html).
+-->
+<link rel="stylesheet" href="../tokens.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0,600;0,700;1,500&display=swap">
+<link rel="stylesheet" href="./play.css">
+<!-- Stripe requires Stripe.js to load from its own domain (PCI). Used only on the card step. -->
+<script src="https://js.stripe.com/v3/" async></script>
+</head>
+<body>
+<header class="bar" id="bar">
+  <button type="button" class="back" id="back" hidden aria-label="Back">‹</button>
+  <img class="mark" src="../gator.png" alt="FXE Tennis" id="mark">
+  <h1 id="bar-title"></h1>
+  <span class="spacer"></span>
+  <button type="button" class="bell" id="bell" hidden aria-label="Notifications">
+    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="m6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+    <span class="dot" id="bell-dot" hidden></span>
+  </button>
+</header>
+<div class="stripe"></div>
+
+<main id="view" aria-live="polite"></main>
+
+<nav class="tabs" id="tabs" hidden>
+  <a href="#/home" data-tab="home">Home</a>
+  <a href="#/clinics" data-tab="clinics">Clinics</a>
+  <a href="#/profile" data-tab="profile">Profile</a>
+</nav>
+
+<dialog id="confirm">
+  <p id="confirm-title"></p>
+  <div class="stack">
+    <button type="button" class="danger" id="confirm-yes"></button>
+    <button type="button" class="quiet" id="confirm-no"></button>
+  </div>
+</dialog>
+
+<script type="module" src="./play.js"></script>
+</body>
+</html>

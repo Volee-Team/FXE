@@ -52,6 +52,7 @@ The history of what we believed is part of the record.
 | [0040](0040-tara-answers-2026-10-12.md) | Tara's answers of 2026-10-12: Waive a late fee, Accept needs a card, a red "Late cancellation" flag, every cancel counted, pros skip the waiver and card | 2026-10-12 | Active |
 | [0041](0041-registration-by-clinic-type.md) | Tara's email of 2026-10-15: card after the clinic list, "Waitlist", 105 vs other clinics, 1-hour offers that expire with pushes to both sides, 2.5 approval for 3.0+ clinics | 2026-10-16 | Active |
 | [0042](0042-app-store-release-on-johns-account.md) | Release to the App Store now on John's account; App Transfer to the LLC once it is approved (supersedes 2026-08-19 and the old C12) | 2026-10-19 | Active |
+| [0043](0043-members-website.md) | The members' website: the app's player side at `/play` for Android members, same reads and RPCs, the app's words, no push yet | 2026-10-22 | Proposed |
 
 Tara's own numbered decisions (1–23, calls of 2026-08-02 and 2026-08-12) are
 tabled in CLAUDE.md; a bare "decision 17" in a record means that list. Not yet
