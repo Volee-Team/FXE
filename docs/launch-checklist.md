@@ -156,6 +156,7 @@ What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision
 | D13 | **Tara can reset any member by hand**: Players tab → Reset link → Copy → text it. One-time, within an hour, no email, every link audited (`admin-reset-link`, decision 0017) | [me] | **DONE 2026-09-27**: PR #73 merged; `supabase db push` applied 20260927000001; `admin-reset-link` deployed; `hosted-smoke.sh` 63 targets, 0 open; live page checked from outside |
 | D14 | Sign-in and sign-up rate limits on hosted: every phone at the party shares the club Wi-Fi's one address | [me] | **DONE 2026-10-05** through the management API, read back: sign-ups 300 per 5 minutes per address, auth emails 100 an hour (earlier, 2026-09-27: `rate_limit_verify` 30 → 300, `rate_limit_token_refresh` 150 → 500 per 5 minutes per IP) |
 | D15 | How many courts the club has | [Tara] | **DONE 2026-09-27**: 5 (Alex), which is exactly what the app allows (1 to 5); no change needed |
+| D16 | The website deploys itself from GitHub on every merge to `main` that touches `web/` (`deploy-web.yml`), verified byte for byte, so John can ship without Alex's laptop | [Alex] | **OPEN**: workflow built 2026-10-24; `VERCEL_ORG_ID` and `VERCEL_PROJECT_ID` set (`gh secret list`); waiting on `VERCEL_TOKEN` (`docs/for-alex.md` §4d) |
 
 ## E. Testing
 

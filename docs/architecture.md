@@ -924,7 +924,7 @@ repository secret. Nightly (`backup.yml`): `pg_dump` of hosted (`public`, `auth`
 and `supabase_migrations`, so a restore keeps the ledger `db push` reads),
 encrypted with `age` to the public key in `.github/backup-recipient.txt`, to
 an artifact, with a size floor so an empty dump fails loudly, and a keep-warm
-query. Nightly too (`hosted-watch.yml`, 2026-10-01): the auth health endpoint answers, `scripts/hosted-smoke.sh` against production, and the admin site, `/app` and the privacy page answer 200, so a change to production between pull requests (a dashboard click, a pause, a platform upgrade) is caught the next morning. The day itself: `docs/launch-runbook.md`.
+query. Nightly too (`hosted-watch.yml`, 2026-10-01): the auth health endpoint answers, `scripts/hosted-smoke.sh` against production, and the admin site, `/app` and the privacy page answer 200, so a change to production between pull requests (a dashboard click, a pause, a platform upgrade) is caught the next morning. The website deploys itself on every merge that touches `web/` (`deploy-web.yml`, 2026-10-24): the job runs `scripts/deploy-web.sh` with a Vercel token from the repository's secrets, so the live site is still compared byte for byte with `main` and the job goes red if it differs. The day itself: `docs/launch-runbook.md`.
 
 Merging: CI is the gate; there is no code review by a second person. Branch
 protection on `main` requires "SQL probes + concurrency" and "Build iOS app +
