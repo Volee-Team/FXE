@@ -138,6 +138,11 @@ function door(c, at = now()) {
 }
 const isOpen = (c, at = now()) => door(c, at).kind === "register";
 
+// Each navigation bumps this; a page whose data arrives after the visitor
+// has moved on draws nothing (found 2026-10-25: tapping tabs on a slow
+// connection let an older page overwrite the current one).
+let renderGen = 0;
+
 const regFor = (clinicId) => S.regs.find((r) => r.clinic_id === clinicId && r.status !== "canceled") || null;
 
 function confirmDialog(title, yes, no) {
@@ -383,9 +388,11 @@ async function deleteAccount(errorId) {
 
 // WaiverView
 async function renderWaiver(error = "") {
+  const gen = renderGen;
   chrome({ title: "Waiver" });
   view.innerHTML = `<div class="placeholder"></div><div class="placeholder"></div>`;
   const { data, error: loadErr } = await sb.rpc("current_waiver");
+  if (gen !== renderGen) return;
   const w = (data || [])[0];
   if (loadErr || !w) {
     view.innerHTML = `<p class="error">${esc(failureLine(loadErr) || "Couldn't load the waiver.")}</p>
@@ -468,12 +475,14 @@ const greeting = () => {
 
 // HomeView
 async function renderHome() {
+  const gen = renderGen;
   chrome({ tab: "home", bell: true });
   const name = S.player?.first_name || S.account?.first_name || "";
   view.innerHTML = `<h2 class="display center" style="margin-top:8px">${esc(greeting())}, ${esc(name)}!</h2>
     <p class="tagline center">Let's Play.</p><div id="home-body"><div class="placeholder"></div><div class="placeholder"></div></div>`;
   let loadError = "";
   try { await loadClinics(); } catch (e) { loadError = failureLine(e) || "Couldn't load clinics."; }
+  if (gen !== renderGen) return;
   const mine = S.clinics.filter((c) => regFor(c.id) && c.status !== "canceled");
   const open = S.clinics.filter((c) => !regFor(c.id) && isOpen(c));
   let html = loadError ? `<p class="error">${esc(loadError)}</p>` : "";
@@ -491,11 +500,14 @@ async function renderHome() {
 
 // ClinicsView: grouped by service week, Sunday to Saturday in New York.
 async function renderClinics() {
+  const gen = renderGen;
   chrome({ title: "Clinics", tab: "clinics", bell: true });
   view.innerHTML = `<div class="placeholder"></div><div class="placeholder"></div><div class="placeholder"></div>`;
   try { await loadClinics(); } catch (e) {
-    view.innerHTML = `<p class="error">${esc(failureLine(e) || "Couldn't load clinics.")}</p>`; return;
+    if (gen === renderGen) view.innerHTML = `<p class="error">${esc(failureLine(e) || "Couldn't load clinics.")}</p>`;
+    return;
   }
+  if (gen !== renderGen) return;
   if (!S.clinics.length) { view.innerHTML = `<p class="muted center">No clinics scheduled yet.</p>`; return; }
   const thisWeek = serviceWeekStart(new Date());
   const groups = new Map();
@@ -510,6 +522,7 @@ async function renderClinics() {
 
 // ClinicDetailView: one clinic and the one action for this player's state.
 async function renderClinic(id, notice = "") {
+  const gen = renderGen;
   chrome({ back: true, bell: true, mark: true, tab: "clinics" });
   view.innerHTML = `<div class="placeholder"></div><div class="placeholder"></div>`;
   let c, messages = [];
@@ -523,8 +536,10 @@ async function renderClinic(id, notice = "") {
     if (regs.error) throw regs.error;
     c = one.data; S.regs = regs.data || []; messages = msgs.data || [];
   } catch (e) {
-    view.innerHTML = `<p class="error">${esc(failureLine(e) || "Couldn't load this clinic.")}</p>`; return;
+    if (gen === renderGen) view.innerHTML = `<p class="error">${esc(failureLine(e) || "Couldn't load this clinic.")}</p>`;
+    return;
   }
+  if (gen !== renderGen) return;
   if (!c) { view.innerHTML = `<p class="muted">That just changed. Here's the latest.</p>`; return; }
   const reg = regFor(c.id);
   const canceled = c.status === "canceled";
@@ -580,7 +595,18 @@ async function renderClinic(id, notice = "") {
   const run = async (work) => {
     for (const b of view.querySelectorAll("button")) b.disabled = true;
     const { error } = await work();
+    if (gen !== renderGen) return;          // she moved on meanwhile
     if (!error) { await renderClinic(id); return; }
+    // No answer (no signal, rate limit): reloading would fail too and wipe
+    // the page, so keep it and say so, as the app does (RequestFailure).
+    const noAnswer = failureLine(error);
+    if (noAnswer) {
+      let line = view.querySelector(".notice");
+      if (!line) { line = document.createElement("p"); line.className = "notice"; view.querySelector(".stack")?.before(line); }
+      line.textContent = noAnswer;
+      for (const b of view.querySelectorAll("button")) b.disabled = false;
+      return;
+    }
     const out = actionOutcome(error);
     if (out.reopens === "waiver") { S.waiver = false; await renderWaiver(); return; }
     if (out.reopens === "card") { await refreshAccount(); renderCardStep(id, out.notice); return; }
@@ -740,6 +766,7 @@ function mountCardOnFile(el, afterRedirect = false) {
 
 // MyClinicsView: upcoming, then the past.
 async function renderMyClinics() {
+  const gen = renderGen;
   chrome({ title: "My Clinics", back: true, tab: "profile" });
   view.innerHTML = `<div class="placeholder"></div>`;
   let past = [];
@@ -749,8 +776,10 @@ async function renderMyClinics() {
     if (r.error) throw r.error;
     past = r.data || [];
   } catch (e) {
-    view.innerHTML = `<p class="error">${esc(failureLine(e) || "Couldn't load clinics.")}</p>`; return;
+    if (gen === renderGen) view.innerHTML = `<p class="error">${esc(failureLine(e) || "Couldn't load clinics.")}</p>`;
+    return;
   }
+  if (gen !== renderGen) return;
   const mine = S.clinics.filter((c) => regFor(c.id));
   const outcome = (p) => {
     if (p.clinic_canceled) return "Canceled";
@@ -770,9 +799,11 @@ async function renderMyClinics() {
 
 // NotificationsView
 async function renderNotifications(error = "") {
+  const gen = renderGen;
   chrome({ title: "Notifications", back: true });
   const { data, error: e } = await sb.from("notifications")
     .select("id,type,entity_type,entity_id,body,created_at,read_at").order("created_at", { ascending: false }).limit(50);
+  if (gen !== renderGen) return;
   if (e) { view.innerHTML = `<p class="error">${esc(failureLine(e) || "Couldn't load notifications. Pull to try again.")}</p>`; return; }
   const items = data || [];
   if (!items.length) { view.innerHTML = `<p class="muted center">No notifications yet</p>`; return; }
@@ -891,6 +922,7 @@ function renderEdit(error = "") {
 
 async function route() {
   if (!S.user) return;
+  renderGen++;
   if (S.waiver === false && !skipsPlayerSteps()) { renderWaiver(); return; }
   const [, page, arg] = (location.hash || "#/home").split("/");
   window.scrollTo(0, 0);
