@@ -1,0 +1,56 @@
+# Deploys the website (Tara's admin, the members' site at /play, the privacy
+# and support pages) whenever main changes under web/, so anyone who merges
+# can ship it, not only the laptop logged in to Vercel (2026-10-24, John's
+# Claude proposed it; Vercel's free plan cannot add John as a member).
+#
+# It runs scripts/deploy-web.sh, the same script a laptop runs, so the deploy
+# is verified the same way: every page, stylesheet, script and image on the
+# live site compared byte for byte with what was merged, and red if they
+# differ. Vercel's own GitHub integration was rejected for that reason: it
+# deploys without the check, and "vercel --prod" has reported success while
+# changing nothing four times (CLAUDE.md, 2026-09-22 and 2026-09-27).
+#
+# Needs three repository secrets: VERCEL_TOKEN (Alex makes it on vercel.com,
+# docs/for-alex.md), VERCEL_ORG_ID and VERCEL_PROJECT_ID (the ids in
+# web/.vercel/project.json). Until the token exists the job says so and stops
+# green, so nothing else is blocked.
+name: Deploy website
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "web/**"
+      - "scripts/deploy-web.sh"
+      - ".github/workflows/deploy-web.yml"
+  workflow_dispatch:
+
+# Two merges close together deploy one after the other, never at once.
+concurrency:
+  group: deploy-web
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy and verify the website
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Deploy, then compare the live site with main
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "::notice::Vercel secrets are not set yet (docs/for-alex.md, 'Deploys without Alex'); not deploying."
+            exit 0
+          fi
+          bash scripts/deploy-web.sh || { echo "--- vercel output"; tail -40 /tmp/vercel-deploy.log; exit 1; }

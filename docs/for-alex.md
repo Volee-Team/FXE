@@ -401,6 +401,27 @@ Then, in App Store Connect:
 > this build. Notifications are optional. Clinic locations are deliberately
 > not shown because this is a members' club.
 
+## 4d. Deploys without Alex (checklist D16), about 3 minutes, once
+
+Every merge that touches the website now deploys it from GitHub
+(`.github/workflows/deploy-web.yml`), so John can ship without your laptop.
+It needs one token from you; the other two settings are already in.
+
+1. https://vercel.com/account/settings/tokens → **Create Token**. Name
+   `FXE GitHub deploy`, scope your own account, expiration **1 year**.
+   Create, then copy the token (it shows once).
+2. In Terminal, in the repo folder, run this and paste the token at the
+   prompt (nothing shows while you paste, and it never goes in chat):
+
+```bash
+gh secret set VERCEL_TOKEN
+```
+
+3. Tell the model "vercel token is in". It runs the deploy once and checks
+   the live site matches `main`.
+
+To stop it any time: delete the token on the same Vercel page.
+
 ## 4c. App Store release on John's account, tonight (checklist C14, decision 0042)
 
 Supersedes §4a's External Testing path for tonight: the release goes straight
