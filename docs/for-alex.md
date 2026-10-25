@@ -241,8 +241,31 @@ except to watch her email for Stripe's follow-ups with her.
 
 ## 3. Push notifications (checklist C3, H8)
 
-John's APNs key went into hosted on 2026-10-03. What is left is seeing one
-real push on a lock screen:
+**No push has ever reached a phone (found 2026-10-21).** Every attempt since
+2026-10-03 failed with Apple's `BadEnvironmentKeyInToken`: John's key is not
+valid for Apple's **production** push service, which every TestFlight and
+App Store phone uses. A key's environment is picked when it is made, and the
+steps below did not say so. Fix, about 5 minutes, no app update:
+
+**A. John makes a new key** on his account, exactly as in steps 1 to 5 at
+the bottom of this section, choosing **Sandbox & Production** at the
+Configure step. Then he sends you the `.p8` file (AirDrop, never chat) and
+the new Key ID.
+
+**B. You put it on hosted** (Terminal, repo folder; the Team ID and topic
+stay the same):
+
+```bash
+supabase secrets set --project-ref amnaxvznkadkgzdxzegw APNS_KEY_ID=<new key id>
+```
+
+```bash
+supabase secrets set --project-ref amnaxvznkadkgzdxzegw APNS_PRIVATE_KEY="$(cat ~/Downloads/AuthKey_<new key id>.p8)"
+```
+
+Delete the `.p8` from Downloads (keep it in LastPass) and tell the model
+"push key is in". The model then reads the next push's outcome on hosted,
+so "delivered" is a fact, not a hope. Then the lock-screen check:
 
 1. On your phone, the TestFlight build, signed in as yourself, with
    notifications allowed.
@@ -252,13 +275,15 @@ real push on a lock screen:
 3. Tell the model whether a banner arrived on the lock screen. Then the
    real-phone walk (checklist H8).
 
-**When the LLC's app ships** (checklist C2), it gets its own key the same
-way, on the LLC's account:
+**Making a key** (John's now, and the LLC's own after the move, checklist
+C12):
 
 1. https://developer.apple.com/account → **Certificates, IDs & Profiles** →
    **Keys** → the **+** button.
-2. Key name `FXE Push`. Tick **Apple Push Notifications service (APNs)**.
-   Continue → Register.
+2. Key name `FXE Push`. Tick **Apple Push Notifications service (APNs)**,
+   then **Configure** next to it: Environment **Sandbox & Production** (not
+   Sandbox: that is the 2026-10-21 failure), Key Restriction **Team Scoped
+   (All Topics)**. Save → Continue → Register.
 3. **Download** the `.p8` file (the private key our server uses to prove to
    Apple it may send notifications). Apple allows one download only, so save
    it straight into LastPass as an attachment. Copy the **Key ID**.
@@ -428,6 +453,8 @@ content; age rating: answer None to every question (4+).
 | User ID | Yes | App Functionality |
 | Other User Content (the private note to Tara at Register) | Yes | App Functionality |
 | Crash Data, Performance Data | Yes (for at most a day, privacy policy) | App Functionality |
+| Purchase History (the record of every charge and refund) | Yes | App Functionality |
+| Product Interaction (Stripe's card form collects it) | No | App Functionality |
 
 Then **Add for Review → Submit**. Apple usually answers in 1 to 2 days.
 
