@@ -17,7 +17,7 @@ session. A recalled status is not a status (hard rule 12).
 | Stripe payout schedule | Automatic, daily | Same page | 2026-10-16 |
 | Stripe live webhook | "FXE app", 9 events, API version 2026-08-26.dahlia, signature accepted (a real `setup_intent.succeeded` wrote a card at 19:37 on 10-14) | Live database row written only by a signed event | 2026-10-14 |
 | First real money | Alex charged $23 and refunded it in live mode, 2026-10-14 20:11 and 20:12 | `scripts/live-status.sh` (money on hosted) | 2026-10-16 |
-| Stripe customer receipts setting | Not checked | Alex to report whether his inbox got a receipt | never |
+| Stripe customer receipts setting | Off: successful-payment and refund emails both off, as Tara asked (question 86, "No receipts") | Alex, 2026-10-21: "both off alr" | 2026-10-21 |
 | Apple: FXE Tennis, LLC developer account | Not approved (Alex, 2026-10-16: "FXE dev acct is NOT approved yet"); authority letter case 102990597020 | Alex | 2026-10-16 |
 | Apple: Volee LLC developer account | Applied, waiting on Apple (John in the group text, 2026-10-16) | John via Alex | 2026-10-16 |
 | Testers' installed build | Build 7 (`v0.1.0-tf7`) was the last upload reported | Git tags; John has not reported builds 8 to 11 | 2026-10-16 |

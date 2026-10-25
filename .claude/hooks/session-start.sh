@@ -44,6 +44,15 @@ if [ "$DIRTY" -gt 0 ]; then
 fi
 
 echo ""
+# Shared team memory (2026-10-21): the lessons every Claude on this repo
+# needs, kept in git so John's Claude and Alex's start from the same notes.
+if [ -f .claude/team-memory/INDEX.md ]; then
+  echo ""
+  echo "Team memory (read the files that bear on this task; update them in .claude/team-memory/, never a private copy):"
+  grep '^- \[' .claude/team-memory/INDEX.md | sed 's#](#](.claude/team-memory/#'
+fi
+
+echo ""
 echo "Recent commits:"
 echo '```'
 git log --oneline -5 2>/dev/null
