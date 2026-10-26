@@ -30,14 +30,24 @@ md5of() { if command -v md5 >/dev/null; then md5 -q "$1"; else md5sum "$1" | cut
 # as surely as a stale page does.
 check() {
   local f live
-  for f in index.html review.html reset.html privacy.html qr.html sheet.html app/index.html app/*.js *.css *.js *.svg *.png vendor/*; do
+  for f in index.html review.html reset.html privacy.html qr.html sheet.html app/index.html app/*.js play/index.html play/*.js play/*.css *.css *.js *.svg *.png vendor/*; do
     [ -f "$f" ] || continue
     live=$(curl -s "$SITE/$f" -o /tmp/deploy-live-check && md5of /tmp/deploy-live-check)
     if [ "$live" != "$(md5of "$f")" ]; then echo "  live $f differs from the working tree"; return 1; fi
   done
-  # The QR code's link (2026-09-28): the printed code says /app, so /app itself
-  # (not /app/index.html) must answer, following Vercel's slash redirect.
-  if [ "$(curl -sL -o /dev/null -w '%{http_code}' "$SITE/app")" != "200" ]; then echo "  $SITE/app does not answer 200: the QR code would lead nowhere"; return 1; fi
+  # /app (the QR code) and /play (the members' site) are folders whose pages
+  # load ./target.js, ./play.js and ./play.css. Without the trailing slash a
+  # browser resolves those against the site root and gets 404s: /play showed
+  # only a bare logo and /app could never forward (2026-10-25, Alex's
+  # screenshot). The old check asked only for a 200 from /app, which the
+  # broken page also gave. Now each must redirect to its slash form
+  # (web/vercel.json) and that form must answer 200.
+  local p loc
+  for p in app play; do
+    loc=$(curl -s -o /dev/null -w '%{http_code} %{redirect_url}' "$SITE/$p")
+    case "$loc" in 30[178]\ "$SITE/$p/") ;; *) echo "  $SITE/$p answers '$loc', not a redirect to /$p/: its scripts would 404"; return 1;; esac
+    if [ "$(curl -s -o /dev/null -w '%{http_code}' "$SITE/$p/")" != "200" ]; then echo "  $SITE/$p/ does not answer 200"; return 1; fi
+  done
   # privacy.html is published since Tara approved it (2026-09-27); it is
   # compared above like every other page. Test tooling must stay out.
   for f in tests/admin.spec.mjs playwright.config.mjs; do

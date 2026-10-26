@@ -1,0 +1,6 @@
+{
+  "redirects": [
+    { "source": "/play", "destination": "/play/", "permanent": true },
+    { "source": "/app", "destination": "/app/", "permanent": true }
+  ]
+}
