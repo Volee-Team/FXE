@@ -298,6 +298,21 @@ Engineering sketch, so the conversation starts from the real cost:
 6. **Lessons** are a new product line (private 1:1 booking), not a clinic
    setting.
 
+**Wayne's suggestion (call of 2026-10-19, Alex's notes):** one code base,
+branding from a JSON file, and one App Store app per club built from it, the
+way the Kroger and Harris Teeter apps are one code base with different looks;
+clubs subscribe monthly instead of buying an app; all under one developer
+account (Volee's, so it drives back to Volee, or a DBA to keep it hidden).
+Alex's conclusion then: probably keep it under Volee, with a new
+`dev@voleeapp.com` address. **The catch to settle before choosing it:** Apple's
+guideline 4.2.6 rejects apps made from a commercial template unless the
+content's owner submits them, and says template services should not submit
+for their clients. Kroger and Harris Teeter work because one company owns
+both brands. So "one app per club, all under our account" is the shape most
+likely to be refused, and the safer shapes are item 2 above (one app, a club
+code) or each club submitting its own branded build. The JSON-branding part
+fits either way: it is what item 2's per-club row would hold.
+
 Rough size: items 1 to 3 are a few weeks of focused work after launch, and
 should start with a decision record and the second-club probes, not code.
 Do not start before 2026-11-06.
