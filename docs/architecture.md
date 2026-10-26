@@ -836,7 +836,7 @@ Supabase project was decided against on 2026-09-18 (`docs/launch-checklist.md`
 §F). They run on a Mac through `scripts/run-ui-tests.sh` on iOS 17, 18 and 26,
 and the `ui-test-record` job fails a PR whose code has no green record.
 
-**Web admin**: 50 Playwright tests (`web/tests/*.spec.mjs`) walk Tara's
+**Web admin**: 68 Playwright tests (`web/tests/*.spec.mjs`) walk Tara's
 side against a fresh seed: sign-in and the non-admin door, prices, walk-up,
 courts, unpaid reminder, a note round-trip, cancel clinic, template archive
 and restore, Money counts, the card-payments ledger, payments off, the
@@ -849,7 +849,13 @@ three laptop time zones, the This week split, a read past a 1000-row cap, and
 a past clinic kept off the tab until Show earlier (`week.spec.mjs`); Copy to
 next week making drafts once and then nothing, the court sheet by court with
 No court yet last and a member reading nothing there, and the history line on
-a Pool row and the Players tab (`tools.spec.mjs`). One
+a Pool row and the Players tab (`tools.spec.mjs`); and the members' site
+(`play.spec.mjs`, since 2026-10-25): a fresh browser signed out with only
+this site's scripts, its own sign-in apart from the admin's, Register with a
+note, the Player Pool when full, Accept and Decline, the 3-hour late cancel
+with its note, Message Tara after the close, the member-only window, nothing
+hidden on any page, the bell, Edit details, sign-up through the waiver, and
+no sideways scroll at phone width. One
 worker, files in name order; the suite is not idempotent (cancel clinic is for
 keeps), so reset between runs.
 
