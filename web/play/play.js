@@ -18,7 +18,11 @@ import { serviceWeekStart, weekLabel } from "../week.js";
 
 // implicit flow, like the admin: a reset emailed from here finishes on
 // ../reset.html, and a reset started in the app finishes there too.
-const sb = createClient(CONFIG.url, CONFIG.key, { auth: { flowType: "implicit" } });
+// Its own storage key: the admin site is the same origin, and with the
+// default key one sign-in served both, so a browser signed in to the admin
+// as Tara opened this page as Tara, and signing out of one signed out of the
+// other (2026-10-25, tests/play.spec.mjs "Tara signed in on the admin site").
+const sb = createClient(CONFIG.url, CONFIG.key, { auth: { flowType: "implicit", storageKey: "fxe-play-auth" } });
 const view = document.getElementById("view");
 const TZ = "America/New_York";
 const HORIZON_DAYS = 35;                       // ClinicRepository.upcoming
