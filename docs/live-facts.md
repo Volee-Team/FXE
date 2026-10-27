@@ -19,6 +19,8 @@ session. A recalled status is not a status (hard rule 12).
 | First real money | Alex charged $23 and refunded it in live mode, 2026-10-14 20:11 and 20:12 | `scripts/live-status.sh` (money on hosted) | 2026-10-16 |
 | Stripe customer receipts setting | Off: successful-payment and refund emails both off, as Tara asked (question 86, "No receipts") | Alex, 2026-10-21: "both off alr" | 2026-10-21 |
 | Apple: FXE Tennis, LLC developer account | Not approved (Alex, 2026-10-16: "FXE dev acct is NOT approved yet"); authority letter case 102990597020 | Alex | 2026-10-16 |
+| Members' site domain | `fxeclinics.com` and `www` (bought by John on Namecheap) on Vercel project `fxe-tennis-admin`: A @ 216.198.79.1 and 64.29.17.1, CNAME www to Vercel; certificate forced with `vercel certs issue` after 30 min without one; both answer 307 to `/play/` then 200 | `dig @8.8.8.8`, `curl -sL`, the built-in browser | 2026-10-27 |
+| Supabase Auth redirect allow-list | `reset.html` on `fxe-tennis-admin.vercel.app`, `fxeclinics.com` and `www.fxeclinics.com` (management API, 2026-10-26) | `GET /v1/projects/.../config/auth` | 2026-10-26 |
 | Apple: Volee LLC developer account | **Approved**; FXE and Volee will both live on it (Alex, 2026-10-25) | Alex | 2026-10-25 |
 | Apple: App Privacy rows | Product Interaction added by John; Purchase History not found by him yet (John's text, relayed 2026-10-25) | John via Alex | 2026-10-25 |
 | Testers' installed build | Build 7 (`v0.1.0-tf7`) was the last upload reported | Git tags; John has not reported builds 8 to 11 | 2026-10-16 |
