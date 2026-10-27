@@ -21,6 +21,10 @@ Tara's and the pros' screens are not here: Tara has the app and the web admin.
 
 ## Decisions inside it
 
+- **Its own domain (2026-10-26):** `fxeclinics.com` (Namecheap), opened to
+  the website: `web/vercel.json` sends `/` on that host to `/play/`, and
+  `supabase/functions/_shared/cors.ts` allows it. Tara's admin stays at the
+  `vercel.app` address.
 - **Where it lives:** `https://fxe-tennis-admin.vercel.app/play/`, deployed
   with the rest of `web/` by `scripts/deploy-web.sh`. The new domain (Alex,
   2026-10-19: "a new domain to come") points here later with no code change.

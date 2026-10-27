@@ -1,6 +1,25 @@
 {
   "redirects": [
-    { "source": "/play", "destination": "/play/", "permanent": true },
-    { "source": "/app", "destination": "/app/", "permanent": true }
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "(?:www\\.)?fxeclinics\\.com"
+        }
+      ],
+      "destination": "/play/",
+      "permanent": false
+    },
+    {
+      "source": "/play",
+      "destination": "/play/",
+      "permanent": true
+    },
+    {
+      "source": "/app",
+      "destination": "/app/",
+      "permanent": true
+    }
   ]
 }
