@@ -14,7 +14,8 @@
 // the credential is the admin's JWT, which a foreign page cannot read, and a
 // non-browser caller ignores CORS entirely.
 
-const ALLOWED = [/^https:\/\/fxe-tennis-admin\.vercel\.app$/, /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/];
+// fxeclinics.com (and www): the members' website's own domain (2026-10-26).
+const ALLOWED = [/^https:\/\/fxe-tennis-admin\.vercel\.app$/, /^https:\/\/(www\.)?fxeclinics\.com$/, /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/];
 
 function corsHeaders(req: Request): Record<string, string> {
   const origin = req.headers.get("Origin") ?? "";
