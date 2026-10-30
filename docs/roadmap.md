@@ -317,6 +317,22 @@ Rough size: items 1 to 3 are a few weeks of focused work after launch, and
 should start with a decision record and the second-club probes, not code.
 Do not start before 2026-11-06.
 
+**Kat's order of operations (group text, 2026-10-29)**, after Tara asked
+for a quick update:
+
+> Yea. We should make a short list of critical items. Order of operations
+> for the next few weeks/months:
+>
+> 1. Launch FXE officially
+> 2. Volee critical path items documented & discussed with delivery date.
+> 3. Approx 3/4 weeks post launch, add volee to FXE
+> 4. Plan FXE white label (+wayne)((with volee))
+> 5. Based on # 4 decide launch strategy for WL FXE/volee
+
+Earlier in the same thread, on the Volee side: *"we only do the FXE changes
+rn that are in the note. So we aren't pushing one off fixes."* Item 3 is
+Tara's 2026-10-16 ask above; item 4 is this section.
+
 
 Also for v2: multiple admins, reminders for unanswered invitations, schedule
 conflict warnings, advanced player search, multiple locations.
@@ -329,7 +345,7 @@ Parked is not rejected; it means nobody has decided when.
 
 | Idea | Raised | Note |
 |---|---|---|
-| **Guests: a member brings a friend** | 2026-09-22 (question 72) | Parked by Tara, 2026-10-12 (question 95, decision 0040): *"Until this becomes an issue, none of the above. If someone brings a guest, I hope the guest gets the app and this isn't ongoing."* A guest gets the app like anyone. When it comes back, the design is in `docs/archive/guests.md` (rows below) |
+| **Guests: a member brings a friend** | 2026-09-22 (question 72) | Parked by Tara, 2026-10-12 (question 95, decision 0040): *"Until this becomes an issue, none of the above. If someone brings a guest, I hope the guest gets the app and this isn't ongoing."* Asked again in the group text of 2026-10-29 (*"What if I wanted to add a friend that I pay for?"*); Kat called it an edge case for later, and Tara: *"So only I can add someone correct? Ya agree this isn't an issue yet."* (She can: `place_player`, decision 3.) A guest gets the app like anyone. When it comes back, the design is in `docs/archive/guests.md` (rows below) |
 | Guests, path 1: Invite a friend sends the app | 2026-09-28 (question 72) | The friend signs up as a non-member with their own card and waiver. Needs the install link (checklist I6) |
 | Guests, path 2: Tara writes the friend in, billed to the member at the non-member price | 2026-09-28 (question 72) | A guest is a `players` row owned by the member's account with an `is_guest` flag; a `guest_requests` row like a late request; Tara's approval places them with `place_player`. Her sentence for the member is recorded (question 93): "Your card will be charged for your guests clinic rate". Open design point: a guest who never installs the app never signs the waiver |
 | Analytics: an `events` table, no third-party SDK | 2026-08-15 (Kat's list) | Whether her "tagged / tag spec / what tool" meant release tags or analytics tagging is unresolved (`docs/kat-due-diligence.md` row 8). If analytics, it is a Tara question first (what she wants to know) and a privacy line in the policy second |

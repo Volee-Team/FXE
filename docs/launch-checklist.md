@@ -46,11 +46,12 @@ How this file works, so it can be trusted:
   Past, crash reports, the card-removed webhook, the secret scan, the clinic
   page for staff), green on iOS 26.2, 18.6 and 17.5 on 2026-10-19
   (`docs/ui-test-runs.log`, fingerprint `96d01ac99a1a364c`).
-- **At Apple:** John uploaded build 12 from that commit (his tag
-  `v0.1.0-tf12`, 2026-10-19) and submitted version 1.0.0 for App Store review
-  on his own account (decision 0042, C14), with the App Review account (C13).
-  Testers' phones are still on build 7 until it is released.
-- **Hosted:** 69 of 71 migrations paired. **Payments live** since 2026-10-14:
+- **At Apple:** version 1.0.0 (build 12, John's tag `v0.1.0-tf12`) is
+  **on the App Store** since 2026-10-28, on John's account (C14; Apple's
+  public lookup, 2026-10-30). Approved 2026-10-27. 1.0.1 (build 13, the gender question) uploaded
+  by John 2026-10-30 (PR #115, `f59677d`); the Waitlist wording (PR #116)
+  missed it and rides in the next build.
+- **Hosted:** 71 of 71 migrations paired (`scripts/live-status.sh`, 2026-10-30). **Payments live** since 2026-10-14:
   3 charges succeeded, 1 refund, 0 failed; 10 members, 4 with a saved card
   (`scripts/live-status.sh`, 2026-10-21). No published clinic after 10-20
   (read-only query, 2026-10-21): Tara's next week is needed while Apple
@@ -58,8 +59,7 @@ How this file works, so it can be trusted:
   (`docs/live-facts.md`).
 - **Tests:** 51 SQL probes plus 15 shell probes, 291 unit tests, 27
   XCUITests, 69 browser tests (`scripts/check-doc-claims.sh`, 2026-10-21).
-- **Waiting on others:** Apple's review of 1.0.0 (C14) and the LLC account
-  (C1); Tara: next week's clinics, questions 109 to 125 (none answered in any
+- **Waiting on others:** the App Transfer to Volee's LLC account (C12); Tara: next week's clinics, questions 109 to 125 (none answered in any
   channel the model can read, checked 2026-10-21), the Volee button words.
 
 ---
@@ -70,13 +70,10 @@ What must be true on the day, in the order it has to happen. Each item is a
 row below; this list adds nothing of its own. Re-derived 2026-10-21, after
 decision 0042 (release on John's account now, move to the LLC later).
 
-1. **Apple approves 1.0.0** (C14): submitted 2026-10-20/21 with the review
-   account (C13). Tara keeps a week of clinics published while it is in
-   review. If Apple rejects, the model fixes and drafts the reply. [Apple,
-   Tara, me]
-2. **Release** (C14): Alex and Tara press Release (the version is set to
-   manual); the model tags `v1.0.0`. Testers move to it from the
-   App Store. [Alex, Tara, me]
+1. **Apple approves 1.0.0** (C14): done 2026-10-27.
+2. **Release** (C14): done 2026-10-28, tagged `v1.0.0` 2026-10-30. Testers
+   move to it from the App Store. 1.0.1 (build 13) uploaded 2026-10-30 without
+   the Waitlist wording (PR #116), which needs the build after it. [John]
 3. **Real payments**: live since 2026-10-14 (A9, A10); receipts off
    (2026-10-21); dispute emails in Tara's own login still to check (A14).
    [Tara]
@@ -131,11 +128,11 @@ What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision
 | C7 | App Store listing: name, subtitle, description in Tara's words, screenshots, age rating, support URL, review notes with a test account | [Alex]+[me] | **DONE** 2026-10-21 (Alex: "he submitted before i saw this"): John filled the listing from `docs/for-alex.md` §4c and submitted. The description went as drafted; its approval tick and the support page's are still open in `docs/copy-review.md` (G4); a change is an edit in App Store Connect |
 | C8 | TestFlight **build 11** from the tag `v0.1.0-rc11` (build 10's note at Register and Tara's 2026-10-12 answers, plus the 2026-10-12 audit fixes; green on iOS 17, 18 and 26 before the tag) | [John] | **OPEN**: build 11 was never uploaded. Build 12 (1.0.0) was uploaded by John (tag `v0.1.0-tf12` on `2f5888d`, 2026-10-19 22:42 EDT). Testers are still on build 7 (Alex). Left: John adds build 12 to the testers' TestFlight group [John] |
 | C9 | Real-device pass: the two simulator flakes checked on an iPhone | [Alex]/[me] | **OPEN** [Alex]: build 12 is uploaded (`v0.1.0-tf12`, 2026-10-19); install it from TestFlight and check the two simulator flakes on a real iPhone |
-| C10 | An annotated git tag at every TestFlight build and upload | [me]/[John] | **OPEN**: `v0.1.0-rc4` to `rc12` exist; upload tags for builds 2, 5, 7 and 12 (`v0.1.0-tf12` by John, 2026-10-19). Builds 8 to 11 were never uploaded (`git tag`, 2026-10-21); `v0.1.0-tf2` is lightweight, not annotated. Next: `v1.0.0` at the App Store release (C14) |
+| C10 | An annotated git tag at every TestFlight build and upload | [me]/[John] | **OPEN**: `v0.1.0-rc4` to `rc12` exist; upload tags for builds 2, 5, 7 and 12 (`v0.1.0-tf12` by John, 2026-10-19). Builds 8 to 11 were never uploaded (`git tag`, 2026-10-21); `v0.1.0-tf2` is lightweight, not annotated. `v1.0.0` (annotated, on `2f5888d`, the commit of `v0.1.0-tf12`) pushed 2026-10-30 for the App Store release (C14; `git cat-file -t v1.0.0` reads `tag`). Next: a tag at 1.0.1's upload [John] |
 | C11 | External TestFlight on John's account with a public link, through Apple's beta review, with no testers invited until the soft launch (G7) | [Alex]/[John] | **DECIDE** [Alex]: External Testing was never submitted; build 12 went straight to App Store review (decision 0042). Either submit build 12 to External Testing too for a public TestFlight link, or wait for the App Store link (C14) for G7, G8 and I6. `web/app/target.js` `INSTALL_URL` is still empty |
-| C12 | Move the app to Volee's LLC developer account (approved 2026-10-25; was the FXE Tennis LLC, C1): App Transfer of `com.fxetennis.app` from John's account (possible once it has an App Store release, C14), then the LLC's APNs key on hosted | [Alex]+[John] | **BLOCKED** on C14 only since Volee's account was approved 2026-10-25 (decision 0042, 2026-10-19; replaces the new-bundle-id plan) |
+| C12 | Move the app to Volee's LLC developer account (approved 2026-10-25; was the FXE Tennis LLC, C1): App Transfer of `com.fxetennis.app` from John's account (possible once it has an App Store release, C14), then the LLC's APNs key on hosted | [Alex]+[John] | **OPEN** since 2026-10-28: 1.0.0 is released (C14), so App Transfer is now possible [Alex]+[John] |
 | C13 | How Apple's reviewer signs in: one real account called App Review, made through the app's own sign-up with an address Alex controls, left out of the board report; while keys are sandbox the review notes give Stripe's 4242 test card | [Alex] | **DONE** 2026-10-20: "App Review" made through the TestFlight app at 23:55 New York, waiver signed, no card, not a member (hosted, read-only query 2026-10-21); John holds the login for App Store Connect. It is not yet left out of the board report (backlog) |
-| C14 | **App Store release, build 12, on John's account** (decision 0042): PR #97 merged green, tag `v0.1.0-rc12`, John uploads and submits version 1.0.0 with the review account (C13) and the listing (C7); Tara has the next week's clinics published so the reviewer sees some | [me]+[John]+[Alex] | **OPEN**, waiting on [Apple]: build 12 uploaded (`v0.1.0-tf12`, John, 2026-10-19) and 1.0.0 submitted with the App Review account (C13) (Alex 2026-10-21). Still open: 0 upcoming published clinics on hosted (read-only query 2026-10-21) [Tara]; John's two extra App Privacy rows, not confirmed [John]. After approval, a manual Release [Alex]+[Tara] |
+| C14 | **App Store release, build 12, on John's account** (decision 0042): PR #97 merged green, tag `v0.1.0-rc12`, John uploads and submits version 1.0.0 with the review account (C13) and the listing (C7); Tara has the next week's clinics published so the reviewer sees some | [me]+[John]+[Alex] | **DONE** 2026-10-28: Apple approved 1.0.0 on 2026-10-27 (its email, forwarded by Kat to the group text) and it was released 2026-10-28 (`curl "https://itunes.apple.com/lookup?bundleId=com.fxetennis.app"`: version 1.0.0, releaseDate 2026-10-28, 2026-10-30); Tara found it in App Store search on 2026-10-29 (group text). Left from this row: the `v1.0.0` tag (C10) |
 ## D. Backend and operations
 
 | ID | Item | Owner | Status |

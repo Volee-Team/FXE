@@ -618,6 +618,17 @@ waitlist"*. Both cannot hold once a 105 is past its first 24 hours.
 **132. A member signs up when the clinic is already full (30 of 30). Waitlist, or in anyway over the cap?**
 *Default: Waitlist; the cap holds for everyone and only you can put someone over it. Status: open, asked 2026-10-30.*
 
+## AB. The "?" page on a 105 (added 2026-10-30)
+
+One of her pros, in the group text of 2026-10-29, with a screenshot of the
+"About this clinic" page for Coed "105": *"Repetitive"*. The page shows the
+clinic's own description, then a "What is 105?" box with her definition
+(her suggestion of 2026-08-16, `FXETennis/Views/ClinicExplainerSheet.swift`). Her Coed 105
+description already says what a 105 is, so the page says it twice.
+
+**133. On a 105 clinic's "?" page, the clinic's description and the "What is 105?" box say nearly the same thing. Keep both, or show just one?**
+*Default: show only the clinic's own description when it has one, and the "What is 105?" box only when the description is empty. Status: open, asked 2026-10-30.*
+
 ### How 52 to 57 are being sent
 
 Round two of the review page (2026-09-21, later): the Words tab now shows her
