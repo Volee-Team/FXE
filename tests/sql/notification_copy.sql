@@ -107,7 +107,7 @@ declare
   YOURE_IN_FRI constant text := 'You''re all set for Probe Copy Friday on Friday at 8:30 PM. Looking forward to seeing you on court!';
   ACCEPTED     constant text := 'Awesome! Your spot is confirmed. See you soon!';
   POOLED       constant text := 'Thanks for registering! I personally create each clinic based on playing levels and will send confirmations once lineups are set ASAP';
-  REMOVED_FRI  constant text := 'You''ve been removed from the Player Pool for Probe Copy Friday. Hope to see you at another clinic soon!';
+  REMOVED_FRI  constant text := 'You''ve been removed from the Waitlist for Probe Copy Friday. Hope to see you at another clinic soon!';
   -- Her question-79 answer, 2026-09-28, typed on her phone: curly apostrophes.
   UNINVITED    constant text := 'The levels didn’t line up for this clinic, so we’ve released your spot. We keep each court close in level so everyone gets a great practice. We’ll catch you at the next clinic!';
   monday timestamp := date_trunc('week', now() at time zone 'America/New_York');
@@ -282,7 +282,7 @@ begin
   perform public.respond_to_invitation(reg_priya_fri, false);
   perform set_config('role', 'postgres', true);
   insert into _probe_result values ('decline_sends_14_to_tara_only',
-    'tara:invitation_declined:registration=ref:Priya Raman declined Probe Copy Friday and is back in the Player Pool.',
+    'tara:invitation_declined:registration=ref:Priya Raman declined Probe Copy Friday and is back on the Waitlist.',
     pg_temp.delta(reg_priya_fri));
   select count(*) into n from public.notifications where entity_id = reg_priya_fri and type = 'added_to_pool';
   insert into _probe_result values ('decline_sends_no_5', '0', n::text);

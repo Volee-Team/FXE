@@ -88,7 +88,7 @@ final class AccessibilityAuditUITests: XCTestCase {
            // iOS 17 reports the chip as a static text with no identifier,
            // so it is also known by the four status words it can say.
            || (e.elementType == .staticText
-               && ["You're In!", "Player Pool", "Response Needed", "Canceled"].contains(e.label)) { return true }
+               && ["You're In!", "Waitlist", "Response Needed", "Canceled"].contains(e.label)) { return true }
         // The logo keeps its size under Larger Text on purpose: it sits in a
         // header of fixed height (Brand.Typography.Role.wordmarkCompact). The
         // audit reaches its "TENNIS" text even inside the one logo element.

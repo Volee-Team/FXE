@@ -184,7 +184,7 @@ public extension Brand {
         public var label: String {
             switch self {
             case .youreIn: return "You're In!"
-            case .playerPool: return "Player Pool"
+            case .playerPool: return "Waitlist"
             case .responseNeeded: return "Response Needed"
             case .canceled: return "Canceled"
             }
@@ -228,7 +228,7 @@ public extension Brand {
         public var accessibilityLabel: String {
             switch self {
             case .youreIn: return "Status: you're in"
-            case .playerPool: return "Status: in the Player Pool"
+            case .playerPool: return "Status: on the Waitlist"
             case .responseNeeded: return "Status: response needed"
             case .canceled: return "Status: canceled"
             }

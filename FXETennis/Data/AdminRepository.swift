@@ -222,7 +222,7 @@ enum MessageAudience: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .everyone: return "Everyone"
         case .in_: return "You're In!"
-        case .pool: return "Player Pool"
+        case .pool: return "Waitlist"
         case .responseNeeded: return "Response Needed"
         case .unpaid: return "Unpaid"
         }

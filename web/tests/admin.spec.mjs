@@ -474,7 +474,7 @@ test.describe("remove from a clinic", () => {
       expect(row.status).toBe("canceled");
       const sent = await db.get(`notifications?entity_id=eq.${reg.id}&select=body`);
       expect(sent.map(n => n.body)).toEqual(
-        ["You've been removed from the Player Pool for Tuesday Ladies 3.0+. Hope to see you at another clinic soon!"]);
+        ["You've been removed from the Waitlist for Tuesday Ladies 3.0+. Hope to see you at another clinic soon!"]);
     } finally {
       await db.del(`notifications?entity_id=eq.${reg.id}`);
       await db.del(`registrations?id=eq.${reg.id}`);

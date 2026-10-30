@@ -242,17 +242,17 @@ enum FXENotification: Sendable {
         case .youreIn:
             return "Registration resolves to You're In!, by member priority or by Tara placing the player."
         case .invitationReceived:
-            return "Tara invites a player from the Player Pool (invite_from_pool)."
+            return "Tara invites a player from the Waitlist (invite_from_pool)."
         case .invitationAccepted:
             return "Player accepts an invitation (respond_to_invitation, accept)."
         case .invitationExpired:
             return "NOT WIRED. No expiry mechanism exists. See contradiction (a)."
         case .addedToPlayerPool:
-            return "First registration resolves to Player Pool. Not on decline, not on invitation cancel."
+            return "First registration resolves to Waitlist. Not on decline, not on invitation cancel."
         case .removedFromPlayerPool:
             return "Tara removes a pooled player (admin cancel_registration)."
         case .clinicCanceled:
-            return "Tara cancels a clinic (cancel_clinic). Sent to You're In!, Player Pool, and Response Needed."
+            return "Tara cancels a clinic (cancel_clinic). Sent to You're In!, Waitlist, and Response Needed."
         case .paymentReminder:
             return "Tara taps the unpaid reminder. Sent only to registrations with paid = false."
         case .newAnnouncement:
@@ -283,8 +283,8 @@ enum FXENotification: Sendable {
         case .invitationReceived:    return "Spot Available"
         case .invitationAccepted:    return "You're In!"
         case .invitationExpired:     return "Invitation Expired"
-        case .addedToPlayerPool:     return "Player Pool"
-        case .removedFromPlayerPool: return "Player Pool"
+        case .addedToPlayerPool:     return "Waitlist"
+        case .removedFromPlayerPool: return "Waitlist"
         case .clinicCanceled:        return "Clinic Canceled"
         case .paymentReminder:       return "Payment Reminder"
         case .newAnnouncement:       return "FXE Tennis"
@@ -323,7 +323,7 @@ enum FXENotification: Sendable {
                 + "and will send confirmations once lineups are set ASAP"
 
         case let .removedFromPlayerPool(clinic):
-            return "You've been removed from the Player Pool for \(clinic.name). "
+            return "You've been removed from the Waitlist for \(clinic.name). "
                 + "Hope to see you at another clinic soon!"
 
         case let .clinicCanceled(clinic, reason):
@@ -352,7 +352,7 @@ enum FXENotification: Sendable {
             return "\(player.fullName) accepted their spot in \(clinic.name)."
 
         case let .playerDeclined(player, clinic):
-            return "\(player.fullName) declined \(clinic.name) and is back in the Player Pool."
+            return "\(player.fullName) declined \(clinic.name) and is back on the Waitlist."
 
         case let .playerCanceled(player, clinic):
             return "\(player.fullName) canceled \(clinic.name)."

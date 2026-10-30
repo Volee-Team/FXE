@@ -325,7 +325,7 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
   <select id="m-audience">
     <option value="everyone">Everyone</option>
     <option value="in">You're In!</option>
-    <option value="pool">Player Pool</option>
+    <option value="pool">Waitlist</option>
     <option value="response_needed">Response Needed</option>
     <option value="unpaid">Unpaid</option>
   </select>
@@ -390,7 +390,7 @@ const $ = (id) => document.getElementById(id);
 // must never be replaced with synonyms.
 const STATUS = {
   in:              { label: "You're In!",      cls: "in"   },
-  pool:            { label: "Player Pool",     cls: "pool" },
+  pool:            { label: "Waitlist",     cls: "pool" },
   response_needed: { label: "Response Needed", cls: "resp" },
   canceled:        { label: "Canceled",        cls: "canc" },
 };
