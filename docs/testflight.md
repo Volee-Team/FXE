@@ -37,7 +37,7 @@ exactly the build that was tested whatever lands on `main` afterwards.
 ## Every build
 
 1. `git fetch --tags && git checkout v0.1.0-rc<build>`, the tag Alex names
-   (for build 11, `v0.1.0-rc11`). The build number is
+   (build 11 was `v0.1.0-rc11`). The build number is
    `CURRENT_PROJECT_VERSION` in `project.yml` (`MARKETING_VERSION` is 0.1.0);
    the model bumps it in the PR that makes the tag, so the tag already
    carries the right number and CI was green on it.
