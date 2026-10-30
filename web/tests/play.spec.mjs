@@ -54,9 +54,9 @@ const MEMBER_WINDOW = { memberOpens: -2 * H, publicOpens: 10 * H };
 
 // A clinic of our own. Opens defaults to "both windows already open".
 async function makeClinic(db, name, { startsIn = 22 * D, minutes = 60, capacity = 8,
-    memberOpens = -2 * D, publicOpens = -1 * D, closesAt } = {}) {
+    memberOpens = -2 * D, publicOpens = -1 * D, closesAt, audience = "coed" } = {}) {
   const row = {
-    name, audience: "coed", category: "Clinic", description: "Made by play.spec.mjs.",
+    name, audience, category: "Clinic", description: "Made by play.spec.mjs.",
     starts_at: iso(startsIn), ends_at: iso(startsIn + minutes * 60_000), duration_minutes: minutes,
     member_opens_at: iso(memberOpens), public_opens_at: iso(publicOpens),
     internal_capacity: capacity, status: "published",
@@ -427,6 +427,9 @@ test.describe("the rest of a member's day", () => {
     await page.getByLabel("Phone").fill("704-555-0142");
     await page.getByRole("button", { name: "No", exact: true }).click();
     await page.getByRole("button", { name: "USTA 3.5" }).click();
+    // Decision 0044: the gender question is required too.
+    await expect(page.getByRole("button", { name: "Continue" })).toBeDisabled();
+    await page.getByRole("button", { name: "Male", exact: true }).click();
     await page.getByRole("button", { name: "Continue" }).click();
     // The waiver comes before anything else (decision 0013 §4).
     await expect(page.getByRole("button", { name: "Agree and sign" })).toBeDisabled();
@@ -436,6 +439,38 @@ test.describe("the rest of a member's day", () => {
     await expect(page.locator("h2.display")).toContainText(", Sam!");
     // A non-member sees what is open to the public, nothing member-only.
     await expect(page.getByText("Saturday Members Only")).toHaveCount(0);
+  });
+
+  // Decision 0044. Theo is seeded as a man; this clears his answer to meet
+  // the one-time question, and puts it back in finally.
+  test("someone who never answered is asked once, and a man then sees no Ladies clinic", async ({ page, request }) => {
+    const db = service(request);
+    const ladies = await makeClinic(db, "Spec Ladies Only", { audience: "ladies" });
+    const coed = await makeClinic(db, "Spec Coed For All");
+    try {
+      await db.patch(`players?id=eq.${P.theo}`, { gender: null });
+      await signIn(page, { email: THEO.email });
+      await expect(page.getByRole("heading", { name: "Gender" })).toBeVisible();
+      // The question holds even when another page is asked for.
+      await page.goto("/play/#/clinics");
+      await expect(page.getByRole("heading", { name: "Gender" })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Continue" })).toBeDisabled();
+      await page.getByRole("button", { name: "Male", exact: true }).click();
+      await page.getByRole("button", { name: "Continue" }).click();
+      await expect(page.getByRole("heading", { name: "Gender" })).toHaveCount(0);
+      await page.goto("/play/#/clinics");
+      await expect(card(page, "Spec Coed For All")).toBeVisible();
+      await expect(card(page, "Spec Ladies Only")).toHaveCount(0);
+      // Answered: a reload does not ask again.
+      await page.reload();
+      await expect(card(page, "Spec Coed For All")).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Gender" })).toHaveCount(0);
+      const [row] = await db.get(`players?id=eq.${P.theo}&select=gender`);
+      expect(row.gender).toBe("male");
+    } finally {
+      await db.patch(`players?id=eq.${P.theo}`, { gender: "male" });
+      await cleanUp(db, [ladies, coed]);
+    }
   });
 });
 
