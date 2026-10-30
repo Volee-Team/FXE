@@ -128,7 +128,7 @@ Last updated: October 13, 2026
 Late cancel
 Late cancel \(player.name)
 Late cancellation
-Leave Player Pool
+Leave Waitlist
 Length (minutes)
 Length must be more than 0 minutes.
 Let's Play.
@@ -230,7 +230,7 @@ Remind unpaid (\(model.unpaidCount))
 Reminder set
 Remove
 Remove \(entry.displayName)
-Remove \(entry.displayName) from the Player Pool
+Remove \(entry.displayName) from the Waitlist
 Remove from clinic
 Resolved
 Response Needed

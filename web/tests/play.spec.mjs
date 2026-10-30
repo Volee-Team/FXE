@@ -184,7 +184,7 @@ test.describe("a member's clinics", () => {
     } finally { await cleanUp(db, [c]); }
   });
 
-  test("a full clinic puts her in the Player Pool, and she can leave it", async ({ page, request }) => {
+  test("a full clinic puts her on the Waitlist, and she can leave it", async ({ page, request }) => {
     const db = service(request);
     let c;
     try {
@@ -195,9 +195,9 @@ test.describe("a member's clinics", () => {
       // Capacity is never shown (hard rule 1): the page offers Register, not "full".
       await expect(page.getByText(/full|spots?|capacity/i)).toHaveCount(0);
       await page.getByRole("button", { name: "Register" }).click();
-      await expect(page.locator(".chip").first()).toHaveText("Player Pool");
-      await page.getByRole("button", { name: "Leave Player Pool" }).click();
-      await page.getByRole("button", { name: "Yes, leave the pool" }).click();
+      await expect(page.locator(".chip").first()).toHaveText("Waitlist");
+      await page.getByRole("button", { name: "Leave Waitlist" }).click();
+      await page.getByRole("button", { name: "Yes, leave the waitlist" }).click();
       await expect(page.getByRole("button", { name: "Register" })).toBeVisible();
       const rows = await db.get(`registrations?clinic_id=eq.${c.id}&player_id=eq.${P.lena}&select=status`);
       expect(rows).toEqual([{ status: "canceled" }]);

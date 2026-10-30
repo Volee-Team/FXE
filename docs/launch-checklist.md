@@ -50,7 +50,7 @@ How this file works, so it can be trusted:
   `v0.1.0-tf12`, 2026-10-19) and submitted version 1.0.0 for App Store review
   on his own account (decision 0042, C14), with the App Review account (C13).
   Testers' phones are still on build 7 until it is released.
-- **Hosted:** 69 of 70 migrations paired. **Payments live** since 2026-10-14:
+- **Hosted:** 69 of 71 migrations paired. **Payments live** since 2026-10-14:
   3 charges succeeded, 1 refund, 0 failed; 10 members, 4 with a saved card
   (`scripts/live-status.sh`, 2026-10-21). No published clinic after 10-20
   (read-only query, 2026-10-21): Tara's next week is needed while Apple

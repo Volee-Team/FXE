@@ -111,14 +111,14 @@ final class PlayerFlowUITests: XCTestCase {
         // documented contract in docs/design-system.md, so this now pins the
         // accessibility behaviour as well as the state transition.
         XCTAssertTrue(
-            ["Status: you're in", "Status: in the Player Pool"].contains(status.label),
+            ["Status: you're in", "Status: on the Waitlist"].contains(status.label),
             "Unexpected status after register: '\(status.label)'"
         )
 
         // And the single primary action must have followed the status.
         let after = app.buttons["clinic.primaryAction"]
         XCTAssertTrue(after.waitForExistence(timeout: 10))
-        XCTAssertTrue(["Cancel Registration", "Leave Player Pool"].contains(after.label),
+        XCTAssertTrue(["Cancel Registration", "Leave Waitlist"].contains(after.label),
                       "Action did not follow status; got '\(after.label)'")
     }
 
@@ -142,7 +142,7 @@ final class PlayerFlowUITests: XCTestCase {
 
         let undo = app.buttons["clinic.primaryAction"]
         XCTAssertTrue(undo.waitForExistence(timeout: 15))
-        XCTAssertTrue(["Cancel Registration", "Leave Player Pool"].contains(undo.label),
+        XCTAssertTrue(["Cancel Registration", "Leave Waitlist"].contains(undo.label),
                       "Not in a registered state, cannot test undo")
 
         // First tap, then BACK OUT. Keeping the spot is the reason the dialog
@@ -159,7 +159,7 @@ final class PlayerFlowUITests: XCTestCase {
         XCTAssertTrue(confirmChoice.waitForExistence(timeout: 6), "No confirmation dialog appeared")
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.12)).tap()
         XCTAssertTrue(app.buttons["clinic.primaryAction"].waitForExistence(timeout: 6))
-        XCTAssertTrue(["Cancel Registration", "Leave Player Pool"].contains(
+        XCTAssertTrue(["Cancel Registration", "Leave Waitlist"].contains(
             app.buttons["clinic.primaryAction"].label),
             "Backing out of the dialog lost the registration")
 
@@ -535,7 +535,7 @@ final class PlayerFlowUITests: XCTestCase {
     private func ensureNotRegistered() {
         let action = app.buttons["clinic.primaryAction"]
         guard action.waitForExistence(timeout: 15) else { return }
-        if ["Cancel Registration", "Leave Player Pool"].contains(action.label) {
+        if ["Cancel Registration", "Leave Waitlist"].contains(action.label) {
             _ = tapDestructiveAndConfirm(action)
             let back = app.buttons["clinic.primaryAction"]
             _ = back.waitForExistence(timeout: 15)

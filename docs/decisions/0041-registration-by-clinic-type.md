@@ -95,7 +95,7 @@ the source; the bullets after each are how they map onto what exists.
 | Her rule | Today |
 |---|---|
 | Card after the clinic list, before sign-up | **New** (client): the onboarding card step goes; Register and Accept open the card sheet when no card is saved. The server already refuses both without a card (`card_required`) |
-| "Waitlist" | **New**: a rename on every player screen, notification and admin label. The database keeps `pool` as the stored status |
+| "Waitlist" | **Built 2026-10-30** after her text that day (*"Players are still seeing player pool. That needs to be waitlist"*): every label on the phone, the members' site and the laptop, and the two notification sentences the server writes (`20261030000002`). The database keeps `pool` as the stored status |
 | 105: members first 24 h, auto-confirm to the cap; everyone else to the waitlist | **Already the rule for every clinic** (`register_for_clinic`): the cap is the clinic's capacity, 30 when she sets 30 |
 | Exact date and time each person joined the waitlist | **New** on her rosters (phone and laptop); the timestamp exists (`registrations.registered_at`, checked on hosted 2026-10-19) |
 | Cancellations never auto-move anyone | **Already** (hard rule 2) |

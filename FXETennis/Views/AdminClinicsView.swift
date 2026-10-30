@@ -141,6 +141,7 @@ private struct PendingHeldAnswer {
 struct AdminClinicsView: View {
     @State private var model = AdminClinicsModel()
     @State private var pendingHeldAnswer: PendingHeldAnswer?
+    @State private var showNotices = false
     private var pendingHeld: (HeldCharge, String, String)? {
         get { pendingHeldAnswer.map { ($0.charge, $0.label, $0.outcome) } }
         nonmutating set { pendingHeldAnswer = newValue.map { PendingHeldAnswer(charge: $0.0, label: $0.1, outcome: $0.2) } }
@@ -235,6 +236,9 @@ struct AdminClinicsView: View {
         // A late request or a reply that came in while the app slept shows
         // when Tara comes back to it (MVP audit item 8).
         .reloadOnForeground { await model.load() }
+        .sheet(isPresented: $showNotices, onDismiss: { Task { await model.load() } }) {
+            NotificationsView()
+        }
     }
 
     private var actionNeeded: some View {
@@ -312,11 +316,42 @@ struct AdminClinicsView: View {
                             .buttonStyle(.plain)
                             .accessibilityIdentifier("admin.actionNeeded.dispute")
                         }
-                        if asks > 0 { needRow(Brand.Status.responseNeeded, "\(asks) asking to get in after close") }
-                        if news > 0 { needRow(Brand.Status.canceled, "\(news) cancellations or replies to see") }
-                        if waiting > 0 { needRow(Brand.Status.responseNeeded, "\(waiting) waiting on a reply") }
-                        if pool > 0 { needRow(Brand.Status.playerPool, "\(pool) in the Player Pool") }
-                        if unpaid > 0 { needRow(Brand.Status.canceled, "\(unpaid) unpaid") }
+                        // Every row opens what it counts (Tara, 2026-10-30:
+                        // she tapped "2 in the Player Pool" and nothing
+                        // happened). The cancellations and replies open the
+                        // list the bell opens; a count that belongs to a
+                        // clinic is one row per clinic, opening that clinic.
+                        if news > 0 {
+                            Button { showNotices = true } label: {
+                                needRow(Brand.Status.canceled, "\(news) cancellations or replies to see")
+                                    .frame(maxWidth: .infinity, minHeight: Brand.Layout.minTapTarget, alignment: .leading)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("admin.actionNeeded.notices")
+                        }
+                        ForEach(perClinic { id in model.lateRequests.filter { $0.clinicId == id }.count }, id: \.clinic.id) { row in
+                            clinicLink(row.clinic.id, identifier: "admin.actionNeeded.clinic") {
+                                needRow(Brand.Status.responseNeeded, "\(row.count) asking to get in after close", detail: clinicDetail(row.clinic))
+                            }
+                        }
+                        ForEach(perClinic { model.rosterCounts[$0]?.responseNeeded ?? 0 }, id: \.clinic.id) { row in
+                            clinicLink(row.clinic.id, identifier: "admin.actionNeeded.clinic") {
+                                needRow(Brand.Status.responseNeeded, "\(row.count) waiting on a reply", detail: clinicDetail(row.clinic))
+                            }
+                        }
+                        ForEach(perClinic { model.rosterCounts[$0]?.pool ?? 0 }, id: \.clinic.id) { row in
+                            clinicLink(row.clinic.id, identifier: "admin.actionNeeded.clinic") {
+                                needRow(Brand.Status.playerPool, "\(row.count) on the Waitlist", detail: clinicDetail(row.clinic))
+                            }
+                        }
+                        if model.zelleAllowed {
+                            ForEach(perClinic { model.rosterCounts[$0]?.unpaid ?? 0 }, id: \.clinic.id) { row in
+                                clinicLink(row.clinic.id, identifier: "admin.actionNeeded.clinic") {
+                                    needRow(Brand.Status.canceled, "\(row.count) unpaid", detail: clinicDetail(row.clinic))
+                                }
+                            }
+                        }
                     }
                     .padding(Brand.Spacing.cardPadding)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -378,9 +413,21 @@ struct AdminClinicsView: View {
         return line
     }
 
+    /// The clinics a count applies to, soonest first, with their count.
+    private func perClinic(_ count: (UUID) -> Int) -> [(clinic: ClinicAdmin, count: Int)] {
+        model.clinics.sorted { $0.startsAt < $1.startsAt }
+            .map { ($0, count($0.id)) }
+            .filter { $0.1 > 0 }
+    }
+
+    /// "Coed 105 on Sun, Nov 1, 4:30 PM": which clinic a count row opens.
+    private func clinicDetail(_ c: ClinicAdmin) -> String {
+        "\(c.name) on \(c.startsAt.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day().hour().minute()))"
+    }
+
     /// A money row opens its clinic. A clinic the list does not hold (it
     /// should always) leaves the row as plain text rather than a dead link.
-    @ViewBuilder private func clinicLink<Content: View>(_ id: UUID, @ViewBuilder _ content: () -> Content) -> some View {
+    @ViewBuilder private func clinicLink<Content: View>(_ id: UUID, identifier: String = "admin.actionNeeded.money", @ViewBuilder _ content: () -> Content) -> some View {
         let row = content()
         if let clinic = model.clinics.first(where: { $0.id == id }) {
             NavigationLink {
@@ -389,7 +436,7 @@ struct AdminClinicsView: View {
                 row
             }
             .buttonStyle(.plain)
-            .accessibilityIdentifier("admin.actionNeeded.money")
+            .accessibilityIdentifier(identifier)
         } else {
             row
         }

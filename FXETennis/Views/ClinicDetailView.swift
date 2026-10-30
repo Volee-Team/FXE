@@ -529,7 +529,7 @@ struct ClinicDetailView: View {
                     }
                 }
             case .pool:
-                destructiveButton("Leave Player Pool") {
+                destructiveButton("Leave Waitlist") {
                     try await RegistrationRepository.leavePool(registrationId: reg.id)
                 }
             case .responseNeeded:

@@ -579,7 +579,7 @@ what is built until she answers.
 *Default: that sentence, until you change it. Status: open, asked 2026-10-16.*
 
 **124. Should the word "Waitlist" replace "Player Pool" everywhere in the app, including the list you pick from when you send a clinic message, and notifications people already received?**
-*Default: yes, every place it shows. Status: open, asked 2026-10-16.*
+*Default: yes, every place it shows. Status: answered 2026-10-30 by text: "making sure it says waitlist not pool - for me and others ... Players are still seeing player pool", built on the phone, the members' site, the laptop and the two notification sentences the server writes (decision 0041). Notifications already sent keep their old words.*
 
 **125. When an offer expires or is declined, does that person go back on the Waitlist (keeping their original sign-up time) or off it?**
 *Default: back on the Waitlist with their original time, so you can offer again. Status: open, asked 2026-10-16.*
@@ -604,6 +604,19 @@ these defaults; each is hers to change.
 
 **130. Every Ladies and Men's clinic needs its Audience set to Ladies or Men when you create it (the Audience box on the clinic form). A clinic left on Coed shows to everyone, whatever its name says. OK?**
 *Default: yes; the app goes by the Audience box, never by the name. Status: open, asked 2026-10-30.*
+
+## AA. Members and the Waitlist (added 2026-10-30)
+
+Her text of 2026-10-30: *"And remember members are never on the waitlist
+they're in automatically."* Her email of 2026-10-15 (decision 0041) said that
+for a 105, *"Nonmembers and members signing up after that window join the
+waitlist"*. Both cannot hold once a 105 is past its first 24 hours.
+
+**131. A member signs up for a 105 after the first 24 hours, and there is still room. In automatically, or on the Waitlist for you to pick?**
+*Default: what the app does today and your email said, the Waitlist after the first 24 hours. If your text meant every member at any time, say so and members go straight in while there is room. Status: open, asked 2026-10-30.*
+
+**132. A member signs up when the clinic is already full (30 of 30). Waitlist, or in anyway over the cap?**
+*Default: Waitlist; the cap holds for everyone and only you can put someone over it. Status: open, asked 2026-10-30.*
 
 ### How 52 to 57 are being sent
 

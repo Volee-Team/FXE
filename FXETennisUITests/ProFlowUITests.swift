@@ -75,7 +75,7 @@ final class ProFlowUITests: XCTestCase {
         // Nothing of Tara's: no Invite, no Player Pool, no money.
         XCTAssertEqual(app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'invite'")).count, 0,
                        "An Invite control reached a pro")
-        XCTAssertFalse(app.staticTexts["Player Pool"].exists, "The Player Pool reached a pro")
+        XCTAssertFalse(app.staticTexts["Waitlist"].exists, "The Waitlist reached a pro")
         XCTAssertEqual(app.staticTexts.matching(NSPredicate(format: "label CONTAINS '$'")).count, 0,
                        "A price reached a pro: \(app.staticTexts.matching(NSPredicate(format: "label CONTAINS '$'")).allElementsBoundByIndex.map(\.label))")
         XCTAssertFalse(app.buttons["Remove from clinic"].exists, "Remove reached a pro")

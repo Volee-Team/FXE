@@ -189,7 +189,7 @@ struct AdminClinicDetailView: View {
 
                     rosterSection(
                         Brand.Status.playerPool, model.pool,
-                        empty: "The Player Pool is empty.",
+                        empty: "The Waitlist is empty.",
                         numbered: true,
                         showsHistory: true
                     ) { entry in
@@ -869,7 +869,7 @@ struct AdminClinicDetailView: View {
         .buttonStyle(.plain)
         .disabled(model.busy.contains(entry.id))
         .accessibilityIdentifier("admin.removeFromPool")
-        .accessibilityLabel("Remove \(entry.displayName) from the Player Pool")
+        .accessibilityLabel("Remove \(entry.displayName) from the Waitlist")
     }
 
     private func cancelInviteButton(_ entry: RosterEntry) -> some View {

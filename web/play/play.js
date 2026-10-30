@@ -33,7 +33,7 @@ const PRIVACY = "../privacy.html";
 // Locked terminology (Brand.Status). Never synonyms.
 const STATUS = {
   in: { label: "You're In!", cls: "in" },
-  pool: { label: "Player Pool", cls: "pool" },
+  pool: { label: "Waitlist", cls: "pool" },
   response_needed: { label: "Response Needed", cls: "resp" },
   canceled: { label: "Canceled", cls: "canc" },
 };
@@ -607,7 +607,7 @@ async function renderClinic(id, notice = "") {
   if (canceled || !hasPlayer) action = "";
   else if (reg) {
     if (reg.status === "in" && !started) action = `<button class="btn danger" id="a-cancel">Cancel Registration</button>`;
-    else if (reg.status === "pool") action = `<button class="btn danger" id="a-leave">Leave Player Pool</button>`;
+    else if (reg.status === "pool") action = `<button class="btn danger" id="a-leave">Leave Waitlist</button>`;
     else if (reg.status === "response_needed") action = `<div class="two">
         <button class="btn primary" id="a-accept">Accept</button>
         <button class="btn secondary" id="a-decline">Decline</button></div>`;
@@ -678,7 +678,7 @@ async function renderClinic(id, notice = "") {
   on("a-accept", () => run(() => sb.rpc("respond_to_invitation", { p_registration: reg.id, p_accept: true })));
   on("a-decline", () => run(() => sb.rpc("respond_to_invitation", { p_registration: reg.id, p_accept: false })));
   on("a-leave", async () => {
-    if (await confirmDialog("Leave Player Pool", "Yes, leave the pool", "Keep my spot"))
+    if (await confirmDialog("Leave Waitlist", "Yes, leave the waitlist", "Keep my spot"))
       run(() => sb.rpc("leave_pool", { p_registration: reg.id }));
   });
   on("a-cancel", async () => {

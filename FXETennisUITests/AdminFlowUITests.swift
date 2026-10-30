@@ -234,15 +234,25 @@ final class AdminFlowUITests: XCTestCase {
         ensureRegistered(forClinicContaining: "Thursday Morning")
         signOut()
 
+        // Through Action Needed, not the clinic card (Tara, 2026-10-30: she
+        // tapped "2 in the Player Pool" and nothing opened). The row names
+        // the clinic it counts and opens it.
         signIn(as: admin)
-        openAdminClinic(containing: "Thursday Morning")
-        let remove = app.buttons["Remove Rob Delgado from the Player Pool"]
-        XCTAssertTrue(remove.waitForExistence(timeout: 20), "No Remove on Rob's Player Pool row")
+        let manage = app.tabBars.buttons["Manage"].exists ? app.tabBars.buttons["Manage"] : app.buttons["Manage"].firstMatch
+        manage.tap()
+        // By its words: the box's own identifier covers the rows inside it.
+        let waitlistRow = app.buttons
+            .matching(NSPredicate(format: "label CONTAINS 'on the Waitlist, Thursday Morning'")).firstMatch
+        if !waitlistRow.waitForExistence(timeout: 5) { manage.tap() }
+        XCTAssertTrue(waitlistRow.waitForExistence(timeout: 20), "No Action Needed row for Thursday's Waitlist")
+        waitlistRow.tap()
+        let remove = app.buttons["Remove Rob Delgado from the Waitlist"]
+        XCTAssertTrue(remove.waitForExistence(timeout: 20), "The Action Needed row did not open Thursday, or Rob has no Remove there")
         remove.tap()
         let confirm = app.buttons["Remove"]
         XCTAssertTrue(confirm.waitForExistence(timeout: 10), "No confirmation before removing from the Pool")
         confirm.tap()
-        XCTAssertTrue(remove.waitForNonExistence(timeout: 20), "Rob is still in the Player Pool after Remove")
+        XCTAssertTrue(remove.waitForNonExistence(timeout: 20), "Rob is still on the Waitlist after Remove")
     }
 
     // MARK: - G. charge each person, remove one (decision 0037)
