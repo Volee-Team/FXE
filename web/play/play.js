@@ -65,6 +65,8 @@ const S = {
   clinics: [], regs: [], unread: 0, loaded: false,
 };
 const isMember = () => S.player?.is_member === true;
+// SessionStore.genderNeeded (decision 0044): asked once, never of Tara or a pro.
+const genderNeeded = () => !!S.player && S.player.gender == null && !skipsPlayerSteps();
 const skipsPlayerSteps = () => S.account?.role === "admin" || S.account?.role === "pro";
 
 // ------------------------------------------------------------- helpers ----
@@ -125,7 +127,8 @@ function actionOutcome(e) {
   if (m.includes("already_registered")) return { notice: null };
   if (m.includes("registration_not_open")) return { notice: "Registration isn't open yet." };
   if (m.includes("clinic_full")) return { notice: "That clinic is full now." };
-  if (m.includes("clinic_not_found")) return { notice: "That just changed. Here's the latest." };
+  // audience_mismatch (decision 0044): a page loaded before the answer.
+  if (m.includes("clinic_not_found") || m.includes("audience_mismatch")) return { notice: "That just changed. Here's the latest." };
   if (m.includes("note_not_editable") || m.includes("note_too_long")) return { notice: "Couldn't save your note." };
   const line = failureLine(e);
   if (line) return { notice: line };
@@ -303,7 +306,7 @@ function renderAuth(mode = "signIn", message = "", isError = true) {
 // CompleteProfileView
 function renderCompleteProfile(error = "") {
   chrome({});
-  let member = null, rating = null;
+  let member = null, rating = null, gender = null;
   view.innerHTML = `
     <h2 class="display">Almost there!</h2>
     <p class="muted" style="margin:0 0 20px">Members get 24-hour early access to all clinics</p>
@@ -316,6 +319,7 @@ function renderCompleteProfile(error = "") {
         <button type="button" class="choice" data-member="true" aria-pressed="false">Yes</button>
         <button type="button" class="choice" data-member="false" aria-pressed="false">No</button>
       </div>
+      ${genderChoices()}
       <p class="emph" style="margin:12px 0 0">Your tennis rating</p>
       <div class="pills" id="ratings">${RATINGS.map((r) =>
         `<button type="button" class="pill" data-rating="${r}" aria-pressed="false" aria-label="USTA ${ratingLabel(r)}">${ratingLabel(r)}</button>`).join("")}</div>
@@ -324,12 +328,12 @@ function renderCompleteProfile(error = "") {
       <p class="caption" style="margin:0">Only Tara sees this.</p>
       <p class="error" id="cp-error">${esc(error)}</p>
       <button class="btn primary" id="cp-go" disabled>Continue</button>
-      <p class="caption" id="cp-why">Add your name, phone number, and tennis rating. Please answer the membership question to continue</p>
+      <p class="caption" id="cp-why">Add your name, phone number, and tennis rating. Please answer the membership and gender questions to continue</p>
     </div>
     ${exitFooter()}`;
   const v = (id) => document.getElementById(id).value.trim();
   const check = () => {
-    const ok = v("first") && v("last") && v("phone") && member !== null && rating !== null;
+    const ok = v("first") && v("last") && v("phone") && member !== null && gender !== null && rating !== null;
     document.getElementById("cp-go").disabled = !ok;
     document.getElementById("cp-why").hidden = !!ok;
   };
@@ -339,6 +343,7 @@ function renderCompleteProfile(error = "") {
     for (const o of view.querySelectorAll("[data-member]")) o.setAttribute("aria-pressed", String(o === b));
     check();
   };
+  wireGenderChoices((g) => { gender = g; check(); });
   for (const b of view.querySelectorAll("[data-rating]")) b.onclick = () => {
     rating = rating === Number(b.dataset.rating) ? null : Number(b.dataset.rating);
     for (const o of view.querySelectorAll("[data-rating]")) o.setAttribute("aria-pressed", String(Number(o.dataset.rating) === rating));
@@ -348,11 +353,57 @@ function renderCompleteProfile(error = "") {
     const btn = document.getElementById("cp-go");
     btn.disabled = true; btn.textContent = "Saving…";
     const note = v("level-note");
-    const { error } = await sb.rpc("create_my_account", {
+    const { data: playerId, error } = await sb.rpc("create_my_account", {
       p_first_name: v("first"), p_last_name: v("last"), p_phone: v("phone") || null,
       p_is_member: member, p_adult_rating: rating, p_level_note: note || null,
     });
     if (error) { renderCompleteProfile(authFriendly(error)); return; }
+    // The answer from the same form (decision 0044). If it does not save,
+    // the one-time question asks again before Home.
+    if (playerId) await sb.rpc("set_my_gender", { p_player: playerId, p_gender: gender });
+    await boot();
+  };
+  wireExitFooter();
+}
+
+// The gender question (decision 0044), on the profile form and on its own
+// page. Plain chrome, the app's words (CompleteProfileView, GenderQuestionView).
+function genderChoices(heading = `<p class="emph" style="margin:12px 0 0">Gender</p>`) {
+  return `${heading}
+      <div class="two">
+        <button type="button" class="choice" data-gender="female" aria-pressed="false">Female</button>
+        <button type="button" class="choice" data-gender="male" aria-pressed="false">Male</button>
+      </div>`;
+}
+function wireGenderChoices(onPick) {
+  for (const b of view.querySelectorAll("[data-gender]")) b.onclick = () => {
+    for (const o of view.querySelectorAll("[data-gender]")) o.setAttribute("aria-pressed", String(o === b));
+    onPick(b.dataset.gender);
+  };
+}
+
+// GenderQuestionView: asked once of a player who signed up before the
+// question existed. Answered, it never comes back (only Tara changes it).
+function renderGenderQuestion(error = "") {
+  chrome({});
+  let gender = null;
+  view.innerHTML = `
+    <div class="stack">
+      ${genderChoices(`<h2 class="display">Gender</h2>`)}
+      <p class="error" id="g-error">${esc(error)}</p>
+      <button class="btn primary" id="g-go" disabled>Continue</button>
+    </div>
+    ${exitFooter()}`;
+  wireGenderChoices((g) => { gender = g; document.getElementById("g-go").disabled = false; });
+  document.getElementById("g-go").onclick = async () => {
+    const btn = document.getElementById("g-go");
+    btn.disabled = true; btn.textContent = "Saving…";
+    const { error: e } = await sb.rpc("set_my_gender", { p_player: S.player.id, p_gender: gender });
+    // Already answered (another device, or Tara): the reload settles it.
+    if (e && !raw(e).includes("gender_already_set")) {
+      renderGenderQuestion(failureLine(e) || "Something went wrong. Please try again.");
+      return;
+    }
     await boot();
   };
   wireExitFooter();
@@ -928,6 +979,7 @@ async function route() {
   if (!S.user) return;
   renderGen++;
   if (S.waiver === false && !skipsPlayerSteps()) { renderWaiver(); return; }
+  if (genderNeeded()) { renderGenderQuestion(); return; }
   const [, page, arg] = (location.hash || "#/home").split("/");
   window.scrollTo(0, 0);
   switch (page) {
@@ -949,7 +1001,7 @@ async function route() {
 window.addEventListener("hashchange", route);
 // Coming back to the tab shows what changed meanwhile (reloadOnForeground).
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "visible" && S.user && S.waiver !== false) route();
+  if (document.visibilityState === "visible" && S.user && S.waiver !== false && !genderNeeded()) route();
 });
 
 async function boot() {

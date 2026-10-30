@@ -50,14 +50,14 @@ How this file works, so it can be trusted:
   `v0.1.0-tf12`, 2026-10-19) and submitted version 1.0.0 for App Store review
   on his own account (decision 0042, C14), with the App Review account (C13).
   Testers' phones are still on build 7 until it is released.
-- **Hosted:** 69 of 69 migrations paired. **Payments live** since 2026-10-14:
+- **Hosted:** 69 of 70 migrations paired. **Payments live** since 2026-10-14:
   3 charges succeeded, 1 refund, 0 failed; 10 members, 4 with a saved card
   (`scripts/live-status.sh`, 2026-10-21). No published clinic after 10-20
   (read-only query, 2026-10-21): Tara's next week is needed while Apple
   reviews. Stripe pays out daily to Tara's bank; receipts off
   (`docs/live-facts.md`).
-- **Tests:** 50 SQL probes plus 15 shell probes, 288 unit tests, 27
-  XCUITests, 68 browser tests (`scripts/check-doc-claims.sh`, 2026-10-21).
+- **Tests:** 51 SQL probes plus 15 shell probes, 291 unit tests, 27
+  XCUITests, 69 browser tests (`scripts/check-doc-claims.sh`, 2026-10-21).
 - **Waiting on others:** Apple's review of 1.0.0 (C14) and the LLC account
   (C1); Tara: next week's clinics, questions 109 to 125 (none answered in any
   channel the model can read, checked 2026-10-21), the Volee button words.
@@ -165,11 +165,11 @@ observer.
 
 | Layer | Runs where | Count (derived 2026-10-12 unless dated) | Gap |
 |---|---|---|---|
-| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 50 probes plus 15 shell probes (the races and the 200-request rush); the suite prints its own check total | none known |
+| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 51 probes plus 15 shell probes (the races and the 200-request rush); the suite prints its own check total | none known |
 | Stripe pipeline against stripe-mock | every PR | 94 checks as of 2026-09-28 | real Stripe behaviour: one live charge and refund, 2026-10-14 (A10) |
 | Push pipeline against a mock APNs | every PR | 57 checks as of 2026-09-28 | real APNs waits on C3 |
-| Web admin browser tests (Playwright, real sign-in) | every PR | 68 | a cold-start flake after a local reset (backlog) |
-| Swift unit tests (pure logic) | every PR | 288 | fine |
+| Web admin browser tests (Playwright, real sign-in) | every PR | 69 | a cold-start flake after a local reset (backlog) |
+| Swift unit tests (pure logic) | every PR | 291 | fine |
 | Hosted signed-out smoke (`scripts/hosted-smoke.sh`) | every PR, read-only against production | 162 targets as of 2026-10-11, including a browser preflight to each function the web admin calls | only the signed-out side |
 | XCUITests, player and admin flows, and Apple's accessibility audit | **local only** (section F) | 27 | run on a laptop before every TestFlight build, on iOS 17, 18 and 26 (`docs/ui-test-runs.log`) |
 | Copy gate, secret scan (now Stripe keys too), migration immutability, icon gate, doc checks | every PR | – | none |

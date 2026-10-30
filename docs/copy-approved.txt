@@ -8,7 +8,7 @@ Add a card on your Profile to register.
 Add a player
 Add to Calendar
 Add your first and last name.
-Add your name, phone number, and tennis rating. Please answer the membership question to continue
+Add your name, phone number, and tennis rating. Please answer the membership and gender questions to continue
 Admin sign-in.
 Agree and sign
 Alex sees your answers as they save. Copy them here if you want to text them as well.
@@ -103,6 +103,8 @@ For the performance of a contract: the clinics you register for through the Serv
 Forgot password?
 Foxcroft share %
 Full legal name
+Gender
+Gender not set
 Give the link a label.
 Has a note
 Home

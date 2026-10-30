@@ -41,12 +41,12 @@ begin
   -- A clinic two hours out (inside the cutoff) and the seed clinic, days out.
   insert into public.clinics (name, audience, category, description, starts_at, ends_at,
       member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
-  values ('Probe Soon', 'ladies', 'Clinic', 'probe', now() + interval '2 hours', now() + interval '3 hours',
+  values ('Probe Soon', 'coed', 'Clinic', 'probe', now() + interval '2 hours', now() + interval '3 hours',
           now() - interval '3 days', now() - interval '2 days', 8, 'published', 60)
   returning id into soon;
   insert into public.clinics (name, audience, category, description, starts_at, ends_at,
       member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
-  values ('Probe Soon 2', 'ladies', 'Clinic', 'probe', now() + interval '2 hours 30 minutes', now() + interval '3 hours 30 minutes',
+  values ('Probe Soon 2', 'coed', 'Clinic', 'probe', now() + interval '2 hours 30 minutes', now() + interval '3 hours 30 minutes',
           now() - interval '3 days', now() - interval '2 days', 8, 'published', 60)
   returning id into soon2;
   insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)

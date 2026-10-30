@@ -584,6 +584,27 @@ what is built until she answers.
 **125. When an offer expires or is declined, does that person go back on the Waitlist (keeping their original sign-up time) or off it?**
 *Default: back on the Waitlist with their original time, so you can offer again. Status: open, asked 2026-10-16.*
 
+## Z. Clinics by gender (added 2026-10-30, decision 0044)
+
+Her rule, relayed by John: men see Coed and Men's clinics, women see Coed and
+Ladies. Asked at sign-up, and once of everyone already signed up. Built with
+these defaults; each is hers to change.
+
+**126. Someone who has not answered yet (for example on the old app, before they update): should they see every clinic until they answer?**
+*Default: yes, everything, as today. Status: open, asked 2026-10-30.*
+
+**127. Can a player change their answer themselves later, or only you, from the Players tab?**
+*Default: only you. They answer once; you can change or clear it on the Players tab. Status: open, asked 2026-10-30.*
+
+**128. If you put a man in a Ladies clinic yourself (Add player), is that fine, and should he then see that one clinic in his list?**
+*Default: yes to both. You can place anyone anywhere; the clinic you placed him in shows in his list, and the other Ladies clinics stay hidden. Status: open, asked 2026-10-30.*
+
+**129. The words: the question says "Gender" with two buttons, "Female" and "Male". Is that how you want it, or would you rather "Ladies" and "Men"?**
+*Default: "Gender", "Female", "Male". Status: open, asked 2026-10-30.*
+
+**130. Every Ladies and Men's clinic needs its Audience set to Ladies or Men when you create it (the Audience box on the clinic form). A clinic left on Coed shows to everyone, whatever its name says. OK?**
+*Default: yes; the app goes by the Audience box, never by the name. Status: open, asked 2026-10-30.*
+
 ### How 52 to 57 are being sent
 
 Round two of the review page (2026-09-21, later): the Words tab now shows her

@@ -158,7 +158,9 @@ final class ClinicDetailModel {
         if text.contains("clinic_already_started") {
             return FailureOutcome(notice: "Registration has closed for this clinic.", reopens: nil)
         }
-        if text.contains("clinic_not_found") {
+        // Decision 0044: a Ladies or Men clinic not open to this player, met
+        // only on a page loaded before their answer. The reload drops it.
+        if text.contains("clinic_not_found") || text.contains("audience_mismatch") {
             return FailureOutcome(notice: "That just changed. Here's the latest.", reopens: nil)
         }
         // The note could not be saved: the clinic started, or the spot is

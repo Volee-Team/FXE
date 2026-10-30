@@ -39,18 +39,21 @@ insert into public.accounts (id, first_name, last_name, email, phone, account_ty
   ('99999999-9999-9999-9999-999999999999', 'Theo',  'Grant',      'theo@fxe.test',  '704-555-0108', 'adult',  'member')
 on conflict (id) do nothing;
 
-insert into public.players (id, account_id, kind, first_name, last_name, date_of_birth, adult_rating, is_member) values
-  ('a0000000-0000-0000-0000-000000000001', '22222222-2222-2222-2222-222222222222', 'adult', 'Maria', 'Alvarez',   '1988-04-12', 3.5,  true),
-  ('a0000000-0000-0000-0000-000000000002', '33333333-3333-3333-3333-333333333333', 'adult', 'Ken',   'Whitfield', '1979-09-30', 4.0,  true),
-  ('a0000000-0000-0000-0000-000000000003', '44444444-4444-4444-4444-444444444444', 'adult', 'Rob',   'Delgado',   '1992-01-05', 3.0,  false),
-  ('a0000000-0000-0000-0000-000000000004', '66666666-6666-6666-6666-666666666666', 'adult', 'Dana',  'Okonkwo',   '1985-06-22', 3.5,  true),
+-- Every seed player has answered the gender question (decision 0044), so the
+-- one-time question does not stand in front of every UI and browser test. A
+-- test that wants the question clears one answer first.
+insert into public.players (id, account_id, kind, first_name, last_name, date_of_birth, adult_rating, is_member, gender) values
+  ('a0000000-0000-0000-0000-000000000001', '22222222-2222-2222-2222-222222222222', 'adult', 'Maria', 'Alvarez',   '1988-04-12', 3.5,  true,  'female'),
+  ('a0000000-0000-0000-0000-000000000002', '33333333-3333-3333-3333-333333333333', 'adult', 'Ken',   'Whitfield', '1979-09-30', 4.0,  true,  'male'),
+  ('a0000000-0000-0000-0000-000000000003', '44444444-4444-4444-4444-444444444444', 'adult', 'Rob',   'Delgado',   '1992-01-05', 3.0,  false, 'male'),
+  ('a0000000-0000-0000-0000-000000000004', '66666666-6666-6666-6666-666666666666', 'adult', 'Dana',  'Okonkwo',   '1985-06-22', 3.5,  true,  'female'),
   -- Priya plays too. v1 is adults only (Tara, 2026-08-02): no junior players,
   -- no parent-managed children. The 'junior' enum value and the junior columns
   -- stay in the schema so the fall re-enable is UI work, not a migration.
-  ('a0000000-0000-0000-0000-000000000005', '55555555-5555-5555-5555-555555555555', 'adult', 'Priya', 'Raman',     '1983-07-14', 3.0,  false),
-  ('a0000000-0000-0000-0000-000000000006', '77777777-7777-7777-7777-777777777777', 'adult', 'Casey', 'Park',      '1990-03-18', 4.5,  true),
-  ('a0000000-0000-0000-0000-000000000007', '88888888-8888-8888-8888-888888888888', 'adult', 'Lena',  'Brooks',    '1986-11-02', 3.5,  true),
-  ('a0000000-0000-0000-0000-000000000008', '99999999-9999-9999-9999-999999999999', 'adult', 'Theo',  'Grant',     '1981-05-27', 3.0,  false)
+  ('a0000000-0000-0000-0000-000000000005', '55555555-5555-5555-5555-555555555555', 'adult', 'Priya', 'Raman',     '1983-07-14', 3.0,  false, 'female'),
+  ('a0000000-0000-0000-0000-000000000006', '77777777-7777-7777-7777-777777777777', 'adult', 'Casey', 'Park',      '1990-03-18', 4.5,  true,  'male'),
+  ('a0000000-0000-0000-0000-000000000007', '88888888-8888-8888-8888-888888888888', 'adult', 'Lena',  'Brooks',    '1986-11-02', 3.5,  true,  'female'),
+  ('a0000000-0000-0000-0000-000000000008', '99999999-9999-9999-9999-999999999999', 'adult', 'Theo',  'Grant',     '1981-05-27', 3.0,  false, 'male')
 on conflict (id) do nothing;
 
 insert into public.player_notes (player_id, body) values

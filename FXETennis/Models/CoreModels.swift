@@ -180,9 +180,12 @@ struct PlayerProfile: Codable, Identifiable, Sendable {
     let isActive: Bool
     /// The player's own note about their level, read only by Tara (decision 0012).
     let levelNote: String?
+    /// "female" or "male", nil until answered (decision 0044). Decides which
+    /// Ladies and Men clinics the server lists; answered once, changed by Tara.
+    var gender: String? = nil
 
     enum CodingKeys: String, CodingKey {
-        case id, kind
+        case id, kind, gender
         case accountId = "account_id"
         case levelNote = "level_note"
         case firstName = "first_name"

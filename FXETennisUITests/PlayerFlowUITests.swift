@@ -246,6 +246,9 @@ final class PlayerFlowUITests: XCTestCase {
                        "Continue was enabled before the membership question was answered")
 
         app.buttons["profile.member.yes"].tap()
+        // Decision 0044: the gender question is required too.
+        XCTAssertFalse(go.isEnabled, "Continue was enabled before the gender question was answered")
+        app.buttons["profile.gender.female"].tap()
         // Pills carry the VoiceOver label "USTA 3.0" (NTRPRating.displayName).
         let pill = app.buttons["USTA 3.0"].firstMatch
         XCTAssertTrue(pill.waitForExistence(timeout: 5), "No rating pill to tap")

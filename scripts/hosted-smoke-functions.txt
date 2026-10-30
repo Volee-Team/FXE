@@ -31,12 +31,14 @@ admin_set_board_share_percent	{"p_percent":1}
 admin_set_fee_waived	{"p_registration":"00000000-0000-0000-0000-000000000000","p_waived":false}
 admin_set_membership	{"p_is_member":false,"p_player":"00000000-0000-0000-0000-000000000000"}
 admin_set_no_show	{"p_no_show":false,"p_registration":"00000000-0000-0000-0000-000000000000"}
+admin_set_player_gender	{"p_gender":"x","p_player":"00000000-0000-0000-0000-000000000000"}
 admin_set_player_note	{"p_body":"x","p_player":"00000000-0000-0000-0000-000000000000"}
 admin_set_pro	{"p_account":"00000000-0000-0000-0000-000000000000","p_pro":false}
 admin_set_template_archived	{"p_archived":false,"p_id":"00000000-0000-0000-0000-000000000000"}
 admin_upsert_clinic	{"p_audience":"x","p_category":"x","p_closes_at":"2026-01-01T00:00:00Z","p_description":"x","p_duration_minutes":1,"p_id":"00000000-0000-0000-0000-000000000000","p_internal_capacity":1,"p_member_opens_at":"2026-01-01T00:00:00Z","p_name":"x","p_public_opens_at":"2026-01-01T00:00:00Z","p_starts_at":"2026-01-01T00:00:00Z"}
 admin_upsert_template	{"p_audience":"x","p_category":"x","p_description":"x","p_duration_minutes":1,"p_id":"00000000-0000-0000-0000-000000000000","p_internal_capacity":1,"p_name":"x"}
 assign_court	{"p_court":1,"p_registration":"00000000-0000-0000-0000-000000000000"}
+audience_open_to	{"p_audience":"x","p_gender":"x"}
 back_to_back_105_opens_at	{"p_a":"2026-01-01T00:00:00Z","p_b":"2026-01-01T00:00:00Z"}
 board_share_percent	{}
 calendar_feed_events	{"p_token":"x"}
@@ -105,6 +107,7 @@ revenue_summary	{"p_from":"2026-01-01T00:00:00Z","p_to":"2026-01-01T00:00:00Z"}
 search_players	{"p_include_inactive":false,"p_query":"x"}
 send_clinic_message	{"p_audience":"x","p_body":"x","p_clinic":"00000000-0000-0000-0000-000000000000"}
 service_week_start	{"p_starts_at":"2026-01-01T00:00:00Z"}
+set_my_gender	{"p_gender":"x","p_player":"00000000-0000-0000-0000-000000000000"}
 set_my_registration_note	{"p_note":"x","p_registration":"00000000-0000-0000-0000-000000000000"}
 set_paid	{"p_paid":false,"p_registration":"00000000-0000-0000-0000-000000000000"}
 set_player_active	{"p_active":false,"p_player":"00000000-0000-0000-0000-000000000000"}
