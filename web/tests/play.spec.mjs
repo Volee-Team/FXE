@@ -162,9 +162,11 @@ test.describe("a member's clinics", () => {
       // The note can be changed after registering, and only Save sends it.
       await page.locator("#note").fill("with Jane please");
       await page.getByRole("button", { name: "Save" }).click();
-      await expect(page.locator("#note")).toHaveValue("with Jane please");
-      rows = await db.get(`registrations?clinic_id=eq.${c.id}&select=player_note`);
-      expect(rows[0].player_note).toBe("with Jane please");
+      // The box holds what she typed before Save lands, so wait on the
+      // database, not the box (CI read it a moment early, 2026-10-30).
+      await expect.poll(async () =>
+        (await db.get(`registrations?clinic_id=eq.${c.id}&select=player_note`))[0].player_note
+      ).toBe("with Jane please");
 
       // Home lists it under My Clinics.
       await page.goto("/play/#/home");
