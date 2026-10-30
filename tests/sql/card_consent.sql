@@ -36,7 +36,7 @@ begin
   update public.app_settings set value = 'true' where key = 'card_required';
   insert into public.clinics (name, audience, category, description, starts_at, ends_at,
       member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
-  values ('Probe Card Clinic', 'ladies', 'Clinic', 'probe', now() + interval '3 days', now() + interval '3 days 1 hour',
+  values ('Probe Card Clinic', 'coed', 'Clinic', 'probe', now() + interval '3 days', now() + interval '3 days 1 hour',
           now() - interval '2 days', now() - interval '1 day', 8, 'published', 60)
   returning id into cl;
   -- Maria opened the card sheet and closed it: a customer, no card.

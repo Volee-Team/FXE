@@ -886,6 +886,21 @@ The listing is what a member reads before installing, so it is copy.
 | ☐ | The listing description, five lines (in §4c) | App Store page |
 | ☐ | Keywords: tennis, clinic, clinics, FXE, lessons, doubles, coach (no city: decision 10) | App Store search, never shown |
 
+## Clinics by gender (2026-10-30) — approved by John
+
+Decision 0044. John stands in for Alex on copy while Alex is away
+(2026-10-30). Plain chrome only, no sentence of ours; Tara can still change
+any of it (question 129). `Female` and `Male` are short button labels the
+extractor cannot see, so they are listed here by hand.
+
+| ✓ | Words | Where |
+|---|---|---|
+| ✓ | Gender | Sign-up profile form (label) and the one-time question (heading), app and `/play` |
+| ✓ | Female / Male | The two buttons under it, same places |
+| ✓ | Add your name, phone number, and tennis rating. Please answer the membership and gender questions to continue | Sign-up helper under the disabled Continue (was "...the membership question...") |
+| ✓ | Gender not set / Female / Male | Tara's Players tab, the dropdown on each player |
+| ✓ | That just changed. Here's the latest. (existing line, reused) | A Register refused as `audience_mismatch`, met only on a page loaded before the answer |
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148

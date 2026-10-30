@@ -368,6 +368,16 @@ enum ProfileRepository {
             .value
     }
 
+    /// The player's one answer to the gender question (decision 0044).
+    /// `set_my_gender` takes it once; repeating the same answer is a no-op,
+    /// and a different one is refused (Tara changes it, from her Players tab).
+    static func setMyGender(player: UUID, gender: String) async throws {
+        struct P: Encodable { let p_player: UUID; let p_gender: String }
+        _ = try await supabase
+            .rpc("set_my_gender", params: P(p_player: player, p_gender: gender))
+            .execute()
+    }
+
     /// Create the caller's own `accounts` + adult `players` rows after auth
     /// sign-up, returning the new player id.
     ///

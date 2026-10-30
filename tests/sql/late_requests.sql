@@ -38,25 +38,25 @@ begin
   -- probe controls exactly which condition each clinic violates.
   insert into public.clinics (name, audience, starts_at, ends_at, duration_minutes,
       member_opens_at, public_opens_at, closes_at, internal_capacity, status)
-  values ('Probe OPEN', 'ladies', now() + interval '10 days', now() + interval '10 days 1 hour', 60,
+  values ('Probe OPEN', 'coed', now() + interval '10 days', now() + interval '10 days 1 hour', 60,
           now() - interval '2 days', now() - interval '1 day', now() + interval '9 days', 8, 'published')
   returning id into v_open;
 
   insert into public.clinics (name, audience, starts_at, ends_at, duration_minutes,
       member_opens_at, public_opens_at, closes_at, internal_capacity, status)
-  values ('Probe CLOSED', 'ladies', now() + interval '2 hours', now() + interval '3 hours', 60,
+  values ('Probe CLOSED', 'coed', now() + interval '2 hours', now() + interval '3 hours', 60,
           now() - interval '2 days', now() - interval '1 day', now() - interval '1 hour', 8, 'published')
   returning id into v_closed;
 
   insert into public.clinics (name, audience, starts_at, ends_at, duration_minutes,
       member_opens_at, public_opens_at, closes_at, internal_capacity, status)
-  values ('Probe STARTED', 'ladies', now() - interval '30 minutes', now() + interval '30 minutes', 60,
+  values ('Probe STARTED', 'coed', now() - interval '30 minutes', now() + interval '30 minutes', 60,
           now() - interval '2 days', now() - interval '1 day', now() - interval '4 hours', 8, 'published')
   returning id into v_started;
 
   insert into public.clinics (name, audience, starts_at, ends_at, duration_minutes,
       member_opens_at, public_opens_at, closes_at, internal_capacity, status)
-  values ('Probe FULL', 'ladies', now() + interval '2 hours', now() + interval '3 hours', 60,
+  values ('Probe FULL', 'coed', now() + interval '2 hours', now() + interval '3 hours', 60,
           now() - interval '2 days', now() - interval '1 day', now() - interval '1 hour', 1, 'published')
   returning id into v_full;
 

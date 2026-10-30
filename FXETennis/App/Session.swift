@@ -147,6 +147,14 @@ final class SessionStore {
     }
     var players: [PlayerProfile] = []
     var activePlayer: PlayerProfile?
+    /// The one-time gender question is due (decision 0044): a player who has
+    /// not answered yet, asked once, before Home. Tara and her pros are not
+    /// asked, as with the waiver. The server lists everything to someone who
+    /// has not answered, so a failed load leaves nothing hidden by mistake.
+    var genderNeeded: Bool {
+        guard let player = activePlayer else { return false }
+        return player.gender == nil && !skipsPlayerSteps
+    }
     var authError: String?
     /// Why the identity could not be loaded; shown by LoadFailedView.
     var loadFailureLine: String?
@@ -428,11 +436,12 @@ final class SessionStore {
         phone: String?,
         isMember: Bool,
         adultRating: Double?,
-        levelNote: String? = nil
+        levelNote: String? = nil,
+        gender: String? = nil
     ) async -> Bool {
         authError = nil
         do {
-            _ = try await ProfileRepository.createMyAccount(
+            let player = try await ProfileRepository.createMyAccount(
                 firstName: firstName,
                 lastName: lastName,
                 phone: phone,
@@ -440,6 +449,10 @@ final class SessionStore {
                 adultRating: adultRating,
                 levelNote: levelNote
             )
+            // The answer from the same form (decision 0044). If it does not
+            // save, the one-time question asks again before Home: nothing is
+            // lost, so the profile is not held back for it.
+            if let gender { try? await ProfileRepository.setMyGender(player: player, gender: gender) }
             let load = await loadProfile()
             if load == .superseded { return false }   // signed out meanwhile
             if case .failed(let failure) = load {
@@ -461,6 +474,29 @@ final class SessionStore {
             authError = Self.friendly(error)
             return false
         }
+    }
+
+    /// The one-time gender question (decision 0044). Saves the answer, then
+    /// reloads so the gate closes and the clinic list is the right one. A
+    /// refusal for an answer already on file (another phone, or Tara) is
+    /// settled by the same reload.
+    func answerGender(_ gender: String) async -> Bool {
+        guard let player = activePlayer else { return false }
+        authError = nil
+        do {
+            try await ProfileRepository.setMyGender(player: player.id, gender: gender)
+        } catch {
+            if !String(describing: error).contains("gender_already_set") {
+                authError = Self.friendly(error)
+                return false
+            }
+        }
+        let load = await loadProfile()
+        if case .failed(let failure) = load {
+            authError = failure.line ?? "Something went wrong. Please try again."
+            return false
+        }
+        return load == .loaded
     }
 
     /// Email a password-reset link. The link lands on the web admin's

@@ -86,6 +86,10 @@ struct RootView: View {
                 // its refusal brings this screen back (SessionStore.reopen).
                 if session.waiverAccepted == false && !session.skipsPlayerSteps {
                     WaiverView()
+                } else if session.genderNeeded {
+                    // Decision 0044: asked once of anyone who has not
+                    // answered (sign-up asks it on the profile form).
+                    GenderQuestionView()
                 } else {
                     MainTabView()
                         .pushTapRouting()

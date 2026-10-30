@@ -182,4 +182,32 @@ final class SessionResilienceTests: XCTestCase {
     func testALeavingScreenSaysNothing() {
         XCTAssertEqual(ClinicDetailModel.outcome(for: CancellationError()), .init(notice: nil, reopens: nil))
     }
+
+    // MARK: the gender question (decision 0044)
+
+    func testTheQuestionIsAskedOnlyOfAnUnansweredPlayer() {
+        let session = SessionStore()
+        XCTAssertFalse(session.genderNeeded, "Nobody known yet: nothing to ask")
+        session.apply(.success((maria, [mariaPlayer])))
+        XCTAssertTrue(session.genderNeeded, "No answer on file: asked once")
+        var answered = mariaPlayer
+        answered.gender = "female"
+        session.apply(.success((maria, [answered])))
+        XCTAssertFalse(session.genderNeeded, "Answered: never asked again")
+    }
+
+    func testTaraIsNotAsked() {
+        let tara = Account(id: UUID(), firstName: "Tara", lastName: "Coach", email: "tara@fxe.test",
+                           phone: nil, accountType: "adult", role: "admin", cardBrand: nil, cardLast4: nil)
+        let session = SessionStore()
+        session.apply(.success((tara, [PlayerProfile(id: UUID(), accountId: tara.id, kind: "adult",
+            firstName: "Tara", lastName: "Coach", dateOfBirth: nil, adultRating: nil,
+            isMember: true, isActive: true, levelNote: nil)])))
+        XCTAssertFalse(session.genderNeeded)
+    }
+
+    func testAClinicNotOpenToThePlayerReadsAsAChange() {
+        let refused = PostgrestError(code: "P0001", message: "audience_mismatch")
+        XCTAssertEqual(ClinicDetailModel.outcome(for: refused).notice, "That just changed. Here's the latest.")
+    }
 }

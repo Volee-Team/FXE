@@ -31,6 +31,7 @@ struct CompleteProfileView: View {
     @State private var lastName = ""
     @State private var phone = ""
     @State private var isMember: Bool?          // nil until answered: no default
+    @State private var gender: String?          // "female" / "male", nil until answered
     @State private var rating: NTRPRating?
     /// Only Tara reads it (decision 0012, her ask 2026-09-16).
     @State private var levelNote = ""
@@ -58,6 +59,7 @@ struct CompleteProfileView: View {
             && !lastName.trimmingCharacters(in: .whitespaces).isEmpty
             && !phone.trimmingCharacters(in: .whitespaces).isEmpty
             && isMember != nil
+            && gender != nil
             && rating != nil
             && !saving
     }
@@ -78,6 +80,7 @@ struct CompleteProfileView: View {
                           name: .phone, next: nil)
 
                     membershipQuestion
+                    genderQuestion
                     ratingPicker
                     levelNoteField
 
@@ -172,6 +175,21 @@ struct CompleteProfileView: View {
             HStack(spacing: Brand.Spacing.sm) {
                 choice("Yes", selected: isMember == true, id: "profile.member.yes") { isMember = true; typing = nil }
                 choice("No", selected: isMember == false, id: "profile.member.no") { isMember = false; typing = nil }
+            }
+        }
+    }
+
+    /// Decision 0044 (Tara, 2026-10-30): men see Men and Coed clinics, women
+    /// Ladies and Coed. Plain chrome, approved by John; the same two buttons
+    /// as GenderQuestionView, which asks anyone who signed up before this.
+    private var genderQuestion: some View {
+        VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
+            Text("Gender")
+                .brandFont(.bodyEmphasis)
+                .foregroundStyle(Brand.textPrimary)
+            HStack(spacing: Brand.Spacing.sm) {
+                choice("Female", selected: gender == "female", id: "profile.gender.female") { gender = "female"; typing = nil }
+                choice("Male", selected: gender == "male", id: "profile.gender.male") { gender = "male"; typing = nil }
             }
         }
     }
@@ -274,7 +292,8 @@ struct CompleteProfileView: View {
                         phone: phone.trimmingCharacters(in: .whitespaces).isEmpty ? nil : phone,
                         isMember: isMember ?? false,
                         adultRating: rating?.rawValue,
-                        levelNote: levelNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : levelNote.trimmingCharacters(in: .whitespacesAndNewlines)
+                        levelNote: levelNote.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : levelNote.trimmingCharacters(in: .whitespacesAndNewlines),
+                        gender: gender
                     )
                     saving = false
                 }
@@ -295,7 +314,7 @@ struct CompleteProfileView: View {
 
             // A disabled control always gets visible helper text saying why.
             if !canSave && !saving {
-                Text("Add your name, phone number, and tennis rating. Please answer the membership question to continue")
+                Text("Add your name, phone number, and tennis rating. Please answer the membership and gender questions to continue")
                     .brandFont(.caption)
                     .foregroundStyle(Brand.textSecondary)
             }

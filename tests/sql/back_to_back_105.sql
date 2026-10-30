@@ -76,7 +76,7 @@ begin
           8, 'published', 60) returning id into x2;
   insert into public.clinics (name, audience, category, description, starts_at, ends_at,
       member_opens_at, public_opens_at, closes_at, internal_capacity, status, duration_minutes)
-  values ('Probe Ladies 3.0+ same day', 'ladies', 'Clinic', 'probe',
+  values ('Probe Ladies 3.0+ same day', 'coed', 'Clinic', 'probe',
           (far_day + time '19:30') at time zone 'America/New_York', (far_day + time '20:30') at time zone 'America/New_York',
           now() - interval '2 days', now() - interval '1 day', (far_day + time '16:30') at time zone 'America/New_York',
           8, 'published', 60) returning id into nx;

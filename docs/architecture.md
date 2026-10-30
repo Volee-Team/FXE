@@ -57,10 +57,10 @@ most important thing to understand here, and it is section 5.
 
 | Area | What exists |
 |---|---|
-| Postgres schema, RLS, narrow views, RPCs | 69 migrations (`ls supabase/migrations`), the newest `20261013000001_audit_fixes.sql`. 63 are on hosted: Alex's `supabase migration list --linked` on 2026-10-12 showed 63 of 63 paired; the 64th goes with the audit-fixes PR. Re-check with that command after any push; this line is not the record |
+| Postgres schema, RLS, narrow views, RPCs | 70 migrations (`ls supabase/migrations`), the newest `20261013000001_audit_fixes.sql`. 63 are on hosted: Alex's `supabase migration list --linked` on 2026-10-12 showed 63 of 63 paired; the 64th goes with the audit-fixes PR. Re-check with that command after any push; this line is not the record |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | Enumerated by probes (section 5) |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | Section 7 |
-| Probe suite: 50 SQL probes and 15 shell probes (races and the API rush); the suite prints its own total | Runs in CI on every push (section 9) |
+| Probe suite: 51 SQL probes and 15 shell probes (races and the API rush); the suite prints its own total | Runs in CI on every push (section 9) |
 | iOS: sign-in, sign-up with profile, the waiver and card steps, password reset, three tabs | In the app |
 | iOS: browse by week, per-viewer pricing, register / cancel (inside the 3-hour cutoff the full fee applies; the note is optional) / leave pool / respond, closed-clinic "Message Tara", the bell, My Clinics, profile edit, card on file | In the app |
 | iOS: a private note for Tara at Register, editable on the player's own live spot until the start (decision 0039) | In the app |
@@ -234,7 +234,8 @@ FXETennis/
 │                                type scales with Larger Text through UIFontMetrics (unit-tested)
 └── Views/
     ├── AuthView.swift           sign in, create account, forgot password
-    ├── CompleteProfileView.swift name, phone, membership question, rating (after sign-up)
+    ├── CompleteProfileView.swift name, phone, membership and gender questions, rating (after sign-up)
+    ├── GenderQuestionView.swift the gender question, asked once of anyone who signed up before it (decision 0044)
     ├── NotificationPermissionView.swift shown once after the profile exists, before iOS's own dialog;
     │                            Tara's Screen-3 sentence, two equal buttons
     ├── MainTabView.swift        Home, Clinics, Profile, plus Manage when isAdmin or Today for a pro
@@ -499,6 +500,7 @@ card was declined). `new_york_date` is the date helper both use.
 | `admin_message_templates`, `admin_save_message_template`, `admin_archive_message_template` | Her saved messages (20260928900001, decision 0030): the live ones newest first; save (trimmed, 1 to 1000 characters, `message_empty` / `message_too_long`) returning the new row or the live one already holding the text; Remove stamps `archived_at` once and answers false if it was already removed. A pro is refused like a member. |
 | `send_clinic_message` | Audiences `everyone` / `in` / `pool` / `response_needed` / `unpaid`, resolved server-side. The one-tap unpaid reminder is this with a fixed body. |
 | `search_players`, `admin_player_note`, `admin_player_note_edited`, `admin_set_player_note`, `admin_set_membership`, `set_player_active` | The directory. `search_players` returns `has_notes`, never the note; `admin_player_note_edited` returns the note's `updated_at` or null (20260912000004). |
+| `set_my_gender`, `admin_set_player_gender`, `audience_open_to` | Decision 0044 (20261030000001). The player answers `players.gender` once (`gender_already_set` for a different second answer); Tara changes or clears it; `audience_open_to` is the rule `clinics_public` and the `audience_mismatch` trigger on `registrations` and `late_requests` share. `search_players` returns `gender`. |
 | `admin_player_history` | A player's history at a glance (decision 0027 §1; 20260928800001; `canceled` added by 20261012000001, decision 0040: every cancel the player made herself, You're In! or the Pool, plus every late cancel whoever marked it, never Tara's plain Remove): per player, clinics played (the board report's attended: You're In!, not a no-show, clinic ended and not canceled), no-shows (the same rows, flagged), late cancellations (in a clinic not canceled, counted when they happen) and the start of the last clinic played. Every player with no argument, one player with `p_player`; a row of zeros is "New". Nothing in a canceled clinic counts. |
 | `admin_copy_week` | Copy to next week (decision 0027 §2; 20260928800002): every clinic of the service week starting on `p_week_start` (a Sunday, else `not_a_sunday`), canceled ones aside, copied to the next week as drafts on the same New York wall clock (local time plus 7 days, never 168 hours); windows, close and prices recomputed for the new date as for any new clinic; registrations, courts and messages never copied. Skips a clinic whose copy exists (same name, same start, not canceled), under an advisory lock on the target week, so a double click makes nothing twice; returns `(created, skipped)`. |
 | `publish_news` | Publish a draft post. |
@@ -748,7 +750,7 @@ revealing the same summary text the page's Copy my answers produces.
 
 ## 9. Testing and CI
 
-**SQL probes** in `tests/sql/`, 50 SQL probes, each printing PASS/FAIL rows,
+**SQL probes** in `tests/sql/`, 51 SQL probes, each printing PASS/FAIL rows,
 plus 15 shell probes that race transactions or call the API. `tests/run-probes.sh` prints its
 own total and fails on silent SQL errors or a probe with zero assertions.
 Every migration that adds a rule adds a probe that is **red first**.
@@ -776,6 +778,7 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `past_clinics` | `my_past_clinics`: own rows only, a future clinic is not past, Ken never sees Maria's row, no hidden column, select-only for the signed-in |
 | `player_history` | Decision 0027 §1, from the rule on three fresh players: played, no-shows, late cancels and last played, where a no-show, a canceled clinic, a Player Pool or Response Needed row in an ended clinic, an early cancel and a clinic still to come count as nothing played, a late cancel counts before its clinic ends, one in a canceled clinic does not, and a clinic ending exactly now has ended; every player once, one player alone, no row for an unknown id, zeros for someone new; a member refused for the club and for herself (`not_authorized`), anon and PUBLIC hold no EXECUTE. Red first under five mutants (a no-show as played, a canceled clinic counted, no `require_admin`, `<` for `<=`, a late cancel only once ended). 17 checks; since the sql-auditor, a clinic in progress counts as nothing (red under `starts_at`: 3 played, 1 no-show) |
 | `canceled_drafts` | 20260929000001: a clinic a player never saw published never appears to them, canceled or not; a published clinic that is canceled still shows Canceled; publishing stamps `published_at` and a cancel keeps it; every published row carries a stamp; a member cannot write it (asserted on the row, not the error); since `20260929000002` a player placed in a draft that is canceled is not told and does not find it in Past, while a published clinic that is canceled still notifies and stays in Past. Red first: under the old view `canceled_draft_invisible_to_player` read 1; before 000002 the notification and Past rows read 1. 12 checks |
+| `clinics_by_gender` | 20261030000001 (decision 0044): a man sees Men and Coed and cannot register or ask late for Ladies; a woman the same way round; an unanswered player sees and registers for everything; Tara's `clinics_admin` lists all and she places anyone anywhere, and a clinic someone was placed in stays in their list; a player answers once, only for their own player, and cannot change it (RPC, column, or a new row born answered); Tara sets and clears it; anon holds nothing. Red first, one break at a time (decision 0044, Checked). 25 checks |
 | `copy_week` | Decision 0027 §2 on hand-worked times across the 2026-11-01 daylight-saving change: 9:00 AM Saturday Oct 31 EDT to 9:00 AM Saturday Nov 7 EST (13:00 to 14:00 UTC), a Tuesday evening, a Saturday 9 pm that is Sunday in UTC and still its New York week's; windows, close and prices from the rule and the length even when the source overrode them; the source untouched and nobody, no court, no message carried; drafts copied, canceled clinics and other weeks not; two same-name same-time clinics are two copies; a second call creates nothing, a canceled copy is made again; drafts invisible to a member in the target week and on a week two weeks from any run date; a Monday and null refused (`not_a_sunday`), a member refused and nothing created, anon and PUBLIC hold no EXECUTE. Every other clinic in the weeks it uses is set aside inside its transaction, so the counts hold on any run date. Red first under seven mutants (168 hours, the source's windows, no skip, published copies, canceled sources, the UTC week, no `require_admin`); since the sql-auditor, one name on two days and neighbours sharing only a name or only a time, red under a start-only key. 33 checks |
 | `clinic_messaging` | Decision 0005: a targeted message is readable only by the group it went to; the whole list each player sees is asserted; the recipients table is hidden; each recipient notified once |
 | `schema_decisions` | Tara's decisions with a DB consequence stay true |
@@ -817,7 +820,7 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `declined_card_race.sh` | 20260928700001: a later-attempted success held open while an earlier attempt's decline is recorded; the account ends with no decline, because `payments_card_decline` locks the account row before deciding (red without the lock, 2026-09-28) |
 | `dispute_race.sh` | Two concurrent deliveries of one dispute (`stripe_record_dispute`, 20260928200001), each holding the row in turn: the newer event's state survives in either commit order. Both statuses are open on purpose, so only the order guard decides; red under a read-then-write version (round 1 ended at the older event), 2026-09-28 |
 
-**Swift**: 288 unit tests (`FXETennisTests`: price formatting, per-viewer
+**Swift**: 291 unit tests (`FXETennisTests`: price formatting, per-viewer
 pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016; since 2026-09-27 the request-failure classifier, a failed load keeping who you are, the waiver and card refusals reopening their steps, the 30-second reload throttle, the redraw moments, and the type scale under Larger Text; since 2026-09-28 the invitation push's Accept and Decline, the Remind me reminder, the calendar entry, and the haptics and chip motion; a clinic the player holds beyond the list's five-week edge staying on their screens, the instant-open snapshot's per-person and ended-clinic rules, Siri's next-clinic answer, and the Player Pool's history line) and 27
 XCUITests: 9 player flows
 (`PlayerFlowUITests`: sign in / browse / register, undo, sign-up end to end,
