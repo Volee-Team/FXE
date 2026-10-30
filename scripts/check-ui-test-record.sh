@@ -7,14 +7,20 @@
 # database changed since the suite last passed on them.
 #
 # REQUIRED_IOS lists the iOS majors that must each have a green run of this
-# exact code: the newest (26), the smallest current screen on 18 (the iPhone
-# SE), and the oldest the app supports (17). On 2026-10-01 the first runs on
-# 18 and 17 found five things no iOS 26 run could: a prompt cutting its own
-# sentence off, navy page titles on the navy banner, a dark search box, a
-# clipped card title, and a tap landing under the home bar.
+# exact code: the newest (26) and the smallest current screen on 18 (the
+# iPhone SE). On 2026-10-01 the first runs on 18 and 17 found five things no
+# iOS 26 run could: a prompt cutting its own sentence off, navy page titles on
+# the navy banner, a dark search box, a clipped card title, and a tap landing
+# under the home bar.
+#
+# iOS 17 was required until 2026-10-30 (John): the current Xcode can no
+# longer download an iOS 17 simulator ("iOS 17.5 is not available for
+# download", likewise 17.0 to 17.4), so no Mac on the team could record it.
+# The app still supports iOS 17.0; it is just not re-run on it before each
+# merge. REQUIRED_IOS="26 18 17" restores the old rule on a Mac that has it.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-REQUIRED_IOS="${REQUIRED_IOS:-26 18 17}"
+REQUIRED_IOS="${REQUIRED_IOS:-26 18}"
 fp=$(bash scripts/app-fingerprint.sh)
 bad=0
 for v in $REQUIRED_IOS; do

@@ -16,8 +16,9 @@
 #     no green line, because UI tests cannot run in CI (no CI database,
 #     launch checklist F) and "I ran them" is otherwise only a claim.
 #
-# CI requires a green record on iOS 26, 18 and 17 for the same code
-# (check-ui-test-record.sh), so a change to the app means all three:
+# CI requires a green record on iOS 26 and 18 for the same code
+# (check-ui-test-record.sh; iOS 17 dropped 2026-10-30, no longer
+# downloadable), so a change to the app means both, and 17 where a Mac has it:
 #   bash scripts/run-ui-tests.sh                                       # iOS 26
 #   RUNTIME=18 DEVICE="iPhone SE (3rd generation)" bash scripts/run-ui-tests.sh
 #   RUNTIME=17 DEVICE="iPhone 15" bash scripts/run-ui-tests.sh

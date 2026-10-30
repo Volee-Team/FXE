@@ -836,7 +836,7 @@ the pro's screens, the status bar, the Return key) and 2 pro flows
 local stack and are order-dependent on a fresh seed. **They do not run in
 CI**: the macOS runner has no Docker for the stack, and a separate CI
 Supabase project was decided against on 2026-09-18 (`docs/launch-checklist.md`
-§F). They run on a Mac through `scripts/run-ui-tests.sh` on iOS 17, 18 and 26,
+§F). They run on a Mac through `scripts/run-ui-tests.sh` on iOS 18 and 26 (17 too until 2026-10-30, when it stopped being downloadable),
 and the `ui-test-record` job fails a PR whose code has no green record.
 
 **Web admin**: 69 Playwright tests (`web/tests/*.spec.mjs`) walk Tara's
