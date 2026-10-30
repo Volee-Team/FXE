@@ -12,7 +12,7 @@ key-shaped text and the secret scan fails on it, but those are seatbelts, not
 permission.
 
 The order is the checklist's critical path (its section 0). In this file:
-the review account and John's build 11 upload (§4a), the Stripe rehearsal and
+the review account and John's build 11 upload (§4a, DONE), the Stripe rehearsal and
 live keys alongside them (§1a, §1b), the public link once Apple approves
 (§4b).
 
@@ -312,7 +312,7 @@ Build 7 was uploaded by John on 2026-09-29 (tag `v0.1.0-tf7`). Builds 8 and
 exists, so neither was recorded as uploaded. Build 10 replaces them (§4a).
 The full runbook is `docs/testflight.md`.
 
-## 4a. The review account, then build 11 to External Testing (checklist C8, C11, C13)
+## 4a. The review account, then build 11 to External Testing (checklist C8, C11, C13; DONE)
 
 **Build 11 is the tag `v0.1.0-rc11`** on `main` (`355f546`, PR #96, merged
 2026-10-13): Tara's note box at Register (decision 0039), her 2026-10-12
@@ -346,19 +346,19 @@ John submits, or the reviewer stops at Add a card.
 **B. John (about 30 minutes, then Apple's 1 to 2 days; checklist C8, C11).**
 Text John something like this:
 
-> John, build 11 is ready. `git fetch --tags && git checkout v0.1.0-rc11`,
+> John, build 11 was ready (DONE). `git fetch --tags && git checkout v0.1.0-rc11`,
 > `xcodegen generate`, open the project, scheme FXETennis, destination Any
 > iOS Device, Product → Archive. Then Distribute App → **App Store Connect →
 > Upload** (not TestFlight Internal Only: that kind can never go to External
 > Testing). Once it has processed, tag it:
 > `git tag -a v0.1.0-tf11 -m "TestFlight build 11, uploaded by John"` and
-> `git push origin v0.1.0-tf11`. Full steps are in `docs/testflight.md`.
+> `git push origin v0.1.0-tf11` (DONE). Full steps are in `docs/testflight.md`.
 
 Then, in App Store Connect:
 
 1. appstoreconnect.apple.com → Apps → FXE Tennis → **TestFlight**.
 2. External Testing → **+** → a group named `FXE Members`.
-3. Add build 11 to the group. Fill in **Test Information** (below), the
+3. Add build 11 to the group (DONE). Fill in **Test Information** (below), the
    feedback email, the contact (name, phone, email) and the sign-in for
    Apple's reviewer from A.
 4. **Submit for Review**. Apple usually answers in 1 to 2 days.
