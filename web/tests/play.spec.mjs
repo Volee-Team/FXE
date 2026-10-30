@@ -481,7 +481,11 @@ test.describe("on a phone", () => {
     await signIn(page, MARIA);
     for (const hash of ["#/home", "#/clinics", "#/clinic/d0000000-0000-0000-0000-000000000002", "#/my-clinics", "#/profile", "#/edit", "#/notifications"]) {
       await page.goto(`/play/${hash}`);
-      await page.waitForLoadState("networkidle");
+      // The page's own loading placeholders gone, not "networkidle": seven
+      // pages of waiting for every font and the Stripe script to go quiet
+      // ran past 30 s on CI (2026-10-27, PR #113).
+      await expect(page.locator("#view")).not.toBeEmpty();
+      await expect(page.locator(".placeholder, .spinner")).toHaveCount(0);
       const wide = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       expect(wide, `on ${hash}`).toBeLessThanOrEqual(0);
     }
