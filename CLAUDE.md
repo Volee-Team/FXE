@@ -336,7 +336,8 @@ Use these exact words in all UI copy. Do not substitute synonyms.
 | Non-member already holding a spot in a 105 that New York day, taking a second 105 | Rejected (`back_to_back_105`) until 48 hours before the earlier start; members and Tara exempt (decision 0015 §13) |
 | Member, inside priority window, room available | You're In! |
 | Member, inside priority window, clinic full | Waitlist |
-| Member, after priority window | Waitlist (decision 0041 changes this for clinics that are not a 105: first come first served to the cap; not built yet) |
+| Member, after priority window, room available | You're In! (decision 0045, Tara 2026-10-30: "members are never on the waitlist they're in automatically"; every clinic, 105 or not) |
+| Member, after priority window, clinic full | Waitlist (question 132 open; default: the cap holds for members too) |
 | Non-member, after public opening | Waitlist |
 | Non-member, inside member-only window | Rejected |
 | Anyone, before member opening | Rejected |

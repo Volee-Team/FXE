@@ -126,11 +126,13 @@ begin
           (monday + interval '10 days 10 hours') at time zone 'America/New_York',
           now() - interval '1 day', now() + interval '1 day', 1, 'published', 60)
   returning id into thu;
-  -- Pool: open to everyone, so every registration lands in the Player Pool.
+  -- Pool: open to everyone, so a non-member lands on the Waitlist. It holds one
+  -- spot, filled by Dana before Ken registers in 17, because a member with
+  -- room is You're In! (decision 0045).
   insert into public.clinics (name, audience, category, description, starts_at, ends_at,
       member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
   values ('Probe Copy Pool', 'coed', 'Clinic', 'probe', now() + interval '10 days', now() + interval '10 days 1 hour',
-          now() - interval '2 days', now() - interval '1 day', 8, 'published', 60)
+          now() - interval '2 days', now() - interval '1 day', 1, 'published', 60)
   returning id into pool_c;
   -- Friday 8:30 PM: Tara's placements.
   insert into public.clinics (name, audience, category, description, starts_at, ends_at,
@@ -326,6 +328,11 @@ begin
 
   -- 17. Ken registers into the Pool (#5), then cancels that himself: #15 to
   --     Tara and no #6, because #6 is Tara removing him, not his own tap.
+  --     Dana holds the clinic's one spot first (a direct row, so it writes no
+  --     notification), so Ken, a member, goes to the Waitlist and not in.
+  insert into public.registrations (clinic_id, player_id, status, source,
+      price_cents_charged, was_member, duration_minutes)
+  values (pool_c, DANA_P, 'in', 'admin', 1800, true, 60);
   perform set_config('role', 'authenticated', true);
   r := public.register_for_clinic(pool_c, KEN_P);
   reg_ken_pool := r.id;
