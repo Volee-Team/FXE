@@ -41,16 +41,17 @@ How this file works, so it can be trusted:
 
 ## State today (re-derived 2026-10-21)
 
-- **Code:** `main` carries build 12, version 1.0.0, tag `v0.1.0-rc12`
+- **Code:** `main` carries build 14, version 1.0.1 (1.0.0 shipped as build 12, tag `v0.1.0-rc12`)
   (PR #97 merged 2026-10-19, `2f5888d`: browse before a card, Tara's 7-day
   Past, crash reports, the card-removed webhook, the secret scan, the clinic
   page for staff), green on iOS 26.2, 18.6 and 17.5 on 2026-10-19
   (`docs/ui-test-runs.log`, fingerprint `96d01ac99a1a364c`).
-- **At Apple:** version 1.0.0 (build 12, John's tag `v0.1.0-tf12`) is
+- **At Apple:** version 1.0.0 shipped (build 12, John's tag `v0.1.0-tf12`) and is
   **on the App Store** since 2026-10-28, on John's account (C14; Apple's
   public lookup, 2026-10-30). Approved 2026-10-27. 1.0.1 (build 13, the gender question) uploaded
   by John 2026-10-30 (PR #115, `f59677d`); the Waitlist wording (PR #116)
-  missed it and rides in the next build.
+  missed it and rode in 1.0.1 (build 14), uploaded 2026-10-31 from `ed7d7f3`
+  (PR #119), not yet submitted for review.
 - **Hosted:** 72 of 72 migrations paired (`scripts/live-status.sh`, 2026-10-31). **Payments live** since 2026-10-14:
   3 charges succeeded, 1 refund, 0 failed; 10 members, 4 with a saved card
   (`scripts/live-status.sh`, 2026-10-21). No published clinic after 10-20
@@ -215,7 +216,7 @@ launch" items are in `docs/backlog.md`.
 | H5 | Push, the app's half: banner while open, a tap opens the clinic, the badge clears (branch `push-client`) | [me] | **DONE 2026-09-27** (PR #75, `997cc65`) |
 | H6 | Password reset without email (D13) and the scanner-proof reset page (branch `admin-reset-link`) | [me] | **DONE 2026-09-27** (PR #73) |
 | H7 | **Payouts on the Money tab** (the balance, the next deposit and its date; Tara's "when will $ be in my account") and dispute alerts in Action Needed, so Tara never needs the Stripe dashboard day to day | [me] | **DONE 2026-09-28.** On hosted: `supabase migration list --linked` pairs `20260928200001`; `supabase functions list` shows `stripe-payouts` v1 and `stripe-webhook` v8 ACTIVE; the live `index.html` carries the Payouts card (`curl ... | **DONE 2026-09-28.** On hosted, `20260928200001` is applied (69 of 69 paired, 2026-10-21) and the functions API shows `stripe-payouts` v7 and `stripe-webhook` v18 ACTIVE; the live `index.html` carries the Payouts card (curl, 2026-10-21) |
-| H8 | Walk on a real phone what the simulator could not: a push tapped with the app in the background, the Home spinner on a slow connection, Accept and Decline on the lock screen, a haptic | [Alex]/[me] | **OPEN**: walk it on build 12 (John's tag `v0.1.0-tf12`, 2026-10-19), after push works (C3). Hosted has never delivered a push: of 38 attempts 27 failed `BadEnvironmentKeyInToken` and 11 `no_device` (read-only query 2026-10-21) |
+| H8 | Walk on a real phone what the simulator could not: a push tapped with the app in the background, the Home spinner on a slow connection, Accept and Decline on the lock screen, a haptic | [Alex]/[me] | **OPEN**: walk it on the newest build (1.0.1 build 14 uploaded 2026-10-31; build 12 shipped as 1.0.0), after push works (C3). Hosted has never delivered a push: of 38 attempts 27 failed `BadEnvironmentKeyInToken` and 11 `no_device` (read-only query 2026-10-21) |
 ## I. Polish for the party (2026-09-28)
 
 Alex, 2026-09-27: *"do as MUCH as you possibly can w building and testing
