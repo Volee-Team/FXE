@@ -98,7 +98,8 @@ B_SAT=$(body "$SATURDAY"); B_TUE=$(body "$TUESDAY"); B_THU=$(body "$THURSDAY" ',
 check "Saturday Members Only: You're In!" "in" "$(rpc "$MARIA" register_for_clinic "$B_SAT" | field "['status']")"
 # A member with room is You're In! since decision 0045, so Tuesday is filled
 # first (Dana takes a spot, the cap shrinks to what is taken) to keep a
-# Waitlist entry in her week.
+# Waitlist entry in her week. Both are undone at the end.
+TUE_CAP=$(sql "select internal_capacity from public.clinics where id = '$TUESDAY'")
 sql "insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
      values ('$TUESDAY', 'a0000000-0000-0000-0000-000000000004', 'in', 'admin', 1800, true, 60)
      on conflict do nothing;
@@ -178,6 +179,8 @@ check "HEAD: 200 and no body" "200 0" "$(curl -s -I -o /dev/null -w '%{http_code
 # Leave nothing behind.
 sql "delete from public.notifications where created_at > '$START';
      delete from public.registrations where registered_at > '$START' and player_id = '$MARIA_P';
+     delete from public.registrations where registered_at > '$START' and clinic_id = '$TUESDAY';
+     update public.clinics set internal_capacity = $TUE_CAP where id = '$TUESDAY';
      delete from public.registrations where clinic_id = '$ODD';
      delete from public.clinics where id = '$ODD';
      update public.clinics set status = 'published', canceled_at = null where id = '$THURSDAY';
