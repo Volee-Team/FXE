@@ -7,7 +7,8 @@
 --
 --   Member,     inside priority window, room available -> You're In!
 --   Member,     inside priority window, clinic full    -> Player Pool
---   Member,     after priority window                  -> Player Pool
+--   Member,     after priority window, room available  -> You're In! (decision 0045)
+--   Member,     after priority window, clinic full     -> Waitlist
 --   Non-member, after public opening                   -> Player Pool
 --   Non-member, inside member-only window              -> rejected
 --   Anyone,     before member opening                  -> rejected
@@ -33,7 +34,7 @@ declare
   KEN_ACC   constant uuid := '33333333-3333-3333-3333-333333333333';
   ROB_ACC   constant uuid := '44444444-4444-4444-4444-444444444444';
   DANA_ACC  constant uuid := '66666666-6666-6666-6666-666666666666';
-  c_priority uuid; c_full uuid; c_open uuid; c_early uuid; c_closed uuid;
+  c_priority uuid; c_full uuid; c_open uuid; c_open_full uuid; c_early uuid; c_closed uuid;
   r public.registrations;
   v_status text;
 begin
@@ -57,6 +58,13 @@ begin
   values ('Fully Open', 'coed', now() + interval '3 days', now() + interval '3 days 1 hour',
       now() - interval '2 days', now() - interval '1 day', 10, 'published')
   returning id into c_open;
+
+  -- Same phase, capacity 1: the late-member-when-full case.
+  insert into public.clinics (name, audience, starts_at, ends_at,
+      member_opens_at, public_opens_at, internal_capacity, status)
+  values ('Fully Open Full', 'coed', now() + interval '3 days', now() + interval '3 days 1 hour',
+      now() - interval '2 days', now() - interval '1 day', 1, 'published')
+  returning id into c_open_full;
 
   -- Phase: nothing is open yet.
   insert into public.clinics (name, audience, starts_at, ends_at,
@@ -83,9 +91,19 @@ begin
   r := public.register_for_clinic(c_full, KEN);
   insert into _probe_result values ('member_when_full_goes_to_pool', 'pool', r.status::text);
 
-  -- 3. Late member (public window already open) -> pool
+  -- 3. Late member (public window already open), room available -> in.
+  --    Decision 0045, Tara 2026-10-30: "members are never on the waitlist
+  --    they're in automatically." Before 0045 this read 'pool'.
   r := public.register_for_clinic(c_open, KEN);
-  insert into _probe_result values ('late_member_goes_to_pool', 'pool', r.status::text);
+  insert into _probe_result values ('late_member_with_room_gets_in', 'in', r.status::text);
+
+  -- 3b. Late member, clinic full -> pool (question 132's default: the cap
+  --     holds for members too; only Tara puts someone over it).
+  perform set_config('request.jwt.claims', json_build_object('sub', MARIA_ACC)::text, true);
+  r := public.register_for_clinic(c_open_full, MARIA);   -- takes the only seat
+  perform set_config('request.jwt.claims', json_build_object('sub', KEN_ACC)::text, true);
+  r := public.register_for_clinic(c_open_full, KEN);
+  insert into _probe_result values ('late_member_when_full_goes_to_pool', 'pool', r.status::text);
 
   -- 4. Non-member after public opening -> pool
   perform set_config('request.jwt.claims', json_build_object('sub', ROB_ACC)::text, true);

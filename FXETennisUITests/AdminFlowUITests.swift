@@ -90,18 +90,20 @@ final class AdminFlowUITests: XCTestCase {
     // MARK: - B. the Player Pool, Tara's hand-pick, and the answer
 
     /// Hard rule 2 end to end. Tuesday's public window opened in the seed, so
-    /// a member lands in the Player Pool (decision 0001). Nothing promotes
-    /// her: Tara invites, and only Maria's own Accept moves her to You're In!.
+    /// Rob, a non-member, lands on the Waitlist. (A member with room is
+    /// You're In! since decision 0045, so this was Maria until 2026-10-31.)
+    /// Nothing promotes him: Tara invites, and only Rob's own Accept moves him
+    /// to You're In!.
     func testAdminB_InvitesFromThePoolAndThePlayerAccepts() {
         app.launch()
-        signIn(as: member)
+        signIn(as: nonMember)
         ensureRegistered(forClinicContaining: "Tuesday Ladies")
         signOut()
 
         signIn(as: admin)
         openAdminClinic(containing: "Tuesday Ladies")
         let invite = app.buttons["admin.invite"].firstMatch
-        XCTAssertTrue(invite.waitForExistence(timeout: 20), "Maria is not in the Player Pool to invite")
+        XCTAssertTrue(invite.waitForExistence(timeout: 20), "Rob is not on the Waitlist to invite")
         invite.tap()
         // She moves to Response Needed; You're In! is unchanged (hard rule 2).
         XCTAssertTrue(app.buttons["admin.cancelInvite"].firstMatch.waitForExistence(timeout: 15),
@@ -110,7 +112,7 @@ final class AdminFlowUITests: XCTestCase {
                        "Someone is in You're In! after an invite; nothing may auto-promote")
         signOut()
 
-        signIn(as: member)
+        signIn(as: nonMember)
         openClinicsTab()
         let card = app.buttons.matching(identifier: "clinic.card")
             .matching(NSPredicate(format: "label CONTAINS[c] 'Tuesday Ladies'")).firstMatch
@@ -225,9 +227,9 @@ final class AdminFlowUITests: XCTestCase {
     /// confirmation as You're In!'s Remove, and the row gone after it. The
     /// server sends her #6 from this path (tests/sql/notification_copy.sql).
     /// Rob, a non-member, on Thursday: a non-member always lands in the Pool,
-    /// and no other test touches him there (Maria's Tuesday Pool row is
-    /// moved to You're In! by testAdminB, which broke the first version of
-    /// this test in the full run).
+    /// and no other test touches him there (his Tuesday Waitlist row is
+    /// moved to You're In! by testAdminB, which is why that one is Tuesday and
+    /// this one Thursday).
     func testAdminF_RemovesFromThePoolWithConfirmation() {
         app.launch()
         signIn(as: nonMember)

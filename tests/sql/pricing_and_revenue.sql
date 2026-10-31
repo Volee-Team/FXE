@@ -156,8 +156,10 @@ begin
   insert into _probe_result values ('pool_entry_owes_nothing', '7200', v);
 
   -- ── the four numbers Tara reads off ──────────────────────────────────────
-  -- Two members and one non-member on a 90, plus Maria and Rob on a 60 that
-  -- are both Player Pool (past the member window), so they owe nothing.
+  -- Two members and one non-member on a 90 ($72), plus on the 60 (past the
+  -- member window): Maria, a member with room, is in at $18 (decision 0045,
+  -- a member is in whenever there is room), and Rob, a non-member, is on the
+  -- Waitlist and owes nothing. $72 + $18 = $90.
   perform set_config('request.jwt.claims', json_build_object('sub', TARA_ACC)::text, true);
   select member_90_players::text into v from public.revenue_summary();
   insert into _probe_result values ('summary_member_90_is_2', '2', v);
@@ -166,7 +168,7 @@ begin
   select other_players::text into v from public.revenue_summary();
   insert into _probe_result values ('summary_no_odd_durations', '0', v);
   select expected_cents::text into v from public.revenue_summary();
-  insert into _probe_result values ('summary_expected_7200', '7200', v);
+  insert into _probe_result values ('summary_expected_9000', '9000', v);
   select collected_cents::text into v from public.revenue_summary();
   insert into _probe_result values ('summary_collected_2200', '2200', v);
   -- The buckets must always reconcile to the total, or a number is going missing.

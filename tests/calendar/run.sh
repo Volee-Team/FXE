@@ -41,7 +41,7 @@ FEED="$API/functions/v1/calendar-feed"
 
 MARIA_P=a0000000-0000-0000-0000-000000000001
 KEN_ACC=33333333-3333-3333-3333-333333333333
-TUESDAY=d0000000-0000-0000-0000-000000000001     # public open: a member is pooled
+TUESDAY=d0000000-0000-0000-0000-000000000001     # public open, filled first: a member is pooled
 THURSDAY=d0000000-0000-0000-0000-000000000002    # Tara places Maria, then cancels it
 SATURDAY=d0000000-0000-0000-0000-000000000003    # member window open: You're In!
 EVENING=d0000000-0000-0000-0000-000000000005     # the seed's invitation
@@ -96,7 +96,16 @@ echo "── Maria's week through the real RPCs"
 body() { printf '{"p_clinic":"%s","p_player":"%s"%s}' "$1" "$MARIA_P" "${2:-}"; }
 B_SAT=$(body "$SATURDAY"); B_TUE=$(body "$TUESDAY"); B_THU=$(body "$THURSDAY" ',"p_status":"in"')
 check "Saturday Members Only: You're In!" "in" "$(rpc "$MARIA" register_for_clinic "$B_SAT" | field "['status']")"
-check "Tuesday Ladies 3.0+: Player Pool" "pool" "$(rpc "$MARIA" register_for_clinic "$B_TUE" | field "['status']")"
+# A member with room is You're In! since decision 0045, so Tuesday is filled
+# first (Dana takes a spot, the cap shrinks to what is taken) to keep a
+# Waitlist entry in her week. Both are undone at the end.
+TUE_CAP=$(sql "select internal_capacity from public.clinics where id = '$TUESDAY'")
+sql "insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
+     values ('$TUESDAY', 'a0000000-0000-0000-0000-000000000004', 'in', 'admin', 1800, true, 60)
+     on conflict do nothing;
+     update public.clinics set internal_capacity = (select count(*) from public.registrations
+       where clinic_id = '$TUESDAY' and status = 'in') where id = '$TUESDAY';" >/dev/null
+check "Tuesday Ladies 3.0+: Waitlist, the clinic full" "pool" "$(rpc "$MARIA" register_for_clinic "$B_TUE" | field "['status']")"
 check "Tara places her in Thursday Morning Cardio" "in" "$(rpc "$TARA" place_player "$B_THU" | field "['status']")"
 SAT_REG=$(sql "select id from public.registrations where clinic_id = '$SATURDAY' and player_id = '$MARIA_P' and status = 'in'")
 B_COURT=$(printf '{"p_registration":"%s","p_court":4}' "$SAT_REG")
@@ -170,6 +179,8 @@ check "HEAD: 200 and no body" "200 0" "$(curl -s -I -o /dev/null -w '%{http_code
 # Leave nothing behind.
 sql "delete from public.notifications where created_at > '$START';
      delete from public.registrations where registered_at > '$START' and player_id = '$MARIA_P';
+     delete from public.registrations where registered_at > '$START' and clinic_id = '$TUESDAY';
+     update public.clinics set internal_capacity = $TUE_CAP where id = '$TUESDAY';
      delete from public.registrations where clinic_id = '$ODD';
      delete from public.clinics where id = '$ODD';
      update public.clinics set status = 'published', canceled_at = null where id = '$THURSDAY';
