@@ -425,7 +425,7 @@ To stop it any time: delete the token on the same Vercel page.
 ## 4c. App Store release on John's account, tonight (checklist C14, decision 0042)
 
 Supersedes §4a's External Testing path for tonight: the release goes straight
-to App Store review. The build is **build 12** (tag `v0.1.0-rc12`, made by
+to App Store review. The build was **build 12** (tag `v0.1.0-rc12`, made by
 the model after PR #97 merges green on iOS 17, 18 and 26). In order:
 
 **1. You, before John submits (about 10 minutes).**
@@ -442,7 +442,7 @@ the model after PR #97 merges green on iOS 17, 18 and 26). In order:
 
 **2. John (about 45 minutes).** Text him (your style):
 
-> build 12 is the one for the app store. git fetch --tags && git checkout v0.1.0-rc12, xcodegen generate, archive like before, Distribute App -> App Store Connect -> Upload. then in app store connect make version 1.0.0 and fill it in from the doc i'll send. screenshots are in the folder i'll airdrop
+> (DONE, shipped) build 12 is the one for the app store. git fetch --tags && git checkout v0.1.0-rc12, xcodegen generate, archive like before, Distribute App -> App Store Connect -> Upload. then in app store connect make version 1.0.0 and fill it in from the doc i'll send. screenshots are in the folder i'll airdrop
 
 Then in App Store Connect → Apps → FXE Tennis → **iOS App, version 1.0.0**:
 
