@@ -52,7 +52,7 @@ How this file works, so it can be trusted:
   by John 2026-10-30 (PR #115, `f59677d`); the Waitlist wording (PR #116)
   missed it and rode in 1.0.1 (build 14), uploaded 2026-10-31 from `ed7d7f3`
   (PR #119), not yet submitted for review.
-- **Hosted:** 72 of 73 migrations paired (`scripts/live-status.sh`, 2026-10-31). **Payments live** since 2026-10-14:
+- **Hosted:** 73 of 73 migrations paired (`scripts/live-status.sh`, 2026-11-01). **Payments live** since 2026-10-14:
   3 charges succeeded, 1 refund, 0 failed; 10 members, 4 with a saved card
   (`scripts/live-status.sh`, 2026-10-21). No published clinic after 10-20
   (read-only query, 2026-10-21): Tara's next week is needed while Apple
