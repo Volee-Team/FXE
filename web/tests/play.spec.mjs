@@ -481,12 +481,28 @@ test.describe("on a phone", () => {
   test.use({ viewport: { width: 375, height: 812 } });
   test("no page scrolls sideways at phone width", async ({ page }) => {
     await signIn(page, MARIA);
-    for (const hash of ["#/home", "#/clinics", "#/clinic/d0000000-0000-0000-0000-000000000002", "#/my-clinics", "#/profile", "#/edit", "#/notifications"]) {
+    // Each page with the title chrome() gives it and something only its
+    // finished render shows. A hash change keeps the old page in #view until
+    // the new one draws, and Notifications draws nothing until its fetch
+    // returns, so "#view not empty" alone measured Edit twice when that fetch
+    // was slow (shown 2026-10-31 by delaying it 2 s).
+    const pages = [
+      ["#/home", "", page.locator("#home-body")],
+      ["#/clinics", "Clinics", page.locator("#view a.card").first()],
+      ["#/clinic/d0000000-0000-0000-0000-000000000002", "", page.locator("#view h2.display", { hasText: "Thursday Morning Cardio" })],
+      ["#/my-clinics", "My Clinics", page.locator("#view")],
+      ["#/profile", "Profile", page.locator("#view h2.display", { hasText: "Maria Alvarez" })],
+      ["#/edit", "Edit details", page.locator("#e-first")],
+      ["#/notifications", "Notifications", page.locator("#view [data-n]").or(page.getByText("No notifications yet")).first()],
+    ];
+    for (const [hash, title, ready] of pages) {
       await page.goto(`/play/${hash}`);
       // The page's own loading placeholders gone, not "networkidle": seven
       // pages of waiting for every font and the Stripe script to go quiet
-      // ran past 30 s on CI (2026-10-27, PR #113).
-      await expect(page.locator("#view")).not.toBeEmpty();
+      // ran past 30 s on CI (2026-10-27, PR #113; and on 2026-10-30 for PRs
+      // #114 and #115, whose branches predated that fix).
+      await expect(page.locator("#bar-title")).toHaveText(title);
+      await expect(ready).toBeVisible();
       await expect(page.locator(".placeholder, .spinner")).toHaveCount(0);
       const wide = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       expect(wide, `on ${hash}`).toBeLessThanOrEqual(0);
