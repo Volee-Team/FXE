@@ -52,13 +52,13 @@ How this file works, so it can be trusted:
   by John 2026-10-30 (PR #115, `f59677d`); the Waitlist wording (PR #116)
   missed it and rode in 1.0.1 (build 14), uploaded 2026-10-31 from `ed7d7f3`
   (PR #119), not yet submitted for review.
-- **Hosted:** 72 of 72 migrations paired (`scripts/live-status.sh`, 2026-10-31). **Payments live** since 2026-10-14:
+- **Hosted:** 72 of 73 migrations paired (`scripts/live-status.sh`, 2026-10-31). **Payments live** since 2026-10-14:
   3 charges succeeded, 1 refund, 0 failed; 10 members, 4 with a saved card
   (`scripts/live-status.sh`, 2026-10-21). No published clinic after 10-20
   (read-only query, 2026-10-21): Tara's next week is needed while Apple
   reviews. Stripe pays out daily to Tara's bank; receipts off
   (`docs/live-facts.md`).
-- **Tests:** 51 SQL probes plus 15 shell probes, 291 unit tests, 27
+- **Tests:** 51 SQL probes plus 16 shell probes, 291 unit tests, 27
   XCUITests, 69 browser tests (`scripts/check-doc-claims.sh`, 2026-10-21).
 - **Waiting on others:** the App Transfer to Volee's LLC account (C12); Tara: next week's clinics, questions 109 to 125 (none answered in any
   channel the model can read, checked 2026-10-21), the Volee button words.
@@ -163,7 +163,7 @@ observer.
 
 | Layer | Runs where | Count (derived 2026-10-12 unless dated) | Gap |
 |---|---|---|---|
-| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 51 probes plus 15 shell probes (the races and the 200-request rush); the suite prints its own check total | none known |
+| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 51 probes plus 16 shell probes (the races and the 200-request rush); the suite prints its own check total | none known |
 | Stripe pipeline against stripe-mock | every PR | 94 checks as of 2026-09-28 | real Stripe behaviour: one live charge and refund, 2026-10-14 (A10) |
 | Push pipeline against a mock APNs | every PR | 57 checks as of 2026-09-28 | real APNs waits on C3 |
 | Web admin browser tests (Playwright, real sign-in) | every PR | 69 | a cold-start flake after a local reset (backlog) |

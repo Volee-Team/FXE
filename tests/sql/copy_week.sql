@@ -122,8 +122,9 @@ begin
   insert into _probe_result values ('sat_morning_same_wall_clock_across_dst',
     '2026-11-07 14:00:00+00|2026-11-07 15:30:00+00', v);
   select member_opens_at || '|' || public_opens_at || '|' || closes_at into v from public.clinics where id = copy_sat;
+  -- Members Thursday 08:00 EDT, everyone else Friday noon EDT (decision 0046).
   insert into _probe_result values ('sat_morning_windows_and_close_from_the_rule_not_the_source',
-    '2026-10-29 12:00:00+00|2026-10-30 12:00:00+00|2026-11-07 11:00:00+00', v);
+    '2026-10-29 12:00:00+00|2026-10-30 16:00:00+00|2026-11-07 11:00:00+00', v);
   select member_price_cents || '|' || nonmember_price_cents into v from public.clinics where id = copy_sat;
   insert into _probe_result values ('sat_morning_prices_from_the_length_not_the_source', '2200|2800', v);
   select '[' || template_id || '|' || name || '|' || audience || '|' || category || '|' || description

@@ -17,7 +17,7 @@
 --   Sunday through Saturday, America/New_York. Registration for every clinic in
 --   that week opens at one pair of moments derived only from the anchor Sunday:
 --     members 08:00 local on anchor_sunday - 3 (Thursday)
---     public  08:00 local on anchor_sunday - 2 (Friday)
+--     public  12:00 local on anchor_sunday - 2 (Friday)   (noon since decision 0046, 2026-11-01; was 08:00)
 --   A clinic's own weekday has no effect on its open time.
 --
 -- Tara's stated case: for the week of Sunday 2026-09-06, members open Thursday
@@ -52,37 +52,37 @@ create temporary table _case (
 insert into _case (label, week_tag, clinic_local, exp_member, exp_public) values
   -- All seven weekdays of the week Tara described. Every one of them must
   -- produce HER pair of dates, regardless of the clinic's own weekday.
-  ('sunday_clinic',    'w0906', '2026-09-06 09:00', '2026-09-03 Thu 08:00', '2026-09-04 Fri 08:00'),
-  ('monday_clinic',    'w0906', '2026-09-07 09:00', '2026-09-03 Thu 08:00', '2026-09-04 Fri 08:00'),
-  ('tuesday_clinic',   'w0906', '2026-09-08 09:00', '2026-09-03 Thu 08:00', '2026-09-04 Fri 08:00'),
-  ('wednesday_clinic', 'w0906', '2026-09-09 09:00', '2026-09-03 Thu 08:00', '2026-09-04 Fri 08:00'),
-  ('thursday_clinic',  'w0906', '2026-09-10 06:15', '2026-09-03 Thu 08:00', '2026-09-04 Fri 08:00'),
-  ('friday_clinic',    'w0906', '2026-09-11 19:45', '2026-09-03 Thu 08:00', '2026-09-04 Fri 08:00'),
-  ('saturday_clinic',  'w0906', '2026-09-12 08:00', '2026-09-03 Thu 08:00', '2026-09-04 Fri 08:00'),
+  ('sunday_clinic',    'w0906', '2026-09-06 09:00', '2026-09-03 Thu 08:00', '2026-09-04 Fri 12:00'),
+  ('monday_clinic',    'w0906', '2026-09-07 09:00', '2026-09-03 Thu 08:00', '2026-09-04 Fri 12:00'),
+  ('tuesday_clinic',   'w0906', '2026-09-08 09:00', '2026-09-03 Thu 08:00', '2026-09-04 Fri 12:00'),
+  ('wednesday_clinic', 'w0906', '2026-09-09 09:00', '2026-09-03 Thu 08:00', '2026-09-04 Fri 12:00'),
+  ('thursday_clinic',  'w0906', '2026-09-10 06:15', '2026-09-03 Thu 08:00', '2026-09-04 Fri 12:00'),
+  ('friday_clinic',    'w0906', '2026-09-11 19:45', '2026-09-03 Thu 08:00', '2026-09-04 Fri 12:00'),
+  ('saturday_clinic',  'w0906', '2026-09-12 08:00', '2026-09-03 Thu 08:00', '2026-09-04 Fri 12:00'),
 
   -- Proximity is not membership. This Saturday is only four days before the
   -- 9/6 week's Sunday, and belongs to the PREVIOUS week regardless.
-  ('previous_week_saturday', 'w0830', '2026-09-05 08:00', '2026-08-27 Thu 08:00', '2026-08-28 Fri 08:00'),
+  ('previous_week_saturday', 'w0830', '2026-09-05 08:00', '2026-08-27 Thu 08:00', '2026-08-28 Fri 12:00'),
 
   -- The week rolls, once, cleanly.
-  ('weekly_roll_next_sunday', 'w0913', '2026-09-13 09:00', '2026-09-10 Thu 08:00', '2026-09-11 Fri 08:00'),
+  ('weekly_roll_next_sunday', 'w0913', '2026-09-13 09:00', '2026-09-10 Thu 08:00', '2026-09-11 Fri 12:00'),
 
   -- Anchor Sunday in August, clinic week spanning into September.
-  ('month_straddle', 'w0830b', '2026-08-30 09:00', '2026-08-27 Thu 08:00', '2026-08-28 Fri 08:00'),
+  ('month_straddle', 'w0830b', '2026-08-30 09:00', '2026-08-27 Thu 08:00', '2026-08-28 Fri 12:00'),
 
   -- DST. The wall clock must stay 08:00 on both sides of the fall-back; the UTC
   -- instant must move by an hour. UTC checked separately below.
-  ('dst_fallback_week',     'wdst1', '2026-11-01 09:00', '2026-10-29 Thu 08:00', '2026-10-30 Fri 08:00'),
-  ('dst_week_after',        'wdst2', '2026-11-08 09:00', '2026-11-05 Thu 08:00', '2026-11-06 Fri 08:00'),
+  ('dst_fallback_week',     'wdst1', '2026-11-01 09:00', '2026-10-29 Thu 08:00', '2026-10-30 Fri 12:00'),
+  ('dst_week_after',        'wdst2', '2026-11-08 09:00', '2026-11-05 Thu 08:00', '2026-11-06 Fri 12:00'),
 
   -- Year boundary, and both open days landing on holidays (Christmas Eve and
   -- Christmas Day). The rule has no holiday awareness: open question Q3.
-  ('year_straddle_holiday', 'wny', '2027-01-01 09:00', '2026-12-24 Thu 08:00', '2026-12-25 Fri 08:00'),
+  ('year_straddle_holiday', 'wny', '2027-01-01 09:00', '2026-12-24 Thu 08:00', '2026-12-25 Fri 12:00'),
 
   -- THE UTC TRAP. A Saturday 21:00 EDT clinic is Sunday 01:00 UTC. Anchoring
   -- off the UTC date pushes it into the next week and returns 2026-09-10
   -- instead of 2026-09-03: a full week late, on the busiest weekday.
-  ('late_saturday_utc_trap', 'wtrap', '2026-09-12 21:00', '2026-09-03 Thu 08:00', '2026-09-04 Fri 08:00');
+  ('late_saturday_utc_trap', 'wtrap', '2026-09-12 21:00', '2026-09-03 Thu 08:00', '2026-09-04 Fri 12:00');
 
 -- 1. Member open, per case.
 insert into _probe_result
@@ -143,15 +143,15 @@ select 'public_open_always_friday', '0',
  where to_char(public.public_opens_at((d::date + time '10:00') at time zone 'America/New_York')
                  at time zone 'America/New_York', 'Dy') <> 'Fri';
 
--- 6. Members always lead by exactly 24 hours. Never zero, never negative, and
+-- 6. Members always lead by exactly 28 hours (Thursday 08:00 to Friday noon, decision 0046). Never zero, never negative, and
 --    never the six-day INVERSION the old rule produced on a Friday clinic.
 insert into _probe_result
-select 'member_head_start_is_always_24h', '0',
+select 'member_head_start_is_always_28h', '0',
        count(*)::text
   from generate_series(date '2026-08-01', date '2027-08-01', interval '1 day') d
  where public.public_opens_at((d::date + time '10:00') at time zone 'America/New_York')
      - public.member_opens_at((d::date + time '10:00') at time zone 'America/New_York')
-       <> interval '24 hours';
+       <> interval '28 hours';
 
 -- 7. Both windows always open strictly before the clinic starts, over a year.
 --    Member lead runs 3 days (Sunday clinic) to 9 days (Saturday clinic).
@@ -234,7 +234,7 @@ begin
     to_char(v.member_opens_at at time zone 'America/New_York', 'YYYY-MM-DD Dy HH24:MI'));
 
   insert into _probe_result values (
-    'created_clinic_stores_public_open', '2026-09-04 Fri 08:00',
+    'created_clinic_stores_public_open', '2026-09-04 Fri 12:00',
     to_char(v.public_opens_at at time zone 'America/New_York', 'YYYY-MM-DD Dy HH24:MI'));
 
   -- 12. Tara's per-clinic override must still be possible. The functions supply

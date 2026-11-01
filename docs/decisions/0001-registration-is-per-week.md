@@ -9,7 +9,9 @@ Saturday 23:59, America/New_York. Registration for every clinic in that week
 opens at one pair of moments derived only from the week's anchor Sunday:
 
 * Members: 08:00 local on `anchor_sunday - 3 days` (the Thursday before)
-* Public: 08:00 local on `anchor_sunday - 2 days` (the Friday before)
+* Public: 08:00 local on `anchor_sunday - 2 days` (the Friday before).
+  **Superseded in part 2026-11-01 by [0046](0046-public-opens-friday-noon.md):
+  the public open is now 12:00 (noon) that Friday.** Everything else here stands.
 
 A clinic's own weekday has no effect on when it opens.
 

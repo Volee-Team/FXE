@@ -4,7 +4,8 @@
 //
 //  The rule (MVP audit item 8): a screen redraws at the moments a clinic's
 //  registration changes on its own, for THIS viewer: members at their
-//  Thursday 8:00 opening, everyone else at the Friday 8:00 one; then the
+//  Thursday 8:00 opening, everyone else at the Friday one (8:00 when written,
+//  noon since decision 0046; the fixtures store their own times); then the
 //  close; then the start. Expected dates are the week of Sunday 2026-10-04
 //  worked by hand from the window rule (CLAUDE.md): members Thu 10-01 08:00
 //  EDT = 12:00Z, public Fri 10-02 08:00 EDT = 12:00Z; a Tuesday 18:00 EDT

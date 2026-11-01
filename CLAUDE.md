@@ -351,7 +351,7 @@ Use these exact words in all UI copy. Do not substitute synonyms.
 > A clinic belongs to the **service week** containing it. A service week runs **Sunday 00:00 through Saturday 23:59, America/New_York**. Registration for every clinic in that week opens at one pair of moments derived only from the week's anchor Sunday:
 >
 > * **Members:** 08:00 local on `anchor_sunday - 3 days` (the Thursday before)
-> * **Public:** 08:00 local on `anchor_sunday - 2 days` (the Friday before)
+> * **Public:** 12:00 (noon) local on `anchor_sunday - 2 days` (the Friday before). 08:00 until 2026-11-01; Tara moved it to noon (decision 0046), so members lead by 28 hours
 >
 > **A clinic's own weekday has no effect on its open time.** Members keep access after Friday: the public open widens the audience, it does not transfer it. Member lead time runs from 3 days (Sunday clinic) to 9 days (Saturday clinic).
 
@@ -366,7 +366,7 @@ Two implementation traps, both pinned by probes:
 
 **Do not reintroduce the per-clinic rule.** "The most recent Thursday strictly before the clinic date" is right on five weekdays out of seven and wrong on Friday and Saturday, the two days where seats are scarcest. On Tara's own Friday 2026-09-11 example it opens members a week late, and its public-side counterpart lands six days *before* the members: an inversion.
 
-**Blocking non-members during the member window is our decision, not the guide's.** The guide only states their opening is Friday 8 AM. Tara sees the Pool in registration order, so letting non-members queue on Thursday would place them ahead of members in her list and quietly subvert the priority. Confirmed by Tara 2026-08-27 (decision 0007 §2: members "get first dibs for 24 hours"); pinned by `tara_member_head_start_is_24h` in `tests/sql/schema_decisions.sql`.
+**Blocking non-members during the member window is our decision, not the guide's.** The guide only states their opening is Friday 8 AM. Tara sees the Pool in registration order, so letting non-members queue on Thursday would place them ahead of members in her list and quietly subvert the priority. Confirmed by Tara 2026-08-27 (decision 0007 §2: members "get first dibs for 24 hours"); since 2026-11-01 the public open is Friday noon, so the head start is 28 hours (decision 0046, question 134 confirms the Thursday side), pinned by `tara_member_head_start_is_28h` in `tests/sql/schema_decisions.sql`.
 
 Capacity is decided in exactly one place: `register_for_clinic`, which locks the clinic row with `FOR UPDATE`. Pinned by `tests/sql/capacity_race.sh` (12-way on every suite run; verified once at 24-way on 2026-07-28 with `bash tests/sql/capacity_race.sh 24`). `place_player` deliberately performs **no** capacity check: capacity never blocks Tara (decision 4).
 
@@ -376,7 +376,7 @@ Tara's example is consistent with more than one reading. The most defensible rea
 
 1. **Saturday clinics: answered 2026-09-21 (decision 0013, question 49).** *"Yes. But no Saturday clinics. The 'week' starts on a Sunday to Friday."* The week-start anchor as built is confirmed; Saturday is theoretical.
 2. **Anchor point: answered 2026-09-21 (decision 0013, question 50).** A short week still opens that same Thursday and Friday. Start-anchored, as implemented.
-3. **Holidays.** The rule has no holiday awareness. Christmas Day 2026 is a Friday public open, and Christmas Eve is its Thursday member open. Ask her whether registration still opens at 8:00 that morning.
+3. **Holidays.** The rule has no holiday awareness. Christmas Day 2026 is a Friday public open, and Christmas Eve is its Thursday member open. Ask her whether registration still opens at 8:00 (members) and noon (everyone else) that week.
 4. **"Member"** means an FXE club member, not a paying app subscriber. `players.is_member`. Confirm with her if it ever becomes ambiguous.
 5. **`closes_at`: answered 2026-08-27 (decision 0007 §5).** Registration closes 3 hours before start by default (`default_closes_at()` plus trigger `apply_default_clinic_close`, migration 20260827000001); Tara can override any clinic through `admin_upsert_clinic`. Inside the window a player can file a late request (`request_late_spot`, 20260827000002) that she resolves by hand.
 

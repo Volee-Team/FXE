@@ -55,6 +55,7 @@ The history of what we believed is part of the record.
 | [0043](0043-members-website.md) | The members' website: the app's player side at `/play` for Android members, same reads and RPCs, the app's words, no push yet | 2026-10-22 | Proposed |
 | [0044](0044-clinics-by-gender.md) | Clinics by gender: men see Men and Coed, women Ladies and Coed; asked at sign-up and once of everyone else; enforced in the database | 2026-10-30 | Active |
 | [0045](0045-members-in-while-room.md) | Members are You're In! whenever the clinic has room, after the member window too; a full clinic still sends them to the Waitlist | 2026-10-31 | Active |
+| [0046](0046-public-opens-friday-noon.md) | Everyone else opens Friday at noon, not 8:00 AM; members stay Thursday 8:00 AM, so their head start is 28 hours | 2026-11-01 | Active |
 
 Tara's own numbered decisions (1–23, calls of 2026-08-02 and 2026-08-12) are
 tabled in CLAUDE.md; a bare "decision 17" in a record means that list. Not yet
