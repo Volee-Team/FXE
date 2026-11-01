@@ -295,7 +295,7 @@ the app.
 **Three things her one sentence does not settle.**
 
 - **Which window.** Every clinic has two: members Thursday 8:00 AM, everyone
-  Friday 8:00 AM. One blast or two? If one, members lose the point of priority.
+  Friday 12:00 PM (8:00 AM until decision 0046). One blast or two? If one, members lose the point of priority.
   If two, everyone gets two pushes per clinic per week.
 - **Which recipients.** A Ladies clinic blasted to the whole club is spam to
   half of it. Audience filtering exists on clinics (`ladies` / `men` / `coed`),
@@ -311,7 +311,7 @@ work, and they are hers to answer first.
 
 **Recommendation.** Build it, but as **one batched digest per window per
 audience**, not one push per clinic. Members get a Thursday 8:00 AM message,
-everyone gets Friday 8:00 AM. Her sentence works unchanged as a digest headline
+everyone gets Friday 12:00 PM. Her sentence works unchanged as a digest headline
 because it names no clinic.
 
 **Question for her.** Should "Registration is LIVE" go out Thursday when members

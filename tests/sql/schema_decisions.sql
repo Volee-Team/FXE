@@ -221,12 +221,13 @@ begin
   select count(*) into n from public.clinics where starts_at > now() and closes_at is null;
   insert into _probe_result values ('no_future_clinic_without_a_close', '0', n::text);
 
-  -- Q2: members get the same schedule 24 hours earlier. Asserted as the GAP so
+  -- Q2: members get the same schedule earlier: 24 hours originally, 28 since
+  -- decision 0046 (2026-11-01: members Thursday 8am, everyone else Friday noon). Asserted as the GAP so
   -- it holds for any clinic, rather than pinning two literal timestamps.
   select round(extract(epoch from (public.public_opens_at('2026-10-06 09:00:00-04'::timestamptz)
          - public.member_opens_at('2026-10-06 09:00:00-04'::timestamptz))) / 3600, 1)
     into v;
-  insert into _probe_result values ('tara_member_head_start_is_24h', '24.0', v::text);
+  insert into _probe_result values ('tara_member_head_start_is_28h', '28.0', v::text);
 
   -- Q6: juniors are deferred to November or the spring session. The enum value
   -- must survive so re-enabling is UI work, not a migration against live data.

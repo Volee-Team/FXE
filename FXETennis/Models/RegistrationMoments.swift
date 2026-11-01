@@ -17,7 +17,7 @@
 import Foundation
 
 extension ClinicPublic {
-    /// This viewer's opening (members Thursday 8:00, everyone Friday 8:00,
+    /// This viewer's opening (members Thursday 8:00, everyone Friday noon,
     /// per service week, stored on the row), the close, and the start: those
     /// still after `now`, soonest first. None for a canceled clinic, which
     /// has nothing to open.

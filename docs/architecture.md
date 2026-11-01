@@ -57,10 +57,10 @@ most important thing to understand here, and it is section 5.
 
 | Area | What exists |
 |---|---|
-| Postgres schema, RLS, narrow views, RPCs | 72 migrations (`ls supabase/migrations`), the newest `20261013000001_audit_fixes.sql`. 63 are on hosted: Alex's `supabase migration list --linked` on 2026-10-12 showed 63 of 63 paired; the 64th goes with the audit-fixes PR. Re-check with that command after any push; this line is not the record |
+| Postgres schema, RLS, narrow views, RPCs | 73 migrations (`ls supabase/migrations`), the newest `20261013000001_audit_fixes.sql`. 63 are on hosted: Alex's `supabase migration list --linked` on 2026-10-12 showed 63 of 63 paired; the 64th goes with the audit-fixes PR. Re-check with that command after any push; this line is not the record |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | Enumerated by probes (section 5) |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | Section 7 |
-| Probe suite: 51 SQL probes and 15 shell probes (races and the API rush); the suite prints its own total | Runs in CI on every push (section 9) |
+| Probe suite: 51 SQL probes and 16 shell probes (races and the API rush); the suite prints its own total | Runs in CI on every push (section 9) |
 | iOS: sign-in, sign-up with profile, the waiver and card steps, password reset, three tabs | In the app |
 | iOS: browse by week, per-viewer pricing, register / cancel (inside the 3-hour cutoff the full fee applies; the note is optional) / leave pool / respond, closed-clinic "Message Tara", the bell, My Clinics, profile edit, card on file | In the app |
 | iOS: a private note for Tara at Register, editable on the player's own live spot until the start (decision 0039) | In the app |
@@ -751,7 +751,7 @@ revealing the same summary text the page's Copy my answers produces.
 ## 9. Testing and CI
 
 **SQL probes** in `tests/sql/`, 51 SQL probes, each printing PASS/FAIL rows,
-plus 15 shell probes that race transactions or call the API. `tests/run-probes.sh` prints its
+plus 16 shell probes that race transactions or call the API. `tests/run-probes.sh` prints its
 own total and fails on silent SQL errors or a probe with zero assertions.
 Every migration that adds a rule adds a probe that is **red first**.
 
@@ -819,6 +819,7 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `message_template_race.sh` | Two saves of one text at the same moment (decision 0030), the first held open: one live row and both get its id. Red with a check-then-insert and no unique index (two rows) and with the index but no ON CONFLICT (a unique violation), 2026-09-28 |
 | `declined_card_race.sh` | 20260928700001: a later-attempted success held open while an earlier attempt's decline is recorded; the account ends with no decline, because `payments_card_decline` locks the account row before deciding (red without the lock, 2026-09-28) |
 | `dispute_race.sh` | Two concurrent deliveries of one dispute (`stripe_record_dispute`, 20260928200001), each holding the row in turn: the newer event's state survives in either commit order. Both statuses are open on purpose, so only the order guard decides; red under a read-then-write version (round 1 ended at the older event), 2026-09-28 |
+| `public_open_backfill.sh` | 20261101000001's backfill (decision 0046), run for real: three planted clinics, the migration file applied over them in one rolled-back transaction. A future week on the old Friday 08:00 moves to noon with its member open unchanged; a hand-set time and a week already open stay (each guard shown red by a copy of the migration without it, 2026-11-01) |
 
 **Swift**: 291 unit tests (`FXETennisTests`: price formatting, per-viewer
 pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016; since 2026-09-27 the request-failure classifier, a failed load keeping who you are, the waiver and card refusals reopening their steps, the 30-second reload throttle, the redraw moments, and the type scale under Larger Text; since 2026-09-28 the invitation push's Accept and Decline, the Remind me reminder, the calendar entry, and the haptics and chip motion; a clinic the player holds beyond the list's five-week edge staying on their screens, the instant-open snapshot's per-person and ended-clinic rules, Siri's next-clinic answer, and the Player Pool's history line) and 27

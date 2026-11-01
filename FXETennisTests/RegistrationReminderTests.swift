@@ -4,7 +4,9 @@
 //
 //  "Remind me" (2026-09-28). The rule: the reminder goes off at the moment
 //  registration opens for THIS player, members at their Thursday 8:00
-//  opening, everyone else at the Friday 8:00 one (CLAUDE.md, the window rule;
+//  opening, everyone else at the Friday one (8:00 when written; noon since
+//  decision 0046, 2026-11-01. The fixtures below store their own times, which
+//  is what the app reads, so they still hold) (CLAUDE.md, the window rule;
 //  both stored on the clinic row, so Tara's override is what counts). None
 //  once it is open, when the moment is past, or for a canceled clinic. Its
 //  words are Tara's, verbatim (notification 10, docs/notifications.md), and a

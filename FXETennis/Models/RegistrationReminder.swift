@@ -5,7 +5,7 @@
 //  "Remind me" on a clinic that has not opened for this player yet
 //  (2026-09-28): a notification on this phone at the moment registration
 //  opens to them, members at the clinic's member_opens_at (Thursday 8:00 by
-//  the window rule), everyone else at public_opens_at (Friday 8:00). Both are
+//  the window rule), everyone else at public_opens_at (Friday noon). Both are
 //  stored on the clinic row, so Tara's override of one clinic is what counts.
 //  The same moment ClinicPublic.door switches from "opens" to Register.
 //

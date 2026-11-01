@@ -77,7 +77,7 @@ struct ClinicPublic: Codable, Identifiable, Sendable, Hashable {
     var isCanceled: Bool { status == "canceled" }
 
     /// Open for registration to this player at `now`: past their opening
-    /// moment (members Thursday 8:00, everyone Friday 8:00, per service week,
+    /// moment (members Thursday 8:00, everyone Friday noon, per service week,
     /// stored on the row) and before the close (3 hours before start by
     /// default). Display only: `register_for_clinic` decides for real. Home
     /// uses it to list what can be signed up for today (Final Updates p.1).

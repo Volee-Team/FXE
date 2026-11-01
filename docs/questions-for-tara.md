@@ -629,6 +629,14 @@ description already says what a 105 is, so the page says it twice.
 **133. On a 105 clinic's "?" page, the clinic's description and the "What is 105?" box say nearly the same thing. Keep both, or show just one?**
 *Default: show only the clinic's own description when it has one, and the "What is 105?" box only when the description is empty. Status: open, asked 2026-10-30.*
 
+## AC. Friday noon (added 2026-11-01, decision 0046)
+
+Her ask, relayed by John on 2026-11-01: *"she wants to switch it to friday
+noon"*. Built: everyone else now opens Friday at 12:00 PM instead of 8:00 AM.
+
+**134. Members still open Thursday at 8:00 AM, so they now get 28 hours to themselves instead of 24. Right?**
+*Default: yes; you only asked about non-members. Status: open, asked 2026-11-01.*
+
 ### How 52 to 57 are being sent
 
 Round two of the review page (2026-09-21, later): the Words tab now shows her
