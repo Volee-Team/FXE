@@ -108,6 +108,10 @@ test.describe("sign-in", () => {
 // testing nothing tonight and failing silently at the party.
 test.describe("the QR code's link", () => {
   test("/app says the app is not available yet while no install link is set", async ({ page }) => {
+    await page.route("**/app/target.js", (route) => route.fulfill({
+      contentType: "application/javascript",
+      body: 'export const INSTALL_URL = "";',
+    }));
     await page.goto("/app/");
     await expect(page.getByRole("heading", { name: "FXE Tennis" })).toBeVisible();
     await expect(page.getByText("Not available yet.")).toBeVisible();
@@ -124,10 +128,18 @@ test.describe("the QR code's link", () => {
     await page.waitForURL("https://install.example/join/ABC123");
   });
 
+  test("the committed link is FXE Tennis on the App Store", async ({ page }) => {
+    // Apple's lookup for com.fxetennis.app, 2026-11-03: trackId 6814658300.
+    await page.route("https://apps.apple.com/**", (route) => route.fulfill({ contentType: "text/html", body: "<title>store</title>" }));
+    await page.goto("/app/");
+    await page.waitForURL("https://apps.apple.com/app/fxe-tennis/id6814658300");
+  });
+
   test("opening /app from the QR code counts one scan, and a plain open counts a link", async ({ page }) => {
     // Kat, 2026-09-29 (decision 0031). The beacon's body is the only thing
     // sent: which way they came, nothing about them.
     const sent = [];
+    await page.route("https://apps.apple.com/**", (route) => route.fulfill({ contentType: "text/html", body: "<title>store</title>" }));
     await page.route("**/functions/v1/app-visit", async (route) => {
       sent.push(route.request().postData());
       await route.fulfill({ status: 204 });
