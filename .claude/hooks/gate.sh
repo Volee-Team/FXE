@@ -42,8 +42,18 @@ fi
 #      files (2026-10-13: a build bump and its push in one command passed,
 #      and the stale "build 10" lines it created reached CI). Push in a
 #      command of its own.
+#      Second limit, 2026-11-03: the checks read the working tree, not the
+#      commit. fix-doc-counts.py corrected docs/architecture.md, the commit
+#      named its files one by one and left that one out, the checks passed on
+#      the tree and CI failed on the commit. So a push with uncommitted
+#      changes to tracked files is refused: what is checked must be what goes.
 if printf '%s' "$cmd" | grep -qE '(^|&&|\|\||;|\|)[[:space:]]*git push'; then
   root=$(git rev-parse --show-toplevel 2>/dev/null)
+  if [ -n "$root" ] && ! (cd "$root" && git diff --quiet HEAD --); then
+    echo "gate: tracked files have uncommitted changes, so the doc checks would judge files this push does not carry. Commit or stash them, then push in a command of its own:" >&2
+    (cd "$root" && git diff --name-only HEAD --) | head -5 >&2
+    exit 2
+  fi
   if [ -n "$root" ] && [ -f "$root/scripts/check-doc-status.sh" ]; then
     for s in check-doc-claims check-doc-status check-doc-paths check-doc-registry check-launch-checklist; do
       if ! out=$(cd "$root" && bash "scripts/$s.sh" 2>&1); then

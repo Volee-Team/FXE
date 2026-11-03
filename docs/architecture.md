@@ -840,7 +840,7 @@ Supabase project was decided against on 2026-09-18 (`docs/launch-checklist.md`
 §F). They run on a Mac through `scripts/run-ui-tests.sh` on iOS 18 and 26 (17 too until 2026-10-30, when it stopped being downloadable),
 and the `ui-test-record` job fails a PR whose code has no green record.
 
-**Web admin**: 69 Playwright tests (`web/tests/*.spec.mjs`) walk Tara's
+**Web admin**: 70 Playwright tests (`web/tests/*.spec.mjs`) walk Tara's
 side against a fresh seed: sign-in and the non-admin door, prices, walk-up,
 courts, unpaid reminder, a note round-trip, cancel clinic, template archive
 and restore, Money counts, the card-payments ledger, payments off, the
