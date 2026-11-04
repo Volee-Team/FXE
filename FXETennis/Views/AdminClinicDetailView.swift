@@ -840,7 +840,7 @@ struct AdminClinicDetailView: View {
                 try await AdminRepository.invite(registration: entry.id)
             } }
         } label: {
-            Text("Invite")
+            Text(movesIn ? "Move In" : "Invite")
                 .brandFont(.chip)
                 .foregroundStyle(Brand.textOnNavy)
                 .padding(.horizontal, Brand.Spacing.sm)
@@ -850,8 +850,13 @@ struct AdminClinicDetailView: View {
         .buttonStyle(.plain)
         .disabled(model.busy.contains(entry.id))
         .accessibilityIdentifier("admin.invite")
-        .accessibilityLabel("Invite \(entry.displayName)")
+        .accessibilityLabel(movesIn ? "Move \(entry.displayName) in" : "Invite \(entry.displayName)")
     }
+
+    /// Before clinic day the button puts the player straight into You're In!
+    /// with her "You're all set" message; on the day it is an invitation they
+    /// accept (decision 0047).
+    private var movesIn: Bool { ServiceWeek.isBeforeClinicDay(clinic.startsAt) }
 
     /// Out of the Player Pool, behind the same confirmation as You're In!'s
     /// Remove. Until 2026-09-28 no screen could do this, so her own "You've

@@ -307,7 +307,7 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
     </label>
     <p class="muted" style="margin-top:10px">
       Registration opens automatically: members Thursday 8am, everyone else
-      Friday 8am, for the whole week this clinic falls in. Prices come from the
+      Friday noon, for the whole week this clinic falls in. Prices come from the
       clinic length.
     </p>
     <div id="edit-msg"></div>
@@ -399,6 +399,12 @@ const STATUS = {
 // the phones, and a clinic never sits under the wrong week's heading.
 const fmtDate = (iso) => new Date(iso).toLocaleString(undefined,
   { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
+// Before clinic day (New York), and more than 3 hours out, her Waitlist
+// button puts the player straight in; otherwise it invites (decision 0047; the server decides, this only
+// names the button). en-CA gives YYYY-MM-DD, which compares as text.
+const nyDay = (d) => d.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+const beforeClinicDay = (c) => nyDay(new Date(c.starts_at)) > nyDay(new Date())
+  && new Date(c.starts_at) - Date.now() >= 3 * 3600_000; // and outside the 3-hour cancel cutoff
 const money = (c) => c == null ? "" : "$" + (c % 100 === 0 ? c / 100 : (c / 100).toFixed(2));
 // Court 1-5 or unassigned, the same values assign_court accepts. A dropdown
 // rather than drag-and-drop on purpose: docs/web-admin.md section 4 says the
@@ -1218,7 +1224,7 @@ async function loadClinics() {
         ${c.status !== "canceled" ? `<button class="small" data-cancelclinic="${c.id}">Cancel clinic</button>` : `<span class="chip canceled">Canceled</span>`}
       </div>
       ${section("in", r => `${courtSelect(r)}${zelleOn ? `<button class="small" data-paid="${r.id}" data-now="${r.paid}">${r.paid ? "Paid" : "Unpaid"}</button>` : ""}<button class="small${r.no_show ? " danger" : ""}" data-noshow="${r.id}" data-now="${r.no_show}">${r.no_show ? "No-show" : "Came"}</button>${lateOpen && !liveCharge(r) ? `<button class="small" data-latecancel="${r.id}" data-who="${esc(nameOf(r))}">Late cancel</button>` : ""}${!liveCharge(r) && c.status !== "canceled" ? `<button class="small" data-remove="${r.id}">Remove</button>` : ""}${chargeOne(r)}`)}
-      ${section("pool", r => c.status !== "canceled" ? `<button class="small primary" data-invite="${r.id}">Invite</button><button class="small" data-remove="${r.id}">Remove</button>` : "")}
+      ${section("pool", r => c.status !== "canceled" ? `<button class="small primary" data-invite="${r.id}">${beforeClinicDay(c) ? "Move in" : "Invite"}</button><button class="small" data-remove="${r.id}">Remove</button>` : "")}
       ${section("response_needed", r => `<button class="small" data-uninvite="${r.id}">Cancel invite</button>`)}
       ${section("canceled", r => r.late_cancel
         // Tara's red flag (question 81): the name stays on her list, and she

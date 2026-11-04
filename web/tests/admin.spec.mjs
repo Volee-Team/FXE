@@ -466,10 +466,10 @@ test.describe("remove from a clinic", () => {
       await signIn(page, TARA);
       const card = page.locator("#clinics .card", { hasText: "Tuesday Ladies" });
       const rob = card.locator(".row", { hasText: "Rob Delgado" });
-      await expect(rob.getByRole("button", { name: "Invite" })).toBeVisible({ timeout: 15_000 });
+      await expect(rob.getByRole("button", { name: "Move in" })).toBeVisible({ timeout: 15_000 });
       await rob.getByRole("button", { name: "Remove" }).click();
       await rob.getByRole("button", { name: "Really remove?" }).click();
-      await expect(rob.getByRole("button", { name: "Invite" })).toHaveCount(0, { timeout: 15_000 });
+      await expect(rob.getByRole("button", { name: "Move in" })).toHaveCount(0, { timeout: 15_000 });
       const [row] = await db.get(`registrations?id=eq.${reg.id}&select=status`);
       expect(row.status).toBe("canceled");
       const sent = await db.get(`notifications?entity_id=eq.${reg.id}&select=body`);

@@ -30,10 +30,14 @@ declare
   SEED_C  constant uuid := 'd0000000-0000-0000-0000-000000000005';
   pc uuid; reg uuid; ent uuid; n int; v text;
 begin
-  -- Fixture: a clinic three weeks out, open to everyone, and Ken in its Pool.
+  -- Fixture: a clinic later today (halfway to New York midnight), open to
+  -- everyone, and Ken in its Pool. Today because since 20261104000001 the
+  -- button invites only on clinic day; before it, Tara's tap puts him in.
   insert into public.clinics (name, audience, category, description, starts_at, ends_at,
       member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
-  values ('Probe Targets', 'coed', 'Clinic', 'probe', now() + interval '20 days', now() + interval '20 days 1 hour',
+  values ('Probe Targets', 'coed', 'Clinic', 'probe',
+          now() + ((((now() at time zone 'America/New_York')::date + 1)::timestamp at time zone 'America/New_York') - now()) / 2,
+          now() + ((((now() at time zone 'America/New_York')::date + 1)::timestamp at time zone 'America/New_York') - now()) / 2 + interval '1 hour',
           now() - interval '2 days', now() - interval '1 day', 8, 'published', 60)
   returning id into pc;
   insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)

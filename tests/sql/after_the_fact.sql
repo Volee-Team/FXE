@@ -55,7 +55,11 @@ begin
   returning id into rained;
   insert into public.clinics (name, audience, category, description, starts_at, ends_at,
       member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
-  values ('Probe Live', 'coed', 'Clinic', 'probe', now() + interval '4 days', now() + interval '4 days 1 hour',
+  -- Today (halfway to New York midnight): since 20261104000001 the button
+  -- invites only on clinic day, and this sanity check is about invitations.
+  values ('Probe Live', 'coed', 'Clinic', 'probe',
+          now() + ((((now() at time zone 'America/New_York')::date + 1)::timestamp at time zone 'America/New_York') - now()) / 2,
+          now() + ((((now() at time zone 'America/New_York')::date + 1)::timestamp at time zone 'America/New_York') - now()) / 2 + interval '1 hour',
           now() - interval '2 days', now() - interval '1 day', 8, 'published', 60)
   returning id into live_c;
 

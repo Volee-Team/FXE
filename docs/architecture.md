@@ -57,10 +57,10 @@ most important thing to understand here, and it is section 5.
 
 | Area | What exists |
 |---|---|
-| Postgres schema, RLS, narrow views, RPCs | 73 migrations (`ls supabase/migrations`), the newest `20261013000001_audit_fixes.sql`. 63 are on hosted: Alex's `supabase migration list --linked` on 2026-10-12 showed 63 of 63 paired; the 64th goes with the audit-fixes PR. Re-check with that command after any push; this line is not the record |
+| Postgres schema, RLS, narrow views, RPCs | 74 migrations (`ls supabase/migrations`), the newest `20261013000001_audit_fixes.sql`. 63 are on hosted: Alex's `supabase migration list --linked` on 2026-10-12 showed 63 of 63 paired; the 64th goes with the audit-fixes PR. Re-check with that command after any push; this line is not the record |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | Enumerated by probes (section 5) |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | Section 7 |
-| Probe suite: 51 SQL probes and 16 shell probes (races and the API rush); the suite prints its own total | Runs in CI on every push (section 9) |
+| Probe suite: 52 SQL probes and 17 shell probes (races and the API rush); the suite prints its own total | Runs in CI on every push (section 9) |
 | iOS: sign-in, sign-up with profile, the waiver and card steps, password reset, three tabs | In the app |
 | iOS: browse by week, per-viewer pricing, register / cancel (inside the 3-hour cutoff the full fee applies; the note is optional) / leave pool / respond, closed-clinic "Message Tara", the bell, My Clinics, profile edit, card on file | In the app |
 | iOS: a private note for Tara at Register, editable on the player's own live spot until the start (decision 0039) | In the app |
@@ -750,8 +750,8 @@ revealing the same summary text the page's Copy my answers produces.
 
 ## 9. Testing and CI
 
-**SQL probes** in `tests/sql/`, 51 SQL probes, each printing PASS/FAIL rows,
-plus 16 shell probes that race transactions or call the API. `tests/run-probes.sh` prints its
+**SQL probes** in `tests/sql/`, 52 SQL probes, each printing PASS/FAIL rows,
+plus 17 shell probes that race transactions or call the API. `tests/run-probes.sh` prints its
 own total and fails on silent SQL errors or a probe with zero assertions.
 Every migration that adds a rule adds a probe that is **red first**.
 
@@ -783,6 +783,8 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `clinic_messaging` | Decision 0005: a targeted message is readable only by the group it went to; the whole list each player sees is asserted; the recipients table is hidden; each recipient notified once |
 | `schema_decisions` | Tara's decisions with a DB consequence stay true |
 | `notification_targets` | Every notification opens something (MVP audit item 12): `invite_from_pool` writes `registration` with the registration id, which the player resolves through `my_registrations` and nobody else can; Tara's accept and cancel rows name the registration and resolve through `registrations_admin` (never `my_registrations`, hence the app's second branch), a canceled one included; the seed's invitation is the producer's own and resolves for Maria; every row points at something its recipient may open; every `notify_account` caller names `clinic` or `registration` as a literal, and the nine known producers are found (`register_for_clinic` and `place_player` since 20260928000001; `cancel_invitation`, a tenth producer since 20260928500001, is covered by the enumerating checks but not named in that list). Red first under three mutants (the old hand-typed seed row, 2 checks; an invite that names the clinic, 3; a third entity type and a variable one, 2) |
+| `waitlist_move_in` | Decision 0047: before the clinic's New York day, `invite_from_pool` puts a Waitlist player straight into You're In! with Tara's #1 and no invitation; on clinic day, or after it, it invites as before; 12:30 AM tomorrow counts as before clinic day; a draft moves in and tells nobody; a second tap is refused and sends nothing; a player cannot press it. 11:30 PM tonight is clinic day (a UTC-date rule goes red there); tomorrow inside the 3-hour cutoff invites. Red on 8 rows against the old function |
+| `move_in_cancel_race` | Tara's Move In racing her own cancel of the clinic: the player does not end in You're In! and no "You're all set" is written. Red with the clinic's FOR SHARE removed |
 | `notification_copy` | 20260928000001, Tara's words from her catalogue (`docs/notifications.md`): per event, exactly the rows written, as recipient, type, what the row points at and the body character for character, compared whole. #1 from registering and from Tara's placement (a Thursday 9:00 AM and a Friday 8:30 PM clinic, built from the New York wall clock; the Friday is Saturday in UTC), #5 from registering into the Pool, #3 and #13 on accept, #14 on decline, #6 on Tara's Pool removal, #15 with the late and note suffixes. Negatives: accept sends no #1, and no #3 once Tara canceled the clinic; decline and a withdrawn invitation no #5; Tara's placement into the Pool nothing; a player's own Pool cancel no #6; Tara's removal from You're In! nothing, nor a Pool removal from a draft or canceled clinic; an approved late request one row, while one approved on an earlier day does not silence #1; and no #1 for a draft, started or canceled clinic. The payments switch is set off inside it, so it does not depend on the card check. Red first on the 12 positive rows against the old functions, and under 15 mutants, one per rule |
 | `after_the_fact` | 20260928300001 and 20260928400001: no Accept into a canceled or finished clinic, no Invite or late-request Approve into a canceled one, and each refusal moves nothing and tells nobody; Declines still work; sanity rows prove the same calls work on a live clinic (red on the six predicted rows against the old functions) |
 | `push_devices` | `register_device` / `unregister_device`, attacked: nobody but the owner sees a token, the account is never a parameter, re-registering is idempotent |
