@@ -150,7 +150,7 @@ jobs:
       # move this off GitHub: a backup living in the same account as the code
       # shares a failure mode with it.
       - name: Upload
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: fxe-db-backup-${{ github.run_id }}
           path: backups/*.sql.gz.age
