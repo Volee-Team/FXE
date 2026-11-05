@@ -55,9 +55,13 @@ struct ClinicPublic: Codable, Identifiable, Sendable, Hashable {
     let memberPriceCents: Int?
     let nonmemberPriceCents: Int?
     let durationMinutes: Int?
+    /// The NTRP number in the clinic's name, nil when there is none
+    /// (decision 0048). Below it, a player asks Tara first.
+    var minRating: Double? = nil
 
     enum CodingKeys: String, CodingKey {
         case id, name, audience, category, description, status
+        case minRating = "min_rating"
         case startsAt = "starts_at"
         case endsAt = "ends_at"
         case memberOpensAt = "member_opens_at"

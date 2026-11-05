@@ -12,6 +12,8 @@
 --             made her a pro through admin_set_pro, at the end of this file
 --   Lena      adult MEMBER, You're In! in today's clinic (the pro's Today tab)
 --   Theo      adult NON-member, You're In! in today's clinic
+--   Gina      adult MEMBER rated 2.5, in nothing: asks Tara before a 3.0+
+--             clinic (decision 0048, testAdminK)
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password,
                         email_confirmed_at, created_at, updated_at)
@@ -24,7 +26,8 @@ values
   ('66666666-6666-6666-6666-666666666666', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'dana@fxe.test',  crypt('password', gen_salt('bf')), now(), now(), now()),
   ('77777777-7777-7777-7777-777777777777', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'pro@fxe.test',   crypt('password', gen_salt('bf')), now(), now(), now()),
   ('88888888-8888-8888-8888-888888888888', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'lena@fxe.test',  crypt('password', gen_salt('bf')), now(), now(), now()),
-  ('99999999-9999-9999-9999-999999999999', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'theo@fxe.test',  crypt('password', gen_salt('bf')), now(), now(), now())
+  ('99999999-9999-9999-9999-999999999999', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'theo@fxe.test',  crypt('password', gen_salt('bf')), now(), now(), now()),
+  ('abababab-abab-abab-abab-abababababab', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'gina@fxe.test',  crypt('password', gen_salt('bf')), now(), now(), now())
 on conflict (id) do nothing;
 
 insert into public.accounts (id, first_name, last_name, email, phone, account_type, role) values
@@ -36,7 +39,8 @@ insert into public.accounts (id, first_name, last_name, email, phone, account_ty
   ('66666666-6666-6666-6666-666666666666', 'Dana',  'Okonkwo',    'dana@fxe.test',  '704-555-0105', 'adult',  'member'),
   ('77777777-7777-7777-7777-777777777777', 'Casey', 'Park',       'pro@fxe.test',   '704-555-0106', 'adult',  'member'),
   ('88888888-8888-8888-8888-888888888888', 'Lena',  'Brooks',     'lena@fxe.test',  '704-555-0107', 'adult',  'member'),
-  ('99999999-9999-9999-9999-999999999999', 'Theo',  'Grant',      'theo@fxe.test',  '704-555-0108', 'adult',  'member')
+  ('99999999-9999-9999-9999-999999999999', 'Theo',  'Grant',      'theo@fxe.test',  '704-555-0108', 'adult',  'member'),
+  ('abababab-abab-abab-abab-abababababab', 'Gina',  'Moreau',     'gina@fxe.test',  '704-555-0109', 'adult',  'member')
 on conflict (id) do nothing;
 
 -- Every seed player has answered the gender question (decision 0044), so the
@@ -53,7 +57,8 @@ insert into public.players (id, account_id, kind, first_name, last_name, date_of
   ('a0000000-0000-0000-0000-000000000005', '55555555-5555-5555-5555-555555555555', 'adult', 'Priya', 'Raman',     '1983-07-14', 3.0,  false, 'female'),
   ('a0000000-0000-0000-0000-000000000006', '77777777-7777-7777-7777-777777777777', 'adult', 'Casey', 'Park',      '1990-03-18', 4.5,  true,  'male'),
   ('a0000000-0000-0000-0000-000000000007', '88888888-8888-8888-8888-888888888888', 'adult', 'Lena',  'Brooks',    '1986-11-02', 3.5,  true,  'female'),
-  ('a0000000-0000-0000-0000-000000000008', '99999999-9999-9999-9999-999999999999', 'adult', 'Theo',  'Grant',     '1981-05-27', 3.0,  false, 'male')
+  ('a0000000-0000-0000-0000-000000000008', '99999999-9999-9999-9999-999999999999', 'adult', 'Theo',  'Grant',     '1981-05-27', 3.0,  false, 'male'),
+  ('a0000000-0000-0000-0000-000000000009', 'abababab-abab-abab-abab-abababababab', 'adult', 'Gina',  'Moreau',    '1994-02-09', 2.5,  true,  'female')
 on conflict (id) do nothing;
 
 insert into public.player_notes (player_id, body) values
@@ -67,7 +72,7 @@ insert into public.clinic_templates (id, name, audience, category, description,
     price_cents, member_price_cents, nonmember_price_cents,
     default_start_time, duration_minutes, internal_capacity) values
   ('b0000000-0000-0000-0000-000000000001', 'Ladies Drill', 'ladies', 'Clinic',
-   'Live-ball drilling, 3.0 to 4.0.', 2200, 2200, 2800, '09:00', 90, 8),
+   'Live-ball drilling, 3.0 to 4.0.', 2200, 2200, 3000, '09:00', 90, 8),
   ('b0000000-0000-0000-0000-000000000002', 'Coed Cardio',  'coed',   'Clinic',
    'Fast-paced hour, all levels.',     1800, 1800, 2300, '18:00', 60, 10)
 on conflict (id) do nothing;
@@ -137,7 +142,8 @@ insert into public.waiver_acceptances (account_id, version, legal_name, email, a
   ('66666666-6666-6666-6666-666666666666', '2026-09', 'Dana Okonkwo',   'dana@fxe.test',  'seed'),
   ('77777777-7777-7777-7777-777777777777', '2026-09', 'Casey Park',     'pro@fxe.test',   'seed'),
   ('88888888-8888-8888-8888-888888888888', '2026-09', 'Lena Brooks',    'lena@fxe.test',  'seed'),
-  ('99999999-9999-9999-9999-999999999999', '2026-09', 'Theo Grant',    'theo@fxe.test',  'seed')
+  ('99999999-9999-9999-9999-999999999999', '2026-09', 'Theo Grant',    'theo@fxe.test',  'seed'),
+  ('abababab-abab-abab-abab-abababababab', '2026-09', 'Gina Moreau',   'gina@fxe.test',  'seed')
 on conflict (account_id, version) do nothing;
 
 -- ── The invitation in Maria's bell, written by the producer ─────────────────

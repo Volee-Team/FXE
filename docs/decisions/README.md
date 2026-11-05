@@ -57,6 +57,7 @@ The history of what we believed is part of the record.
 | [0045](0045-members-in-while-room.md) | Members are You're In! whenever the clinic has room, after the member window too; a full clinic still sends them to the Waitlist | 2026-10-31 | Active |
 | [0046](0046-public-opens-friday-noon.md) | Everyone else opens Friday at noon, not 8:00 AM; members stay Thursday 8:00 AM, so their head start is 28 hours | 2026-11-01 | Active |
 | [0047](0047-waitlist-move-in-before-clinic-day.md) | Before clinic day Tara's Waitlist button reads Move In and puts the player straight into You're In! with her "You're all set" message; on clinic day it still invites and they accept. Amends hard rule 2 | 2026-11-04 | Active |
+| [0048](0048-level-approval.md) | A player rated below the level in a clinic's name asks Tara once ("Request Approval for Ladies 3.0+"); her approval lasts until she removes it. The rating is Tara's once set. Same PR: non-member 90 minutes $28 to $30 from the week of 2026-11-08 | 2026-11-05 | Active |
 
 Tara's own numbered decisions (1–23, calls of 2026-08-02 and 2026-08-12) are
 tabled in CLAUDE.md; a bare "decision 17" in a record means that list. Not yet

@@ -133,6 +133,56 @@ test.describe("the directory", () => {
   });
 });
 
+// Decision 0048. Tara, 2026-10-15: "I also want to be able to go directly into
+// someone's profile and approve them myself. Their actual rating should stay
+// 2.5 ... That approval stays until I remove it." Theo, a man seeded at 3.0,
+// so the label is "Men's"; he ends as the seed made him.
+test.describe("level approval on the Players tab", () => {
+  const THEO_P = "a0000000-0000-0000-0000-000000000008";
+  const theo = (page) => page.locator("[data-player-row]", { hasText: "Theo Grant" });
+  const findTheo = async (page) => {
+    await page.getByRole("tab", { name: "Players" }).click();
+    await page.getByLabel("Search players by name").fill("Theo");
+    await expect(page.locator("[data-player-row]", { hasText: "Rob Delgado" })).toHaveCount(0);
+    await expect(theo(page)).toBeVisible();
+  };
+
+  test("Tara approves a player for a level directly, removes it, and corrects the rating", async ({ page, request }) => {
+    const db = service(request);
+    try {
+      await db.del(`level_approvals?player_id=eq.${THEO_P}`);
+      await signIn(page, TARA);
+      await findTheo(page);
+      await expect(theo(page).getByText(/^Approved to attend/)).toHaveCount(0);
+      await theo(page).getByLabel("Approve for").selectOption("3.5");
+      await theo(page).getByRole("button", { name: "Approve", exact: true }).click();
+      await expect(theo(page).getByText("Approved to attend: Men's 3.5+", { exact: true })).toBeVisible({ timeout: 15_000 });
+      // His rating stays what it was (Tara: "Their actual rating should stay").
+      await expect(theo(page)).toContainText("3.0, Non-member");
+      expect(await db.get(`level_approvals?player_id=eq.${THEO_P}&select=level,status`))
+        .toEqual([{ level: 3.5, status: "approved" }]);
+      // He is told once (admin_set_level_approval).
+      const told = await db.get(`notifications?entity_id=eq.${THEO_P}&type=eq.level_approved&select=id`);
+      expect(told.length).toBe(1);
+
+      await theo(page).getByRole("button", { name: "Remove" }).click();
+      await expect(theo(page).getByText(/^Approved to attend/)).toHaveCount(0, { timeout: 15_000 });
+      expect(await db.get(`level_approvals?player_id=eq.${THEO_P}&select=level`)).toEqual([]);
+
+      // The rating is hers to correct: the dropdown, read back from the server.
+      await expect(theo(page).getByLabel("Rating")).toHaveValue("3.0");
+      await theo(page).getByLabel("Rating").selectOption("3.5");
+      await expect(theo(page)).toContainText("3.5, Non-member", { timeout: 15_000 });
+      const [row] = await db.get(`players?id=eq.${THEO_P}&select=adult_rating`);
+      expect(row.adult_rating).toBe(3.5);
+    } finally {
+      await db.del(`level_approvals?player_id=eq.${THEO_P}`);
+      await db.del(`notifications?entity_id=eq.${THEO_P}`);
+      await db.patch(`players?id=eq.${THEO_P}`, { adult_rating: 3.0 });
+    }
+  });
+});
+
 // Decision 0025. Tara makes an account a pro on the Players tab; a pro gets
 // the phone's Today tab and nothing here. Lena, because no other browser test
 // touches her; she ends as the member the seed made her, so a second run

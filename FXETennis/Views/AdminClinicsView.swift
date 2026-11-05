@@ -37,6 +37,8 @@ final class AdminClinicsModel {
     var disputes: [MoneyDispute] = []
     /// Charges held for her answer (20260927300003).
     var held: [HeldCharge] = []
+    /// Players asking for clinics above their rating (decision 0048).
+    var levelRequests: [AdminLevelApproval] = []
 
     /// Clinics that ended with someone who still owes a fee.
     /// Only while payments are on: the tap is the resolving action.
@@ -68,6 +70,7 @@ final class AdminClinicsModel {
             declines = ((try? await AdminRepository.moneyDeclined()) ?? []).filter { $0.accountDeleted != true }
             disputes = (try? await AdminRepository.moneyDisputes()) ?? []
             held = (try? await AdminRepository.heldCharges()) ?? []
+            levelRequests = ((try? await AdminRepository.levelApprovals()) ?? []).filter(\.isRequest)
             error = nil
             await loadCounts()
         } catch {
@@ -89,6 +92,19 @@ final class AdminClinicsModel {
             line = String(describing: error).contains("decline_not_open")
                 ? AdminClinicModel.changedUnderYou
                 : (RequestFailure(error).line ?? "That didn't go through. Check your connection and try again.")
+        }
+        await load()
+        if let line { self.error = line }
+    }
+
+    /// Approve or Decline on a level request (decision 0048). One tap, as
+    /// Resolved: Decline only removes the ask, and the player can ask again.
+    func answer(_ request: AdminLevelApproval, approve: Bool) async {
+        var line: String?
+        do {
+            try await AdminRepository.setLevelApproval(playerId: request.playerId, level: request.level, approved: approve)
+        } catch {
+            line = RequestFailure(error).line ?? "That didn't go through. Check your connection and try again."
         }
         await load()
         if let line { self.error = line }
@@ -252,9 +268,10 @@ struct AdminClinicsView: View {
         let asks = model.lateRequests.count
         let news = model.notices.count
         let money = !model.uncharged.isEmpty || !model.declines.isEmpty || !model.disputes.isEmpty || !model.held.isEmpty
+        let levels = model.levelRequests.count
 
         return Group {
-            if waiting > 0 || unpaid > 0 || pool > 0 || asks > 0 || news > 0 || money {
+            if waiting > 0 || unpaid > 0 || pool > 0 || asks > 0 || news > 0 || money || levels > 0 {
                 VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
                     Text("ACTION NEEDED")
                         .brandFont(.chip)
@@ -316,6 +333,23 @@ struct AdminClinicsView: View {
                             .buttonStyle(.plain)
                             .accessibilityIdentifier("admin.actionNeeded.dispute")
                         }
+                        // Decision 0048: a player below a clinic's level
+                        // asks once; she answers here.
+                        ForEach(model.levelRequests) { r in
+                            VStack(alignment: .leading, spacing: 2) {
+                                needRow(Brand.Status.responseNeeded,
+                                        "\(r.name) (\(r.adultRating.map { LevelGate.number($0) } ?? "no rating")) asks for \(r.label)")
+                                HStack(spacing: Brand.Spacing.sm) {
+                                    levelAnswer(r, label: "Approve", approve: true)
+                                    levelAnswer(r, label: "Decline", approve: false)
+                                }
+                                .padding(.leading, 17)
+                            }
+                            // contain: the row's own id must not cover its
+                            // buttons' (it did on the Waitlist row, 2026-10-30).
+                            .accessibilityElement(children: .contain)
+                            .accessibilityIdentifier("admin.actionNeeded.level")
+                        }
                         // Every row opens what it counts (Tara, 2026-10-30:
                         // she tapped "2 in the Player Pool" and nothing
                         // happened). The cancellations and replies open the
@@ -366,6 +400,19 @@ struct AdminClinicsView: View {
     }
 
     /// One of her two answers on a held charge, confirmed with "Really?".
+    private func levelAnswer(_ r: AdminLevelApproval, label: String, approve: Bool) -> some View {
+        Button {
+            Task { await model.answer(r, approve: approve) }
+        } label: {
+            Text(label)
+                .brandFont(.chip)
+                .foregroundStyle(Brand.navy)
+                .frame(minHeight: Brand.Layout.minTapTarget)
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("admin.level.\(approve ? "approve" : "decline")")
+    }
+
     private func heldAnswer(_ h: HeldCharge, label: String, outcome: String) -> some View {
         Button {
             pendingHeld = (h, label, outcome)

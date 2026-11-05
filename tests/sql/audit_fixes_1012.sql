@@ -51,7 +51,7 @@ begin
   perform public.admin_upsert_clinic(p_id => c, p_duration_minutes => 90);
   perform set_config('role', 'postgres', true);
   select member_price_cents || '/' || nonmember_price_cents || '/' || duration_minutes into v from public.clinics where id = c;
-  insert into _probe_result values ('ninety_minutes_reprices', '2200/2800/90', v);
+  insert into _probe_result values ('ninety_minutes_reprices', '2200/3000/90', v);
   select price_cents_charged::text into v from public.registrations where id = reg;
   insert into _probe_result values ('already_in_keeps_their_price', '1800', v);
 
@@ -60,7 +60,7 @@ begin
   perform public.admin_upsert_clinic(p_id => c, p_duration_minutes => 90);
   perform set_config('role', 'postgres', true);
   select member_price_cents || '/' || nonmember_price_cents into v from public.clinics where id = c;
-  insert into _probe_result values ('other_edits_keep_the_price', '2200/2800', v);
+  insert into _probe_result values ('other_edits_keep_the_price', '2200/3000', v);
 
   perform set_config('role', 'authenticated', true);
   perform public.admin_upsert_clinic(p_id => c, p_duration_minutes => 60);

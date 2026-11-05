@@ -18,8 +18,11 @@ America/New_York
 Ann finds Anna, Annette, Joann…
 Any personal information that we collect is stored on secure hosted servers. We are always striving to ensure a safe and convenient experience with the Services. This goes beyond our technologies to include physical, contractual, and managerial safeguards to protect your personal information.
 Apple Inc. delivers notifications to your device.
+Approve
+Approve for
 Are you currently a Foxcroft East Racquet & Swim Club member?
 Are you currently a Foxcroft East Racquet &amp; Swim Club member?
+Ask Tara for approval first.
 At least 6 characters.
 Back
 Board report
@@ -130,6 +133,7 @@ Leave Waitlist
 Length (minutes)
 Length must be more than 0 minutes.
 Let's Play.
+Level requests
 Link label
 Loading
 Manage
@@ -211,6 +215,7 @@ Questions about the app or your clinics:
 Rating
 Rating Guide
 Rating \(bucket.label)
+Rating not set
 Really cancel? Everyone is told.
 Really remove?
 Really?
@@ -230,6 +235,7 @@ Remove
 Remove \(entry.displayName)
 Remove \(entry.displayName) from the Waitlist
 Remove from clinic
+Request sent. Tara will let you know.
 Resolved
 Response Needed
 Review links

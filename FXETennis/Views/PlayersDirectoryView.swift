@@ -171,6 +171,8 @@ private struct PlayerAdminDetailView: View {
     /// Their history at a glance (decision 0027 §1), read each time the page
     /// opens; nil until it arrives, and stays nil if it cannot be read.
     @State private var history: PlayerHistory?
+    /// This player's level requests and approvals (decision 0048).
+    @State private var levels: [AdminLevelApproval] = []
 
     init(player: PlayerSearchResult, onChange: @escaping () -> Void) {
         self.player = player
@@ -243,6 +245,8 @@ private struct PlayerAdminDetailView: View {
                     .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
                     .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
 
+                    levelCard
+
                     VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
                         Text("Private note")
                             .brandFont(.bodyEmphasis)
@@ -294,12 +298,89 @@ private struct PlayerAdminDetailView: View {
         .navyTitle("Player")
         .navigationBarTitleDisplayMode(.inline)
         .task {
+            await loadLevels()
             history = (try? await AdminRepository.playerHistory(player: player.id)) ?? history
             guard !loadedNote else { return }
             note = (try? await AdminRepository.playerNote(player.id)) ?? ""
             savedNote = note
             loadedNote = true
         }
+    }
+
+    private func loadLevels() async {
+        if let all = try? await AdminRepository.levelApprovals() {
+            levels = all.filter { $0.playerId == player.id }.sorted { $0.level < $1.level }
+        }
+    }
+
+    /// Levels she could approve them for: above their rating, up to 5.0.
+    private var approvableLevels: [Double] {
+        let floor = player.adultRating ?? 2.0
+        return stride(from: 2.5, through: 5.0, by: 0.5).filter { lvl in
+            lvl > floor && !levels.contains { $0.level == lvl && !$0.isRequest }
+        }
+    }
+
+    /// Decision 0048. Tara's line, "Approved to attend: Ladies 3.0+", with
+    /// Remove; a request with Approve and Decline; and Approve for, so she
+    /// can approve straight from the profile with no request first.
+    @ViewBuilder private var levelCard: some View {
+        if !levels.isEmpty || !approvableLevels.isEmpty {
+            VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
+                ForEach(levels) { row in
+                    HStack(spacing: Brand.Spacing.sm) {
+                        Text(row.isRequest ? "Asks for \(row.label)" : LevelGate.approvedLine(label: row.label))
+                            .brandFont(.body)
+                            .foregroundStyle(Brand.textPrimary)
+                        Spacer(minLength: 0)
+                        if row.isRequest {
+                            levelButton("Approve", id: "admin.player.levelApprove") { try await set(row.level, true) }
+                            levelButton("Decline", id: "admin.player.levelDecline") { try await set(row.level, false) }
+                        } else {
+                            levelButton("Remove", id: "admin.player.levelRemove") { try await set(row.level, false) }
+                        }
+                    }
+                    .frame(minHeight: Brand.Layout.minTapTarget)
+                }
+                if !approvableLevels.isEmpty {
+                    Menu {
+                        ForEach(approvableLevels, id: \.self) { lvl in
+                            Button(LevelGate.label(level: lvl, gender: player.gender)) {
+                                perform { try await set(lvl, true) }
+                            }
+                        }
+                    } label: {
+                        Text("Approve for")
+                            .brandFont(.button)
+                            .foregroundStyle(Brand.navy)
+                            .frame(minHeight: Brand.Layout.minTapTarget)
+                    }
+                    .accessibilityIdentifier("admin.player.levelApproveFor")
+                }
+            }
+            .padding(.horizontal, Brand.Spacing.cardPadding)
+            .padding(.vertical, Brand.Spacing.xs)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
+            .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
+        }
+    }
+
+    private func set(_ level: Double, _ approved: Bool) async throws {
+        try await AdminRepository.setLevelApproval(playerId: player.id, level: level, approved: approved)
+        await loadLevels()
+    }
+
+    private func levelButton(_ title: String, id: String, _ work: @escaping () async throws -> Void) -> some View {
+        Button { perform(work) } label: {
+            Text(title)
+                .brandFont(.chip)
+                .foregroundStyle(Brand.navy)
+                .frame(minHeight: Brand.Layout.minTapTarget)
+        }
+        .buttonStyle(.plain)
+        .disabled(busy)
+        .accessibilityIdentifier(id)
     }
 
     private func perform(_ work: @escaping () async throws -> Void) {
