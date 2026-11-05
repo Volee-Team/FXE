@@ -2,7 +2,8 @@
 //  EditProfileView.swift
 //  FXETennis
 //
-//  Fix a typo in your name, change your phone, update your rating. Membership
+//  Fix a typo in your name, change your phone. The rating and membership
+//  are shown, not edited, once set (decision 0048 for the rating). Membership
 //  is shown but not editable here: it decides which registration window opens
 //  first and which rate is shown, so after sign-up it is Tara's to correct
 //  (for-tara.md q5). The same fields and the same rating pills as the profile
@@ -72,6 +73,16 @@ struct EditProfileView: View {
                                 RatingGuideButton(identifier: "edit.ratingGuide") { showNTRP = true }
                                 Spacer()
                             }
+                            if let set = session.activePlayer?.adultRating {
+                                // Decision 0048: once given, the rating is
+                                // Tara's (a 2.5 who could type 3.0 would walk
+                                // round her approval). Shown, not offered, and
+                                // with no caption, as membership (decision 0024).
+                                Text(NTRPRating(rating: set)?.label ?? String(format: "%.1f", set))
+                                    .brandFont(.body)
+                                    .foregroundStyle(Brand.textPrimary)
+                                    .accessibilityIdentifier("edit.ratingValue")
+                            } else {
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: Brand.Spacing.xs) {
                                     ForEach(NTRPRating.displayOrdered) { level in
@@ -93,6 +104,7 @@ struct EditProfileView: View {
                                     }
                                 }
                                 .padding(.vertical, Brand.Spacing.xxs)
+                            }
                             }
                         }
 

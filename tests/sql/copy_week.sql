@@ -21,7 +21,7 @@
 --   source (published unless said)          copy, UTC
 --   Copy Sat Morning  Sat Oct 31 09:00 EDT  Sat Nov 7 09:00 EST = 14:00 (not 13:00)
 --     90 min, its own windows, close and      ends 15:30; windows Oct 29/30 12:00;
---     prices (999 / 1999), Maria on court 2,  closes 11:00; 2200 / 2800; draft;
+--     prices (999 / 1999), Maria on court 2,  closes 11:00; 2200 / 3000; draft;
 --     a message                               nobody in it, no message
 --   Copy Tue Evening  Tue Oct 27 18:30 EDT  Tue Nov 3 18:30 EST = 23:30, ends Nov 4 00:30,
 --                                           closes 20:30
@@ -126,7 +126,7 @@ begin
   insert into _probe_result values ('sat_morning_windows_and_close_from_the_rule_not_the_source',
     '2026-10-29 12:00:00+00|2026-10-30 16:00:00+00|2026-11-07 11:00:00+00', v);
   select member_price_cents || '|' || nonmember_price_cents into v from public.clinics where id = copy_sat;
-  insert into _probe_result values ('sat_morning_prices_from_the_length_not_the_source', '2200|2800', v);
+  insert into _probe_result values ('sat_morning_prices_from_the_length_not_the_source', '2200|3000', v);
   select '[' || template_id || '|' || name || '|' || audience || '|' || category || '|' || description
          || '|' || duration_minutes || '|' || internal_capacity || '|' || status || ']' into v
     from public.clinics where id = copy_sat;

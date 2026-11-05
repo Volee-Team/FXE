@@ -42,6 +42,32 @@ const STATUS = {
 const RATINGS = [2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0];
 const ratingLabel = (r) => (r >= 5 ? "5.0+" : Number(r).toFixed(1));
 
+// Decision 0048. A clinic's level is the NTRP number in its name
+// (clinics_public.min_rating); a player rated below it needs Tara's approval
+// at that level or higher. The label follows Tara's two examples, "Ladies
+// 3.0+" and "Men's 3.0+", by the player's own answer (level_approval_label).
+const levelLabel = (level, gender) => {
+  const x = `${Number(level).toFixed(1)}+`;
+  return gender === "female" ? `Ladies ${x}` : gender === "male" ? `Men's ${x}` : x;
+};
+// Display only: the server refuses the registration itself
+// (level_approval_required). Null rating or no level in the name: no gate.
+function levelGate(c, approvals) {
+  const r = S.player?.adult_rating, min = c.min_rating;
+  if (r == null || min == null || Number(r) >= Number(min)) return null;
+  if (approvals.some((a) => a.status === "approved" && Number(a.level) >= Number(min))) return null;
+  const asked = approvals.some((a) => a.status === "requested" && Number(a.level) === Number(min));
+  return { level: Number(min), asked };
+}
+// The player's own requests and approvals. Leniently: no answer gates
+// nothing here, and the server still decides.
+async function loadApprovals() {
+  if (!S.player) return [];
+  const { data, error } = await sb.from("level_approvals")
+    .select("player_id,level,status,requested_at,approved_at").eq("player_id", S.player.id);
+  return error ? [] : data || [];
+}
+
 // Tara and Kat's permission sentence (PaymentsRepository.CardConsent.words).
 const CARD_CONSENT = "I give permission for my card to be charged";
 
@@ -127,8 +153,12 @@ function actionOutcome(e) {
   if (m.includes("already_registered")) return { notice: null };
   if (m.includes("registration_not_open")) return { notice: "Registration isn't open yet." };
   if (m.includes("clinic_full")) return { notice: "That clinic is full now." };
+  // level_approval_required (decision 0048): a page loaded before Tara
+  // removed an approval. The reload shows the request button.
+  if (m.includes("level_approval_required")) return { notice: "Ask Tara for approval first." };
   // audience_mismatch (decision 0044): a page loaded before the answer.
-  if (m.includes("clinic_not_found") || m.includes("audience_mismatch")) return { notice: "That just changed. Here's the latest." };
+  // approval_not_needed (decision 0048): Tara approved, or the rating changed.
+  if (m.includes("clinic_not_found") || m.includes("audience_mismatch") || m.includes("approval_not_needed")) return { notice: "That just changed. Here's the latest." };
   if (m.includes("note_not_editable") || m.includes("note_too_long")) return { notice: "Couldn't save your note." };
   const line = failureLine(e);
   if (line) return { notice: line };
@@ -580,16 +610,17 @@ async function renderClinic(id, notice = "") {
   const gen = renderGen;
   chrome({ back: true, bell: true, mark: true, tab: "clinics" });
   view.innerHTML = `<div class="placeholder"></div><div class="placeholder"></div>`;
-  let c, messages = [];
+  let c, messages = [], approvals = [];
   try {
-    const [one, regs, msgs] = await Promise.all([
+    const [one, regs, msgs, levels] = await Promise.all([
       sb.from("clinics_public").select("*").eq("id", id).maybeSingle(),
       sb.from("my_registrations").select("*"),
       sb.from("my_clinic_messages").select("*").eq("clinic_id", id).order("sent_at"),
+      loadApprovals(),
     ]);
     if (one.error) throw one.error;
     if (regs.error) throw regs.error;
-    c = one.data; S.regs = regs.data || []; messages = msgs.data || [];
+    c = one.data; S.regs = regs.data || []; messages = msgs.data || []; approvals = levels;
   } catch (e) {
     if (gen === renderGen) view.innerHTML = `<p class="error">${esc(failureLine(e) || "Couldn't load this clinic.")}</p>`;
     return;
@@ -602,6 +633,9 @@ async function renderClinic(id, notice = "") {
   const hasPlayer = !!S.player;
   const started = now() >= t(c.starts_at);
   const d = door(c);
+  // Decision 0048: below the clinic's level with no approval, the request
+  // takes the place of Register and of the closed clinic's Message Tara.
+  const gate = !reg && (d.kind === "register" || d.kind === "askTara") ? levelGate(c, approvals) : null;
 
   let action = "";
   if (canceled || !hasPlayer) action = "";
@@ -611,6 +645,13 @@ async function renderClinic(id, notice = "") {
     else if (reg.status === "response_needed") action = `<div class="two">
         <button class="btn primary" id="a-accept">Accept</button>
         <button class="btn secondary" id="a-decline">Decline</button></div>`;
+  } else if (gate && gate.asked) action = `<p class="muted center card" id="level-asked">Request sent. Tara will let you know.</p>`;
+  else if (gate) {
+    // Tara's words, verbatim (email of 2026-10-15, decision 0048).
+    const label = levelLabel(gate.level, S.player.gender);
+    action = `<div class="card stack" id="level">
+        <p style="margin:0">You're currently rated ${esc(Number(S.player.adult_rating).toFixed(1))}. You can request approval from Tara to attend ${esc(label)} clinics. Once approved, you can sign up without requesting again.</p>
+        <button class="btn primary" id="a-level">Request Approval for ${esc(label)}</button></div>`;
   } else if (d.kind === "register") action = `<button class="btn primary" id="a-register">Register</button>`;
   else if (d.kind === "opens") action = `<p class="muted center card">Registration opens ${esc(opensAt(d.at))}</p>`;
   else if (d.kind === "askTara") action = `<div class="center stack" id="late">
@@ -620,7 +661,7 @@ async function renderClinic(id, notice = "") {
 
   // ClinicNote.offered
   const noteOffered = hasPlayer && !canceled && !started &&
-    (reg ? ["in", "pool", "response_needed"].includes(reg.status) : d.kind === "register");
+    (reg ? ["in", "pool", "response_needed"].includes(reg.status) : d.kind === "register" && !gate);
   const saved = reg?.player_note || "";
   const noteArea = noteOffered ? `<div class="stack" style="gap:6px">
       <label for="note">Note for Tara (optional)</label>
@@ -698,6 +739,8 @@ async function renderClinic(id, notice = "") {
     document.getElementById("late").innerHTML = `<p class="emph" style="margin:0">Tara has your message.</p>
       <p class="muted" style="margin:0">She will let you know as soon as possible if there is room in this clinic</p>`;
   });
+  // Asks Tara; registers for nothing. A second tap changes nothing.
+  on("a-level", () => run(() => sb.rpc("request_level_approval", { p_player: S.player.id, p_level: gate.level })));
   on("a-ics", () => downloadIcs(c));
   const noteEl = document.getElementById("note");
   if (noteEl && reg) noteEl.oninput = () => {
@@ -892,6 +935,7 @@ async function renderNotifications(error = "") {
 
 // ProfileView
 function renderProfile() {
+  const gen = renderGen;
   chrome({ title: "Profile", tab: "profile", bell: true });
   const a = S.account || {}, p = S.player;
   const name = p ? `${p.first_name} ${p.last_name}` : `${a.first_name || ""} ${a.last_name || ""}`;
@@ -902,6 +946,7 @@ function renderProfile() {
       <div><div class="caption">Email</div><div>${esc(a.email || S.user?.email || "")}</div></div>
       <div><div class="caption">Phone</div><div>${esc(a.phone || "")}</div></div>
       ${p ? `<div><div class="caption">Rating</div><div>${p.adult_rating != null ? esc(ratingLabel(p.adult_rating)) : ""}</div></div>` : ""}
+      ${p ? `<div id="p-levels" hidden></div>` : ""}
     </div>
     ${S.paymentsEnabled && p ? `<div class="card" id="card-area"></div>` : ""}
     <div class="stack" style="margin-top:12px">
@@ -918,6 +963,14 @@ function renderProfile() {
       <p class="error" id="p-error"></p>
     </div>`;
   if (S.paymentsEnabled && p) mountCardOnFile(document.getElementById("card-area"));
+  // Each approval in Tara's words (decision 0048), under the rating.
+  if (p) loadApprovals().then((rows) => {
+    const el = document.getElementById("p-levels");
+    const approved = rows.filter((r) => r.status === "approved").sort((x, y) => x.level - y.level);
+    if (gen !== renderGen || !el || !approved.length) return;
+    el.innerHTML = approved.map((r) => `<div data-approved="${esc(r.level)}">Approved to attend: ${esc(levelLabel(r.level, p.gender))}</div>`).join("");
+    el.hidden = false;
+  });
   document.getElementById("p-signout").onclick = async () => {
     if (await confirmDialog("Sign Out", "Sign Out", "Cancel")) signOut();
   };
@@ -939,13 +992,19 @@ function renderEdit(error = "") {
   chrome({ title: "Edit details", back: true });
   const a = S.account, p = S.player;
   let rating = p.adult_rating;
+  // Decision 0048: once set, the rating is Tara's (guard_player_rating), so it
+  // shows as the membership row does, read only and with no caption (decision
+  // 0024). A player who never gave one still picks it here, once.
+  const ratingSet = p.adult_rating != null;
   view.innerHTML = `<div class="stack">
       <label class="field">First Name<input type="text" id="e-first" value="${esc(p.first_name)}" autocomplete="given-name"></label>
       <label class="field">Last Name<input type="text" id="e-last" value="${esc(p.last_name)}" autocomplete="family-name"></label>
       <label class="field">Phone<input type="tel" id="e-phone" value="${esc(a.phone || "")}" autocomplete="tel"></label>
       <p class="emph" style="margin:12px 0 0">Your tennis rating</p>
-      <div class="pills">${RATINGS.map((r) =>
-        `<button type="button" class="pill" data-rating="${r}" aria-pressed="${Number(rating) === r}" aria-label="USTA ${ratingLabel(r)}">${ratingLabel(r)}</button>`).join("")}</div>
+      ${ratingSet
+        ? `<div class="card" id="e-rating" style="margin:0;border-radius:var(--fxe-radius-md)">${esc(ratingLabel(p.adult_rating))}</div>`
+        : `<div class="pills">${RATINGS.map((r) =>
+        `<button type="button" class="pill" data-rating="${r}" aria-pressed="${Number(rating) === r}" aria-label="USTA ${ratingLabel(r)}">${ratingLabel(r)}</button>`).join("")}</div>`}
       <p class="emph" style="margin:12px 0 0">Note for Tara (optional)</p>
       <textarea id="e-note" maxlength="${NOTE_LIMIT}" placeholder="Just coming back from a back injury - probably a low 3.5">${esc(p.level_note || "")}</textarea>
       <p class="caption" style="margin:0">Only Tara sees this.</p>
@@ -964,9 +1023,9 @@ function renderEdit(error = "") {
     if (!v("e-first") || !v("e-last")) { renderEdit("Add your first and last name."); return; }
     const btn = document.getElementById("e-save"); btn.disabled = true; btn.textContent = "Saving…";
     const one = await sb.from("accounts").update({ first_name: v("e-first"), last_name: v("e-last"), phone: v("e-phone") || null }).eq("id", a.id);
-    const two = one.error ? one : await sb.from("players").update({
-      first_name: v("e-first"), last_name: v("e-last"), adult_rating: rating, level_note: v("e-note") || null,
-    }).eq("id", p.id);
+    const fields = { first_name: v("e-first"), last_name: v("e-last"), level_note: v("e-note") || null };
+    if (!ratingSet) fields.adult_rating = rating;
+    const two = one.error ? one : await sb.from("players").update(fields).eq("id", p.id);
     if (one.error || two.error) { renderEdit("That didn't save. Check your connection and try again."); return; }
     await loadProfile();
     go("#/profile");

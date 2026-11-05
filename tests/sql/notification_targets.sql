@@ -127,13 +127,22 @@ begin
             select 1 from public.registrations r join public.players p on p.id = r.player_id
              where r.id = nt.entity_id
                and (p.account_id = nt.account_id
+                    or exists (select 1 from public.accounts a where a.id = nt.account_id and a.role = 'admin'))))
+      -- 'player' (decision 0048, level approval): a note about a person. It
+      -- opens nothing in the app; Tara acts from Action Needed and Players.
+      -- It must still name a player its recipient owns, or Tara.
+      or (nt.entity_type = 'player' and exists (
+            select 1 from public.players p
+             where p.id = nt.entity_id
+               and (p.account_id = nt.account_id
                     or exists (select 1 from public.accounts a where a.id = nt.account_id and a.role = 'admin')))));
   insert into _probe_result values ('every_row_points_at_something_its_recipient_may_open', '0', n::text);
 end $$;
 
 -- ------------------------------------------------ 6. every producer, enumerated
 -- Enumerate, never list: every function that calls notify_account() must name
--- one of the two entity types the app opens, as a literal. A new producer with
+-- one of the two entity types the app opens (or 'player', a note that opens
+-- nothing, decision 0048), as a literal. A new producer with
 -- a third kind turns this red, which is the moment to teach NotificationRouter
 -- to open it.
 --
@@ -153,7 +162,7 @@ with calls as (
 insert into _probe_result
 select 'every_producer_names_clinic_or_registration', '',
        coalesce(string_agg(distinct entity, ',' order by entity)
-                  filter (where entity not in ('clinic', 'registration')), '')
+                  filter (where entity not in ('clinic', 'registration', 'player')), '')
   from calls;
 
 with every_call as (

@@ -12,6 +12,8 @@ struct ProfileView: View {
     @Environment(\.openURL) private var openURL
     @Environment(SessionStore.self) private var session
     @State private var showNTRP = false
+    /// Tara's approvals for clinics above the rating (decision 0048).
+    @State private var levelApprovals: [LevelApproval] = []
     @State private var editing = false
     @State private var confirmDelete = false
     @State private var deleting = false
@@ -261,6 +263,20 @@ struct ProfileView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+            // Tara's words: "Approved to attend: Ladies 3.0+".
+            ForEach(levelApprovals.filter(\.isApproved).sorted { $0.level < $1.level }, id: \.level) { approval in
+                Text(LevelGate.approvedLine(label: LevelGate.label(level: approval.level,
+                                                                    gender: session.activePlayer?.gender)))
+                    .brandFont(.body)
+                    .foregroundStyle(Brand.textPrimary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityIdentifier("profile.levelApproval")
+            }
+        }
+        .task(id: session.activePlayer?.id) {
+            guard let id = session.activePlayer?.id,
+                  let rows = try? await LevelRepository.mine(playerId: id) else { return }
+            levelApprovals = rows
         }
         .padding(Brand.Spacing.cardPadding)
         .frame(maxWidth: .infinity, alignment: .leading)

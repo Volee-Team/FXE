@@ -49,6 +49,11 @@ final class ClinicDetailModel {
     /// registration, so a canceled clinic kept its Register button and a moved
     /// start kept the old cutoff (audit 2026-10-12).
     var freshClinic: ClinicPublic?
+    /// This player's level requests and approvals (decision 0048).
+    var levelApprovals: [LevelApproval] = []
+    /// Remembered from the page's first load, so a reload after an action
+    /// (which knows only the clinic) still reads the approvals.
+    private var playerId: UUID?
 
     /// Ask Tara to fit this player in after registration has closed.
     ///
@@ -74,12 +79,16 @@ final class ClinicDetailModel {
 
     /// `keepingNotice`: a reload nobody on this page asked for (a push, an
     /// answer from a notification) leaves the line on screen alone.
-    func load(clinicId: UUID, keepingNotice: Bool = false) async {
+    func load(clinicId: UUID, playerId: UUID? = nil, keepingNotice: Bool = false) async {
         do {
             let regs = try await RegistrationRepository.mine()
             registration = regs.first { $0.clinicId == clinicId && $0.status != .canceled }
             // Leniently: no answer keeps the copy the page opened with.
             if let current = try? await ClinicRepository.clinic(id: clinicId) { freshClinic = current }
+            // Leniently too: a server without the table (an older build of
+            // it) gates nothing, and the server still decides.
+            if let playerId { self.playerId = playerId }
+            if let id = self.playerId, let rows = try? await LevelRepository.mine(playerId: id) { levelApprovals = rows }
             messages = try await ClinicRepository.messages(clinicId: clinicId)
             // A load that worked clears an old "Couldn't reach the server"
             // (review, 2026-09-27: it stayed after a pull that succeeded).
@@ -160,6 +169,16 @@ final class ClinicDetailModel {
         }
         // Decision 0044: a Ladies or Men clinic not open to this player, met
         // only on a page loaded before their answer. The reload drops it.
+        // Decision 0048: below the clinic's level with no approval, met on a
+        // page loaded before Tara removed one. The reload shows her button.
+        if text.contains("level_approval_required") {
+            return FailureOutcome(notice: "Ask Tara for approval first.", reopens: nil)
+        }
+        // Asked when no longer needed: Tara approved meanwhile, or the
+        // rating changed. The reload shows Register.
+        if text.contains("approval_not_needed") {
+            return FailureOutcome(notice: "That just changed. Here's the latest.", reopens: nil)
+        }
         if text.contains("clinic_not_found") || text.contains("audience_mismatch") {
             return FailureOutcome(notice: "That just changed. Here's the latest.", reopens: nil)
         }
@@ -265,6 +284,11 @@ struct ClinicDetailView: View {
     /// The copy the page was opened with; `clinic` is the fresher one once loaded.
     private let initialClinic: ClinicPublic
     private var clinic: ClinicPublic { model.freshClinic ?? initialClinic }
+    /// Decision 0048: whether this player must ask Tara before this clinic.
+    private var levelGate: LevelGate.State {
+        LevelGate.state(rating: session.activePlayer?.adultRating,
+                        minRating: clinic.minRating, approvals: model.levelApprovals)
+    }
     let isMember: Bool
     var onChanged: () async -> Void = {}
 
@@ -300,7 +324,7 @@ struct ClinicDetailView: View {
                         // do nothing at all when they tapped it (audit 2026-10-12):
                         // the server needs a player to register, so the controls are
                         // simply not offered to an account without one.
-                        if hasPlayer, ClinicNote.offered(status: model.registration?.status,
+                        if hasPlayer, model.registration != nil || levelGate == .open, ClinicNote.offered(status: model.registration?.status,
                                               door: clinic.door(isMember: isMember, now: now),
                                               isCanceled: clinic.isCanceled,
                                               startsAt: clinic.startsAt, now: now) {
@@ -328,7 +352,7 @@ struct ClinicDetailView: View {
         // the bar too, it read twice (2026-09-28). Kept for VoiceOver.
         .hidesBarTitle()
         .task {
-            if !model.loaded { await model.load(clinicId: clinic.id) }
+            if !model.loaded { await model.load(clinicId: clinic.id, playerId: session.activePlayer?.id) }
             await syncReminder()
         }
         // The saved note fills the box whenever the server's copy changes
@@ -353,16 +377,16 @@ struct ClinicDetailView: View {
                 }
             }
         }
-        .refreshable { await model.load(clinicId: clinic.id); await syncReminder() }
+        .refreshable { await model.load(clinicId: clinic.id, playerId: session.activePlayer?.id); await syncReminder() }
         // A Pool player who left this page open sees Response Needed when she
         // comes back to the app, not the state from before (MVP audit item 8).
-        .reloadOnForeground { await model.load(clinicId: clinic.id); await syncReminder() }
+        .reloadOnForeground { await model.load(clinicId: clinic.id, playerId: session.activePlayer?.id); await syncReminder() }
         // An answer from the invitation's own buttons, or a push landing,
         // while this page is open (NotificationRouter).
         // A refusal line on screen stays: an unrelated push landing a moment
         // later must not wipe "Sign the waiver first." (review, 2026-09-28).
         .onChange(of: NotificationRouter.shared.reloads) {
-            Task { await model.load(clinicId: clinic.id, keepingNotice: true); await syncReminder() }
+            Task { await model.load(clinicId: clinic.id, playerId: session.activePlayer?.id, keepingNotice: true); await syncReminder() }
         }
     }
 
@@ -559,6 +583,51 @@ struct ClinicDetailView: View {
     /// late request; from the start, nothing, because a clinic Tara is
     /// already coaching has nothing left to sign up for.
     @ViewBuilder private func notRegisteredArea(_ door: RegistrationDoor) -> some View {
+        let gate = levelGate
+        if gate != .open, door == .register || door == .askTara {
+            // Decision 0048: below the clinic's level, Tara's request takes
+            // the place of Register and of the late-request door, both of
+            // which the server would refuse.
+            levelApprovalArea(asked: gate == .asked)
+        } else {
+            doorArea(door)
+        }
+    }
+
+    /// Tara's words (email of 2026-10-15): her sentence and her button; then
+    /// our one line once asked. Asking registers for nothing.
+    @ViewBuilder private func levelApprovalArea(asked: Bool) -> some View {
+        let level = clinic.minRating ?? 0
+        let label = LevelGate.label(level: level, gender: session.activePlayer?.gender)
+        VStack(spacing: Brand.Spacing.sm) {
+            if asked {
+                HStack(spacing: Brand.Spacing.xs) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(Brand.Status.youreIn.ink)
+                    Text("Request sent. Tara will let you know.")
+                        .brandFont(.bodyEmphasis)
+                        .foregroundStyle(Brand.textPrimary)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("clinic.levelRequested")
+            } else {
+                Text(LevelGate.prompt(rating: session.activePlayer?.adultRating ?? 0, label: label))
+                    .brandFont(.subheadline)
+                    .foregroundStyle(Brand.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                primaryButton(LevelGate.buttonTitle(label: label)) {
+                    guard let playerId = session.activePlayer?.id else { return }
+                    try await LevelRepository.request(playerId: playerId, level: level)
+                }
+                .accessibilityIdentifier("clinic.requestLevelApproval")
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, Brand.Spacing.xs)
+    }
+
+    @ViewBuilder private func doorArea(_ door: RegistrationDoor) -> some View {
         switch door {
         case .askTara:
             // Registration has closed. Before 2026-08-27 this branch did not

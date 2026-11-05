@@ -690,9 +690,12 @@ struct PlayerSearchResult: Codable, Identifiable, Sendable {
     let levelNote: String?
     /// Signed the current waiver (decision 0013 §4).
     let waiverAccepted: Bool?
+    /// "female", "male" or nil (decision 0044); picks "Ladies" or "Men's"
+    /// in a level label (decision 0048).
+    var gender: String? = nil
 
     enum CodingKeys: String, CodingKey {
-        case id, kind, age
+        case id, kind, age, gender
         case firstName = "first_name"
         case lastName = "last_name"
         case adultRating = "adult_rating"
@@ -896,5 +899,55 @@ enum DeclineReason {
     static func label(_ code: String?) -> String? {
         guard let code, !code.isEmpty else { return nil }
         return labels[code] ?? code
+    }
+}
+
+// MARK: - Level approval, Tara's side (decision 0048)
+
+/// One row of `admin_level_approvals()`: a request waiting for Tara, or an
+/// approval she has given.
+struct AdminLevelApproval: Decodable, Identifiable, Hashable, Sendable {
+    let playerId: UUID
+    let firstName: String
+    let lastName: String
+    let adultRating: Double?
+    let level: Double
+    let status: String
+    let requestedAt: Date?
+    let label: String
+
+    var id: String { "\(playerId.uuidString)-\(level)" }
+    var isRequest: Bool { status == "requested" }
+    var name: String { "\(firstName) \(lastName)" }
+
+    enum CodingKeys: String, CodingKey {
+        case level, status, label
+        case playerId = "player_id"
+        case firstName = "first_name"
+        case lastName = "last_name"
+        case adultRating = "adult_rating"
+        case requestedAt = "requested_at"
+    }
+}
+
+extension AdminRepository {
+    static func levelApprovals() async throws -> [AdminLevelApproval] {
+        try await supabase.rpc("admin_level_approvals").execute().value
+    }
+
+    /// true approves (a request, or straight from the profile); false
+    /// declines a request or removes an approval.
+    static func setLevelApproval(playerId: UUID, level: Double, approved: Bool) async throws {
+        struct P: Encodable { let p_player: UUID; let p_level: Double; let p_approved: Bool }
+        try await supabase
+            .rpc("admin_set_level_approval", params: P(p_player: playerId, p_level: level, p_approved: approved))
+            .execute()
+    }
+
+    static func setPlayerRating(playerId: UUID, rating: Double) async throws {
+        struct P: Encodable { let p_player: UUID; let p_rating: Double }
+        try await supabase
+            .rpc("admin_set_player_rating", params: P(p_player: playerId, p_rating: rating))
+            .execute()
     }
 }

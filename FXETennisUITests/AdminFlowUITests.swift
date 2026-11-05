@@ -17,6 +17,8 @@ final class AdminFlowUITests: XCTestCase {
     private let admin = "tara@fxe.test"
     private let member = "maria@fxe.test"
     private let nonMember = "rob@fxe.test"
+    /// Rated 2.5 in the seed (decision 0048).
+    private let belowLevel = "gina@fxe.test"
     private let seedPassword = "password"
     private var app: XCUIApplication!
 
@@ -476,6 +478,60 @@ final class AdminFlowUITests: XCTestCase {
         XCTAssertFalse(app.buttons["clinic.primaryAction"].waitForExistence(timeout: 8),
                        "The clinic page offered Tara a Register button that cannot work")
         XCTAssertFalse(app.descendants(matching: .any)["clinic.note"].exists, "The note box was offered to Tara")
+    }
+
+    // MARK: - K. level approval (decision 0048)
+
+    /// Tara: a 2.5 asks before a 3.0+ clinic, she approves once, and from
+    /// then on the player signs up normally. Gina is 2.5; "Tuesday Ladies
+    /// 3.0+" is a 3.0 clinic by its name.
+    func testAdminK_ABelowLevelPlayerAsksAndTaraApproves() {
+        app.launch()
+        signIn(as: belowLevel)
+        openTuesdayLadies()
+        let ask = app.buttons.matching(NSPredicate(format: "label == %@", "Request Approval for Ladies 3.0+")).firstMatch
+        XCTAssertTrue(ask.waitForExistence(timeout: 15), "No Request Approval button for a 2.5 on a 3.0+ clinic")
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label == %@",
+                      "You're currently rated 2.5. You can request approval from Tara to attend Ladies 3.0+ clinics. Once approved, you can sign up without requesting again.")).firstMatch.exists,
+                      "Tara's sentence is not on the page")
+        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label ==[c] 'Register'")).firstMatch.exists,
+                       "A 2.5 was offered Register on a 3.0+ clinic")
+        ask.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["clinic.levelRequested"].waitForExistence(timeout: 15),
+                      "Asking did not show that the request was sent")
+        signOut()
+
+        signIn(as: admin)
+        app.buttons["Manage"].tap()
+        let approve = app.buttons["admin.level.approve"].firstMatch
+        XCTAssertTrue(approve.waitForExistence(timeout: 20), "Gina's request is not in Action Needed")
+        XCTAssertTrue(scrollUntilHittable(approve), "Could not reach Approve")
+        approve.tap()
+        XCTAssertTrue(approve.waitForNonExistence(timeout: 15), "The request stayed after Approve")
+        signOut()
+
+        signIn(as: belowLevel)
+        openTuesdayLadies()
+        let register = app.buttons.matching(NSPredicate(format: "label ==[c] 'Register'")).firstMatch
+        XCTAssertTrue(register.waitForExistence(timeout: 15), "No Register after Tara approved")
+        XCTAssertFalse(app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Request Approval'")).firstMatch.exists,
+                       "Still asked to request approval after Tara approved")
+        app.navigationBars.buttons.firstMatch.tap()
+        openProfileTab()
+        XCTAssertTrue(app.staticTexts["Approved to attend: Ladies 3.0+"].waitForExistence(timeout: 15),
+                      "The profile does not say Approved to attend: Ladies 3.0+")
+    }
+
+    private func openTuesdayLadies() {
+        openClinicsTab()
+        let card = app.buttons.matching(identifier: "clinic.card")
+            .matching(NSPredicate(format: "label CONTAINS[c] %@", "Tuesday Ladies")).firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 20), "No Clinics-tab card for Tuesday Ladies")
+        card.tap()
+        // A tap that lands while the list is still settling after sign-in
+        // opens nothing (seen once on the first run); tap again, as a person would.
+        if !app.staticTexts["clinic.title"].waitForExistence(timeout: 5) { card.tap() }
+        XCTAssertTrue(app.staticTexts["clinic.title"].waitForExistence(timeout: 15), "The clinic page never opened")
     }
 
     // MARK: - helpers (mirrors PlayerFlowUITests; kept local so each file reads alone)

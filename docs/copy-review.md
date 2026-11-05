@@ -901,6 +901,33 @@ extractor cannot see, so they are listed here by hand.
 | ✓ | Gender not set / Female / Male | Tara's Players tab, the dropdown on each player |
 | ✓ | That just changed. Here's the latest. (existing line, reused) | A Register refused as `audience_mismatch`, met only on a page loaded before the answer |
 
+## Level approval, web and app (2026-11-05) — awaiting John
+
+Decision 0048, the `/play` members' site and Tara's laptop. Tara's own words
+(her email of 2026-10-15) are listed for reference and need no tick; the
+rest is our chrome. The sentence, the button and the "Approved to attend"
+line are built from the player's gender and the clinic's level, so the
+extractor cannot see them; they are listed here by hand. Labels are
+"Ladies 3.0+", "Men's 3.0+", or "3.0+" when gender is unanswered.
+
+| ☐ | Words | Where |
+|---|---|---|
+| Tara's | You're currently rated 2.5. You can request approval from Tara to attend Ladies 3.0+ clinics. Once approved, you can sign up without requesting again. | `/play` clinic page, in place of Register (and of Message Tara once closed), for a player rated below the clinic's level |
+| Tara's | Request Approval for Ladies 3.0+ | The button under it |
+| Tara's | Approved to attend: Ladies 3.0+ | `/play` Profile under Rating; Tara's Players tab on each player |
+| ☐ | Request sent. Tara will let you know. | `/play` clinic page after asking, in place of the button |
+| ☐ | Ask Tara for approval first. | `/play` clinic page: Register refused as `level_approval_required` (a page loaded before Tara removed an approval) |
+| ☐ | That just changed. Here's the latest. (existing line, reused) | `/play`: a request refused as `approval_not_needed` (Tara approved meanwhile) |
+| ☐ | Level requests | Tara's laptop, Action Needed: the heading of the requests card |
+| ☐ | Approve / Decline | Tara's laptop, each level request |
+| ☐ | Approve for / Approve / Remove | Tara's Players tab: the level dropdown (2.5+ to 5.0+), its button, and the Remove beside each approval |
+| ☐ | Rating / Rating not set | Tara's Players tab: the rating dropdown (2.0 to 5.0); "Rating not set" only while a player has none |
+| ☐ | Request sent. Tara will let you know. / Ask Tara for approval first. | The app's clinic page, the same two moments as `/play` |
+| ☐ | {Name} ({rating}) asks for Ladies 3.0+ / Approve / Decline | The app, Tara's Action Needed: one row per request |
+| ☐ | Asks for Ladies 3.0+ / Approve for / Remove | The app, Tara's player page: a request, the level menu, and Remove beside each approval |
+| ☐ | {First Last} ({rating}) asked to attend 3.0+ clinics. | Notification to Tara when someone asks (server, `request_level_approval`) |
+| Q123 | You're approved to attend Ladies 3.0+ clinics. | Notification to the player when Tara approves: question 123's sentence, waiting on her answer |
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148

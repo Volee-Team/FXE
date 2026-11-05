@@ -167,6 +167,8 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
     <div id="action" class="hide">
       <h2>Action Needed</h2>
       <div id="late" class="card hide"></div>
+      <!-- Decision 0048: players asking to attend clinics above their rating. -->
+      <div id="levels" class="card hide"></div>
       <div id="money-needs" class="card hide"></div>
       <div id="notes" class="card hide"></div>
     </div>
@@ -655,6 +657,11 @@ async function loadActionNeeded(clinics, byPlayer, owed, stale = () => false) {
     .in("type", ["player_canceled", "invitation_declined", "invitation_accepted"])
     .order("created_at", { ascending: false }).limit(30);
   if (stale()) return;
+  // Level requests (decision 0048). Read leniently, like the disputes list:
+  // the page can reach Vercel before its migration reaches hosted.
+  const { data: levelRows } = await sb.rpc("admin_level_approvals");
+  if (stale()) return;
+  const asks = (levelRows || []).filter(r => r.status === "requested");
   // Held charges (20260927300003): Stripe may or may not have taken them, and
   // only Tara, looking in Stripe, can say. Until 2026-10-12 they were only on
   // the Money tab's newest 50 rows, and a busy week pushed them off it (audit).
@@ -707,10 +714,20 @@ async function loadActionNeeded(clinics, byPlayer, owed, stale = () => false) {
   moneyEl.innerHTML = moneyRows.join("");
   moneyEl.classList.toggle("hide", !moneyRows.length);
 
-  const lateEl = $("late"), notesEl = $("notes");
+  const lateEl = $("late"), notesEl = $("notes"), levelsEl = $("levels");
   lateEl.classList.toggle("hide", !(late || []).length);
   notesEl.classList.toggle("hide", !(notes || []).length);
-  $("action").classList.toggle("hide", !(late || []).length && !(notes || []).length && !moneyRows.length);
+  levelsEl.classList.toggle("hide", !asks.length);
+  $("action").classList.toggle("hide", !(late || []).length && !(notes || []).length && !moneyRows.length && !asks.length);
+
+  // Approve lets them sign up for every clinic at that level and below, for
+  // good, and tells them; Decline drops the request and they may ask again.
+  levelsEl.innerHTML = asks.length ? `<div class="name">Level requests</div>` + asks.map(r => `<div class="row" data-level-request="${r.player_id}">
+      <span class="grow"><span class="name">${esc(r.first_name + " " + r.last_name)}</span> <span class="muted">(${ntrp(r.adult_rating)})</span><br>
+        <span class="muted">${esc(r.label)}${r.requested_at ? ", " + fmtDate(r.requested_at) : ""}</span></span>
+      <button class="small primary" data-levelapprove="${r.player_id}" data-level="${r.level}">Approve</button>
+      <button class="small" data-leveldecline="${r.player_id}" data-level="${r.level}">Decline</button>
+    </div>`).join("") : "";
 
   lateEl.innerHTML = (late || []).map(r => {
     const p = byPlayer[r.player_id], c = byClinic[r.clinic_id];
@@ -1401,6 +1418,19 @@ document.addEventListener("click", async (e) => {
     if (sent) note($("msg"), `Reminder sent to ${b.dataset.n}.`, true);
     return;
   }
+  // Decision 0048. Both lists show approvals, so both are read again.
+  const setLevel = (player, lvl, approved) => run(async () => {
+    await call("admin_set_level_approval", { p_player: player, p_level: Number(lvl), p_approved: approved });
+    await searchPlayers();
+  });
+  if (b.dataset.levelapprove) return setLevel(b.dataset.levelapprove, b.dataset.level, true);
+  if (b.dataset.leveldecline) return setLevel(b.dataset.leveldecline, b.dataset.level, false);
+  if (b.dataset.levelremove)  return setLevel(b.dataset.levelremove, b.dataset.level, false);
+  if (b.dataset.levelgrant) {
+    const pick = document.querySelector(`select[data-approvelevel="${b.dataset.levelgrant}"]`);
+    if (!pick || !pick.value) { pick?.focus(); return; }
+    return setLevel(b.dataset.levelgrant, pick.value, true);
+  }
   if (b.dataset.approve)  return run(() => call("resolve_late_request", { p_request: b.dataset.approve, p_approve: true }));
   if (b.dataset.decline)  return run(() => call("resolve_late_request", { p_request: b.dataset.decline, p_approve: false }));
   if (b.dataset.seen)     return run(async () => {
@@ -1555,14 +1585,30 @@ let playerTimer;
 // is shown for a live member or pro account only: admin_set_pro refuses an
 // admin, a deleted account and Tara's own, and the page does not offer what
 // the database would refuse.
-const playerRow = (pl, history, who) => `<div class="row" data-player-row="${pl.id}">
+// `approved` is this player's approvals from admin_level_approvals (decision
+// 0048), each in Tara's words with a Remove beside it.
+const RATING_STEPS = [2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0];
+const playerRow = (pl, history, who, approved = []) => `<div class="row" data-player-row="${pl.id}">
   <span class="grow"><span class="name">${esc(pl.first_name)} ${esc(pl.last_name)}</span>${pl.has_notes ? ' <span class="muted" title="Has a note">✎</span>' : ""}<br>
-    <span class="muted">${ntrp(pl.adult_rating)}, ${pl.is_member ? "Member" : "Non-member"}${pl.is_active ? "" : ", Inactive"}${pl.waiver_accepted ? "" : ", Waiver not signed"}</span>${historyHtml(history)}${pl.level_note ? `<br><span class="muted" title="The player's note at level entry; only you see it">“${esc(pl.level_note)}”</span>` : ""}</span>
+    <span class="muted">${ntrp(pl.adult_rating)}, ${pl.is_member ? "Member" : "Non-member"}${pl.is_active ? "" : ", Inactive"}${pl.waiver_accepted ? "" : ", Waiver not signed"}</span>${historyHtml(history)}${pl.level_note ? `<br><span class="muted" title="The player's note at level entry; only you see it">“${esc(pl.level_note)}”</span>` : ""}
+    <span class="levels" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px">
+      ${approved.map(a => `<span class="muted" data-approved="${pl.id}">Approved to attend: ${esc(a.label)}</span>
+        <button class="small" data-levelremove="${pl.id}" data-level="${a.level}">Remove</button>`).join("")}
+      <select class="small" data-approvelevel="${pl.id}" aria-label="Approve for" style="width:auto;margin:0">
+        <option value="" selected>Approve for</option>
+        ${RATING_STEPS.filter(r => r >= 2.5).map(r => `<option value="${r.toFixed(1)}">${r.toFixed(1)}+</option>`).join("")}
+      </select>
+      <button class="small" data-levelgrant="${pl.id}">Approve</button>
+    </span></span>
   <button class="small" data-member="${pl.id}" data-now="${pl.is_member}">${pl.is_member ? "Make non-member" : "Make member"}</button>
   <select class="small" data-gender="${pl.id}" aria-label="Gender" style="width:auto;margin:0">
     <option value=""${pl.gender ? "" : " selected"}>Gender not set</option>
     <option value="female"${pl.gender === "female" ? " selected" : ""}>Female</option>
     <option value="male"${pl.gender === "male" ? " selected" : ""}>Male</option>
+  </select>
+  <select class="small" data-rating="${pl.id}" aria-label="Rating" style="width:auto;margin:0">
+    ${pl.adult_rating == null ? `<option value="" selected>Rating not set</option>` : ""}
+    ${RATING_STEPS.map(r => `<option value="${r.toFixed(1)}"${pl.adult_rating != null && Number(pl.adult_rating) === r ? " selected" : ""}>${r.toFixed(1)}</option>`).join("")}
   </select>
   <button class="small" data-active="${pl.id}" data-now="${pl.is_active}">${pl.is_active ? "Deactivate" : "Reactivate"}</button>
   ${who && !who.deleted && (who.role === "member" || who.role === "pro")
@@ -1589,15 +1635,20 @@ async function searchPlayers() {
   // The load-time list and a typed search can be in flight together; only
   // the latest one may draw, or a slow full list would replace her results.
   const seq = ++playerSeq;
-  const [{ data, error }, history] = await Promise.all([
+  const [{ data, error }, history, levels] = await Promise.all([
     sb.rpc("search_players", { p_query: q, p_include_inactive: $("p-inactive").checked }),
-    readHistory()]);
+    readHistory(),
+    // Leniently, like the history: no answer shows no approvals.
+    sb.rpc("admin_level_approvals")]);
   if (seq !== playerSeq) return;
   if (error) return note($("players-msg"), friendly(error));
   const roles = await playerRoles((data || []).map(pl => pl.id));
   if (seq !== playerSeq) return;
+  const approvedBy = {};
+  for (const a of (levels.error ? [] : levels.data || []).filter(a => a.status === "approved"))
+    (approvedBy[a.player_id] ||= []).push(a);
   $("p-results").innerHTML = (data || []).length
-    ? data.map(pl => playerRow(pl, history[pl.id], roles.get(pl.id))).join("")
+    ? data.map(pl => playerRow(pl, history[pl.id], roles.get(pl.id), approvedBy[pl.id])).join("")
     : (q ? `<p class="muted">Nobody by that name yet. They may need to sign up in the app first.</p>`
          : `<p class="muted">No players yet.</p>`);
 }
@@ -1633,6 +1684,18 @@ document.addEventListener("change", async (e) => {
   pick.disabled = true;
   try {
     const { error } = await sb.rpc("admin_set_player_gender", { p_player: pick.dataset.gender, p_gender: pick.value || null });
+    if (error) throw error;
+    note($("players-msg"), "");
+  } catch (err) { note($("players-msg"), friendly(err)); }
+  await searchPlayers();
+});
+// Her correction of a player's rating (decision 0048): the player cannot
+// change it once set. Read again after, like the gender.
+document.addEventListener("change", async (e) => {
+  const pick = e.target.closest("select[data-rating]"); if (!pick || !pick.value) return;
+  pick.disabled = true;
+  try {
+    const { error } = await sb.rpc("admin_set_player_rating", { p_player: pick.dataset.rating, p_rating: Number(pick.value) });
     if (error) throw error;
     note($("players-msg"), "");
   } catch (err) { note($("players-msg"), friendly(err)); }

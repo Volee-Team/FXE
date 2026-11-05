@@ -544,3 +544,25 @@ enum NotificationRepository {
             .execute()
     }
 }
+
+// MARK: - Level approval (decision 0048)
+
+enum LevelRepository {
+    /// The player's own requests and approvals (RLS: own players, or Tara).
+    static func mine(playerId: UUID) async throws -> [LevelApproval] {
+        try await supabase
+            .from("level_approvals")
+            .select("player_id,level,status")
+            .eq("player_id", value: playerId)
+            .execute()
+            .value
+    }
+
+    /// Ask Tara for clinics at this level. Does not register for anything.
+    static func request(playerId: UUID, level: Double) async throws {
+        struct P: Encodable { let p_player: UUID; let p_level: Double }
+        try await supabase
+            .rpc("request_level_approval", params: P(p_player: playerId, p_level: level))
+            .execute()
+    }
+}

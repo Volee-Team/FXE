@@ -17,12 +17,14 @@ const PW = "password";
 const MARIA = { email: "maria@fxe.test", first: "Maria" };   // member
 const THEO = { email: "theo@fxe.test", first: "Theo" };      // non-member
 const LENA = { email: "lena@fxe.test", first: "Lena" };      // member
+const PRIYA = { email: "priya@fxe.test", first: "Priya" };   // non-member, seeded 3.0, female
 const TARA = { email: "tara@fxe.test" };
 const P = {
   maria: "a0000000-0000-0000-0000-000000000001",
   ken: "a0000000-0000-0000-0000-000000000002",
   lena: "a0000000-0000-0000-0000-000000000007",
   theo: "a0000000-0000-0000-0000-000000000008",
+  priya: "a0000000-0000-0000-0000-000000000005",
 };
 const ACCOUNT = { maria: "22222222-2222-2222-2222-222222222222" };
 
@@ -384,24 +386,52 @@ test.describe("the rest of a member's day", () => {
     }
   });
 
-  test("Edit details saves her phone and rating, and membership is not hers to change", async ({ page, request }) => {
+  // Decision 0048: once a rating is set it is Tara's, shown read only like
+  // membership, with no caption (Tara, decision 0024: "Remove 'set my
+  // Tara' from view by user"). Until 2026-11-05 this test changed Maria's
+  // rating from here, which is now the hole the level gate closes.
+  test("Edit details saves her phone; her rating and membership are not hers to change", async ({ page, request }) => {
     const db = service(request);
     const [before] = await db.get(`accounts?id=eq.${ACCOUNT.maria}&select=phone`);
-    const [pBefore] = await db.get(`players?id=eq.${P.maria}&select=adult_rating`);
     try {
       await signIn(page, MARIA);
       await page.getByRole("link", { name: "Profile" }).click();
       await page.getByRole("link", { name: "Edit details" }).click();
       await expect(page.locator("#view input[type=checkbox], #view [data-member]")).toHaveCount(0);
+      // Seeded 3.5, shown as text: no rating buttons, and no caption.
+      await expect(page.locator("#e-rating")).toHaveText("3.5");
+      await expect(page.getByRole("button", { name: /^USTA / })).toHaveCount(0);
+      await expect(page.getByText(/Set by Tara|Only Tara can/)).toHaveCount(0);
       await page.getByLabel("Phone").fill("704-555-0199");
-      await page.getByRole("button", { name: "USTA 4.5" }).click();
       await page.getByRole("button", { name: "Save" }).click();
       await expect(page.locator("h2.display")).toHaveText("Maria Alvarez");
       await expect(page.getByText("704-555-0199")).toBeVisible();
-      await expect(page.getByText("4.5", { exact: true })).toBeVisible();
+      // The save went through (guard_player_rating refuses only a change)
+      // and the rating is what Tara set.
+      const [row] = await db.get(`players?id=eq.${P.maria}&select=adult_rating`);
+      expect(row.adult_rating).toBe(3.5);
     } finally {
       await db.patch(`accounts?id=eq.${ACCOUNT.maria}`, { phone: before.phone });
-      await db.patch(`players?id=eq.${P.maria}`, { adult_rating: pBefore.adult_rating });
+    }
+  });
+
+  test("a player who never gave a rating picks it once, and then it is read only", async ({ page, request }) => {
+    const db = service(request);
+    try {
+      await db.patch(`players?id=eq.${P.theo}`, { adult_rating: null });
+      await signIn(page, THEO);
+      await page.goto("/play/#/edit");
+      await page.getByRole("button", { name: "USTA 3.5" }).click();
+      await page.getByRole("button", { name: "Save" }).click();
+      await expect(page.locator("h2.display")).toHaveText("Theo Grant");
+      await expect(page.getByText("3.5", { exact: true })).toBeVisible();
+      const [row] = await db.get(`players?id=eq.${P.theo}&select=adult_rating`);
+      expect(row.adult_rating).toBe(3.5);
+      await page.getByRole("link", { name: "Edit details" }).click();
+      await expect(page.locator("#e-rating")).toHaveText("3.5");
+      await expect(page.getByRole("button", { name: /^USTA / })).toHaveCount(0);
+    } finally {
+      await db.patch(`players?id=eq.${P.theo}`, { adult_rating: 3.0 });
     }
   });
 
@@ -472,6 +502,109 @@ test.describe("the rest of a member's day", () => {
     } finally {
       await db.patch(`players?id=eq.${P.theo}`, { gender: "male" });
       await cleanUp(db, [ladies, coed]);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Decision 0048. Tara, 2026-10-15: "For a 2.5 player who hasn't been approved,
+// please show: 'You're currently rated 2.5. You can request approval from Tara
+// to attend Ladies 3.0+ clinics. Once approved, you can sign up without
+// requesting again.' Button: Request Approval for Ladies 3.0+". The expected
+// words below are hers, copied from the decision, not from play.js.
+test.describe("level approval (decision 0048)", () => {
+  const TUESDAY = { id: "d0000000-0000-0000-0000-000000000001", name: "Tuesday Ladies 3.0+" };
+  const SENTENCE = "You're currently rated 2.5. You can request approval from Tara to attend Ladies 3.0+ clinics. Once approved, you can sign up without requesting again.";
+  const reset = async (db) => {
+    await db.del(`level_approvals?player_id=eq.${P.priya}`);
+    await db.del(`notifications?entity_id=eq.${P.priya}`);
+  };
+
+  test("a 2.5 asks, Tara approves on the laptop, and then she can register; a removed approval asks again", async ({ browser, request }) => {
+    const db = service(request);
+    try {
+      await reset(db);
+      await db.patch(`players?id=eq.${P.priya}`, { adult_rating: 2.5 });
+      const player = await (await browser.newContext()).newPage();
+      await signIn(player, PRIYA);
+      await openClinic(player, TUESDAY);
+      // Her sentence and her button, in place of Register and the note box.
+      await expect(player.getByText(SENTENCE, { exact: true })).toBeVisible();
+      await expect(player.getByRole("button", { name: "Register" })).toHaveCount(0);
+      await expect(player.locator("#note")).toHaveCount(0);
+      await player.getByRole("button", { name: "Request Approval for Ladies 3.0+", exact: true }).click();
+      await expect(player.getByText("Request sent. Tara will let you know.", { exact: true })).toBeVisible();
+      await expect(player.getByRole("button", { name: /^Request Approval/ })).toHaveCount(0);
+      await expect(player.getByRole("button", { name: "Register" })).toHaveCount(0);
+      // Asking registers her for nothing.
+      expect(await db.get(`registrations?clinic_id=eq.${TUESDAY.id}&player_id=eq.${P.priya}&select=id`)).toEqual([]);
+      expect(await db.get(`level_approvals?player_id=eq.${P.priya}&select=level,status`))
+        .toEqual([{ level: 3, status: "requested" }]);
+      // Still asked on a fresh load: the page reads it from the server.
+      await player.reload();
+      await expect(player.getByText("Request sent. Tara will let you know.", { exact: true })).toBeVisible();
+
+      // Tara sees it with her other to-dos and approves it.
+      const tara = await (await browser.newContext()).newPage();
+      await tara.goto("/index.html");
+      await tara.getByLabel("Email").fill(TARA.email);
+      await tara.getByLabel("Password").fill(PW);
+      await tara.getByRole("button", { name: "Sign In" }).click();
+      const ask = tara.locator("#levels .row", { hasText: "Priya Raman" });
+      await expect(tara.locator("#levels")).toContainText("Level requests");
+      await expect(ask).toContainText("(2.5)");
+      await expect(ask).toContainText("Ladies 3.0+");
+      await ask.getByRole("button", { name: "Approve" }).click();
+      await expect(tara.locator("#levels .row", { hasText: "Priya Raman" })).toHaveCount(0, { timeout: 15_000 });
+      expect(await db.get(`level_approvals?player_id=eq.${P.priya}&select=level,status`))
+        .toEqual([{ level: 3, status: "approved" }]);
+
+      // Now Register, and her profile says what Tara approved. (The page is
+      // still open on the clinic; a reload is how she sees the change.)
+      await player.reload();
+      await expect(player.locator("h2.display")).toHaveText(TUESDAY.name);
+      await expect(player.getByRole("button", { name: "Register" })).toBeVisible();
+      await expect(player.getByText(SENTENCE)).toHaveCount(0);
+      await player.goto("/play/#/profile");
+      await expect(player.getByText("Approved to attend: Ladies 3.0+", { exact: true })).toBeVisible();
+
+      // A page left open while Tara removes the approval: Register is refused
+      // by the server, and the page says so and offers the request again.
+      await openClinic(player, TUESDAY);
+      await expect(player.getByRole("button", { name: "Register" })).toBeVisible();
+      await db.del(`level_approvals?player_id=eq.${P.priya}`);
+      await player.getByRole("button", { name: "Register" }).click();
+      await expect(player.getByText("Ask Tara for approval first.", { exact: true })).toBeVisible();
+      await expect(player.getByRole("button", { name: "Request Approval for Ladies 3.0+", exact: true })).toBeVisible();
+      expect(await db.get(`registrations?clinic_id=eq.${TUESDAY.id}&player_id=eq.${P.priya}&select=id`)).toEqual([]);
+    } finally {
+      await reset(db);
+      await db.patch(`players?id=eq.${P.priya}`, { adult_rating: 3.0 });
+    }
+  });
+
+  test("after registration closes, a 2.5 is offered the request, not Message Tara", async ({ page, request }) => {
+    const db = service(request);
+    let c;
+    try {
+      await reset(db);
+      await db.patch(`players?id=eq.${P.priya}`, { adult_rating: 2.5 });
+      c = await makeClinic(db, "Play Spec Ladies 3.0+", { startsIn: 2 * H });
+      await signIn(page, PRIYA);
+      await openClinic(page, c);
+      await expect(page.getByText(SENTENCE, { exact: true })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Message Tara" })).toHaveCount(0);
+      // A clinic with no level in its name asks nothing of her.
+      const open = await makeClinic(db, "Play Spec All Levels");
+      try {
+        await openClinic(page, open);
+        await expect(page.getByRole("button", { name: "Register" })).toBeVisible();
+        await expect(page.getByText(/request approval/i)).toHaveCount(0);
+      } finally { await cleanUp(db, [open]); }
+    } finally {
+      await cleanUp(db, [c]);
+      await reset(db);
+      await db.patch(`players?id=eq.${P.priya}`, { adult_rating: 3.0 });
     }
   });
 });

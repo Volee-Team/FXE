@@ -570,13 +570,13 @@ what is built until she answers.
 *Default: yes, anyone under 3.0. Status: open, asked 2026-10-16.*
 
 **121. Which clinics need approval: every clinic with "3.0+" in its name (Ladies 3.0+, Men's 3.0+, and a Coed 3.0+ if you ever make one)?**
-*Default: yes, any clinic named "3.0+", approved per category (Ladies, Men's, Coed separately). Status: open, asked 2026-10-16.*
+*Default: yes, any clinic named "3.0+", approved per category (Ladies, Men's, Coed separately). Status: open, asked 2026-10-16. Built 2026-11-05 (decision 0048) per LEVEL instead, any clinic with a level in its name (4.0 too, her text of 2026-11-04); question 135.*
 
 **122. Without approval, can a 2.5 player still join the Waitlist for a 3.0+ clinic, or only request approval?**
-*Default: only request approval; no sign-up until approved. Status: open, asked 2026-10-16.*
+*Default: only request approval; no sign-up until approved. Status: open, asked 2026-10-16. Built as the default (decision 0048): no Register and no Waitlist until approved.*
 
 **123. The message someone gets when you approve them: is "You're approved to attend Ladies 3.0+ clinics." right, or what would you like it to say?**
-*Default: that sentence, until you change it. Status: open, asked 2026-10-16.*
+*Default: that sentence, until you change it. Status: open, asked 2026-10-16. Built as that sentence (decision 0048).*
 
 **124. Should the word "Waitlist" replace "Player Pool" everywhere in the app, including the list you pick from when you send a clinic message, and notifications people already received?**
 *Default: yes, every place it shows. Status: answered 2026-10-30 by text: "making sure it says waitlist not pool - for me and others ... Players are still seeing player pool", built on the phone, the members' site, the laptop and the two notification sentences the server writes (decision 0041). Notifications already sent keep their old words.*
@@ -636,6 +636,24 @@ noon"*. Built: everyone else now opens Friday at 12:00 PM instead of 8:00 AM.
 
 **134. Members still open Thursday at 8:00 AM, so they now get 28 hours to themselves instead of 24. Right?**
 *Default: yes; you only asked about non-members. Status: open, asked 2026-11-01.*
+
+## AD. Asking to play above your level (added 2026-11-05, decision 0048)
+
+Her asks, 2026-10-15 and by text 2026-11-04: a 2.5 asks before a 3.0+ clinic,
+a 3.5 before a 4.0 clinic, she approves once. Built with her words; these are
+the parts left open.
+
+**135. One approval per level: approving someone for 3.0+ lets them into every 3.0+ clinic they can see (Ladies and Coed for a woman). Or should Ladies and Coed be approved separately?**
+*Default: per level. Status: open, asked 2026-11-05.*
+
+**136. A player with no rating at all (a few older accounts): let them sign up for any clinic, or make them ask?**
+*Default: not gated. Status: open, asked 2026-11-05.*
+
+**137. Can a player two levels below ask (a 2.5 for a 4.0 clinic), or only one level below?**
+*Default: anyone below may ask; you decide. Status: open, asked 2026-11-05.*
+
+**138. Players can no longer change their own rating once it is set (otherwise a 2.5 could type 3.0 and skip your approval). You change it from the Players tab on the laptop. OK?**
+*Default: yes. Status: open, asked 2026-11-05.*
 
 ### How 52 to 57 are being sent
 
