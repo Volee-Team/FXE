@@ -225,6 +225,8 @@ FXETennis/
 │   ├── LevelApproval.swift      decision 0048: what a clinic page offers a player below the level
 │   │                            in its name (Tara's sentence and button, or Register), her words
 │   │                            for the label and the profile line (pure, unit-tested)
+│   ├── ReviewPrompt.swift       Apple's rating popup: after a second You're In! or later, once per
+│   │                            app version, never in UI tests (pure rule, unit-tested)
 │   ├── RegistrationMoments.swift when a clinic's registration changes on its own (opening, close,
 │   │                            start), for TimelineView redraws; `door`: what the clinic page
 │   │                            and card offer someone not registered (pure, unit-tested)
@@ -830,7 +832,7 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `dispute_race.sh` | Two concurrent deliveries of one dispute (`stripe_record_dispute`, 20260928200001), each holding the row in turn: the newer event's state survives in either commit order. Both statuses are open on purpose, so only the order guard decides; red under a read-then-write version (round 1 ended at the older event), 2026-09-28 |
 | `public_open_backfill.sh` | 20261101000001's backfill (decision 0046), run for real: three planted clinics, the migration file applied over them in one rolled-back transaction. A future week on the old Friday 08:00 moves to noon with its member open unchanged; a hand-set time and a week already open stay (each guard shown red by a copy of the migration without it, 2026-11-01) |
 
-**Swift**: 299 unit tests (`FXETennisTests`: price formatting, per-viewer
+**Swift**: 303 unit tests (`FXETennisTests`: price formatting, per-viewer
 pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016; since 2026-09-27 the request-failure classifier, a failed load keeping who you are, the waiver and card refusals reopening their steps, the 30-second reload throttle, the redraw moments, and the type scale under Larger Text; since 2026-09-28 the invitation push's Accept and Decline, the Remind me reminder, the calendar entry, and the haptics and chip motion; a clinic the player holds beyond the list's five-week edge staying on their screens, the instant-open snapshot's per-person and ended-clinic rules, Siri's next-clinic answer, and the Player Pool's history line) and 28
 XCUITests: 9 player flows
 (`PlayerFlowUITests`: sign in / browse / register, undo, sign-up end to end,

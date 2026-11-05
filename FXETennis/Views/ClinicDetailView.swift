@@ -28,6 +28,7 @@
 //
 
 import SwiftUI
+import StoreKit
 import Supabase
 
 @MainActor
@@ -218,6 +219,8 @@ final class ClinicDetailModel {
     /// Each moves once per haptic; the page plays one on every change.
     var successes = 0
     var warnings = 0
+    /// Moves when this landing should show Apple's rating popup (ReviewPrompt).
+    var askForReview = 0
 
     private func feel(_ haptic: Haptic?) {
         switch haptic {
@@ -240,6 +243,8 @@ final class ClinicDetailModel {
             try await work()
             await load(clinicId: clinicId)
             feel(Self.haptic(landing: landing, landedIn: registration?.status, failure: nil))
+            // A happy moment: Register or Accept that landed in You're In!.
+            if landing, registration?.status == .in_, ReviewPrompt.recordYoureIn() { askForReview &+= 1 }
             await onChanged()
         } catch {
             await load(clinicId: clinicId)
@@ -301,6 +306,7 @@ struct ClinicDetailView: View {
     @Environment(SessionStore.self) private var session
     /// Accept and Decline stack at the accessibility text sizes.
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.requestReview) private var requestReview
     @State private var model = ClinicDetailModel()
 
     var body: some View {
@@ -370,6 +376,16 @@ struct ClinicDetailView: View {
         // Played once the reload shows where the player landed (or why not).
         .sensoryFeedback(.success, trigger: model.successes)
         .sensoryFeedback(.warning, trigger: model.warnings)
+        // Apple's rating popup, a moment after the You're In! chip has shown
+        // (ReviewPrompt). Never during UI tests: a development build shows it
+        // every time and it would sit over the next tap.
+        .onChange(of: model.askForReview) {
+            guard !AppEnv.isUITesting else { return }
+            Task {
+                try? await Task.sleep(for: .seconds(1.5))
+                requestReview()
+            }
+        }
         .sheet(item: $lateCancel) { reg in
             LateCancelSheet { note in
                 await run {
