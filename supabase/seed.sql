@@ -180,7 +180,18 @@ begin
     json_build_object('sub', '11111111-1111-1111-1111-111111111111')::text, true);
   if exists (select 1 from public.registrations
               where id = 'e0000000-0000-0000-0000-000000000001' and status = 'pool') then
+    -- Since 20261104000001 the button invites only on clinic day; before
+    -- that it puts the player straight in. So the clinic sits on today's
+    -- date while Tara presses it, and goes back to 40 days out after: the
+    -- row is still the producer's own, the date is what the tests need.
+    -- Halfway between now and New York midnight: today whatever the hour.
+    update public.clinics
+       set starts_at = now() + ((((now() at time zone 'America/New_York')::date + 1)::timestamp at time zone 'America/New_York') - now()) / 2,
+           ends_at   = now() + ((((now() at time zone 'America/New_York')::date + 1)::timestamp at time zone 'America/New_York') - now()) / 2 + interval '1 hour'
+     where id = 'd0000000-0000-0000-0000-000000000005';
     perform public.invite_from_pool('e0000000-0000-0000-0000-000000000001');
+    update public.clinics set starts_at = now() + interval '40 days', ends_at = now() + interval '40 days 1 hour'
+     where id = 'd0000000-0000-0000-0000-000000000005';
     -- The one thing changed after the producer: the row's own id, so the
     -- simctl payload file can mark exactly this row read.
     update public.notifications set id = 'f0000000-0000-0000-0000-000000000001'

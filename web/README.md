@@ -55,7 +55,7 @@ courtside work; this does weekly setup.
   the database (archive, never delete)
 
 Registration windows are computed for her: members Thursday 8am, everyone else
-Friday 8am, for the whole service week the clinic falls in (decision 0001). She
+Friday noon (decision 0046), for the whole service week the clinic falls in (decision 0001). She
 never types a window. Prices come from clinic length, so a typo cannot
 undercharge the club.
 

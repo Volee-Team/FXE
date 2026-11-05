@@ -116,8 +116,6 @@ If the app crashes, freezes or runs slowly, your phone's operating system (Apple
 If you have any concerns or questions about your data, please contact us at:
 Information collection
 International data
-Invite
-Invite \(entry.displayName)
 Just coming back from a back injury - probably a low 3.5
 Keep
 Keep my account

@@ -49,6 +49,16 @@ enum ServiceWeek {
         return c
     }
 
+    /// True while `date` falls on a New York day after today's and is more
+    /// than the 3-hour cancel cutoff away. Then Tara's Waitlist button puts
+    /// the player straight in; otherwise it invites (decision 0047,
+    /// `invite_from_pool`). The server decides; this only names the button.
+    static func isBeforeClinicDay(_ date: Date, now: Date = .now) -> Bool {
+        let c = calendar
+        return c.startOfDay(for: date) > c.startOfDay(for: now)
+            && date.timeIntervalSince(now) >= 3 * 3600
+    }
+
     /// Midnight (New York) on the Sunday that starts the week containing `date`.
     static func start(of date: Date) -> Date {
         let c = calendar

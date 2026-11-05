@@ -113,6 +113,7 @@ declare
   monday timestamp := date_trunc('week', now() at time zone 'America/New_York');
   thu uuid; pool_c uuid; fri uuid; soon uuid; draft_c uuid; started uuid; rained uuid; washout uuid;
   reg_rob_wash uuid; reg_priya_wash uuid;
+  pool_start timestamptz; pool_end timestamptz; fri_start timestamptz; fri_end timestamptz;
   r public.registrations; lr public.late_requests;
   reg_maria_thu uuid; reg_ken_thu uuid; reg_rob_pool uuid; reg_dana_fri uuid; reg_priya_fri uuid;
   reg_ken_pool uuid; reg_maria_soon uuid; n int; v text; err text;
@@ -167,7 +168,11 @@ begin
   -- Washout: published now, canceled by Tara in step 24.
   insert into public.clinics (name, audience, category, description, starts_at, ends_at,
       member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
-  values ('Probe Copy Washout', 'coed', 'Clinic', 'probe', now() + interval '6 days', now() + interval '6 days 1 hour',
+  -- Today (halfway to New York midnight): the button invites only on clinic
+  -- day since 20261104000001, and step 24 is about an invitation.
+  values ('Probe Copy Washout', 'coed', 'Clinic', 'probe',
+          now() + ((((now() at time zone 'America/New_York')::date + 1)::timestamp at time zone 'America/New_York') - now()) / 2,
+          now() + ((((now() at time zone 'America/New_York')::date + 1)::timestamp at time zone 'America/New_York') - now()) / 2 + interval '1 hour',
           now() - interval '2 days', now() - interval '1 day', 8, 'published', 60)
   returning id into washout;
   insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
@@ -251,6 +256,15 @@ begin
   insert into _probe_result values ('place_into_pool_sends_nothing', '', pg_temp.delta(reg_priya_fri));
 
   -- ====================================== #3, #13, #14: invitations answered
+  -- Since 20261104000001 the button invites only on clinic day (before it,
+  -- Tara's tap puts the player straight in: waitlist_move_in.sql). So for
+  -- steps 8 to 13 both clinics sit on today's date, and go back after; none
+  -- of these sentences names a day.
+  select starts_at, ends_at into pool_start, pool_end from public.clinics where id = pool_c;
+  select starts_at, ends_at into fri_start, fri_end from public.clinics where id = fri;
+  update public.clinics set starts_at = now() + ((((now() at time zone 'America/New_York')::date + 1)::timestamp at time zone 'America/New_York') - now()) / 2, ends_at = now() + ((((now() at time zone 'America/New_York')::date + 1)::timestamp at time zone 'America/New_York') - now()) / 2 + interval '1 hour'
+   where id in (pool_c, fri);
+
   -- 8. Tara invites Rob. #2 is not rewired here (contradiction (a) waits on
   --    her), so this row keeps our words; pinned so this change is seen not
   --    to have touched it.
@@ -303,6 +317,9 @@ begin
     'priya:invitation_withdrawn:registration=ref:' || UNINVITED, pg_temp.delta(reg_priya_fri));
   select count(*) into n from public.notifications where entity_id = reg_priya_fri and type = 'added_to_pool';
   insert into _probe_result values ('withdrawn_invitation_sends_no_5', '0', n::text);
+
+  update public.clinics set starts_at = pool_start, ends_at = pool_end where id = pool_c;
+  update public.clinics set starts_at = fri_start, ends_at = fri_end where id = fri;
 
   -- ============================================ #6 and #15: cancellations
   -- 14. Tara removes Priya from the Player Pool: #6 to Priya, nothing to Tara.

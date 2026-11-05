@@ -89,12 +89,15 @@ final class AdminFlowUITests: XCTestCase {
 
     // MARK: - B. the Player Pool, Tara's hand-pick, and the answer
 
-    /// Hard rule 2 end to end. Tuesday's public window opened in the seed, so
-    /// Rob, a non-member, lands on the Waitlist. (A member with room is
+    /// Decision 0047 end to end. Tuesday's public window opened in the seed,
+    /// so Rob, a non-member, lands on the Waitlist. (A member with room is
     /// You're In! since decision 0045, so this was Maria until 2026-10-31.)
-    /// Nothing promotes him: Tara invites, and only Rob's own Accept moves him
-    /// to You're In!.
-    func testAdminB_InvitesFromThePoolAndThePlayerAccepts() {
+    /// Tuesday is days away, so Tara's button reads Move In and puts him
+    /// straight into You're In!, with no invitation to answer: Rob sees
+    /// You're In! without tapping anything. On clinic day the same button
+    /// invites (waitlist_move_in.sql; the seed's invitation in Maria's bell
+    /// and the notification tests cover Accept).
+    func testAdminB_MovesFromTheWaitlistBeforeClinicDay() {
         app.launch()
         signIn(as: nonMember)
         ensureRegistered(forClinicContaining: "Tuesday Ladies")
@@ -102,32 +105,29 @@ final class AdminFlowUITests: XCTestCase {
 
         signIn(as: admin)
         openAdminClinic(containing: "Tuesday Ladies")
-        let invite = app.buttons["admin.invite"].firstMatch
-        XCTAssertTrue(invite.waitForExistence(timeout: 20), "Rob is not on the Waitlist to invite")
-        invite.tap()
-        // She moves to Response Needed; You're In! is unchanged (hard rule 2).
-        XCTAssertTrue(app.buttons["admin.cancelInvite"].firstMatch.waitForExistence(timeout: 15),
-                      "Invite did not move her to Response Needed")
-        XCTAssertFalse(app.buttons["admin.paidToggle"].firstMatch.exists,
-                       "Someone is in You're In! after an invite; nothing may auto-promote")
+        let move = app.buttons["admin.invite"].firstMatch
+        XCTAssertTrue(move.waitForExistence(timeout: 20), "Rob is not on the Waitlist to move in")
+        XCTAssertTrue(move.label.hasPrefix("Move"), "Before clinic day the button should read Move In, not \(move.label)")
+        move.tap()
+        // He is in at once: no Response Needed row to cancel.
+        XCTAssertTrue(move.waitForNonExistence(timeout: 15), "Rob is still on the Waitlist after Move In")
+        XCTAssertFalse(app.buttons["admin.cancelInvite"].firstMatch.exists,
+                       "Move In left an invitation; before clinic day it puts him straight in")
         signOut()
 
         signIn(as: nonMember)
         openClinicsTab()
         let card = app.buttons.matching(identifier: "clinic.card")
             .matching(NSPredicate(format: "label CONTAINS[c] 'Tuesday Ladies'")).firstMatch
-        XCTAssertTrue(card.waitForExistence(timeout: 20), "No Clinics-tab card for Tuesday Ladies after the invite")
+        XCTAssertTrue(card.waitForExistence(timeout: 20), "No Clinics-tab card for Tuesday Ladies after Move In")
         card.tap()
-        // Accept and Decline share the primary-action identifier on this
-        // screen, so pick by label as well.
-        let accept = app.buttons.matching(identifier: "clinic.primaryAction")
-            .matching(NSPredicate(format: "label CONTAINS[c] 'accept'")).firstMatch
-        XCTAssertTrue(accept.waitForExistence(timeout: 10), "No Accept on the invitation screen")
-        accept.tap()
         let chip = app.descendants(matching: .any).matching(identifier: "clinic.statusChip").firstMatch
         let isIn = NSPredicate(format: "label CONTAINS[c] \"you're in\"")
         expectation(for: isIn, evaluatedWith: chip)
         waitForExpectations(timeout: 20)
+        XCTAssertFalse(app.buttons.matching(identifier: "clinic.primaryAction")
+            .matching(NSPredicate(format: "label CONTAINS[c] 'accept'")).firstMatch.exists,
+                       "Rob was asked to accept; before clinic day Tara's tap is enough")
     }
 
     // MARK: - C. the directory
