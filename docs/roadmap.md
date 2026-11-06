@@ -143,7 +143,7 @@ Alex, 2026-08-19: *"we're not in a big rush, I can do it as an org from the star
 | Feature | |
 |---|---|
 | **Stripe, card on file** (decision 0009): schema, ledger, edge functions, the card screen, Tara's per-person Charge (decision 0037), refunds on the laptop, the stripe-mock harness in CI | built. Turning it on and going live: checklist A2, A9, A10, A11, A13, A14 |
-| **Juniors.** Deferred by Tara to November or the spring session (decision 0007 §6). The enum value is already in the schema, so this is UI work, not a migration | |
+| **Juniors.** Deferred by Tara to November or the spring session (decision 0007 §6). The enum value is already in the schema, so this is UI work, not a migration. Tara, group text 2026-11-05: *"can we get a rough idea as to when we can put juniors in on the app? ... Just wondering if it's possible to have this done by January 1?"*; John: yes, before January 1, once she sends the doc. Target 2027-01-01, waiting on her doc | |
 | Parent accounts managing children, junior age groups | |
 | Duplicate a week: Copy to next week, as drafts she checks and publishes | built (`admin_copy_week`, decision 0027) |
 | Add to Calendar (nothing about where goes into the entry) | built (decision 0023) |
@@ -244,7 +244,7 @@ What that means for how we build now: keep the club, not the tennis program,
 as the unit the schema can grow into (accounts and payments already are
 club-level; clinics are one product line). Court reservations stay on
 reservemycourt.com ($500/yr) until v2; Alex can get an FXE member account
-there to study it. White-labelling later means nothing FXE-specific hard-coded
+there to study it. Tara raised it again, group text 2026-11-05: *"maybe we should also have the court reservation system within the app as well. Don't wanna rush anything."* White-labelling later means nothing FXE-specific hard-coded
 where a setting would do (the payment instructions, the club name, the logo).
 
 ### Tara's ask: FXE and Volee together (2026-10-16, group text, relayed by Alex)
@@ -345,6 +345,8 @@ Parked is not rejected; it means nobody has decided when.
 
 | Idea | Raised | Note |
 |---|---|---|
+| **A basketball coach who wants an app** | 2026-11-04 | Tara, group text: *"Think I found you guys a basketball coach looking for an app. His will be even more simple than mine. He's in no rush"*. A lead for the white-label work below, after launch |
+| **Ask members for App Store reviews** | 2026-11-05 | Tara, group text: she will message everyone on the app *"in a weeks time"* (about 2026-11-12). Apple's own rating prompt is John's PR #126 |
 | **Guests: a member brings a friend** | 2026-09-22 (question 72) | Parked by Tara, 2026-10-12 (question 95, decision 0040): *"Until this becomes an issue, none of the above. If someone brings a guest, I hope the guest gets the app and this isn't ongoing."* Asked again in the group text of 2026-10-29 (*"What if I wanted to add a friend that I pay for?"*); Kat called it an edge case for later, and Tara: *"So only I can add someone correct? Ya agree this isn't an issue yet."* (She can: `place_player`, decision 3.) A guest gets the app like anyone. When it comes back, the design is in `docs/archive/guests.md` (rows below) |
 | Guests, path 1: Invite a friend sends the app | 2026-09-28 (question 72) | The friend signs up as a non-member with their own card and waiver. Needs the install link (checklist I6) |
 | Guests, path 2: Tara writes the friend in, billed to the member at the non-member price | 2026-09-28 (question 72) | A guest is a `players` row owned by the member's account with an `is_guest` flag; a `guest_requests` row like a late request; Tara's approval places them with `place_player`. Her sentence for the member is recorded (question 93): "Your card will be charged for your guests clinic rate". Open design point: a guest who never installs the app never signs the waiver |
