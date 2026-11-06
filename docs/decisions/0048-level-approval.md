@@ -83,3 +83,19 @@ history for registrations and money, and a request is neither).
 `testAdminK_ABelowLevelPlayerAsksAndTaraApproves` (Gina, a 2.5 in the seed,
 asks; Tara approves from Action Needed; Gina sees Register and her profile
 line), `LevelGateTests` (8), and four browser tests on `/play` and the laptop.
+
+## Switched off, 2026-11-06
+
+At noon on Friday, when non-members could first register, Tara saw players
+below a clinic's level refused by the 1.0.1 app with "Sorry, someone beat you
+to the punch" (the store app predates the Request Approval button and reads
+an unknown refusal as a race), about 60 players were rated below 3.0, and
+she texted *"A lot of people won't get in then right now ... Turn off now!"*.
+`20261106000002` adds `app_settings.level_check_enabled`, set to false on
+hosted the same hour: the trigger lets every registration through and the
+clinic views hide `min_rating`, so the site and the app offer Register to
+everyone. Approvals already given are kept. **The lesson:** a server refusal
+the app in the store does not know becomes the wrong sentence on every
+member's phone, so a new refusal ships after the app that explains it, or
+behind a switch that starts off. Turning it back on (one migration) waits
+for 1.0.2 in the store and Tara's yes.

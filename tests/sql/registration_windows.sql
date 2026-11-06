@@ -7,7 +7,7 @@
 --
 --   Member,     inside priority window, room available -> You're In!
 --   Member,     inside priority window, clinic full    -> Player Pool
---   Member,     after priority window, room available  -> You're In! (decision 0045)
+--   Member,     after priority window, room available  -> Waitlist (decision 0050)
 --   Member,     after priority window, clinic full     -> Waitlist
 --   Non-member, after public opening                   -> Player Pool
 --   Non-member, inside member-only window              -> rejected
@@ -91,11 +91,11 @@ begin
   r := public.register_for_clinic(c_full, KEN);
   insert into _probe_result values ('member_when_full_goes_to_pool', 'pool', r.status::text);
 
-  -- 3. Late member (public window already open), room available -> in.
-  --    Decision 0045, Tara 2026-10-30: "members are never on the waitlist
-  --    they're in automatically." Before 0045 this read 'pool'.
+  -- 3. Late member (public window already open), room available -> pool.
+  --    Decision 0050, Tara 2026-11-06: "members signing up after Friday noon
+  --    should be on waitlist like rest of nonmembers." (0045 had made it 'in'.)
   r := public.register_for_clinic(c_open, KEN);
-  insert into _probe_result values ('late_member_with_room_gets_in', 'in', r.status::text);
+  insert into _probe_result values ('late_member_goes_to_pool', 'pool', r.status::text);
 
   -- 3b. Late member, clinic full -> pool (question 132's default: the cap
   --     holds for members too; only Tara puts someone over it).

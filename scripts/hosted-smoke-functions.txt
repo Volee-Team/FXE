@@ -67,6 +67,7 @@ is_admin	{}
 is_pro	{}
 leave_pool	{"p_registration":"00000000-0000-0000-0000-000000000000"}
 level_approval_label	{"p_gender":"x","p_level":1}
+level_check_enabled	{}
 level_ok	{"p_min_rating":1,"p_player":"00000000-0000-0000-0000-000000000000"}
 mark_news_read	{"p_news":"00000000-0000-0000-0000-000000000000"}
 member_opens_at	{"p_starts_at":"2026-01-01T00:00:00Z"}

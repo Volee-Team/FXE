@@ -274,3 +274,9 @@ end $$;
 delete from public.app_settings where key = 'stripe_live_since';
 update public.app_settings set value = 'false' where key = 'payments_enabled';
 update public.app_settings set value = '' where key = 'payments_enabled_at';
+
+-- Decision 0048: the level check is OFF on hosted from 2026-11-06 until the
+-- 1.0.2 app is out (20261106000002). Local and CI run with it ON, so
+-- level_approval.sql and testAdminK keep testing the gate Tara will switch
+-- back on; level_approval.sql also tests it switched off.
+update public.app_settings set value = 'true' where key = 'level_check_enabled';

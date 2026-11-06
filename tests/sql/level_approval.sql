@@ -310,6 +310,23 @@ begin
   exception when others then err := sqlerrm; end;
   insert into _probe_result values ('a_2_0_still_asks_for_2_5_plus', 'level_approval_required', err);
   perform set_config('role', 'postgres', true);
+  -- ------------- 9. the switch (20261106000002): off, everyone registers
+  -- Tara, 2026-11-06: "Turn off now!" while the store app could not ask.
+  -- Section 7 moved Priya to 3.0; back to 2.5 (as Tara, whom the rating
+  -- guard lets through).
+  perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
+  update public.players set adult_rating = 2.5 where id = PRIYA_P;
+  update public.app_settings set value = 'false' where key = 'level_check_enabled';
+  perform set_config('request.jwt.claims', json_build_object('sub', PRIYA)::text, true);
+  perform set_config('role', 'authenticated', true);
+  select coalesce(min_rating::text, 'null') into got from public.clinics_public where id = c30b;
+  insert into _probe_result values ('switched_off_the_level_is_hidden', 'null', got);
+  begin
+    perform public.register_for_clinic(c30b, PRIYA_P, null); err := 'registered';
+  exception when others then err := sqlerrm; end;
+  insert into _probe_result values ('switched_off_below_the_level_registers', 'registered', err);
+  perform set_config('role', 'postgres', true);
+  update public.app_settings set value = 'true' where key = 'level_check_enabled';
 end $$;
 
 select check_name, expected, actual,

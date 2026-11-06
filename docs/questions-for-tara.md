@@ -613,7 +613,7 @@ for a 105, *"Nonmembers and members signing up after that window join the
 waitlist"*. Both cannot hold once a 105 is past its first 24 hours.
 
 **131. A member signs up for a 105 after the first 24 hours, and there is still room. In automatically, or on the Waitlist for you to pick?**
-*Default: what the app does today and your email said, the Waitlist after the first 24 hours. If your text meant every member at any time, say so and members go straight in while there is room. Status: ANSWERED 2026-10-31 (relayed by John): "members are never on the waitlist they're in automatically". In while there is room, at any time, every clinic (decision 0045).*
+*Default: what the app does today and your email said, the Waitlist after the first 24 hours. If your text meant every member at any time, say so and members go straight in while there is room. Status: ANSWERED 2026-10-31 (relayed by John): "members are never on the waitlist they're in automatically". In while there is room, at any time, every clinic (decision 0045). RE-ANSWERED 2026-11-06 by text: "members signing up after Friday noon should be on waitlist like rest of nonmembers. Automatically in between Thur 8am-Friday noon." Decision 0050.*
 
 **132. A member signs up when the clinic is already full (30 of 30). Waitlist, or in anyway over the cap?**
 *Default: Waitlist; the cap holds for everyone and only you can put someone over it. Status: open, asked 2026-10-30; still open after decision 0045, which built the default.*
