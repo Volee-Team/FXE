@@ -655,6 +655,34 @@ the parts left open.
 **138. Players can no longer change their own rating once it is set (otherwise a 2.5 could type 3.0 and skip your approval). You change it from the Players tab on the laptop. OK?**
 *Default: yes. Status: open, asked 2026-11-05.*
 
+## AC. Level approval on beginner clinics (added 2026-11-05)
+
+Decision 0048 takes the number in a clinic's name as its minimum. Her ask of
+2026-11-04 named only 2.5 for 3.0+ and 3.5 for 4.0.
+
+**139. "Ladies Beginner - 2.5": can a player rated 2.0 sign up without asking you?**
+*Default: yes, a beginner clinic is open to anyone at or below its level. Status: ANSWERED 2026-11-05: "Beginner clinics can be open to anyone up to a 3.0, I guess, even though it says beginner to 2.5" (decision 0049).*
+
+**140. "Ladies 2.5+": does a player rated 2.0 need your OK?**
+*Default: yes, the same as a 2.5 for a 3.0+. Status: ANSWERED 2026-11-05: "Yes, that is correct" (a 2.0 asks, decision 0049).*
+
+## AE. Beginner clinics and stronger players (added 2026-11-05)
+
+Her text of 2026-11-05 (decision 0049): *"Beginner clinics can be open to anyone up to a 3.0, I guess"*. The app no longer keeps anyone lower out; nothing keeps anyone higher out either.
+
+**142. A player rated 3.5 or higher signs up for a beginner clinic. Should the app refuse them, or let them in and leave it to Tara to remove them?**
+*Default: let them in; Tara can remove anyone from the roster. Status: open, asked 2026-11-05.*
+
+## AD. Offers now that people move straight in (added 2026-11-05)
+
+Her text of 2026-11-04 (decision 0047): a Waitlist player moves straight to
+You're In! unless it is the same day, when they must accept. Her 10-15 email
+(decision 0041) gave every offer one hour. Only same-day invitations are left
+for that hour to apply to.
+
+**141. Someone you invite on the day of the clinic has to accept. Should that invitation still run out after 1 hour, or stay open until you cancel it or the clinic starts?**
+*Default: stays open, as the app does today; you can cancel it and pick someone else. Status: open, asked 2026-11-05.*
+
 ### How 52 to 57 are being sent
 
 Round two of the review page (2026-09-21, later): the Words tab now shows her

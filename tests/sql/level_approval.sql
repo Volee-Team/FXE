@@ -37,7 +37,7 @@ declare
   ROB_P   constant uuid := 'a0000000-0000-0000-0000-000000000003';
   THEO_P  constant uuid := 'a0000000-0000-0000-0000-000000000008';
   THEO    constant uuid := '99999999-9999-9999-9999-999999999999';
-  c30 uuid; c30b uuid; c35 uuid; c_plain uuid; c_late uuid; c_placed uuid;
+  c30 uuid; c30b uuid; c35 uuid; c_plain uuid; c_late uuid; c_placed uuid; c_beg uuid; c_25 uuid;
   v public.level_approvals; err text; n int; got text;
 begin
   update public.players set adult_rating = 2.5 where id = PRIYA_P;
@@ -277,6 +277,39 @@ begin
   insert into _probe_result values ('no_registration_through_a_second_row', '0',
     (select count(*)::text from public.registrations r join public.players p on p.id = r.player_id
       where p.account_id = PRIYA and p.id <> PRIYA_P));
+
+  -- ------------------------------ beginner clinics (decision 0049, Tara 2026-11-05)
+  -- "Beginner clinics can be open to anyone up to a 3.0 ... even though it says
+  -- beginner to 2.5". The number in a beginner clinic's name is not a minimum.
+  -- A 2.0 still needs her OK for "Ladies 2.5+" (her "yes" to question 140).
+  select string_agg(coalesce(public.clinic_level_from_name(x)::text, '-'), ' ' order by o) into got
+    from unnest(array['Ladies Beginner - 2.5', 'Ladies Beginner - 2.5 level', 'BEGINNER 2.5', 'Beginner 3.0',
+                      'Ladies Beginners 2.5', 'Ladies 2.5+', 'Ladies 3.0+ Clinic']) with ordinality as t(x, o);
+  insert into _probe_result values ('beginner_name_carries_no_minimum', '- - - - - 2.5 3.0', got);
+
+  perform set_config('role', 'postgres', true);
+  perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
+  delete from public.level_approvals where player_id = PRIYA_P;
+  update public.players set adult_rating = 2.0 where id = PRIYA_P;
+  insert into public.clinics (name, audience, category, description, starts_at, ends_at,
+      member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
+  values ('Probe Beginner - 2.5', 'coed', 'Clinic', 'probe', now() + interval '9 days', now() + interval '9 days 60 minutes',
+          now() - interval '2 days', now() - interval '1 day', 8, 'published', 60) returning id into c_beg;
+  insert into public.clinics (name, audience, category, description, starts_at, ends_at,
+      member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
+  values ('Probe Ladies 2.5+', 'coed', 'Clinic', 'probe', now() + interval '10 days', now() + interval '10 days 60 minutes',
+          now() - interval '2 days', now() - interval '1 day', 8, 'published', 60) returning id into c_25;
+  perform set_config('request.jwt.claims', json_build_object('sub', PRIYA)::text, true);
+  perform set_config('role', 'authenticated', true);
+  begin
+    perform public.register_for_clinic(c_beg, PRIYA_P, null); err := 'registered';
+  exception when others then err := sqlerrm; end;
+  insert into _probe_result values ('a_2_0_registers_for_a_beginner_clinic', 'registered', err);
+  begin
+    perform public.register_for_clinic(c_25, PRIYA_P, null); err := 'registered';
+  exception when others then err := sqlerrm; end;
+  insert into _probe_result values ('a_2_0_still_asks_for_2_5_plus', 'level_approval_required', err);
+  perform set_config('role', 'postgres', true);
 end $$;
 
 select check_name, expected, actual,

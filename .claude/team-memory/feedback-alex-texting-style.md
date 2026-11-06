@@ -24,4 +24,5 @@ Got your email, it's being built but a few quick questions (default answer in pa
 - No exclamation marks. Defaults go in parentheses at the end: `(yes)`.
 - Short words, contractions, no salesy or explaining tone; say only what she needs. No "I'd vote", no "Small heads up:".
 - Never sound like an AI: no em-dashes, no "Here's what we'll do:", no tidy summaries.
+- Questions for Tara: write "you" and "your", never "u" and "ur", and give a little context so each one makes sense on its own (Alex, 2026-11-05: *"for the questions dont say u and ur and stuff, and give a little more context pls"*). She is the client. "u" is fine only for John.
 Related: [[feedback-session-hygiene]] (no em-dashes in chat).
