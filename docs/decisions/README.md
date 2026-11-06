@@ -54,11 +54,12 @@ The history of what we believed is part of the record.
 | [0042](0042-app-store-release-on-johns-account.md) | Release to the App Store now on John's account; App Transfer to the LLC once it is approved (supersedes 2026-08-19 and the old C12) | 2026-10-19 | Active |
 | [0043](0043-members-website.md) | The members' website: the app's player side at `/play` for Android members, same reads and RPCs, the app's words, no push yet | 2026-10-22 | Proposed |
 | [0044](0044-clinics-by-gender.md) | Clinics by gender: men see Men and Coed, women Ladies and Coed; asked at sign-up and once of everyone else; enforced in the database | 2026-10-30 | Active |
-| [0045](0045-members-in-while-room.md) | Members are You're In! whenever the clinic has room, after the member window too; a full clinic still sends them to the Waitlist | 2026-10-31 | Active |
+| [0045](0045-members-in-while-room.md) | Members are You're In! whenever the clinic has room, after the member window too; a full clinic still sends them to the Waitlist | 2026-10-31 | Superseded by 0050 (timing) |
 | [0046](0046-public-opens-friday-noon.md) | Everyone else opens Friday at noon, not 8:00 AM; members stay Thursday 8:00 AM, so their head start is 28 hours | 2026-11-01 | Active |
 | [0047](0047-waitlist-move-in-before-clinic-day.md) | Before clinic day Tara's Waitlist button reads Move In and puts the player straight into You're In! with her "You're all set" message; on clinic day it still invites and they accept. Amends hard rule 2 | 2026-11-04 | Active |
 | [0048](0048-level-approval.md) | A player rated below the level in a clinic's name asks Tara once ("Request Approval for Ladies 3.0+"); her approval lasts until she removes it. The rating is Tara's once set. Same PR: non-member 90 minutes $28 to $30 from the week of 2026-11-08 | 2026-11-05 | Active |
 | [0049](0049-beginner-clinics-open.md) | A beginner clinic's number is not a minimum: anyone may register; a ceiling waits on question 142 | 2026-11-05 | Active |
+| [0050](0050-members-waitlist-after-public-open.md) | Members are You're In! only from the member open to the public open (Thursday 8am to Friday noon) while there is room; after that they join the Waitlist like everyone | 2026-11-06 | Active |
 
 Tara's own numbered decisions (1–23, calls of 2026-08-02 and 2026-08-12) are
 tabled in CLAUDE.md; a bare "decision 17" in a record means that list. Not yet

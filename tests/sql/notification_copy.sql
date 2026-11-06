@@ -128,8 +128,8 @@ begin
           now() - interval '1 day', now() + interval '1 day', 1, 'published', 60)
   returning id into thu;
   -- Pool: open to everyone, so a non-member lands on the Waitlist. It holds one
-  -- spot, filled by Dana before Ken registers in 17, because a member with
-  -- room is You're In! (decision 0045).
+  -- spot, filled by Dana before Ken registers in 17 (from decision 0045, when
+  -- a member with room was You're In!; harmless since 0050).
   insert into public.clinics (name, audience, category, description, starts_at, ends_at,
       member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
   values ('Probe Copy Pool', 'coed', 'Clinic', 'probe', now() + interval '10 days', now() + interval '10 days 1 hour',

@@ -1,6 +1,6 @@
 # 0045. Members are in whenever there is room (2026-10-31)
 
-**Status:** accepted by John, 2026-10-31; built in
+**Status:** superseded by decision 0050 (2026-11-06): members join the Waitlist after the public open again. Was accepted by John, 2026-10-31; built in
 `supabase/migrations/20261031000001_members_in_while_room.sql`.
 
 ## Her words
