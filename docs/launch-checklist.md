@@ -52,13 +52,13 @@ How this file works, so it can be trusted:
   by John 2026-10-30 (PR #115, `f59677d`); the Waitlist wording (PR #116)
   missed it and rode in 1.0.1 (build 14), uploaded 2026-10-31 from `ed7d7f3`
   (PR #119), not yet submitted for review.
-- **Hosted:** 73 of 76 migrations paired (`scripts/live-status.sh`, 2026-11-01). **Payments live** since 2026-10-14:
+- **Hosted:** 73 of 77 migrations paired (`scripts/live-status.sh`, 2026-11-01). **Payments live** since 2026-10-14:
   3 charges succeeded, 1 refund, 0 failed; 10 members, 4 with a saved card
   (`scripts/live-status.sh`, 2026-10-21). No published clinic after 10-20
   (read-only query, 2026-10-21): Tara's next week is needed while Apple
   reviews. Stripe pays out daily to Tara's bank; receipts off
   (`docs/live-facts.md`).
-- **Tests:** 53 SQL probes plus 17 shell probes, 299 unit tests, 27
+- **Tests:** 53 SQL probes plus 18 shell probes, 299 unit tests, 27
   XCUITests, 74 browser tests (`scripts/check-doc-claims.sh`, 2026-10-21).
 - **Waiting on others:** the App Transfer to Volee's LLC account (C12); Tara: next week's clinics, questions 109 to 125 (none answered in any
   channel the model can read, checked 2026-10-21), the Volee button words.
@@ -83,7 +83,7 @@ decision 0042 (release on John's account now, move to the LLC later).
    members, so what is left of 1-hour offers waits on question 141. [Tara]
 5. **Tara's email to members** with the QR code and the App Store link (G8,
    I6). [Tara]
-6. **Push seen on a real lock screen** (C3). [Alex]
+6. **Push seen on a real lock screen** (C3): done 2026-11-05.
 7. **The move to the LLC** (C1, C12): App Transfer once Apple approves the
    LLC account, then the LLC's APNs key on hosted. Not needed for the party.
    [Apple, Alex, John]
@@ -121,7 +121,7 @@ What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision
 |---|---|---|---|
 | C1 | Apple Developer Program enrollment as FXE Tennis, LLC (Apple asked for the ID, employment verification and a business document on 2026-08-26; Tara sent them) | [Tara]/[Apple] | **BLOCKED** on Apple: on 2026-10-11 Apple (case 102990597020, enrollment L6R8KDC88Y) asked for a letter giving Alex authority to bind the LLC; signed by Alex and Tara, and Alex reported it sent on 2026-10-12. **Superseded 2026-10-25** (Alex: *"volee just got an LLC acct approved, and for now were gonna have both volee and LLC under Volee's llc acct!"*): FXE moves to Volee's LLC developer account instead, by App Transfer from John's account once 1.0.0 is released (C12). The FXE Tennis, LLC enrollment is no longer needed |
 | C2 | Bundle id, Team ID, App Store Connect record and APNs key under the LLC | [Alex] | **BLOCKED** on C1, and now part of C12: since decision 0042 (2026-10-19) `com.fxetennis.app`, its App Store Connect record and the listing move to the LLC by App Transfer, and the LLC's APNs key replaces John's then. Nothing is created separately under the LLC |
-| C3 | Push notifications on the lock screen: sender, trigger and audit columns deployed 2026-09-23 (#61); the app's half (banner while open, tap opens the clinic, badge clears, Accept and Decline on the lock screen) merged in PR #75 (H5) | [me] | **OPEN**, last step [Alex]: see one on a real lock screen. The new key `94698TDPGY` (Sandbox & Production, John sent it 2026-10-26) went on hosted 2026-11-06 01:14 UTC; the first two notifications after it were delivered, Apple accepted both (`scripts/live-status.sh`: sent 50, delivered 2, failed 48, last delivered Nov 05 08:20 PM, devices 215; the 48 are all from before the key). Before it no push had ever been delivered: key `75U93U9VS6` of 2026-10-03 was not valid for production push (`BadEnvironmentKeyInToken`). Delivered means Apple took it, not that a person saw it |
+| C3 | Push notifications on the lock screen: sender, trigger and audit columns deployed 2026-09-23 (#61); the app's half (banner while open, tap opens the clinic, badge clears, Accept and Decline on the lock screen) merged in PR #75 (H5) | [me] | **DONE** 2026-11-05: Alex saw a test push on his iPhone ("Yes, got it"), sent straight through Apple with the new key `94698TDPGY` (HTTP 200 on both his devices; set on hosted 2026-11-06 01:14 UTC). Separately, the server's own path delivered its first two notifications after the key (`scripts/live-status.sh`: sent 50, delivered 2, failed 48, all 48 from before the key). Before it no push had ever been delivered: key `75U93U9VS6` of 2026-10-03 was not valid for production push (`BadEnvironmentKeyInToken`). A push from the server seen on a phone is still part of H8 |
 | C4 | Privacy manifest | [me] | **OPEN**: `FXETennis/Resources/PrivacyInfo.xcprivacy` (unchanged since 2026-09-12) declares Name, Email, Phone, User ID and Payment Info; build 10 added the note to Tara (Other User Content) and build 12 crash reports (Crash Data, Performance Data), and Purchase History is declared in App Store Connect. Fix in the next build [me] |
 | C5 | Delete my account in the app, history kept (guideline 5.1.1(v)) | [me] | **DONE 2026-09-21**; `delete-account` deployed the same day |
 | C6 | Privacy policy at a public URL | [Tara] | **DONE 2026-09-27**: Tara approved it ("looks good"), contact fersctennispro@gmail.com; published at `https://fxe-tennis-admin.vercel.app/privacy.html` (verified by `deploy-web.sh`) and linked from Profile in the app (build 4) |
@@ -141,7 +141,7 @@ What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision
 | D1 | **A real email sender, so "Forgot password?" reaches members** | [Alex] | **DONE 2026-09-27**: Gmail `fxetennis.app@gmail.com` with an app password as custom SMTP; read back through the management API (`smtp_host` smtp.gmail.com, port 465, sender "FXE Tennis"). Delivery confirmed by Alex 2026-10-01: *"the reset emails came in just took a while"* |
 | D2 | Reset page allow-listed as a redirect on hosted | [Alex] | **DONE 2026-09-01**; verified 2026-09-27 (`uri_allow_list` is `https://fxe-tennis-admin.vercel.app/reset.html`) |
 | D3 | Supabase plan: the free tier pauses after a quiet week and has no point-in-time recovery; Pro is $25 a month | [Alex] | **LATER**: Alex, 2026-10-21: *"ig were fine for now, we dont rlly need it yet"*. What covers the gap meanwhile: real members use it daily now, the nightly keep-warm job pings it, and the nightly encrypted backup (restore drill passed 2026-10-12, D4). Revisit if the project pauses or before a busy season |
-| D4 | Restore drill (a backup nobody has restored is not a backup) | [me] | **DONE 2026-11-03**: the 2026-11-02 nightly backup (run 41483885958) decrypted with Alex's key and restored into a throwaway `supabase/postgres:17.6` container after `drop schema auth cascade`; one harmless error ("schema public already exists"). Restored: 26 sign-ins, 76 migrations (newest `20261101000001`), 24 accounts, 24 players, 37 clinics, 31 registrations, 6 payments. Hosted at the same moment: 28, 73, 24, 24, 37, 32, 6, and exactly 2 sign-ins and 1 registration on hosted postdate the backup (read-only query), so every row the backup should hold came back. Container and decrypted dump deleted. Monthly; next due 2026-12-03 |
+| D4 | Restore drill (a backup nobody has restored is not a backup) | [me] | **DONE 2026-11-03**: the 2026-11-02 nightly backup (run 41483885958) decrypted with Alex's key and restored into a throwaway `supabase/postgres:17.6` container after `drop schema auth cascade`; one harmless error ("schema public already exists"). Restored: 26 sign-ins, 77 migrations (newest `20261101000001`), 24 accounts, 24 players, 37 clinics, 31 registrations, 6 payments. Hosted at the same moment: 28, 73, 24, 24, 37, 32, 6, and exactly 2 sign-ins and 1 registration on hosted postdate the backup (read-only query), so every row the backup should hold came back. Container and decrypted dump deleted. Monthly; next due 2026-12-03 |
 | D5 | Tara's real templates and clinics in hosted, through the admin site | [Tara] | **DONE 2026-10-11**: her real clinics are on hosted from 2026-10-04 to 2026-10-20 (read-only query 2026-10-21). **None scheduled after today** (`starts_at > now()` returns 0), and C14 needs next week's clinics published while the reviewer looks |
 | D6 | Crash reporting and error alerts: MetricKit crash and hang reports into `app_diagnostics` through `report_app_diagnostic` (decision 0035) | [me]/[Alex] | **OPEN**: shipped in build 12 (PR #97 merged 2026-10-19; hosted has `20261014000001` and `20261014000002`, 69 of 69 paired; the live privacy page carries the MetricKit sentence; the nightly retention job runs `purge_app_diagnostics()`). Not yet seen end to end: `app_diagnostics` has 0 rows on hosted (2026-10-21), expected until a build-12 phone reports |
 | D7 | Rate limits on the public functions and sign-up | [me] | **LATER**: low risk at club scale |
@@ -162,7 +162,7 @@ observer.
 
 | Layer | Runs where | Count (derived 2026-10-12 unless dated) | Gap |
 |---|---|---|---|
-| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 53 probes plus 17 shell probes (the races and the 200-request rush); the suite prints its own check total | none known |
+| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 53 probes plus 18 shell probes (the races and the 200-request rush); the suite prints its own check total | none known |
 | Stripe pipeline against stripe-mock | every PR | 94 checks as of 2026-09-28 | real Stripe behaviour: one live charge and refund, 2026-10-14 (A10) |
 | Push pipeline against a mock APNs | every PR | 57 checks as of 2026-09-28 | real APNs waits on C3 |
 | Web admin browser tests (Playwright, real sign-in) | every PR | 74 | a cold-start flake after a local reset (backlog) |
