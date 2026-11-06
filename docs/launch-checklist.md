@@ -58,7 +58,7 @@ How this file works, so it can be trusted:
   (read-only query, 2026-10-21): Tara's next week is needed while Apple
   reviews. Stripe pays out daily to Tara's bank; receipts off
   (`docs/live-facts.md`).
-- **Tests:** 53 SQL probes plus 17 shell probes, 299 unit tests, 27
+- **Tests:** 53 SQL probes plus 18 shell probes, 299 unit tests, 27
   XCUITests, 74 browser tests (`scripts/check-doc-claims.sh`, 2026-10-21).
 - **Waiting on others:** the App Transfer to Volee's LLC account (C12); Tara: next week's clinics, questions 109 to 125 (none answered in any
   channel the model can read, checked 2026-10-21), the Volee button words.
@@ -163,7 +163,7 @@ observer.
 
 | Layer | Runs where | Count (derived 2026-10-12 unless dated) | Gap |
 |---|---|---|---|
-| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 53 probes plus 17 shell probes (the races and the 200-request rush); the suite prints its own check total | none known |
+| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 53 probes plus 18 shell probes (the races and the 200-request rush); the suite prints its own check total | none known |
 | Stripe pipeline against stripe-mock | every PR | 94 checks as of 2026-09-28 | real Stripe behaviour: one live charge and refund, 2026-10-14 (A10) |
 | Push pipeline against a mock APNs | every PR | 57 checks as of 2026-09-28 | real APNs waits on C3 |
 | Web admin browser tests (Playwright, real sign-in) | every PR | 74 | a cold-start flake after a local reset (backlog) |

@@ -283,9 +283,9 @@ begin
   -- beginner to 2.5". The number in a beginner clinic's name is not a minimum.
   -- A 2.0 still needs her OK for "Ladies 2.5+" (her "yes" to question 140).
   select string_agg(coalesce(public.clinic_level_from_name(x)::text, '-'), ' ' order by o) into got
-    from unnest(array['Ladies Beginner - 2.5', 'Ladies Beginner - 2.5 level', 'BEGINNER 2.5',
-                      'Ladies 2.5+', 'Ladies 3.0+ Clinic']) with ordinality as t(x, o);
-  insert into _probe_result values ('beginner_name_carries_no_minimum', '- - - 2.5 3.0', got);
+    from unnest(array['Ladies Beginner - 2.5', 'Ladies Beginner - 2.5 level', 'BEGINNER 2.5', 'Beginner 3.0',
+                      'Ladies Beginners 2.5', 'Ladies 2.5+', 'Ladies 3.0+ Clinic']) with ordinality as t(x, o);
+  insert into _probe_result values ('beginner_name_carries_no_minimum', '- - - - - 2.5 3.0', got);
 
   perform set_config('role', 'postgres', true);
   perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
