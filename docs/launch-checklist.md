@@ -78,10 +78,9 @@ decision 0042 (release on John's account now, move to the LLC later).
 3. **Real payments**: live since 2026-10-14 (A9, A10); receipts off
    (2026-10-21); dispute emails in Tara's own login still to check (A14).
    [Tara]
-4. **Decision 0041's server side**: 1-hour offers that expire, her pushes to
-   both sides, first come first served for clinics that are not a 105, join
-   times on her roster; built with the defaults of questions 118 to 125 until
-   she answers. [me, Tara]
+4. **Decision 0041's server side**: held 2026-11-05. Decision 0047 moves a
+   Waitlist player straight in unless it is the same day, and 0045 covers
+   members, so what is left of 1-hour offers waits on question 141. [Tara]
 5. **Tara's email to members** with the QR code and the App Store link (G8,
    I6). [Tara]
 6. **Push seen on a real lock screen** (C3). [Alex]

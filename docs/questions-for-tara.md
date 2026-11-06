@@ -666,6 +666,16 @@ Decision 0048 takes the number in a clinic's name as its minimum. Her ask of
 **140. "Ladies 2.5+": does a player rated 2.0 need your OK?**
 *Default: yes, the same as a 2.5 for a 3.0+. Status: open, asked 2026-11-05.*
 
+## AD. Offers now that people move straight in (added 2026-11-05)
+
+Her text of 2026-11-04 (decision 0047): a Waitlist player moves straight to
+You're In! unless it is the same day, when they must accept. Her 10-15 email
+(decision 0041) gave every offer one hour. Only same-day invitations are left
+for that hour to apply to.
+
+**141. Someone you invite on the day of the clinic has to accept. Should that invitation still run out after 1 hour, or stay open until you cancel it or the clinic starts?**
+*Default: stays open, as the app does today; you can cancel it and pick someone else. Status: open, asked 2026-11-05.*
+
 ### How 52 to 57 are being sent
 
 Round two of the review page (2026-09-21, later): the Words tab now shows her
