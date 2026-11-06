@@ -655,6 +655,17 @@ the parts left open.
 **138. Players can no longer change their own rating once it is set (otherwise a 2.5 could type 3.0 and skip your approval). You change it from the Players tab on the laptop. OK?**
 *Default: yes. Status: open, asked 2026-11-05.*
 
+## AC. Level approval on beginner clinics (added 2026-11-05)
+
+Decision 0048 takes the number in a clinic's name as its minimum. Her ask of
+2026-11-04 named only 2.5 for 3.0+ and 3.5 for 4.0.
+
+**139. "Ladies Beginner - 2.5": can a player rated 2.0 sign up without asking you?**
+*Default: yes, a beginner clinic is open to anyone at or below its level. Status: open, asked 2026-11-05.*
+
+**140. "Ladies 2.5+": does a player rated 2.0 need your OK?**
+*Default: yes, the same as a 2.5 for a 3.0+. Status: open, asked 2026-11-05.*
+
 ### How 52 to 57 are being sent
 
 Round two of the review page (2026-09-21, later): the Words tab now shows her
