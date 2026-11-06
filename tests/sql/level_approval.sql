@@ -239,10 +239,16 @@ begin
   -- ------------------------------ 7. the rating is Tara's once it is set
   perform set_config('request.jwt.claims', json_build_object('sub', PRIYA)::text, true);
   perform set_config('role', 'authenticated', true);
+  -- Since 20261106000004 the change is quietly dropped, not refused: the 1.0.1
+  -- app lets a player edit the rating, and a refusal lost the whole save
+  -- behind "Check your connection" (13 refusals on hosted, 11-06).
   begin
-    update public.players set adult_rating = 3.0 where id = PRIYA_P; err := 'changed';
+    update public.players set adult_rating = 3.0, last_name = 'Probe Kept' where id = PRIYA_P; err := 'saved';
   exception when others then err := sqlerrm; end;
-  insert into _probe_result values ('player_cannot_raise_her_own_rating', 'rating_set_by_tara', err);
+  insert into _probe_result values ('player_cannot_raise_her_own_rating', 'saved 2.5',
+    err || ' ' || (select adult_rating::text from public.players where id = PRIYA_P));
+  insert into _probe_result values ('the_rest_of_that_save_lands', 'Probe Kept',
+    (select last_name from public.players where id = PRIYA_P));
   -- The 1.0.x app sends the rating unchanged with every Edit details save.
   begin
     update public.players set first_name = 'Priya', adult_rating = 2.5 where id = PRIYA_P; err := 'saved';

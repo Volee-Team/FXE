@@ -99,3 +99,16 @@ the app in the store does not know becomes the wrong sentence on every
 member's phone, so a new refusal ships after the app that explains it, or
 behind a switch that starts off. Turning it back on (one migration) waits
 for 1.0.2 in the store and Tara's yes.
+
+## Rating change dropped quietly, 2026-11-06
+
+`20261106000004`. The 1.0.1 app still lets a player edit the rating on Edit
+details and sends it with the name and level note in one update, so
+`rating_set_by_tara` threw away the whole save behind "That didn't save. Check
+your connection and try again." Hosted logged 13 of them on 11-06, nine from
+one player in a minute. `guard_player_rating` now keeps the old rating and lets
+the rest through; the rule (only Tara moves a set rating) is unchanged.
+`level_approval.sql`: `player_cannot_raise_her_own_rating` now expects the save
+to land with 2.5 kept, and `the_rest_of_that_save_lands`. Same lesson as the
+switch above: a refusal the store app cannot explain does more harm than the
+thing it refuses.
