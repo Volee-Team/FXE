@@ -2,6 +2,8 @@
 
 **Date:** 2026-09-28 · **Status:** Active; five defaults wait on Tara (below) · **Source:** Tara, 2026-09-28 (decision 0024) and 2026-09-22 (decision 0016)
 
+**Extended by 0051 (forward note added 2026-11-07):** the tab is named Manage and lists the week (`pro_week`), and a pro sets courts on that week's You're In! rows (`pro_assign_court`); everything below about money and the Waitlist still holds.
+
 **Superseded in part by 0040 (forward note added 2026-10-12):** the five defaults below were answered on 2026-10-12 (questions 96 to 100). The one that changed: pros do **not** sign the waiver or add a card (question 96, "No"); the app skips both steps for a pro (`SessionStore.skipsPlayerSteps`).
 
 Tara's words. 2026-09-28: *"For right now, I'm going to be the only one that

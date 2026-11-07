@@ -38,6 +38,21 @@ courtside work; this does weekly setup.
   renders today.)
 * Message any audience on a clinic, starting from one of her **saved messages**
   if she likes (her own text, kept with Save this message; decision 0030)
+* Message **one player**: from a clinic's Message (To: One player, anyone on
+  that clinic who is not canceled; kept on the clinic for them alone), or
+  from the Players tab (**Message** on each row, a notification only, whether
+  or not they are in any clinic). `admin_message_player`, 20261107000002
+* **Invite player** on a published clinic that has not ended: anyone not
+  already on it gets an invitation to accept or decline (`admin_invite_player`)
+* **Add guest** on any clinic not canceled: a first and last name for
+  someone who isn't in the app (`admin_add_guest`, 20261107000003). A guest
+  sits in You're In! after the players with a Guest tag, a court and Remove
+  (kept with `removed_at`), counts toward the clinic's spots, and is on the
+  court sheet marked "(guest)". Never messaged and never charged by the app:
+  Tara collects her own way
+* On a full clinic (You're In! and guests at Max players), Move in / Invite on the
+  Waitlist, Invite player and Add player ask "Are you sure ...? Your clinic is
+  full (25/25)." first; Cancel does nothing, and capacity never blocks her
 * **Action Needed** at the top: players asking in after the 3-hour close (Put
   them in / No room), cancellations or invitation replies she has not seen, a
   clinic that ended and is not charged yet, a declined card (with Resolved),
@@ -73,8 +88,8 @@ get committed aimed at the wrong project. Sign in as `tara@fxe.test` /
 
 ## Test it
 
-74 Playwright tests (`cat web/tests/*.spec.mjs | grep -cE '^\s*test\('`,
-2026-11-05) walk this page the way Tara does, against the LOCAL stack on a
+81 Playwright tests (`cat web/tests/*.spec.mjs | grep -cE '^\s*test\('`,
+2026-11-07) walk this page the way Tara does, against the LOCAL stack on a
 fresh seed. They are the only automated check on the web admin,
 so they run in CI on every push (`web-browser-tests` in `probes.yml`).
 

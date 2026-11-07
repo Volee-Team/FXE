@@ -91,15 +91,19 @@ test.describe("copy to next week", () => {
       const days = (new Date(copy[0].starts_at) - new Date(source.starts_at)) / DAY;
       expect(days).toBeGreaterThan(6.9);
       expect(days).toBeLessThan(7.1);
-      // On the tab as a draft: it offers Publish, and the source does not.
+      // On the tab as a draft: it offers Publish, and the source does not. The
+      // tab starts today (2026-11-07), so the source is on it only until its day
+      // has passed (a Tuesday source is gone by Wednesday).
+      const today = await page.evaluate(async () => (await import("/week.js")).nyDayStart().getTime());
+      const onTab = 1 + (new Date(source.ends_at).getTime() > today ? 1 : 0);
       const named = page.locator("#clinics .card", { hasText: "Browser Copy Clinic" });
-      await expect(named).toHaveCount(2);
+      await expect(named).toHaveCount(onTab);
       await expect(named.filter({ has: page.getByRole("button", { name: "Publish" }) })).toHaveCount(1);
 
       await page.getByRole("button", { name: "Copy to next week" }).click();
       await expect(msg).toHaveText("Nothing new to copy.", { timeout: 15_000 });
       expect((await drafts()).length).toBe(n);
-      await expect(page.locator("#clinics .card", { hasText: "Browser Copy Clinic" })).toHaveCount(2);
+      await expect(page.locator("#clinics .card", { hasText: "Browser Copy Clinic" })).toHaveCount(onTab);
     } finally {
       await db.del(`clinics?status=eq.draft&created_at=gte.${encodeURIComponent(source.created_at)}`);
       await db.del(`clinics?id=eq.${source.id}`);

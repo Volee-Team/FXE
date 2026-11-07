@@ -45,6 +45,7 @@ Check your email for a reset link. It can take a few minutes.
 Checking your reset link…
 Children's privacy
 Choose a new password
+Choose a player
 Clinic updates come through the app. Keep notifications on so you don't miss them.
 Clinics
 Close
@@ -67,7 +68,6 @@ Couldn't reach the server. Check your connection.
 Couldn't save your note.
 Couldn't save, still on this phone
 Court
-Court \(court)
 Court \(n)
 Data retention
 Date &amp; time
@@ -101,6 +101,7 @@ Fees at clinic prices
 First and last name
 First time? Create your account
 For someone who called or grabbed you at the club. They go straight to You&rsquo;re In!
+For someone who isn't in the app. They get no messages and the app never charges them.
 For testing with Tara and Kat. Nothing here is part of running the clinics.
 For the performance of a contract: the clinics you register for through the Services and any other contract with us through the Services.
 Forgot password?
@@ -119,6 +120,11 @@ If the app crashes, freezes or runs slowly, your phone's operating system (Apple
 If you have any concerns or questions about your data, please contact us at:
 Information collection
 International data
+Invite
+Invite ${esc(name)}
+Invite a Player
+Invite a player
+Invite player
 Just coming back from a back injury - probably a low 3.5
 Keep
 Keep my account
@@ -145,8 +151,11 @@ Members get 24-hour early access to all clinics
 Members, 60 min
 Members, 90 min
 Message
+Message Player
 Message Players
 Message Tara
+Message \(player.firstName)
+Message player
 Message players
 More
 My Clinics
@@ -162,7 +171,7 @@ No card payments yet.
 No clinics currently open for registration
 No clinics scheduled yet.
 No clinics this week or later. Use “New clinic” to add one.
-No clinics today.
+No clinics this week.
 No court
 No deposits yet.
 No description yet.
@@ -187,6 +196,7 @@ Note (optional)
 Note for Tara (optional)
 Notifications
 On your laptop, with your real account. Whatever you set up here is real: it is your schedule.
+One player
 Only Tara sees this
 Only Tara sees this.
 Only a You're In! player can be a no-show.
@@ -207,6 +217,7 @@ Privacy Policy
 Private note
 Processing
 Profile
+Publish the clinic first.
 Put in clinic
 Put them in
 QR code for fxe-tennis-admin.vercel.app/app
@@ -278,6 +289,7 @@ That clinic ended before card payments were on.
 That clinic is already canceled.
 That clinic is canceled.
 That clinic is full now.
+That clinic is over.
 That didn't save. Check your connection and try again.
 That didn't work. Check your connection and try again.
 That didn’t save. Try again.
@@ -288,6 +300,7 @@ That just changed. Here's the latest.
 That one is already charged.
 That one is already refunded.
 That player has no card on file.
+That player's account was deleted.
 The Services are for adults. We do not knowingly collect personal information from anyone under the age of 18. In the event of any inadvertent collection of personal information related to a minor, we will delete such personal information upon notice.
 The Services are intended to be used by U.S. residents. Personal information you provide to us will be maintained and processed on servers located in the United States.
 The Services may contain links to websites operated and maintained by third parties, over which we have no control. Privacy policies on such linked websites may be different from our privacy policy. You access such linked websites at your own risk. You should always read the privacy policy of a linked website before disclosing any of your information on such website.
@@ -297,6 +310,7 @@ The fee applies.
 The information collected is used solely for providing the Services: clinic registration, communication from your coach about clinics, charging for clinics you attend under the club's cancellation policy, and keeping your clinic history. We do not share or sell your personal information with external parties for marketing purposes.
 The player's note at level entry; only you see it
 The waiver was updated. Read it again and sign.
+They get an invitation to accept or decline.
 Third parties
 This Privacy Policy describes the policies and procedures of FXE Tennis, LLC (&quot;FXE Tennis,&quot; &quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) on the collection, use and disclosure of your information when you use the FXE Tennis application (the &quot;Services&quot;) and tells you about your privacy rights and how the law protects you.
 This cancellation is within 3 hours of clinic and the full clinic fee will apply. If an emergency, please leave a note below.
@@ -306,10 +320,10 @@ This link has no code, answers stay on this phone.
 This link isn't active, answers stay on this phone.
 Those don’t match.
 To
+To \(name)
 To contact you: by notification in the app, email, telephone, or other equivalent forms of electronic communication, about clinics and the Services.
 To manage your requests: to attend to and manage your requests to us. Messages sent through the Services are stored on our servers.
 To provide and maintain our Services, including to monitor the usage of our Services.
-Today
 Too many attempts. Try again in a minute.
 Too many reset emails. Try again later.
 Try again

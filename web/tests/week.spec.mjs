@@ -107,6 +107,32 @@ test.describe("the rule", () => {
     });
   });
 
+  test("the tab starts today: a clinic from earlier this week waits behind Show earlier", async ({ browser, baseURL }) => {
+    // Tara, 2026-11-07 (a Saturday): Sunday Nov 1's clinic was still on her
+    // screen. Today began Saturday 2026-11-07 00:00 EST (05:00Z).
+    const clinics = [
+      { id: "a-sunday-nov-1", starts_at: "2026-11-01T21:30:00Z", ends_at: "2026-11-01T23:00:00Z", status: "published" },
+      { id: "b-friday-night", starts_at: "2026-11-07T03:00:00Z", ends_at: "2026-11-07T04:30:00Z", status: "published" },
+      { id: "c-this-morning-done", starts_at: "2026-11-07T13:00:00Z", ends_at: "2026-11-07T14:00:00Z", status: "published" },
+      { id: "d-sunday-nov-8", starts_at: "2026-11-08T21:30:00Z", ends_at: "2026-11-08T23:00:00Z", status: "published" },
+      { id: "e-thursday-owed", starts_at: "2026-11-05T14:00:00Z", ends_at: "2026-11-05T15:00:00Z", status: "published" },
+    ];
+    for (const zone of ["America/New_York", "UTC", "Asia/Tokyo"]) {
+      const got = await inBrowser(browser, baseURL, zone, async (clinics) => {
+        const { splitThisWeek, nyDayStart } = await import("/week.js");
+        const since = nyDayStart(new Date("2026-11-07T19:00:00Z")); // 2 PM Saturday in New York
+        const { current, earlier } = splitThisWeek(clinics, { since, paymentsOn: true, owed: new Set(["e-thursday-owed"]) });
+        return { since: since.toISOString(), current: current.map(c => c.id), earlier: earlier.map(c => c.id) };
+      }, clinics);
+      expect(got).toEqual({
+        since: "2026-11-07T05:00:00.000Z",
+        // This morning's clinic stays all day; an uncharged one stays until charged.
+        current: ["e-thursday-owed", "c-this-morning-done", "d-sunday-nov-8"],
+        earlier: ["b-friday-night", "a-sunday-nov-1"],
+      });
+    }
+  });
+
   test("a list longer than the server's 1000-row cap comes back whole and in order", async ({ browser, baseURL }) => {
     const got = await inBrowser(browser, baseURL, "UTC", async () => {
       const { readAll, readByIds } = await import("/read.js");

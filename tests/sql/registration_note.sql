@@ -88,6 +88,10 @@ begin
     from unnest((select proargnames from pg_proc where proname = 'pro_today')) a
    where a ilike '%note%';
   insert into _probe_result values ('pro_today_has_no_note', '', v);
+  select coalesce(string_agg(a, ','), '') into v
+    from unnest((select proargnames from pg_proc where proname = 'pro_week')) a
+   where a ilike '%note%';
+  insert into _probe_result values ('pro_week_has_no_note', '', v);
 
   -- 5. Tara reads it on her roster.
   perform set_config('role', 'authenticated', true);
@@ -120,8 +124,9 @@ begin
    where pronamespace = 'public'::regnamespace
      and prorettype = 'public.registrations'::regtype
      and has_function_privilege('authenticated', oid, 'EXECUTE');
+  -- admin_invite_player (20261107000002): Tara's alone (require_admin).
   insert into _probe_result values ('whole_row_functions_pinned',
-    '[admin_mark_late_cancel, admin_set_no_show, assign_court, cancel_invitation, cancel_registration, invite_from_pool, place_player, register_for_clinic, respond_to_invitation, set_paid]',
+    '[admin_invite_player, admin_mark_late_cancel, admin_set_no_show, assign_court, cancel_invitation, cancel_registration, invite_from_pool, place_player, register_for_clinic, respond_to_invitation, set_paid]',
     '[' || coalesce(v, '') || ']');
   select count(*) into n from pg_proc where proname = 'register_for_clinic';
   insert into _probe_result values ('one_register_for_clinic', '1', n::text);

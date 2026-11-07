@@ -19,13 +19,21 @@
 //  THE TAB IS NOT A SECURITY CONTROL. pro_today() returns only these columns,
 //  and only to a pro; both writes refuse any other day (tests/sql/pro_role.sql).
 //
+//  The week (20261107000002). Tara, 2026-11-06: "Allow pros to have access to
+//  the week ahead and what players are signed up. Not just day of (right now
+//  their tab says TODAY. Have it say manage or whatever like mine but their
+//  ONLY capabilities are to assign courts and see who is in the clinic."
+//  So the tab is Manage, it lists today and the six days after (pro_week),
+//  and every row has Tara's court menu (pro_assign_court). Came / No-show and
+//  Late cancel stay on today's clinics only, as the server allows.
+//
 
 import SwiftUI
 
 @MainActor
 @Observable
 final class ProTodayModel {
-    var clinics: [ProTodayClinic] = []
+    var days: [ProDay] = []
     var loading = false
     var loaded = false
     var error: String?
@@ -38,7 +46,7 @@ final class ProTodayModel {
         loading = true
         defer { loading = false }
         do {
-            clinics = try await ProRepository.today()
+            days = ProToday.days(try await ProRepository.week())
             cutoffHours = (try? await RegistrationRepository.cancelCutoffHours()) ?? 3
             error = nil
             loaded = true
@@ -83,15 +91,23 @@ struct ProTodayView: View {
                                 .accessibilityIdentifier("pro.error")
                         }
 
-                        if model.loaded && model.clinics.isEmpty {
-                            Text("No clinics today.")
+                        if model.loaded && model.days.isEmpty {
+                            Text("No clinics this week.")
                                 .brandFont(.body)
                                 .foregroundStyle(Brand.textSecondary)
                                 .accessibilityIdentifier("pro.empty")
                         }
 
-                        ForEach(model.clinics) { clinic in
-                            clinicCard(clinic)
+                        ForEach(model.days) { day in
+                            // Tara's own section headings (AdminClinicsView.section).
+                            Text(day.title.uppercased())
+                                .brandFont(.chip)
+                                .foregroundStyle(Brand.textSecondary)
+                                .accessibilityAddTraits(.isHeader)
+                                .accessibilityIdentifier("pro.day")
+                            ForEach(day.clinics) { clinic in
+                                clinicCard(clinic, today: day.isToday)
+                            }
                         }
                     }
                     .padding(Brand.Spacing.pageMargin)
@@ -100,7 +116,7 @@ struct ProTodayView: View {
                 .refreshable { await model.load() }
             }
             .crispTopEdge()
-            .bannerTitle("Today")
+            .bannerTitle("Manage")
         }
         // Late cancel: a player told the pro inside the cutoff. Tara's alert,
         // with her optional note, and without "The fee applies.": a pro is
@@ -127,7 +143,7 @@ struct ProTodayView: View {
 
     // MARK: - One clinic
 
-    private func clinicCard(_ clinic: ProTodayClinic) -> some View {
+    private func clinicCard(_ clinic: ProTodayClinic, today: Bool) -> some View {
         VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
             Text(clinic.name)
                 .brandFont(.headline)
@@ -146,13 +162,20 @@ struct ProTodayView: View {
             }
 
             if clinic.players.isEmpty {
+                // On the raised card, like the rows: on the court backdrop it
+                // failed the iOS 18 contrast audit (2026-11-07), once the week
+                // brought clinics nobody is in yet.
                 Text("Nobody is in yet.")
                     .brandFont(.body)
                     .foregroundStyle(Brand.textSecondary)
+                    .frame(maxWidth: .infinity, minHeight: Brand.Layout.comfortableTapTarget, alignment: .leading)
+                    .padding(.horizontal, Brand.Spacing.cardPadding)
+                    .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
+                    .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
             } else {
                 VStack(spacing: 0) {
                     ForEach(clinic.players) { player in
-                        row(player, in: clinic)
+                        row(player, in: clinic, today: today)
                         if player.id != clinic.players.last?.id {
                             Divider().background(Brand.hairline)
                         }
@@ -174,14 +197,14 @@ struct ProTodayView: View {
     /// up the sizes and reported "Dynamic Type partially unsupported" on every
     /// name, court and toggle (2026-09-28). A long name wraps instead of being
     /// cut off ("text clipped", the same audit).
-    private func row(_ player: ProTodayPlayer, in clinic: ProTodayClinic) -> some View {
+    private func row(_ player: ProTodayPlayer, in clinic: ProTodayClinic, today: Bool) -> some View {
         let layout = typeSize.isAccessibilitySize
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: Brand.Spacing.xxs))
             : AnyLayout(HStackLayout(alignment: .center, spacing: Brand.Spacing.sm))
         return layout {
             identity(player)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            controls(player, in: clinic)
+            controls(player, in: clinic, today: today)
         }
         .padding(.vertical, Brand.Spacing.xs)
         .frame(minHeight: Brand.Layout.comfortableTapTarget)
@@ -189,33 +212,56 @@ struct ProTodayView: View {
         .accessibilityIdentifier("pro.row")
     }
 
-    /// Name, and the court when Tara has set one: pros coach on those courts.
+    /// The name. The court is on the menu beside it.
     private func identity(_ player: ProTodayPlayer) -> some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text(player.name)
-                .brandFont(.bodyEmphasis)
-                .foregroundStyle(Brand.textPrimary)
-                .fixedSize(horizontal: false, vertical: true)
-            if let court = player.court {
-                Text("Court \(court)")
-                    .brandFont(.caption)
-                    .foregroundStyle(Brand.textSecondary)
-            }
-        }
+        Text(player.name)
+            .brandFont(.bodyEmphasis)
+            .foregroundStyle(Brand.textPrimary)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     /// The two controls, side by side; stacked too at the accessibility
     /// sizes, where side by side they no longer fit a phone's width.
-    private func controls(_ player: ProTodayPlayer, in clinic: ProTodayClinic) -> some View {
+    private func controls(_ player: ProTodayPlayer, in clinic: ProTodayClinic, today: Bool) -> some View {
         let layout = typeSize.isAccessibilitySize
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: 0))
             : AnyLayout(HStackLayout(spacing: Brand.Spacing.xs))
         return layout {
-            if ProToday.canLateCancel(startsAt: clinic.startsAt, cutoffHours: model.cutoffHours) {
-                lateCancelButton(player)
+            courtMenu(player)
+            if today {
+                if ProToday.canLateCancel(startsAt: clinic.startsAt, cutoffHours: model.cutoffHours) {
+                    lateCancelButton(player)
+                }
+                noShowToggle(player)
             }
-            noShowToggle(player)
         }
+    }
+
+    /// Tara's court menu (AdminClinicDetailView.courtMenu) with only the
+    /// courts in it: no Late cancel, no Remove.
+    private func courtMenu(_ player: ProTodayPlayer) -> some View {
+        Menu {
+            Button("No court") { assign(player, nil) }
+            ForEach(1...5, id: \.self) { n in
+                Button("Court \(n)") { assign(player, n) }
+            }
+        } label: {
+            Label(player.court.map { "Court \($0)" } ?? "Court", systemImage: "rectangle.split.2x1")
+                .brandFont(.chip)
+                .fixedSize()
+                .foregroundStyle(player.court == nil ? Brand.textSecondary : Brand.navy)
+                .frame(minHeight: Brand.Layout.minTapTarget)
+        }
+        .disabled(model.busy.contains(player.id))
+        .accessibilityIdentifier("pro.court")
+        .accessibilityLabel("\(player.name), \(player.court.map { "court \($0)" } ?? "no court"). Tap to change.")
+    }
+
+    private func assign(_ player: ProTodayPlayer, _ court: Int?) {
+        guard court != player.court else { return }
+        Task { await model.perform(player.id) {
+            try await ProRepository.assignCourt(registration: player.id, court: court)
+        } }
     }
 
     // MARK: - The two controls

@@ -56,7 +56,16 @@ struct ProTodayPlayer: Identifiable, Sendable, Equatable {
     var name: String { "\(firstName) \(lastName)" }
 }
 
-/// One of today's clinics and who is coming.
+/// One New York day of a pro's week and its clinics, earliest first.
+struct ProDay: Identifiable, Sendable, Equatable {
+    /// Midnight in New York.
+    let id: Date
+    let title: String
+    let isToday: Bool
+    var clinics: [ProTodayClinic]
+}
+
+/// One of the week's clinics and who is coming.
 struct ProTodayClinic: Identifiable, Sendable, Equatable {
     let id: UUID
     let name: String
@@ -104,6 +113,33 @@ enum ProToday {
         return a.firstName < b.firstName
     }
 
+    /// The week (pro_week, 20261107000002) as New York days, today first.
+    /// Tara, 2026-11-06: "Allow pros to have access to the week ahead and what
+    /// players are signed up. Not just day of".
+    static func days(_ rows: [ProTodayRow], now: Date = .now) -> [ProDay] {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = ServiceWeek.timeZone
+        let today = calendar.startOfDay(for: now)
+        var days: [Date: [ProTodayClinic]] = [:]
+        for clinic in group(rows) {
+            days[calendar.startOfDay(for: clinic.startsAt), default: []].append(clinic)
+        }
+        return days.keys.sorted().map { day in
+            ProDay(id: day, title: dayTitle(day, today: today, calendar: calendar),
+                   isToday: day == today, clinics: days[day] ?? [])
+        }
+    }
+
+    /// "Today", "Tomorrow", else "Sunday, Nov 8", on New York's calendar.
+    static func dayTitle(_ day: Date, today: Date, calendar: Calendar) -> String {
+        let ahead = calendar.dateComponents([.day], from: today, to: day).day ?? 0
+        if ahead == 0 { return "Today" }
+        if ahead == 1 { return "Tomorrow" }
+        var style = Date.FormatStyle().weekday(.wide).month(.abbreviated).day()
+        style.timeZone = calendar.timeZone
+        return day.formatted(style)
+    }
+
     /// Late cancel is offered where the server would accept it: inside the
     /// cutoff or after the start (registration_mark_late_cancel). Before the
     /// cutoff a cancellation is free, and it is the player's to make.
@@ -128,7 +164,8 @@ enum ProToday {
         if e.contains("clinic_locked") || e.contains("charged_refund_first") { return onlyTara }
         if e.contains("not_late_yet") { return "Not late yet." }
         if e.contains("clinic_canceled") { return "That clinic is canceled." }
-        if e.contains("registration_not_in") || e.contains("not_today") || e.contains("registration_not_found") {
+        if e.contains("registration_not_in") || e.contains("not_today") || e.contains("not_this_week")
+            || e.contains("registration_not_found") {
             return changedUnderYou
         }
         // Demoted from pro while the tab was open: the tab goes at the next

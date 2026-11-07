@@ -92,7 +92,13 @@ that shape gets the same three layers.
 whose `role` is `pro`, asked by `is_pro()` (false once deleted). `is_admin()`
 is unchanged: Tara is the only admin. No policy, view or grant mentions a
 pro, so from every table and view a pro reads exactly what a member reads.
-A pro's reach is three functions, each gated by `require_pro()`:
+A pro's reach is five functions, each gated by `require_pro()` (the week
+and its courts added by decision 0051, `20261107000002`):
+- `pro_week()`: `pro_today()`'s columns exactly, for today and the six New
+  York days after it. `pro_assign_court()`: court 1 to 5 or none on a You're
+  In! row of one of those clinics; returns nothing; every refusal reads
+  `not_this_week`, so it says nothing about other rows, and it does not ask
+  `pro_clinic_locked` (a court is not money; asking would add a money signal).
 - `pro_today()`: today's clinics by the New York date, published and not
   canceled, and per You're In! row only the registration id, first and last
   name, court, `no_show` and `late_cancel`. Never the Player Pool, Response
