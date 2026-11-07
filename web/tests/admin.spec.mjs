@@ -1137,3 +1137,126 @@ test.describe("Tara's next update (2026-11-06)", () => {
     }
   });
 });
+
+// Tara's guests (20261107000003). Her words, 2026-11-07: "If somebody isn't
+// in the app, I just want the capability of inputting their name first and
+// last. And then I would just take care of the payment". A name on one
+// clinic, not a player: it takes a spot, gets a court, is on the court sheet,
+// and is removed (removed_at), never deleted.
+test.describe("guests", () => {
+  const guestClinic = (name, capacity) => ({
+    name, audience: "coed", category: "Clinic", description: "browser test",
+    starts_at: daysAgo(-2), ends_at: daysAgo(-2, 1),
+    member_opens_at: daysAgo(3), public_opens_at: daysAgo(2),
+    internal_capacity: capacity, status: "published", duration_minutes: 60,
+  });
+  const inReg = (db, clinic, player) => db.insert("registrations", { clinic_id: clinic.id, player_id: player, status: "in",
+    source: "admin", price_cents_charged: 1800, was_member: true, duration_minutes: 60 });
+  const cleanup = async (db, clinic) => {
+    const regs = await db.get(`registrations?clinic_id=eq.${clinic.id}&select=id`);
+    if (regs.length) await db.del(`notifications?entity_id=in.(${regs.map(r => r.id).join(",")})`);
+    await db.del(`clinic_guests?clinic_id=eq.${clinic.id}`);
+    await db.del(`registrations?clinic_id=eq.${clinic.id}`);
+    await db.del(`clinics?id=eq.${clinic.id}`);
+  };
+
+  test("a guest takes a spot, gets a court, is on the court sheet, and is removed but kept", async ({ page, request }) => {
+    const db = service(request);
+    const clinic = await db.insert("clinics", guestClinic("Browser Guest Clinic", 8));
+    try {
+      await inReg(db, clinic, KEN_P);
+      await signIn(page, TARA);
+      const card = page.locator("#clinics .card", { hasText: "Browser Guest Clinic" });
+      await expect(card.locator(`[data-taken="${clinic.id}"]`)).toHaveText("1/8", { timeout: 15_000 });
+
+      await card.getByRole("button", { name: "Add guest" }).click();
+      const dialog = page.locator("dialog#guest");
+      await expect(dialog).toContainText("For someone who isn't in the app. They get no messages and the app never charges them.");
+      await dialog.getByLabel("First name").fill("Pat");
+      await dialog.getByLabel("Last name").fill("Visitor");
+      await dialog.getByRole("button", { name: "Add", exact: true }).click();
+      await expect(dialog).toBeHidden({ timeout: 15_000 });
+
+      // In You're In!, after the players, with the tag, and in the count.
+      const guest = card.locator("[data-guest-row]", { hasText: "Pat Visitor" });
+      await expect(guest).toBeVisible({ timeout: 15_000 });
+      await expect(guest.locator(".chip.guest")).toHaveText("Guest");
+      await expect(card.locator(`[data-taken="${clinic.id}"]`)).toHaveText("2/8");
+      // A court and Remove, and nothing that messages or charges.
+      await expect(guest.getByRole("button")).toHaveText(["Remove"]);
+      const [row] = await db.get(`clinic_guests?clinic_id=eq.${clinic.id}&select=id,first_name,last_name,court_number,removed_at`);
+      expect(row).toMatchObject({ first_name: "Pat", last_name: "Visitor", court_number: null, removed_at: null });
+
+      // The same name twice on one clinic is refused (guest_already_added).
+      await card.getByRole("button", { name: "Add guest" }).click();
+      await dialog.getByLabel("First name").fill("pat");
+      await dialog.getByLabel("Last name").fill("visitor");
+      await dialog.getByRole("button", { name: "Add", exact: true }).click();
+      await expect(dialog.locator("#guest-msg")).toHaveText("pat visitor is already on this clinic.", { timeout: 15_000 });
+      await dialog.getByRole("button", { name: "Cancel" }).click();
+      expect(await db.get(`clinic_guests?clinic_id=eq.${clinic.id}&select=id`)).toHaveLength(1);
+
+      await guest.getByLabel("Court").selectOption("3");
+      await expect(card.locator("[data-guest-row]", { hasText: "Pat Visitor" }).getByLabel("Court")).toHaveValue("3", { timeout: 15_000 });
+      expect((await db.get(`clinic_guests?id=eq.${row.id}&select=court_number`))[0].court_number).toBe(3);
+
+      // The court sheet: by court, marked as a guest; Ken has no court yet.
+      await page.goto(`/sheet.html?clinic=${clinic.id}`);
+      const groups = page.locator("[data-court-group]");
+      await expect(groups.locator("h2")).toHaveText(["Court 3", "No court yet"], { timeout: 15_000 });
+      await expect(groups.nth(0).locator(".player")).toHaveText(["Pat Visitor (guest)"]);
+      await expect(groups.nth(1).locator(".player")).toHaveText(["Ken Whitfield"]);
+
+      // Remove takes two clicks; the row stays, with removed_at.
+      await page.goto("/index.html");
+      const again = page.locator("#clinics .card", { hasText: "Browser Guest Clinic" });
+      const g2 = again.locator("[data-guest-row]", { hasText: "Pat Visitor" });
+      await g2.getByRole("button", { name: "Remove" }).click();
+      await g2.getByRole("button", { name: "Really remove?" }).click();
+      await expect(again.locator("[data-guest-row]")).toHaveCount(0, { timeout: 15_000 });
+      await expect(again.locator(`[data-taken="${clinic.id}"]`)).toHaveText("1/8");
+      const [kept] = await db.get(`clinic_guests?id=eq.${row.id}&select=removed_at`);
+      expect(kept.removed_at).not.toBeNull();
+    } finally {
+      await cleanup(db, clinic);
+    }
+  });
+
+  test("a 1-spot clinic with one guest is full: Add player and Add guest ask first, and Cancel does nothing", async ({ page, request }) => {
+    const db = service(request);
+    const clinic = await db.insert("clinics", guestClinic("Browser Guest Full Clinic", 1));
+    const asked = [];
+    try {
+      await db.insert("clinic_guests", { clinic_id: clinic.id, first_name: "Pat", last_name: "Visitor" });
+      await signIn(page, TARA);
+      const card = page.locator("#clinics .card", { hasText: "Browser Guest Full Clinic" });
+      await expect(card.locator(`[data-taken="${clinic.id}"]`)).toHaveText("1/1", { timeout: 15_000 });
+      const dismiss = () => page.once("dialog", async (d) => { asked.push(d.message()); await d.dismiss(); });
+
+      await card.getByRole("button", { name: "Add player" }).click();
+      const walkup = page.locator("dialog#walkup");
+      await walkup.getByLabel("Search by name").fill("Ken");
+      dismiss();
+      await walkup.getByRole("button", { name: "Put in clinic" }).first().click();
+      await expect.poll(() => asked.length).toBe(1);
+      expect(asked[0]).toBe("Are you sure you want to add Ken Whitfield? Your clinic is full (1/1).");
+      await page.waitForTimeout(500);
+      expect(await db.get(`registrations?clinic_id=eq.${clinic.id}&select=id`)).toEqual([]);
+      await walkup.getByRole("button", { name: "Close" }).click();
+
+      await card.getByRole("button", { name: "Add guest" }).click();
+      const dialog = page.locator("dialog#guest");
+      await dialog.getByLabel("First name").fill("Sam");
+      await dialog.getByLabel("Last name").fill("Other");
+      dismiss();
+      await dialog.getByRole("button", { name: "Add", exact: true }).click();
+      await expect.poll(() => asked.length).toBe(2);
+      expect(asked[1]).toBe("Are you sure you want to add Sam Other? Your clinic is full (1/1).");
+      await page.waitForTimeout(500);
+      await expect(dialog).toBeVisible();
+      expect(await db.get(`clinic_guests?clinic_id=eq.${clinic.id}&select=first_name`)).toEqual([{ first_name: "Pat" }]);
+    } finally {
+      await cleanup(db, clinic);
+    }
+  });
+});

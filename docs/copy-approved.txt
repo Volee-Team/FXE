@@ -101,6 +101,7 @@ Fees at clinic prices
 First and last name
 First time? Create your account
 For someone who called or grabbed you at the club. They go straight to You&rsquo;re In!
+For someone who isn't in the app. They get no messages and the app never charges them.
 For testing with Tara and Kat. Nothing here is part of running the clinics.
 For the performance of a contract: the clinics you register for through the Services and any other contract with us through the Services.
 Forgot password?

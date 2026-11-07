@@ -951,6 +951,18 @@ cannot see them; they are listed here by hand.
 | ☐ | No clinics this week. | Phone: the pro's tab when the week is empty (was "No clinics today.") |
 | ☐ | {Name} declined {clinic}. | Tara's notice when someone she invited directly declines (her #14 without "and is back on the Waitlist") |
 
+## Guests (2026-11-07) — awaiting John
+
+Decision 0052, Tara's laptop only.
+
+| ☐ | Words | Where |
+|---|---|---|
+| ☐ | Add guest / Add a guest / First name / Last name / Add | The clinic card's button, the dialog's title, its fields and button |
+| ☐ | For someone who isn't in the app. They get no messages and the app never charges them. | The dialog's one line |
+| ☐ | Guest | The tag beside a guest in You're In! |
+| ☐ | (guest) | After a guest's name on the court sheet |
+| ☐ | {First Last} is already on this clinic. (existing sentence, reused) | Adding the same guest twice |
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148

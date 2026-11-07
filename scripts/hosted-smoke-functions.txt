@@ -1,5 +1,6 @@
 accept_waiver	{"p_app_version":"x","p_legal_name":"x","p_version":"x"}
 admin_account_ids	{}
+admin_add_guest	{"p_clinic":"00000000-0000-0000-0000-000000000000","p_first":"x","p_last":"x"}
 admin_app_diagnostics	{"p_limit":1}
 admin_app_link_visits	{}
 admin_archive_message_template	{"p_id":"00000000-0000-0000-0000-000000000000"}
@@ -9,6 +10,7 @@ admin_board_share_percent	{}
 admin_charge_clinic	{"p_clinic":"00000000-0000-0000-0000-000000000000"}
 admin_charge_player	{"p_registration":"00000000-0000-0000-0000-000000000000"}
 admin_charge_registration	{"p_amount_cents":1,"p_kind":"x","p_registration":"00000000-0000-0000-0000-000000000000"}
+admin_clinic_guests	{"p_clinics":[]}
 admin_copy_week	{"p_week_start":"2026-01-01"}
 admin_create_review_link	{"p_label":"x"}
 admin_delete_template	{"p_id":"00000000-0000-0000-0000-000000000000"}
@@ -26,12 +28,14 @@ admin_player_history	{"p_player":"00000000-0000-0000-0000-000000000000"}
 admin_player_note	{"p_player":"00000000-0000-0000-0000-000000000000"}
 admin_player_note_edited	{"p_player":"00000000-0000-0000-0000-000000000000"}
 admin_refund_payment	{"p_payment":"00000000-0000-0000-0000-000000000000"}
+admin_remove_guest	{"p_guest":"00000000-0000-0000-0000-000000000000"}
 admin_resolve_decline	{"p_payment":"00000000-0000-0000-0000-000000000000"}
 admin_resolve_held_payment	{"p_outcome":"x","p_payment":"00000000-0000-0000-0000-000000000000"}
 admin_review_responses	{}
 admin_save_message_template	{"p_body":"x"}
 admin_set_board_share_percent	{"p_percent":1}
 admin_set_fee_waived	{"p_registration":"00000000-0000-0000-0000-000000000000","p_waived":false}
+admin_set_guest_court	{"p_court":1,"p_guest":"00000000-0000-0000-0000-000000000000"}
 admin_set_level_approval	{"p_approved":false,"p_level":1,"p_player":"00000000-0000-0000-0000-000000000000"}
 admin_set_membership	{"p_is_member":false,"p_player":"00000000-0000-0000-0000-000000000000"}
 admin_set_no_show	{"p_no_show":false,"p_registration":"00000000-0000-0000-0000-000000000000"}
@@ -55,6 +59,7 @@ card_consent_text	{}
 card_required	{}
 clean_player_note	{"p_note":"x"}
 clinic_level_from_name	{"p_name":"x"}
+clinic_taken	{"p_clinic":"00000000-0000-0000-0000-000000000000"}
 courtesy_available	{"p_player":"00000000-0000-0000-0000-000000000000"}
 courtesy_cancel_days	{}
 create_clinic_from_template	{"p_ends_at":"2026-01-01T00:00:00Z","p_starts_at":"2026-01-01T00:00:00Z","p_template":"00000000-0000-0000-0000-000000000000"}

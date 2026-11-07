@@ -70,6 +70,8 @@
   .chip.pool { color:#7A5E24; background:#F5EBD8; }
   .chip.resp { color:#1F4E5A; background:#DDEEF0; }
   .chip.canc { color:#992E22; background:#F6DED9; }
+  /* A guest (20261107000003): a name, not a status, so a neutral chip. */
+  .chip.guest { color: var(--fxe-text-primary); background: var(--fxe-surface-warm); }
   .err { color:#992E22; margin: 10px 0; }
   .ok  { color:#2C5A3E; margin: 10px 0; }
   dialog { border: none; border-radius: 16px; padding: 20px; max-width: 520px; width: 92%;
@@ -384,6 +386,25 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
   </div>
 </dialog>
 
+<!-- Tara's guests (20261107000003). Her words, 2026-11-07: "If somebody
+     isn't in the app, I just want the capability of inputting their name
+     first and last. And then I would just take care of the payment". A name
+     on this clinic, not a player: never messaged, never charged by the app. -->
+<dialog id="guest">
+  <h3 style="margin-top:0">Add a guest</h3>
+  <p class="muted" style="margin-top:0">For someone who isn't in the app. They get no messages and the app never charges them.</p>
+  <label for="g-first">First name</label>
+  <input id="g-first" maxlength="60" autocomplete="off">
+  <label for="g-last">Last name</label>
+  <input id="g-last" maxlength="60" autocomplete="off">
+  <div id="guest-msg"></div>
+  <div class="row" style="margin-top:14px">
+    <span class="grow"></span>
+    <button type="button" id="guest-cancel">Cancel</button>
+    <button type="button" class="primary" id="guest-save">Add</button>
+  </div>
+</dialog>
+
 <!-- Tara invites anyone, not only the Waitlist (admin_invite_player,
      20261107000002). Her words, 2026-11-06: "Allow me to invite anyone to a
      clinic that is not on a waitlist". Always an invitation: they land in
@@ -464,6 +485,11 @@ const COURTS = [1, 2, 3, 4, 5];
 // them. Audience 'unpaid' is resolved server-side by send_clinic_message.
 let clinicIndex = {};
 let regsByClinic = {};
+// Tara's guests by clinic (admin_clinic_guests, 20261107000003): names on
+// You're In! that are not players. They take a spot like anyone In.
+let guestsByClinic = {};
+const takenOf = (clinicId) => (regsByClinic[clinicId] || []).filter(r => r.status === "in").length
+  + (guestsByClinic[clinicId] || []).length;
 const unpaidIn = (c) => (regsByClinic[c.id] || []).filter(r => r.status === "in" && !r.paid);
 // Every player by id, from the last load, for names outside a card's own HTML.
 let playerIndex = {};
@@ -478,7 +504,7 @@ const fullName = (id) => { const p = playerIndex[id]; return p ? `${p.first_name
 // "add Jane Doe". True means go ahead.
 const goAheadIfFull = (clinicId, what) => {
   const c = clinicIndex[clinicId];
-  const n = (regsByClinic[clinicId] || []).filter(r => r.status === "in").length;
+  const n = takenOf(clinicId);   // You're In! and guests, as the server counts (clinic_taken)
   if (!c || c.internal_capacity == null || n < c.internal_capacity) return true;
   return confirm(`Are you sure you want to ${what}? Your clinic is full (${n}/${c.internal_capacity}).`);
 };
@@ -491,6 +517,14 @@ const onClinic = (clinicId) => {
   const seen = new Set();
   return [...ins, ...regs.filter(r => r.status === "pool"), ...regs.filter(r => r.status === "response_needed")]
     .filter(r => !seen.has(r.player_id) && seen.add(r.player_id));
+};
+// The guest RPCs' refusals in words. The page checks names and courts before
+// asking, so these are a stale page or a second tab.
+const guestError = (err) => {
+  const m = (err?.message || String(err)).toLowerCase();
+  if (m.includes("guest_not_found") || m.includes("clinic_not_found")) return "That just changed. Here's the latest.";
+  if (m.includes("clinic_canceled")) return "That clinic is canceled.";
+  return friendly(err);
 };
 // admin_invite_player's refusals in words (the phone's ClinicFull.inviteError).
 const inviteError = (err, name) => {
@@ -533,7 +567,7 @@ const chargeOne = (r) => {
 const endSentence = (t) => /[.!?]$/.test(t.trim()) ? t.trim() : t.trim() + ".";
 const reminderBody = (c, paymentLine) =>
   `Just a reminder that ${c.name} (${fmtDate(c.starts_at)}) hasn't been paid yet. ${endSentence(paymentLine)} Thanks!`;
-const courtSelect = (r) => `<select class="court" data-court="${r.id}" aria-label="Court">
+const courtSelect = (r, attr = "court") => `<select class="court" data-${attr}="${r.id}" aria-label="Court">
   <option value=""${r.court_number == null ? " selected" : ""}>No court</option>
   ${COURTS.map(n => `<option value="${n}"${r.court_number === n ? " selected" : ""}>Court ${n}</option>`).join("")}
 </select>`;
@@ -662,6 +696,7 @@ let editingId = null;
 let messagingClinic = null;
 let walkupClinic = null;
 let invitingClinic = null;
+let guestClinic = null;
 let messagingPlayer = null;
 let lateCancelReg = null;
 let templates = [];
@@ -1249,13 +1284,15 @@ async function loadClinics() {
   // (the Player Pool's numbers are Tara's priority order). Players are read
   // whole because Action Needed names people who are not on a roster yet.
   const onScreen = [...visible, ...visibleEarlier].map(c => c.id);
-  const [{ data: regs, error: regsError }, { data: players, error: playersError }, history] = await Promise.all([
+  const [{ data: regs, error: regsError }, { data: players, error: playersError }, history, { data: guests, error: guestsError }] = await Promise.all([
     readByIds(onScreen, (part) => sb.from("registrations_admin").select("*").in("clinic_id", part).order("registered_at").order("id")),
     readAll(() => sb.from("players").select("id,first_name,last_name,is_member,adult_rating,level_note").order("id")),
     readHistory(),
+    // Every on-screen clinic's guests in one call.
+    onScreen.length ? sb.rpc("admin_clinic_guests", { p_clinics: onScreen }) : { data: [], error: null },
   ]);
   if (stale()) return;
-  if (regsError || playersError) {
+  if (regsError || playersError || guestsError) {
     $("clinics").innerHTML = "";
     return note($("msg"), "Couldn't load clinics.");
   }
@@ -1276,6 +1313,8 @@ async function loadClinics() {
   playerIndex = byPlayer;
   regsByClinic = {};
   for (const r of (regs || [])) (regsByClinic[r.clinic_id] ||= []).push(r);
+  guestsByClinic = {};
+  for (const g of (guests || [])) (guestsByClinic[g.clinic_id] ||= []).push(g);
   await loadActionNeeded(clinics, byPlayer, owed, stale);
   if (stale()) return;
   loadMoney();
@@ -1295,12 +1334,21 @@ async function loadClinics() {
     const lateOpen = c.status !== "canceled" && Date.now() >= new Date(c.starts_at).getTime() - cutoffHours * 3600_000;
     const liveCharge = (r) => ["pending", "processing", "succeeded"].includes(r.charge_status);
     const nameOf = (r) => { const p = byPlayer[r.player_id]; return p ? `${p.first_name} ${p.last_name}` : "this player"; };
+    // Guests read after the players in You're In!, in the order she added
+    // them: a name, a Guest tag, a court and Remove; nothing that messages
+    // or charges, since the app never does either for a guest.
+    const guests = guestsByClinic[c.id] || [];
+    const guestRows = () => guests.map(g => `<div class="row" data-guest-row="${g.id}">
+            <span class="grow"><span class="name">${esc(g.first_name + " " + g.last_name)}</span> <span class="chip guest">Guest</span></span>
+            ${courtSelect(g, "guestcourt")}${c.status !== "canceled" ? `<button class="small" data-removeguest="${g.id}">Remove</button>` : ""}
+          </div>`).join("");
     const section = (s, extra) => {
       const rows = group(s);
-      if (!rows.length) return "";
+      const extraRows = s === "in" ? guests.length : 0;
+      if (!rows.length && !extraRows) return "";
       return `<div style="margin-top:12px">
         <span class="chip ${STATUS[s].cls}">${STATUS[s].label}</span>
-        <span class="muted"> ${rows.length}</span>
+        <span class="muted"> ${rows.length + extraRows}</span>
         ${rows.map((r, i) => {
           const p = byPlayer[r.player_id];
           const who = p ? `${p.first_name} ${p.last_name}` : "Unknown player";
@@ -1313,6 +1361,7 @@ async function loadClinics() {
             ${extra(r)}
           </div>`;
         }).join("")}
+        ${s === "in" ? guestRows() : ""}
       </div>`;
     };
     return `<div class="card" id="clinic-${c.id}">
@@ -1320,11 +1369,12 @@ async function loadClinics() {
         <span class="grow"><span class="name">${esc(c.name)}</span><br>
           <span class="muted">${fmtDate(c.starts_at)}<br>${c.duration_minutes} min,
           ${money(c.member_price_cents)} member / ${money(c.nonmember_price_cents)} non-member</span></span>
-        <span class="muted">${group("in").length}/${c.internal_capacity}</span>
+        <span class="muted" data-taken="${c.id}">${group("in").length + guests.length}/${c.internal_capacity}</span>
         <button class="small" data-edit="${c.id}">Edit</button>
         <button class="small" data-message="${c.id}">Message</button>
         <button class="small" data-walkup="${c.id}">Add player</button>
         ${c.status === "published" && new Date(c.ends_at) > new Date() ? `<button class="small" data-inviteany="${c.id}">Invite player</button>` : ""}
+        ${c.status !== "canceled" ? `<button class="small" data-addguest="${c.id}">Add guest</button>` : ""}
         ${c.status !== "canceled" ? `<a class="button small" href="sheet.html?clinic=${c.id}" target="_blank" rel="noopener">Court sheet</a>` : ""}
         ${zelleOn && unpaidIn(c).length ? `<button class="small" data-remind="${c.id}" data-n="${unpaidIn(c).length}">Remind unpaid (${unpaidIn(c).length})</button>` : ""}
         ${c.status === "draft" ? `<button class="small primary" data-publish="${c.id}">Publish</button>` : ""}
@@ -1385,6 +1435,20 @@ document.addEventListener("change", async (e) => {
     if (error) throw error;
     await loadClinics();
   } catch (err) { note($("msg"), friendly(err)); sel.disabled = false; }
+});
+
+// A guest's court, the same five courts (admin_set_guest_court).
+document.addEventListener("change", async (e) => {
+  const sel = e.target.closest("select[data-guestcourt]"); if (!sel) return;
+  sel.disabled = true;
+  try {
+    const { error } = await sb.rpc("admin_set_guest_court", {
+      p_guest: sel.dataset.guestcourt,
+      p_court: sel.value === "" ? null : Number(sel.value),
+    });
+    if (error) throw error;
+    await loadClinics();
+  } catch (err) { note($("msg"), guestError(err)); sel.disabled = false; }
 });
 
 document.addEventListener("click", async (e) => {
@@ -1498,6 +1562,28 @@ document.addEventListener("click", async (e) => {
       return;
     }
     return run(() => call("cancel_registration", { p_registration: b.dataset.remove }));
+  }
+  if (b.dataset.removeguest) {
+    // Two clicks, like a player's Remove. Kept with removed_at, never deleted
+    // (hard rule 4).
+    if (b.dataset.armed !== "1") {
+      b.dataset.armed = "1"; b.textContent = "Really remove?"; b.classList.add("danger");
+      setTimeout(() => { if (b.isConnected) { b.dataset.armed = ""; b.textContent = "Remove"; b.classList.remove("danger"); } }, 5000);
+      return;
+    }
+    b.disabled = true;
+    try {
+      const { error } = await sb.rpc("admin_remove_guest", { p_guest: b.dataset.removeguest });
+      if (error) throw error;
+      await loadClinics();
+    } catch (err) { note($("msg"), guestError(err)); b.disabled = false; }
+    return;
+  }
+  if (b.dataset.addguest) {
+    guestClinic = b.dataset.addguest;
+    $("g-first").value = ""; $("g-last").value = ""; note($("guest-msg"), "");
+    $("guest").showModal(); $("g-first").focus();
+    return;
   }
   if (b.dataset.remind)   {
     // run() reloads the page state, which clears #msg, so the confirmation is
@@ -1675,6 +1761,31 @@ $("edit-cancel").onclick = () => $("edit").close();
 $("message-cancel").onclick = () => $("message").close();
 $("walkup-cancel").onclick = () => $("walkup").close();
 $("inviteany-cancel").onclick = () => $("inviteany").close();
+$("guest-cancel").onclick = () => $("guest").close();
+// Add guest. On a full clinic, the same question as Add player; Cancel does
+// nothing. Capacity never blocks her: the server takes the guest regardless.
+$("guest-save").onclick = async () => {
+  const first = $("g-first").value.trim(), last = $("g-last").value.trim();
+  if (!first) return $("g-first").focus();
+  if (!last) return $("g-last").focus();
+  if (!goAheadIfFull(guestClinic, `add ${first} ${last}`)) return;
+  const btn = $("guest-save"); btn.disabled = true;
+  try {
+    const { error } = await sb.rpc("admin_add_guest", { p_clinic: guestClinic, p_first: first, p_last: last });
+    if (error) throw error;
+    $("guest").close();
+    await loadClinics();
+  } catch (err) {
+    // The page trims and caps both names first, so these are not expected;
+    // friendly() would call name_required "A clinic needs a name".
+    const m = err?.message || "";
+    if (m.includes("guest_already_added")) note($("guest-msg"), `${first} ${last} is already on this clinic.`);
+    else if (m.includes("name_required") || m.includes("name_too_long")) $("g-first").focus();
+    else note($("guest-msg"), guestError(err));
+  }
+  finally { btn.disabled = false; }
+};
+$("g-last").addEventListener("keydown", e => { if (e.key === "Enter") $("guest-save").click(); });
 $("messageplayer-cancel").onclick = () => $("messageplayer").close();
 $("latecancel-keep").onclick = () => $("latecancel").close();
 $("latecancel-save").onclick = async () => {
