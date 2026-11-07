@@ -72,7 +72,7 @@ insert into public.clinic_templates (id, name, audience, category, description,
     price_cents, member_price_cents, nonmember_price_cents,
     default_start_time, duration_minutes, internal_capacity) values
   ('b0000000-0000-0000-0000-000000000001', 'Ladies Drill', 'ladies', 'Clinic',
-   'Live-ball drilling, 3.0 to 4.0.', 2200, 2200, 3000, '09:00', 90, 8),
+   'Live-ball drilling, 3.0 to 4.0.', 2200, 2200, 2800, '09:00', 90, 8),
   ('b0000000-0000-0000-0000-000000000002', 'Coed Cardio',  'coed',   'Clinic',
    'Fast-paced hour, all levels.',     1800, 1800, 2300, '18:00', 60, 10)
 on conflict (id) do nothing;
