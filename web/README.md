@@ -44,7 +44,13 @@ courtside work; this does weekly setup.
   or not they are in any clinic). `admin_message_player`, 20261107000002
 * **Invite player** on a published clinic that has not ended: anyone not
   already on it gets an invitation to accept or decline (`admin_invite_player`)
-* On a full clinic (You're In! at Max players), Move in / Invite on the
+* **Add guest** on any clinic not canceled: a first and last name for
+  someone who isn't in the app (`admin_add_guest`, 20261107000003). A guest
+  sits in You're In! after the players with a Guest tag, a court and Remove
+  (kept with `removed_at`), counts toward the clinic's spots, and is on the
+  court sheet marked "(guest)". Never messaged and never charged by the app:
+  Tara collects her own way
+* On a full clinic (You're In! and guests at Max players), Move in / Invite on the
   Waitlist, Invite player and Add player ask "Are you sure ...? Your clinic is
   full (25/25)." first; Cancel does nothing, and capacity never blocks her
 * **Action Needed** at the top: players asking in after the 3-hour close (Put
@@ -82,7 +88,7 @@ get committed aimed at the wrong project. Sign in as `tara@fxe.test` /
 
 ## Test it
 
-79 Playwright tests (`cat web/tests/*.spec.mjs | grep -cE '^\s*test\('`,
+81 Playwright tests (`cat web/tests/*.spec.mjs | grep -cE '^\s*test\('`,
 2026-11-07) walk this page the way Tara does, against the LOCAL stack on a
 fresh seed. They are the only automated check on the web admin,
 so they run in CI on every push (`web-browser-tests` in `probes.yml`).
