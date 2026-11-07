@@ -162,9 +162,16 @@ struct ProTodayView: View {
             }
 
             if clinic.players.isEmpty {
+                // On the raised card, like the rows: on the court backdrop it
+                // failed the iOS 18 contrast audit (2026-11-07), once the week
+                // brought clinics nobody is in yet.
                 Text("Nobody is in yet.")
                     .brandFont(.body)
                     .foregroundStyle(Brand.textSecondary)
+                    .frame(maxWidth: .infinity, minHeight: Brand.Layout.comfortableTapTarget, alignment: .leading)
+                    .padding(.horizontal, Brand.Spacing.cardPadding)
+                    .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.md))
+                    .overlay(RoundedRectangle(cornerRadius: Brand.Radius.md).stroke(Brand.hairline))
             } else {
                 VStack(spacing: 0) {
                     ForEach(clinic.players) { player in
