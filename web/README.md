@@ -73,7 +73,7 @@ get committed aimed at the wrong project. Sign in as `tara@fxe.test` /
 
 ## Test it
 
-74 Playwright tests (`cat web/tests/*.spec.mjs | grep -cE '^\s*test\('`,
+75 Playwright tests (`cat web/tests/*.spec.mjs | grep -cE '^\s*test\('`,
 2026-11-05) walk this page the way Tara does, against the LOCAL stack on a
 fresh seed. They are the only automated check on the web admin,
 so they run in CI on every push (`web-browser-tests` in `probes.yml`).
