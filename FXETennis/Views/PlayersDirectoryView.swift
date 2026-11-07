@@ -173,6 +173,8 @@ private struct PlayerAdminDetailView: View {
     @State private var history: PlayerHistory?
     /// This player's level requests and approvals (decision 0048).
     @State private var levels: [AdminLevelApproval] = []
+    /// Message them, whatever clinic they are or are not in (20261107000002).
+    @State private var messaging = false
 
     init(player: PlayerSearchResult, onChange: @escaping () -> Void) {
         self.player = player
@@ -221,6 +223,22 @@ private struct PlayerAdminDetailView: View {
                                     .accessibilityIdentifier("admin.player.lastPlayed")
                             }
                         }
+                    }
+
+                    // Tara, 2026-11-06: "Allow me to send a message to anyone
+                    // whenever they are".
+                    Button { messaging = true } label: {
+                        Label("Message \(player.firstName)", systemImage: "bubble.left")
+                            .brandFont(.chip)
+                            .foregroundStyle(Brand.textOnNavy)
+                            .padding(.horizontal, Brand.Spacing.sm)
+                            .frame(minHeight: Brand.Layout.minTapTarget)
+                            .background(Capsule().fill(Brand.navy))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("admin.player.message")
+                    .sheet(isPresented: $messaging) {
+                        MessagePlayerSheet(playerId: player.id, name: "\(player.firstName) \(player.lastName)")
                     }
 
                     VStack(spacing: 0) {

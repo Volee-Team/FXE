@@ -66,7 +66,7 @@ begin
   select member_price_cents::text into v from public.clinics where id = c90;
   insert into _probe_result values ('default_member_90_is_2200', '2200', v);
   select nonmember_price_cents::text into v from public.clinics where id = c90;
-  insert into _probe_result values ('default_nonmember_90_is_3000', '3000', v);
+  insert into _probe_result values ('default_nonmember_90_is_2800', '2800', v);
 
   -- ── what each player is actually charged ─────────────────────────────────
   perform set_config('request.jwt.claims', json_build_object('sub', MARIA_ACC)::text, true);
@@ -88,7 +88,7 @@ begin
   -- described, and it must still charge the non-member rate.
   perform set_config('request.jwt.claims', json_build_object('sub', TARA_ACC)::text, true);
   r := public.place_player(c90, ROB, 'in');
-  insert into _probe_result values ('nonmember_charged_3000_for_90', '3000', r.price_cents_charged::text);
+  insert into _probe_result values ('nonmember_charged_2800_for_90', '2800', r.price_cents_charged::text);
 
   -- ── THE GUARANTEE: history does not move ─────────────────────────────────
   -- This is the whole reason the price is snapshotted. Tara reconciles real
@@ -122,12 +122,12 @@ begin
   insert into _probe_result values ('placed_player_snapshot_member', 'true', r.was_member::text);
 
   -- ── the reconciliation numbers ───────────────────────────────────────────
-  -- 90-minute clinic: Maria $22 (member) + Rob $30 (non-member, $28 until 2026-11-08) + Ken $22
-  -- placed by Tara = $74 expected, nothing marked paid yet.
+  -- 90-minute clinic: Maria $22 (member) + Rob $28 (non-member; $30 for two days, 11-05 to 11-07) + Ken $22
+  -- placed by Tara = $72 expected, nothing marked paid yet.
   select expected_cents::text into v from public.revenue_by_clinic where clinic_id = c90;
-  insert into _probe_result values ('revenue_90_expected_7400', '7400', v);
+  insert into _probe_result values ('revenue_90_expected_7200', '7200', v);
   select outstanding_cents::text into v from public.revenue_by_clinic where clinic_id = c90;
-  insert into _probe_result values ('revenue_90_all_outstanding', '7400', v);
+  insert into _probe_result values ('revenue_90_all_outstanding', '7200', v);
   select member_players::text into v from public.revenue_by_clinic where clinic_id = c90;
   insert into _probe_result values ('revenue_90_two_members', '2', v);
   select nonmember_players::text into v from public.revenue_by_clinic where clinic_id = c90;
@@ -142,9 +142,9 @@ begin
   select collected_cents::text into v from public.revenue_by_clinic where clinic_id = c90;
   insert into _probe_result values ('revenue_90_collected_2200', '2200', v);
   select outstanding_cents::text into v from public.revenue_by_clinic where clinic_id = c90;
-  insert into _probe_result values ('revenue_90_outstanding_5200', '5200', v);
+  insert into _probe_result values ('revenue_90_outstanding_5000', '5000', v);
   select expected_cents::text into v from public.revenue_by_clinic where clinic_id = c90;
-  insert into _probe_result values ('expected_unchanged_by_payment', '7400', v);
+  insert into _probe_result values ('expected_unchanged_by_payment', '7200', v);
 
   -- A Player Pool entry owes nothing until Tara gives them a spot.
   perform set_config('role', 'postgres', true);
@@ -153,13 +153,13 @@ begin
   values (c90, 'a0000000-0000-0000-0000-000000000004', 'pool', 'self', 2200, true, 90);
   perform set_config('role', 'authenticated', true);
   select expected_cents::text into v from public.revenue_by_clinic where clinic_id = c90;
-  insert into _probe_result values ('pool_entry_owes_nothing', '7400', v);
+  insert into _probe_result values ('pool_entry_owes_nothing', '7200', v);
 
   -- ── the four numbers Tara reads off ──────────────────────────────────────
-  -- Two members and one non-member on a 90 ($74), plus on the 60 (past the
+  -- Two members and one non-member on a 90 ($72), plus on the 60 (past the
   -- member window): Maria, a member, and Rob, a non-member, are both on the
   -- Waitlist (decision 0050: after the public open members wait too) and owe
-  -- nothing. $74.
+  -- nothing. $72.
   perform set_config('request.jwt.claims', json_build_object('sub', TARA_ACC)::text, true);
   select member_90_players::text into v from public.revenue_summary();
   insert into _probe_result values ('summary_member_90_is_2', '2', v);
@@ -168,7 +168,7 @@ begin
   select other_players::text into v from public.revenue_summary();
   insert into _probe_result values ('summary_no_odd_durations', '0', v);
   select expected_cents::text into v from public.revenue_summary();
-  insert into _probe_result values ('summary_expected_7400', '7400', v);
+  insert into _probe_result values ('summary_expected_7200', '7200', v);
   select collected_cents::text into v from public.revenue_summary();
   insert into _probe_result values ('summary_collected_2200', '2200', v);
   -- The buckets must always reconcile to the total, or a number is going missing.

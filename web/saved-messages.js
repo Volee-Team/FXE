@@ -20,7 +20,9 @@ export const savable = (text) => {
 
 // dialog, box (textarea), list (container), save (button), say(text, ok) for
 // the dialog's message line, friendly(err) for server errors in words.
-export function wireSavedMessages(sb, { dialog, box, list, save, say, friendly }) {
+// idPrefix keeps each saved row's id unique when two dialogs carry the list
+// (the clinic's Message players and the Players tab's one-player message).
+export function wireSavedMessages(sb, { dialog, box, list, save, say, friendly, idPrefix = "saved-" }) {
   let generation = 0;
 
   const refreshSave = () => { save.disabled = savable(box.value) === null; };
@@ -41,7 +43,7 @@ export function wireSavedMessages(sb, { dialog, box, list, save, say, friendly }
       const use = document.createElement("button");
       use.type = "button";
       use.className = "saved-use";
-      use.id = `saved-${m.id}`;
+      use.id = `${idPrefix}${m.id}`;
       use.textContent = m.body;            // text, never HTML: her words as typed
       use.addEventListener("click", () => {
         box.value = m.body;

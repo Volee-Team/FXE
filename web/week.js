@@ -56,16 +56,26 @@ export function serviceWeekStart(now = new Date()) {
   return nyMidnight(sunday.getUTCFullYear(), sunday.getUTCMonth() + 1, sunday.getUTCDate());
 }
 
-// Split clinics into the two lists the tab draws.
-//   current: every clinic that ends after the week began, plus, while
+// 00:00 in New York of the day containing `now`.
+export function nyDayStart(now = new Date()) {
+  const c = nyClock(now);
+  return nyMidnight(c.year, c.month, c.day);
+}
+// Split clinics into the two lists the tab draws. `since` is where the tab
+// starts: the start of today in New York (Tara, 2026-11-07: "Don't need to
+// see Nov 1 on my screen at all. Maybe in the past clinic history that has a
+// drop down IF I want to see it at all"). It was the start of the service
+// week until then, so Sunday's clinics stayed up all week. `weekStart` is the
+// old name and still works.
+//   current: every clinic that ends after `since`, plus, while
 //            payments are on, any earlier clinic that Charge clinic would
 //            still charge someone for (`owed`: clinic ids), so a Saturday
 //            nobody has charged does not vanish at midnight. Never a
 //            canceled one: Charge clinic is not offered on those.
 //   earlier: everything else, shown only behind Show earlier.
-// current reads forward in time; earlier reads back from the week's start.
-export function splitThisWeek(clinics, { weekStart, paymentsOn = false, owed = new Set() }) {
-  const t0 = weekStart.getTime();
+// current reads forward in time; earlier reads back from `since`.
+export function splitThisWeek(clinics, { since, weekStart, paymentsOn = false, owed = new Set() }) {
+  const t0 = (since ?? weekStart).getTime();
   const current = [], earlier = [];
   for (const c of clinics) {
     const inWeek = new Date(c.ends_at).getTime() > t0;

@@ -46,6 +46,17 @@ final class AdminClinicModel {
     var canceled: [RosterEntry] { roster.filter { $0.registration.status == .canceled } }
     var lateRequests: [(request: LateRequest, player: PlayerProfile?)] = []
     var unpaidCount: Int { youreIn.filter { !$0.registration.paid }.count }
+    /// Who "One player" can reach: everyone on the clinic who is not canceled,
+    /// You're In! first, as the lists read; one row per player.
+    var messageable: [RosterEntry] {
+        var seen = Set<UUID>()
+        return (youreIn + pool + responseNeeded).filter { seen.insert($0.registration.playerId).inserted }
+    }
+    /// Player ids already on the clinic (In, Waitlist or invited): the invite
+    /// sheet marks them instead of letting the server refuse.
+    var onClinic: Set<UUID> { Set((youreIn + pool + responseNeeded).map(\.registration.playerId)) }
+    /// Tara's "clinic is full" question (ClinicFull).
+    var isFull: Bool { ClinicFull.isFull(inCount: youreIn.count, capacity: clinic.internalCapacity) }
     /// Decision 0013: false, so Paid/Unpaid and the reminder stay hidden.
     var zelleAllowed = false
     /// app_settings.cancel_cutoff_hours (3, decision 0013), for Late cancel.
@@ -158,6 +169,10 @@ struct AdminClinicDetailView: View {
     @State private var cancelError: String?
     @State private var model: AdminClinicModel
     @State private var showMessage = false
+    /// A Waitlist Invite / Move In waiting on "Your clinic is full" (item 5).
+    @State private var fullFor: RosterEntry?
+    /// Invite anyone, not only the Waitlist (item 2).
+    @State private var invitingAnyone = false
     @State private var confirmRemind = false
     @State private var remindNote: String?
 
@@ -237,6 +252,12 @@ struct AdminClinicDetailView: View {
             if clinic.status != "canceled" {
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
+                        // Tara, 2026-11-06: "Allow me to invite anyone to a
+                        // clinic that is not on a waitlist". Only while players
+                        // can see it and it has not ended.
+                        if clinic.status == "published" && !model.isOver() {
+                            Button("Invite a player") { invitingAnyone = true }
+                        }
                         // Charge clinic was here until 2026-10-02: Tara charges
                         // each person on the row instead (decision 0037).
                         Button("Cancel clinic", role: .destructive) { confirmCancelClinic = true }
@@ -316,8 +337,25 @@ struct AdminClinicDetailView: View {
         .task { await model.load() }
         // The roster as it is now when Tara comes back to the app (MVP audit item 8).
         .reloadOnForeground { await model.load() }
+        .confirmationDialog(
+            fullFor.map { ClinicFull.question(movesIn ? .moveIn : .invite, name: $0.displayName,
+                                              inCount: model.youreIn.count, capacity: clinic.internalCapacity ?? 0) } ?? "",
+            isPresented: Binding(get: { fullFor != nil }, set: { if !$0 { fullFor = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button(movesIn ? "Move In" : "Invite") {
+                if let entry = fullFor { invite(entry) }
+                fullFor = nil
+            }
+            Button("Cancel", role: .cancel) { fullFor = nil }
+        }
+        .sheet(isPresented: $invitingAnyone) {
+            InvitePlayerSheet(clinic: clinic, inCount: model.youreIn.count, onClinic: model.onClinic) {
+                await model.load()
+            }
+        }
         .sheet(isPresented: $showMessage) {
-            MessageClinicSheet(clinic: clinic, unpaidCount: model.unpaidCount)
+            MessageClinicSheet(clinic: clinic, unpaidCount: model.unpaidCount, roster: model.messageable)
         }
     }
 
@@ -836,9 +874,7 @@ struct AdminClinicDetailView: View {
 
     private func inviteButton(_ entry: RosterEntry) -> some View {
         Button {
-            Task { await model.perform(entry.id) {
-                try await AdminRepository.invite(registration: entry.id)
-            } }
+            if model.isFull { fullFor = entry } else { invite(entry) }
         } label: {
             Text(movesIn ? "Move In" : "Invite")
                 .brandFont(.chip)
@@ -851,6 +887,12 @@ struct AdminClinicDetailView: View {
         .disabled(model.busy.contains(entry.id))
         .accessibilityIdentifier("admin.invite")
         .accessibilityLabel(movesIn ? "Move \(entry.displayName) in" : "Invite \(entry.displayName)")
+    }
+
+    private func invite(_ entry: RosterEntry) {
+        Task { await model.perform(entry.id) {
+            try await AdminRepository.invite(registration: entry.id)
+        } }
     }
 
     /// Before clinic day the button puts the player straight into You're In!
@@ -919,9 +961,24 @@ struct AdminClinicDetailView: View {
 private struct MessageClinicSheet: View {
     let clinic: ClinicAdmin
     let unpaidCount: Int
+    /// Everyone on this clinic who is not canceled, for "One player".
+    let roster: [RosterEntry]
+
+    /// A group, or one player (20261107000002). Tara, pointing at this
+    /// sheet's To menu, 2026-11-06: "For instance, here - option to message
+    /// individual".
+    enum To: Hashable {
+        case group(MessageAudience)
+        case onePlayer
+    }
 
     @Environment(\.dismiss) private var dismiss
-    @State private var audience: MessageAudience = .everyone
+    @State private var to: To = .group(.everyone)
+    @State private var player: UUID?
+    private var audience: MessageAudience? {
+        if case .group(let a) = to { return a }
+        return nil
+    }
     @State private var body_ = ""
     @State private var sending = false
     @State private var error: String?
@@ -938,14 +995,29 @@ private struct MessageClinicSheet: View {
                         .brandFont(.subheadline)
                         .foregroundStyle(Brand.textSecondary)
 
-                    Picker("To", selection: $audience) {
+                    Picker("To", selection: $to) {
                         ForEach(MessageAudience.allCases) { a in
-                            Text(a.label).tag(a)
+                            Text(a.label).tag(To.group(a))
+                        }
+                        if !roster.isEmpty {
+                            Text("One player").tag(To.onePlayer)
                         }
                     }
                     .pickerStyle(.menu)
                     .tint(Brand.navy)
                     .accessibilityIdentifier("admin.messageAudience")
+
+                    if to == .onePlayer {
+                        Picker("Player", selection: $player) {
+                            Text("Choose a player").tag(UUID?.none)
+                            ForEach(roster) { entry in
+                                Text(entry.displayName).tag(UUID?.some(entry.registration.playerId))
+                            }
+                        }
+                        .pickerStyle(.menu)
+                        .tint(Brand.navy)
+                        .accessibilityIdentifier("admin.messagePlayer")
+                    }
 
                     if audience == .unpaid {
                         Text("\(unpaidCount) unpaid.")
@@ -988,7 +1060,8 @@ private struct MessageClinicSheet: View {
                 .onNavy()
                 ToolbarItem(placement: .confirmationAction) {
                     Button(sending ? "Sending…" : "Send") { send() }
-                        .disabled(sending || body_.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .disabled(sending || body_.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                  || (to == .onePlayer && player == nil))
                         .accessibilityIdentifier("admin.sendMessage")
                     .tint(Brand.textOnNavy)
                 }
@@ -999,13 +1072,14 @@ private struct MessageClinicSheet: View {
 
     private func send() {
         sending = true
+        let text = body_.trimmingCharacters(in: .whitespacesAndNewlines)
         Task {
             do {
-                try await AdminRepository.sendMessage(
-                    clinic: clinic.id,
-                    audience: audience,
-                    body: body_.trimmingCharacters(in: .whitespacesAndNewlines)
-                )
+                if let audience {
+                    try await AdminRepository.sendMessage(clinic: clinic.id, audience: audience, body: text)
+                } else if let player {
+                    try await AdminRepository.messagePlayer(player, body: text, clinic: clinic.id)
+                }
                 dismiss()
             } catch {
                 self.error = "The message didn't send. Check your connection and try again."

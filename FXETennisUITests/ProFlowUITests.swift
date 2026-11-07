@@ -34,24 +34,46 @@ final class ProFlowUITests: XCTestCase {
         }
     }
 
-    /// The pro signs in, has Today and no Manage, sees today's clinic with
-    /// its two players and their courts, marks Lena a No-show (read back from
-    /// the server's answer), and finds no Invite, no Player Pool and no price
-    /// anywhere on the tab.
+    /// The pro signs in, has a Manage tab that is the pro's and not Tara's
+    /// (since 2026-11-07, at Tara's word; it was Today), sees today's clinic
+    /// under TODAY with its two players and their courts, gives Theo a court and
+    /// takes it back (read back from the server's answer), marks Lena a
+    /// No-show, and finds no Invite, no Player Pool and no price anywhere on
+    /// the tab.
     func testProSeesTodayAndMarksANoShow() {
         app.launch()
         signIn(as: pro)
 
-        XCTAssertTrue(todayTab.waitForExistence(timeout: 10), "A pro has no Today tab")
-        XCTAssertFalse(app.tabBars.buttons["Manage"].exists, "A pro was given Tara's Manage tab")
+        XCTAssertTrue(todayTab.waitForExistence(timeout: 10), "A pro has no Manage tab")
 
         openToday()
+        XCTAssertFalse(app.descendants(matching: .any).matching(identifier: "admin.clinic.card").firstMatch.exists,
+                       "A pro was given Tara's Manage")
+        XCTAssertTrue(app.staticTexts["TODAY"].waitForExistence(timeout: 20), "No TODAY heading on the pro's week")
         XCTAssertTrue(app.staticTexts["Today Drill"].waitForExistence(timeout: 20),
                       "Today's seeded clinic is not on the Today tab. Texts: \(app.staticTexts.allElementsBoundByIndex.map(\.label).prefix(30))")
         XCTAssertTrue(app.staticTexts["Lena Brooks"].waitForExistence(timeout: 10), "Lena is not listed")
         XCTAssertTrue(app.staticTexts["Theo Grant"].exists, "Theo is not listed")
-        XCTAssertTrue(app.staticTexts["Court 1"].exists, "Lena's court is not shown")
-        keepScreenshot("1 Today tab, as the pro")
+        let lenaCourt = app.buttons.matching(identifier: "pro.court")
+            .matching(NSPredicate(format: "label CONTAINS[c] 'Lena Brooks, court 1'")).firstMatch
+        XCTAssertTrue(lenaCourt.exists, "Lena's court is not shown")
+        keepScreenshot("1 Manage tab, as the pro")
+
+        // A court for Theo, then none again (the seed has him on no court).
+        let theoCourt = app.buttons.matching(identifier: "pro.court")
+            .matching(NSPredicate(format: "label CONTAINS[c] 'Theo Grant'")).firstMatch
+        XCTAssertTrue(theoCourt.waitForExistence(timeout: 10), "No court menu on Theo's row")
+        theoCourt.tap()
+        XCTAssertTrue(app.buttons["Court 3"].waitForExistence(timeout: 10), "The court menu did not open")
+        app.buttons["Court 3"].tap()
+        expectation(for: NSPredicate(format: "label CONTAINS[c] 'court 3'"), evaluatedWith: theoCourt)
+        waitForExpectations(timeout: 15)
+        keepScreenshot("1b Theo on court 3")
+        theoCourt.tap()
+        XCTAssertTrue(app.buttons["No court"].waitForExistence(timeout: 10))
+        app.buttons["No court"].tap()
+        expectation(for: NSPredicate(format: "label CONTAINS[c] 'no court'"), evaluatedWith: theoCourt)
+        waitForExpectations(timeout: 15)
 
         // Came -> No-show, asserted from the toggle's own label, which is
         // rebuilt from pro_today() after the RPC returns.
@@ -86,18 +108,16 @@ final class ProFlowUITests: XCTestCase {
         waitForExpectations(timeout: 15)
     }
 
-    /// Players never see the tab; Tara keeps Manage and does not get Today.
+    /// Players never see the tab; Tara's Manage is still hers.
     func testOnlyAProHasTheTodayTab() {
         app.launch()
         signIn(as: member)
         XCTAssertTrue(app.tabBars.buttons["Profile"].waitForExistence(timeout: 10))
-        XCTAssertFalse(todayTab.exists, "A member was given the pro's Today tab")
         XCTAssertFalse(app.tabBars.buttons["Manage"].exists, "A member was given Manage")
         signOut()
 
         signIn(as: admin)
         XCTAssertTrue(app.tabBars.buttons["Manage"].waitForExistence(timeout: 10), "Tara lost Manage")
-        XCTAssertFalse(todayTab.exists, "Tara was given the pro's Today tab")
 
         // Her roster of the same clinic still has her controls. Came /
         // No-show is on every You're In! row before and after the clinic;
@@ -128,16 +148,16 @@ final class ProFlowUITests: XCTestCase {
         add(shot)
     }
 
-    private var todayTab: XCUIElement { app.tabBars.buttons["Today"] }
+    private var todayTab: XCUIElement { app.tabBars.buttons["Manage"] }
 
     /// The iOS 26 simulator's tab bar drops a first tap now and then
     /// (2026-09-12), so tap once more before calling it a failure.
     private func openToday() {
         todayTab.tap()
-        if !app.navigationBars["Today"].waitForExistence(timeout: 5) {
+        if !app.navigationBars["Manage"].waitForExistence(timeout: 5) {
             todayTab.tap()
         }
-        XCTAssertTrue(app.navigationBars["Today"].waitForExistence(timeout: 15), "The Today tab never opened")
+        XCTAssertTrue(app.navigationBars["Manage"].waitForExistence(timeout: 15), "The Manage tab never opened")
     }
 
     private func signIn(as email: String) {
