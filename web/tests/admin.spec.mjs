@@ -330,7 +330,9 @@ test.describe("payments switch", () => {
     // button on any roster row or ledger row.
     await signIn(page, TARA);
     await expect(page.locator("#clinics .card").first()).toBeVisible();
-    await expect(page.getByRole("button", { name: /^Charge/ })).toHaveCount(0);
+    // A fee button reads "Charge $18". Charge half (rain) (decision 0053) is
+    // a price change, not a charge, and is on every card either way.
+    await expect(page.getByRole("button", { name: /^Charge \$/ })).toHaveCount(0);
     // Decision 0012: no-shows are Tara's to mark, switch or no switch. The
     // seed has Ken in Thursday Morning Cardio, so one row offers it.
     await expect(page.getByRole("button", { name: "Came" }).first()).toBeVisible();
@@ -1257,6 +1259,127 @@ test.describe("guests", () => {
       expect(await db.get(`clinic_guests?clinic_id=eq.${clinic.id}&select=first_name`)).toEqual([{ first_name: "Pat" }]);
     } finally {
       await cleanup(db, clinic);
+    }
+  });
+});
+
+// Decision 0053. Tara, 2026-11-07: "I would just be able to manually change
+// the clinic rate ... even though I hardly will ever do that unless it rains"
+// and "if I could have the option to charge half, then that means everybody
+// would be charged half if it were to rain". Both reprice every registration
+// on the clinic that is not Paid and holds no charge.
+test.describe("clinic price and rain", () => {
+  const rainClinic = (name) => ({
+    name, audience: "coed", category: "Clinic", description: "browser test",
+    starts_at: daysAgo(-2), ends_at: daysAgo(-2, 1),
+    member_opens_at: daysAgo(3), public_opens_at: daysAgo(2),
+    internal_capacity: 8, status: "published", duration_minutes: 60,
+  });
+  const inReg = (db, clinic, player, member, cents, extra = {}) => db.insert("registrations", { clinic_id: clinic.id,
+    player_id: player, status: "in", source: "admin", price_cents_charged: cents, was_member: member, duration_minutes: 60, ...extra });
+
+  test("Change price and Charge half reprice everyone not yet paid, and the card says so", async ({ page, request }) => {
+    const db = service(request);
+    const clinic = await db.insert("clinics", rainClinic("Browser Rain Clinic"));
+    const asked = [];
+    try {
+      const maria = await inReg(db, clinic, MARIA_P, true, 1800);
+      const rob = await inReg(db, clinic, ROB_P, false, 2300);
+      const ken = await inReg(db, clinic, KEN_P, true, 1800, { paid: true });   // Paid: never repriced
+      const dana = await inReg(db, clinic, DANA_P, true, 1800);                  // a no-show, below
+      const who = { [maria.id]: "maria", [rob.id]: "rob", [ken.id]: "ken", [dana.id]: "dana" };
+      const cents = async () => Object.fromEntries((await db.get(
+        `registrations?id=in.(${Object.keys(who).join(",")})&select=id,price_cents_charged`))
+        .map(r => [who[r.id], r.price_cents_charged]));
+      const answer = (accept) => page.once("dialog", async (d) => { asked.push(d.message()); await (accept ? d.accept() : d.dismiss()); });
+
+      await signIn(page, TARA);
+      const card = page.locator("#clinics .card", { hasText: "Browser Rain Clinic" });
+      const line = card.locator(`[data-price-line="${clinic.id}"]`);
+      await expect(line).toHaveText("$18 member / $23 non-member", { timeout: 15_000 });
+
+      // Change price: prefilled in dollars; nothing above $0 is refused here.
+      await card.getByRole("button", { name: "Change price" }).click();
+      const dialog = page.locator("dialog#price");
+      await expect(dialog).toContainText("Everyone not yet charged pays the new price.");
+      await expect(dialog.getByLabel("Member price", { exact: true })).toHaveValue("18");
+      await expect(dialog.getByLabel("Non-member price")).toHaveValue("23");
+      await dialog.getByLabel("Member price", { exact: true }).fill("0");
+      await dialog.getByRole("button", { name: "Save" }).click();
+      await expect(dialog).toContainText("Enter a price above $0.");
+      await dialog.getByLabel("Member price", { exact: true }).fill("20");
+      await dialog.getByLabel("Non-member price").fill("25.00");
+      await dialog.getByRole("button", { name: "Save" }).click();
+      await expect(dialog).toBeHidden({ timeout: 15_000 });
+      await expect(page.locator("#msg")).toHaveText("Saved.");
+      await expect(line).toHaveText("$20 member / $25 non-member");
+      expect(await cents()).toEqual({ maria: 2000, rob: 2500, ken: 1800, dana: 2000 });
+
+      // Dana didn't come. Half is for those who came: a no-show pays in full.
+      await db.patch(`registrations?id=eq.${dana.id}`, { no_show: true });
+
+      // Charge half, asked first.
+      answer(true);
+      await card.getByRole("button", { name: "Charge half (rain)" }).click();
+      await expect(card.locator(`[data-rain-chip="${clinic.id}"]`)).toHaveText("Rain: half price", { timeout: 15_000 });
+      expect(asked[0]).toBe("Charge everyone who came half for Browser Rain Clinic? No-shows and late cancels still pay in full.");
+      await expect(line).toHaveText("$10 member / $12.50 non-member (half, rain)");
+      expect(await cents()).toEqual({ maria: 1000, rob: 1250, ken: 1800, dana: 2000 });
+
+      // The length cannot change while it is half (rain_half_on).
+      await card.getByRole("button", { name: "Edit" }).click();
+      const edit = page.locator("dialog#edit");
+      await expect(edit.getByLabel("Length (minutes)")).toHaveValue("60");
+      await edit.getByLabel("Length (minutes)").fill("90");
+      await edit.getByRole("button", { name: "Save" }).click();
+      await expect(edit.locator("#edit-msg")).toHaveText("Turn off Charge half (rain) before changing the length.", { timeout: 15_000 });
+      await edit.getByRole("button", { name: "Cancel" }).click();
+      expect((await db.get(`clinics?id=eq.${clinic.id}&select=duration_minutes`))[0].duration_minutes).toBe(60);
+
+      // Back to full price: Cancel leaves it half...
+      answer(false);
+      await card.getByRole("button", { name: "Back to full price" }).click();
+      await expect.poll(() => asked.length).toBe(2);
+      expect(asked[1]).toBe("Charge the full price again for Browser Rain Clinic?");
+      await page.waitForTimeout(500);
+      expect((await db.get(`clinics?id=eq.${clinic.id}&select=rain_half`))[0].rain_half).toBe(true);
+      expect(await cents()).toEqual({ maria: 1000, rob: 1250, ken: 1800, dana: 2000 });
+      // ...and Yes puts the full price back.
+      answer(true);
+      await card.getByRole("button", { name: "Back to full price" }).click();
+      await expect(card.locator(`[data-rain-chip="${clinic.id}"]`)).toHaveCount(0, { timeout: 15_000 });
+      await expect(line).toHaveText("$20 member / $25 non-member");
+      await expect(card.getByRole("button", { name: "Charge half (rain)" })).toBeVisible();
+      expect(await cents()).toEqual({ maria: 2000, rob: 2500, ken: 1800, dana: 2000 });
+    } finally {
+      await db.del(`registrations?clinic_id=eq.${clinic.id}`);
+      await db.del(`clinics?id=eq.${clinic.id}`);
+    }
+  });
+
+  test("a rained-out clinic's Charge button asks for half", async ({ page, request }) => {
+    const db = service(request);
+    const clinic = await db.insert("clinics", pastClinic("Browser Rain Ended Clinic", 1));
+    try {
+      await db.patch("app_settings?key=eq.payments_enabled", { value: "true" });
+      await db.patch("app_settings?key=eq.payments_enabled_at", { value: daysAgo(5) });
+      await db.patch(`accounts?id=eq.${MARIA_ACCT}`, { stripe_customer_id: "cus_browser_rain", card_brand: "visa", card_last4: "4242" });
+      await inReg(db, clinic, MARIA_P, true, 1800);
+      await signIn(page, TARA);
+      const card = page.locator("#clinics .card", { hasText: "Browser Rain Ended Clinic" });
+      const maria = card.locator(".row", { hasText: "Maria Alvarez" });
+      await expect(maria.getByRole("button", { name: "Charge $18" })).toBeVisible({ timeout: 15_000 });
+      page.once("dialog", (d) => d.accept());
+      await card.getByRole("button", { name: "Charge half (rain)" }).click();
+      await expect(maria.getByRole("button", { name: "Charge $9" })).toBeVisible({ timeout: 15_000 });
+    } finally {
+      const regs = await db.get(`registrations?clinic_id=eq.${clinic.id}&select=id`);
+      if (regs.length) await db.del(`payments?registration_id=in.(${regs.map(r => r.id).join(",")})`);
+      await db.del(`registrations?clinic_id=eq.${clinic.id}`);
+      await db.del(`clinics?id=eq.${clinic.id}`);
+      await db.patch(`accounts?id=eq.${MARIA_ACCT}`, { stripe_customer_id: null, card_brand: null, card_last4: null });
+      await db.patch("app_settings?key=eq.payments_enabled_at", { value: "" });
+      await db.patch("app_settings?key=eq.payments_enabled", { value: "false" });
     }
   });
 });

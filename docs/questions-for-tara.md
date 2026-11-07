@@ -690,7 +690,7 @@ two need her rules first.
 
 **143. Rain halfway through: who pays half, and what about anyone already charged?**
 Item 3: "Capabilities of charging 1/2 for a clinic in case it rains halfway through".
-*Default: a "Rained out at half" button on a clinic charges everyone in You're In! half their price, and anyone already charged the full price gets half back. Status: ANSWERED 2026-11-07: "Nobody will be charged ahead of time, so if it were to rain halfway through the clinic, I would just be able to manually change the clinic rate. It might just be easiest if I have the option to change the clinic rate always ... if I could have the option to charge half, then that means everybody would be charged half if it were to rain". Not built yet.*
+*Default: a "Rained out at half" button on a clinic charges everyone in You're In! half their price, and anyone already charged the full price gets half back. Status: ANSWERED 2026-11-07: "Nobody will be charged ahead of time, so if it were to rain halfway through the clinic, I would just be able to manually change the clinic rate. It might just be easiest if I have the option to change the clinic rate always ... if I could have the option to charge half, then that means everybody would be charged half if it were to rain". Built as decision 0053.*
 
 **144. Adding someone who is not in the app: what do you need on the roster?**
 Item 4: "Allow me capabilities of adding someone that is not in the app. I'll take care of collecting payment from them."

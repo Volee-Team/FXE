@@ -62,6 +62,7 @@ The history of what we believed is part of the record.
 | [0050](0050-members-waitlist-after-public-open.md) | Members are You're In! only from the member open to the public open (Thursday 8am to Friday noon) while there is room; after that they join the Waitlist like everyone | 2026-11-06 | Active |
 | [0051](0051-tara-next-update-1106.md) | Tara's 11-06 list, items 1, 2, 5, 6: message one player (on a clinic or from Players), invite anyone (always an invitation; a decline ends it), "Your clinic is full" asked before an invite, and the pros' Manage tab shows the week with courts | 2026-11-07 | Active |
 | [0052](0052-guests.md) | A guest is a first and last name on one clinic for someone not in the app (its own table, not a player): counts toward capacity, gets a court and the court sheet, never notified or charged; laptop now, phone in 1.0.3 | 2026-11-07 | Active |
+| [0053](0053-clinic-price-and-rain-half.md) | Tara changes a clinic's price any time, and "Charge half (rain)" makes everyone owe half; both reprice only registrations not Paid and not charged; laptop now, phone in 1.0.3 | 2026-11-07 | Active |
 
 Tara's own numbered decisions (1–23, calls of 2026-08-02 and 2026-08-12) are
 tabled in CLAUDE.md; a bare "decision 17" in a record means that list. Not yet
