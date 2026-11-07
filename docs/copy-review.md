@@ -928,6 +928,29 @@ extractor cannot see them; they are listed here by hand. Labels are
 | ☐ | {First Last} ({rating}) asked to attend 3.0+ clinics. | Notification to Tara when someone asks (server, `request_level_approval`) |
 | Q123 | You're approved to attend Ladies 3.0+ clinics. | Notification to the player when Tara approves: question 123's sentence, waiting on her answer |
 
+## Tara's next update: one player, invite anyone, clinic full, the pros' week (2026-11-07) — awaiting John
+
+Decision 0051. Tara's own words (her notes of 2026-11-06) need no tick; the
+rest is our chrome, on the phone and the laptop unless marked. The full
+question and the refusals are built from names and counts, so the extractor
+cannot see them; they are listed here by hand.
+
+| ☐ | Words | Where |
+|---|---|---|
+| Tara's | Manage | The pro's tab, in place of Today ("Have it say manage or whatever like mine") |
+| Tara's (built from her sentence) | Are you sure you want to invite Jane Doe? Your clinic is full (25/25). | Before Invite / Invite a player on a full clinic ("are you sure you want to invite ___ your clinic is full") |
+| ☐ | Are you sure you want to move Jane Doe in? Your clinic is full (25/25). | Before Move In on a full clinic |
+| ☐ | Are you sure you want to add Jane Doe? Your clinic is full (25/25). | Laptop only: before Add player on a full clinic |
+| ☐ | One player / Choose a player | Message Players' To menu, and the second menu that names the player |
+| ☐ | Message {first name} / Message Player / To {full name} | The Players tab button, the sheet's title, and its first line |
+| ☐ | Invite a player / Invite a Player / Invite player | Phone: More menu, sheet title; laptop: the clinic card's button |
+| ☐ | They get an invitation to accept or decline. | Top of the invite sheet |
+| ☐ | Already on this clinic | Beside anyone already In, waiting or invited, in the invite search |
+| ☐ | {Name} is already on this clinic. / Publish the clinic first. / That clinic is over. / That player's account was deleted. / {Name} hasn't signed the waiver yet. | The invite's refusals |
+| ☐ | TODAY / TOMORROW / WEDNESDAY, NOV 11 | Phone: the pro's day headings (Tara's own heading style) |
+| ☐ | No clinics this week. | Phone: the pro's tab when the week is empty (was "No clinics today.") |
+| ☐ | {Name} declined {clinic}. | Tara's notice when someone she invited directly declines (her #14 without "and is back on the Waitlist") |
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148

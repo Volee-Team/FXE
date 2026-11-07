@@ -54,12 +54,13 @@ struct MainTabView: View {
                     .tabItem { Label("Manage", systemImage: "list.clipboard").environment(\.symbolVariants, .none) }
                     .accessibilityIdentifier("tab.admin")
             } else if session.account?.isPro == true {
-                // A pro's one extra tab (decision 0025): today's clinics, who
-                // is coming, Came / No-show and Late cancel. Tara does not
-                // get it; Manage already holds all of it and more.
+                // A pro's one extra tab (decision 0025): the week's clinics,
+                // who is coming and on which court; Came / No-show and Late
+                // cancel on today's. Named Manage like Tara's at her word
+                // (2026-11-06), but it is not hers: no invite, no charge.
                 ProTodayView()
                     .tint(Brand.navy)
-                    .tabItem { Label("Today", systemImage: "calendar").environment(\.symbolVariants, .none) }
+                    .tabItem { Label("Manage", systemImage: "list.clipboard").environment(\.symbolVariants, .none) }
                     .accessibilityIdentifier("tab.today")
             }
 

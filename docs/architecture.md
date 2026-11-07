@@ -57,10 +57,10 @@ most important thing to understand here, and it is section 5.
 
 | Area | What exists |
 |---|---|
-| Postgres schema, RLS, narrow views, RPCs | 81 migrations (`ls supabase/migrations`), the newest `20261013000001_audit_fixes.sql`. 63 are on hosted: Alex's `supabase migration list --linked` on 2026-10-12 showed 63 of 63 paired; the 64th goes with the audit-fixes PR. Re-check with that command after any push; this line is not the record |
+| Postgres schema, RLS, narrow views, RPCs | 82 migrations (`ls supabase/migrations`), the newest `20261013000001_audit_fixes.sql`. 63 are on hosted: Alex's `supabase migration list --linked` on 2026-10-12 showed 63 of 63 paired; the 64th goes with the audit-fixes PR. Re-check with that command after any push; this line is not the record |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | Enumerated by probes (section 5) |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | Section 7 |
-| Probe suite: 53 SQL probes and 18 shell probes (races and the API rush); the suite prints its own total | Runs in CI on every push (section 9) |
+| Probe suite: 54 SQL probes and 18 shell probes (races and the API rush); the suite prints its own total | Runs in CI on every push (section 9) |
 | iOS: sign-in, sign-up with profile, the waiver and card steps, password reset, three tabs | In the app |
 | iOS: browse by week, per-viewer pricing, register / cancel (inside the 3-hour cutoff the full fee applies; the note is optional) / leave pool / respond, closed-clinic "Message Tara", the bell, My Clinics, profile edit, card on file | In the app |
 | iOS: a private note for Tara at Register, editable on the player's own live spot until the start (decision 0039) | In the app |
@@ -194,8 +194,9 @@ FXETennis/
 │   │                            three admin-only RPCs
 │   ├── AdminRepository.swift    every admin RPC + the roster/late-request/notice models, the money
 │   │                            models (MoneyClinic, MoneyDecline, MoneyDispute) and Stripe's decline codes in words
-│   ├── ProRepository.swift      a pro's three calls (decision 0025): pro_today, pro_set_no_show,
-│   │                            pro_mark_late_cancel; the two writes return nothing
+│   ├── ProRepository.swift      a pro's calls (decision 0025): pro_week (the week, 20261107000002;
+│   │                            pro_today stays for 1.0.x), pro_assign_court, pro_set_no_show,
+│   │                            pro_mark_late_cancel; the writes return nothing
 │   └── RequestFailure.swift     what a request met, by URLError code, HTTP status or Postgres code:
 │                                unreachable / rate limited / cancelled / an answer; a PostgrestError
 │                                with no code is the gateway, so unreachable (unit-tested)
@@ -219,12 +220,16 @@ FXETennis/
 │   ├── PlayerHistory.swift      decision 0027: admin_player_history's row and its line, "12 played ·
 │   │                            1 no-show · 2 late cancels" or "New", for the Pool rows and the
 │   │                            player page (pure, unit-tested)
-│   ├── ProToday.swift           a pro's Today rows, pro_today()'s columns one for one; grouped into
-│   │                            clinics in court order; when Late cancel is offered; the server's
+│   ├── ProToday.swift           a pro's rows, pro_today()'s columns one for one; grouped into
+│   │                            clinics in court order and New York days ("Today", "Tomorrow",
+│   │                            "Wednesday, Nov 11"); when Late cancel is offered; the server's
 │   │                            refusals in words that never mention money (pure, unit-tested)
 │   ├── LevelApproval.swift      decision 0048: what a clinic page offers a player below the level
 │   │                            in its name (Tara's sentence and button, or Register), her words
 │   │                            for the label and the profile line (pure, unit-tested)
+│   ├── ClinicFull.swift         Tara's "Your clinic is full (25/25). Are you sure..." question
+│   │                            before an invite or Move In, and the invite refusals in words
+│   │                            (item 5 of her 11-06 list; pure, unit-tested)
 │   ├── ReviewPrompt.swift       Apple's rating popup: after a second You're In! or later, once per
 │   │                            app version, never in UI tests (pure rule, unit-tested)
 │   ├── RegistrationMoments.swift when a clinic's registration changes on its own (opening, close,
@@ -298,10 +303,16 @@ FXETennis/
     │                            no charge is taken (decision 0040); Paid and Remind unpaid only while
     │                            zelle_allowed. ChargeSummary and ChargeOutcome remain for
     │                            AdminRepository.chargeClinic, which nothing calls
-    ├── PlayersDirectoryView.swift search, member / active switches, private note
-    └── ProTodayView.swift       a pro's Today tab (decision 0025), in place of Manage: today's clinics,
-                                 who is You're In! and on which court, Came / No-show, Late cancel
-                                 (Tara's alert without "The fee applies."); nothing else of the roster
+    ├── PlayersDirectoryView.swift search, member / active switches, private note, Message (one
+    │                            player, wherever they are; 20261107000002)
+    ├── MessagePlayerSheet.swift Tara writes to one player from the Players tab (admin_message_player,
+    │                            no clinic: a notification only)
+    ├── InvitePlayerSheet.swift  More > Invite a player: search anyone, invite (admin_invite_player),
+    │                            "Already on this clinic" marked, the clinic-full question first
+    └── ProTodayView.swift       a pro's Manage tab (decision 0025; named Today until 2026-11-07): the
+                                 week's clinics by day (pro_week), who is You're In!, a court menu on
+                                 every row (pro_assign_court), Came / No-show and Late cancel on
+                                 today's only (Tara's alert without "The fee applies."); nothing else
 ```
 
 Four ideas run through the client code:
@@ -475,7 +486,11 @@ Enums: `account_type`, `account_role` (`member` / `admin` / `pro`), `player_kind
 `mark_news_read`, `register_device` / `unregister_device` (the account is
 always `auth.uid()`; `devices` stays client-unreadable), `current_waiver` / `waiver_version` / `my_waiver_accepted` / `accept_waiver` (the waiver, decision 0013 §4), `my_calendar_feed_token` / `reset_my_calendar_feed` (the account's calendar-feed token, made on first use, the same until a reset; the account is `auth.uid()`, never a parameter; `account_not_found` once deleted; decision 0029), `delete_my_account` (scrubs the person, keeps history; the `delete-account` edge function then removes the sign-in through Supabase's admin API, decision 0013 §5), `zelle_allowed` (false: the card is the only way to pay).
 
-**Pro** (each asks `is_pro()`, decision 0025, 20260928600001): `pro_today`
+**Pro** (each asks `is_pro()`, decision 0025, 20260928600001; the week,
+20261107000002): `pro_week` (pro_today's columns exactly, for today and the
+six New York days after it) and `pro_assign_court` (court 1 and up or none,
+on a You're In! row of one of those clinics; returns nothing; every refusal
+reads `not_this_week`, so a pro learns nothing about other rows), `pro_today`
 (today's clinics by the New York date, published and not canceled, and per
 You're In! row only the registration id, first and last name, court,
 `no_show` and `late_cancel`; a clinic nobody is in yet comes as one row with
@@ -504,12 +519,13 @@ card was declined). `new_york_date` is the date helper both use.
 | `place_player` | Walk-up placement; ignores window and capacity by design; still snapshots the price. Since 20260928000001 it sends the player Tara's #1 when this placement is what put them in: not when they were already in, not for a draft, canceled or already-started clinic, and not when it is `resolve_late_request` placing an approved late asker (that answer is its own row). It reads the clinic row `FOR UPDATE`, the lock `register_for_clinic` takes, and the player's live row `FOR UPDATE`, so "already in" is exact under a double tap or a simultaneous Accept. |
 | `set_paid`, `assign_court` | The court sheet. `assign_court` is the one unconditional update in the schema: a court is a value, not a transition. |
 | `admin_message_templates`, `admin_save_message_template`, `admin_archive_message_template` | Her saved messages (20260928900001, decision 0030): the live ones newest first; save (trimmed, 1 to 1000 characters, `message_empty` / `message_too_long`) returning the new row or the live one already holding the text; Remove stamps `archived_at` once and answers false if it was already removed. A pro is refused like a member. |
-| `send_clinic_message` | Audiences `everyone` / `in` / `pool` / `response_needed` / `unpaid`, resolved server-side. The one-tap unpaid reminder is this with a fixed body. |
+| `send_clinic_message` | Audiences `everyone` / `in` / `pool` / `response_needed` / `unpaid`, resolved server-side. The one-tap unpaid reminder is this with a fixed body. Refuses `player` (`invalid_audience`): that audience is `admin_message_player`'s. |
+| `admin_message_player`, `admin_invite_player` | Tara's 11-06 list (20261107000002). `admin_message_player(player, body, clinic?)`: one player, wherever they are; with a clinic it is a `clinic_messages` row of audience `player` and one recipient (so only they read it there), without one a notification only (entity `player`); `message_empty`, `message_too_long` (over 2000), `player_not_found` for a deleted account. `admin_invite_player(clinic, player)`: anyone not already In, waiting or invited (`already_registered`, the status in the hint) on a published clinic that has not ended; always Response Needed with "A spot opened in ... Accept or decline.", whatever the capacity; source `invite`, so `respond_to_invitation`'s decline cancels it (Tara's notice: "... declined X.") instead of the Waitlist. |
 | `search_players`, `admin_player_note`, `admin_player_note_edited`, `admin_set_player_note`, `admin_set_membership`, `set_player_active` | The directory. `search_players` returns `has_notes`, never the note; `admin_player_note_edited` returns the note's `updated_at` or null (20260912000004). |
 | `set_my_gender`, `admin_set_player_gender`, `audience_open_to` | Decision 0044 (20261030000001). The player answers `players.gender` once (`gender_already_set` for a different second answer); Tara changes or clears it; `audience_open_to` is the rule `clinics_public` and the `audience_mismatch` trigger on `registrations` and `late_requests` share. `search_players` returns `gender`. |
 | `request_level_approval`, `admin_set_level_approval`, `admin_level_approvals`, `admin_set_player_rating`, `clinic_level_from_name`, `level_approval_label` | Decision 0048 (20261105000002). `clinics.min_rating` is generated from the NTRP number in the name (`clinic_level_from_name`); a player rated below it registers or asks late only with an approval at that level or above (trigger `guard_clinic_level`, `level_approval_required`). The player asks once (Tara is notified); Tara approves (the player is notified), declines or removes, and lists every row with its label ("Ladies 3.0+", `level_approval_label`). The rating is Tara's once set (`guard_player_rating`: a player's change is dropped quietly and the rest of the update saves, since 20261106000004; she sets it with `admin_set_player_rating`). INSERT on `players` is revoked from clients so a second player row cannot dodge the gate. |
 | `level_check_enabled` | 20261106000002: the level check's on/off switch (`app_settings.level_check_enabled`). Off on hosted from 2026-11-06 (Tara: *"Turn off now!"*, the store app could not ask); while off, `guard_clinic_level` lets everything through and both clinic views show `min_rating` as null. The seed turns it on locally and in CI so the gate stays tested. |
-| `apply_default_clinic_close`, `apply_default_clinic_pricing` | Trigger functions on `clinics`: fill `closes_at` (3 hours before start) and the two prices (`default_price_cents`, non-member 90 minutes $30 from the week of 2026-11-08, 20261105000001) when a clinic is written without them. |
+| `apply_default_clinic_close`, `apply_default_clinic_pricing` | Trigger functions on `clinics`: fill `closes_at` (3 hours before start) and the two prices (`default_price_cents`; non-member 90 minutes was $30 from 2026-11-05 to 11-07, 20261105000001, and is $28 again, 20261107000001) when a clinic is written without them. |
 | `admin_player_history` | A player's history at a glance (decision 0027 §1; 20260928800001; `canceled` added by 20261012000001, decision 0040: every cancel the player made herself, You're In! or the Pool, plus every late cancel whoever marked it, never Tara's plain Remove): per player, clinics played (the board report's attended: You're In!, not a no-show, clinic ended and not canceled), no-shows (the same rows, flagged), late cancellations (in a clinic not canceled, counted when they happen) and the start of the last clinic played. Every player with no argument, one player with `p_player`; a row of zeros is "New". Nothing in a canceled clinic counts. |
 | `admin_copy_week` | Copy to next week (decision 0027 §2; 20260928800002): every clinic of the service week starting on `p_week_start` (a Sunday, else `not_a_sunday`), canceled ones aside, copied to the next week as drafts on the same New York wall clock (local time plus 7 days, never 168 hours); windows, close and prices recomputed for the new date as for any new clinic; registrations, courts and messages never copied. Skips a clinic whose copy exists (same name, same start, not canceled), under an advisory lock on the target week, so a double click makes nothing twice; returns `(created, skipped)`. |
 | `publish_news` | Publish a draft post. |
@@ -759,7 +775,7 @@ revealing the same summary text the page's Copy my answers produces.
 
 ## 9. Testing and CI
 
-**SQL probes** in `tests/sql/`, 53 SQL probes, each printing PASS/FAIL rows,
+**SQL probes** in `tests/sql/`, 54 SQL probes, each printing PASS/FAIL rows,
 plus 18 shell probes that race transactions or call the API. `tests/run-probes.sh` prints its
 own total and fails on silent SQL errors or a probe with zero assertions.
 Every migration that adds a rule adds a probe that is **red first**.
@@ -794,6 +810,7 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `notification_targets` | Every notification opens something (MVP audit item 12): `invite_from_pool` writes `registration` with the registration id, which the player resolves through `my_registrations` and nobody else can; Tara's accept and cancel rows name the registration and resolve through `registrations_admin` (never `my_registrations`, hence the app's second branch), a canceled one included; the seed's invitation is the producer's own and resolves for Maria; every row points at something its recipient may open; every `notify_account` caller names `clinic` or `registration` as a literal, and the nine known producers are found (`register_for_clinic` and `place_player` since 20260928000001; `cancel_invitation`, a tenth producer since 20260928500001, is covered by the enumerating checks but not named in that list). Red first under three mutants (the old hand-typed seed row, 2 checks; an invite that names the clinic, 3; a third entity type and a variable one, 2) |
 | `waitlist_move_in` | Decision 0047: before the clinic's New York day, `invite_from_pool` puts a Waitlist player straight into You're In! with Tara's #1 and no invitation; on clinic day, or after it, it invites as before; 12:30 AM tomorrow counts as before clinic day; a draft moves in and tells nobody; a second tap is refused and sends nothing; a player cannot press it. 11:30 PM tonight is clinic day (a UTC-date rule goes red there); tomorrow inside the 3-hour cutoff invites. Red on 8 rows against the old function |
 | `level_approval` | Decision 0048: the level read from a clinic's name; a 2.5 refused Register and the late request at a 3.0 clinic and offered nothing else; at the level, or unrated, as before; asking records once and tells Tara once; Tara approves once and tells the player once; the approval lasts, covers lower levels and not higher; Remove refuses again but keeps the spot taken; Tara places anyone; the rating cannot be changed by its player, only by Tara; no second player row on the account. Red on 6 rows with the triggers disabled |
+| `next_update_1107` | Tara's 11-06 list (20261107000002), from the rule: one player's message reaches only them (and shows on that clinic for them alone, not for the rest of it); a player in nothing can be messaged; empty refused; the group sender refuses `player`; players and pros cannot message. Invite anyone: Response Needed, source `invite`, her sentence; a full clinic still invites; never someone already In or waiting, never a draft, never by a player or a pro; a decline cancels (Tara reads "Rob Delgado declined Probe Next Week.") and asked again he accepts; a Waitlist decline still waits. The pros' week: today to six days out, You're In! only, `pro_today`'s exact columns; a court set and cleared; refused past the week, on a Waitlist row and court 0; players cannot read it or set courts. |
 | `move_in_cancel_race` | Tara's Move In racing her own cancel of the clinic: the player does not end in You're In! and no "You're all set" is written. Red with the clinic's FOR SHARE removed |
 | `notification_copy` | 20260928000001, Tara's words from her catalogue (`docs/notifications.md`): per event, exactly the rows written, as recipient, type, what the row points at and the body character for character, compared whole. #1 from registering and from Tara's placement (a Thursday 9:00 AM and a Friday 8:30 PM clinic, built from the New York wall clock; the Friday is Saturday in UTC), #5 from registering into the Pool, #3 and #13 on accept, #14 on decline, #6 on Tara's Pool removal, #15 with the late and note suffixes. Negatives: accept sends no #1, and no #3 once Tara canceled the clinic; decline and a withdrawn invitation no #5; Tara's placement into the Pool nothing; a player's own Pool cancel no #6; Tara's removal from You're In! nothing, nor a Pool removal from a draft or canceled clinic; an approved late request one row, while one approved on an earlier day does not silence #1; and no #1 for a draft, started or canceled clinic. The payments switch is set off inside it, so it does not depend on the card check. Red first on the 12 positive rows against the old functions, and under 15 mutants, one per rule |
 | `after_the_fact` | 20260928300001 and 20260928400001: no Accept into a canceled or finished clinic, no Invite or late-request Approve into a canceled one, and each refusal moves nothing and tells nobody; Declines still work; sanity rows prove the same calls work on a live clinic (red on the six predicted rows against the old functions) |
@@ -834,7 +851,7 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `public_open_backfill.sh` | 20261101000001's backfill (decision 0046), run for real: three planted clinics, the migration file applied over them in one rolled-back transaction. A future week on the old Friday 08:00 moves to noon with its member open unchanged; a hand-set time and a week already open stay (each guard shown red by a copy of the migration without it, 2026-11-01) |
 | `beginner_backfill.sh` | 20261106000001's rewrite of existing clinics (decision 0049), run for real: two planted clinics carrying the old value, the migration file applied over them in one rolled-back transaction; the beginner row loses its minimum, the 3.0+ row keeps it, and neither row's published date or price moves |
 
-**Swift**: 303 unit tests (`FXETennisTests`: price formatting, per-viewer
+**Swift**: 308 unit tests (`FXETennisTests`: price formatting, per-viewer
 pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016; since 2026-09-27 the request-failure classifier, a failed load keeping who you are, the waiver and card refusals reopening their steps, the 30-second reload throttle, the redraw moments, and the type scale under Larger Text; since 2026-09-28 the invitation push's Accept and Decline, the Remind me reminder, the calendar entry, and the haptics and chip motion; a clinic the player holds beyond the list's five-week edge staying on their screens, the instant-open snapshot's per-person and ended-clinic rules, Siri's next-clinic answer, and the Player Pool's history line) and 28
 XCUITests: 9 player flows
 (`PlayerFlowUITests`: sign in / browse / register, undo, sign-up end to end,
@@ -853,7 +870,7 @@ Supabase project was decided against on 2026-09-18 (`docs/launch-checklist.md`
 §F). They run on a Mac through `scripts/run-ui-tests.sh` on iOS 18 and 26 (17 too until 2026-10-30, when it stopped being downloadable),
 and the `ui-test-record` job fails a PR whose code has no green record.
 
-**Web admin**: 75 Playwright tests (`web/tests/*.spec.mjs`) walk Tara's
+**Web admin**: 79 Playwright tests (`web/tests/*.spec.mjs`) walk Tara's
 side against a fresh seed: sign-in and the non-admin door, prices, walk-up,
 courts, unpaid reminder, a note round-trip, cancel clinic, template archive
 and restore, Money counts, the card-payments ledger, payments off, the

@@ -13,8 +13,10 @@ admin_copy_week	{"p_week_start":"2026-01-01"}
 admin_create_review_link	{"p_label":"x"}
 admin_delete_template	{"p_id":"00000000-0000-0000-0000-000000000000"}
 admin_fees_due	{"p_clinic":"00000000-0000-0000-0000-000000000000"}
+admin_invite_player	{"p_clinic":"00000000-0000-0000-0000-000000000000","p_player":"00000000-0000-0000-0000-000000000000"}
 admin_level_approvals	{}
 admin_mark_late_cancel	{"p_note":"x","p_registration":"00000000-0000-0000-0000-000000000000"}
+admin_message_player	{"p_body":"x","p_clinic":"00000000-0000-0000-0000-000000000000","p_player":"00000000-0000-0000-0000-000000000000"}
 admin_message_templates	{}
 admin_money_clinics	{}
 admin_money_declined	{}
@@ -86,10 +88,12 @@ payments_enabled_at	{}
 place_player	{"p_clinic":"00000000-0000-0000-0000-000000000000","p_player":"00000000-0000-0000-0000-000000000000","p_status":"x"}
 player_age	{"p_dob":"2026-01-01"}
 player_has_live_fee	{"p_clinic":"00000000-0000-0000-0000-000000000000","p_player":"00000000-0000-0000-0000-000000000000"}
+pro_assign_court	{"p_court":1,"p_registration":"00000000-0000-0000-0000-000000000000"}
 pro_clinic_locked	{"p_clinic":"00000000-0000-0000-0000-000000000000"}
 pro_mark_late_cancel	{"p_note":"x","p_registration":"00000000-0000-0000-0000-000000000000"}
 pro_set_no_show	{"p_no_show":false,"p_registration":"00000000-0000-0000-0000-000000000000"}
 pro_today	{}
+pro_week	{}
 public_opens_at	{"p_starts_at":"2026-01-01T00:00:00Z"}
 publish_clinic	{"p_clinic":"00000000-0000-0000-0000-000000000000"}
 publish_news	{"p_news":"00000000-0000-0000-0000-000000000000"}

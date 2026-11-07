@@ -20,6 +20,36 @@ final class ProTodayTests: XCTestCase {
                     lateCancel: reg == nil ? nil : false)
     }
 
+    // MARK: - the week (20261107000002)
+
+    /// New York days, worked by hand. 2026-11-07 14:00 New York is
+    /// 19:00Z (EST). Clinics: 23:30 New York tonight (04:30Z on the 8th, the
+    /// next UTC day but still today in New York), 9:00 tomorrow, and 9:00 on
+    /// Wednesday the 11th.
+    func testTheWeekIsNewYorkDaysTodayFirst() {
+        let iso = ISO8601DateFormatter()
+        let now = iso.date(from: "2026-11-07T19:00:00Z")!
+        func at(_ s: String, _ id: UUID, _ name: String) -> ProTodayRow {
+            let start = iso.date(from: s)!
+            return ProTodayRow(clinicId: id, clinicName: name, startsAt: start, endsAt: start.addingTimeInterval(3600),
+                               registrationId: UUID(), firstName: "Ann", lastName: "Lee",
+                               courtNumber: nil, noShow: false, lateCancel: false)
+        }
+        let wed = UUID()
+        let days = ProToday.days([
+            at("2026-11-11T14:00:00Z", wed, "Wednesday Drill"),
+            at("2026-11-08T04:30:00Z", early, "Late Tonight"),
+            at("2026-11-08T14:00:00Z", late, "Sunday Morning"),
+        ], now: now)
+        XCTAssertEqual(days.map(\.title), ["Today", "Tomorrow", "Wednesday, Nov 11"])
+        XCTAssertEqual(days.map(\.isToday), [true, false, false])
+        XCTAssertEqual(days.map { $0.clinics.map(\.name) }, [["Late Tonight"], ["Sunday Morning"], ["Wednesday Drill"]])
+    }
+
+    func testTheWeeksRefusalReadsAsChangedUnderYou() {
+        XCTAssertEqual(ProToday.message(forDescription: "not_this_week"), ProToday.changedUnderYou)
+    }
+
     // MARK: - grouping
 
     func testRowsGroupIntoClinicsEarliestFirst() {

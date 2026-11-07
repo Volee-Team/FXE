@@ -509,6 +509,38 @@ enum AdminRepository {
             .execute()
     }
 
+    /// One player, in Tara's own words (admin_message_player, 20261107000002).
+    /// With a clinic it stays on that clinic's page for that player alone;
+    /// without one (the Players tab) it is a notification only. Tara,
+    /// 2026-11-06: "Allow me to send a message to anyone whenever they are".
+    static func messagePlayer(_ player: UUID, body: String, clinic: UUID?) async throws {
+        struct P: Encodable {
+            let p_player: UUID
+            let p_body: String
+            let p_clinic: UUID?
+            enum CodingKeys: String, CodingKey { case p_player, p_body, p_clinic }
+            // An explicit null: PostgREST picks the function by argument names.
+            func encode(to encoder: Encoder) throws {
+                var c = encoder.container(keyedBy: CodingKeys.self)
+                try c.encode(p_player, forKey: .p_player)
+                try c.encode(p_body, forKey: .p_body)
+                if let id = p_clinic { try c.encode(id, forKey: .p_clinic) } else { try c.encodeNil(forKey: .p_clinic) }
+            }
+        }
+        try await supabase
+            .rpc("admin_message_player", params: P(p_player: player, p_body: body, p_clinic: clinic))
+            .execute()
+    }
+
+    /// Invite anyone, not only the Waitlist (admin_invite_player,
+    /// 20261107000002): always an invitation they accept, never a placement.
+    static func invitePlayer(clinic: UUID, player: UUID) async throws {
+        struct P: Encodable { let p_clinic: UUID; let p_player: UUID }
+        _ = try await supabase
+            .rpc("admin_invite_player", params: P(p_clinic: clinic, p_player: player))
+            .execute()
+    }
+
     /// One tap, one reminder to everyone in You're In! who has not paid. The
     /// body is built from things Tara owns: the clinic name, its date, and her
     /// own payment line (`payment_instructions()`). The connective words are

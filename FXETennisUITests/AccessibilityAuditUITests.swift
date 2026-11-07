@@ -345,12 +345,12 @@ final class AccessibilityAuditUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["home.greeting"].waitForExistence(timeout: 20))
 
         // Same second-tap retry as Manage below.
-        let today = app.tabBars.buttons["Today"]
+        let today = app.tabBars.buttons["Manage"]
         XCTAssertTrue(today.waitForExistence(timeout: 20))
         today.tap()
         let row = app.descendants(matching: .any).matching(identifier: "pro.row").firstMatch
         if !row.waitForExistence(timeout: 5) { today.tap() }
-        XCTAssertTrue(row.waitForExistence(timeout: 20), "No row on the pro's Today tab")
+        XCTAssertTrue(row.waitForExistence(timeout: 20), "No row on the pro's Manage tab")
         sleep(2)
         audit("pro today")
     }

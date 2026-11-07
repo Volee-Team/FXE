@@ -330,7 +330,15 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
     <option value="pool">Waitlist</option>
     <option value="response_needed">Response Needed</option>
     <option value="unpaid">Unpaid</option>
+    <!-- Tara, 2026-11-06, pointing at this menu: "option to message
+         individual". Sent with admin_message_player and kept on this clinic
+         for that player alone (20261107000002); never send_clinic_message,
+         which refuses audience 'player'. Hidden when nobody is on the clinic. -->
+    <option value="player">One player</option>
   </select>
+  <!-- Everyone on the clinic who is not canceled, You're In! first, then
+       Waitlist, then Response Needed; one entry per player. -->
+  <select id="m-player" class="hide" aria-label="Player" style="margin-top:8px"></select>
   <!-- Saved messages (decision 0030): her own words, kept to fill the box
        again. saved-messages.js reads them each time the dialog opens. -->
   <p id="m-saved-label" class="muted" style="margin:10px 0 4px">Saved</p>
@@ -373,6 +381,43 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
   <div class="row" style="margin-top:14px">
     <span class="grow"></span>
     <button type="button" id="walkup-cancel">Close</button>
+  </div>
+</dialog>
+
+<!-- Tara invites anyone, not only the Waitlist (admin_invite_player,
+     20261107000002). Her words, 2026-11-06: "Allow me to invite anyone to a
+     clinic that is not on a waitlist". Always an invitation: they land in
+     Response Needed, and a decline ends it. The phone's InvitePlayerSheet. -->
+<dialog id="inviteany">
+  <h3 style="margin-top:0">Invite a player</h3>
+  <p class="muted" style="margin-top:0">They get an invitation to accept or decline.</p>
+  <label for="i-query">Search by name</label>
+  <input id="i-query" placeholder="Ann finds Anna, Annette, Joann…">
+  <div id="i-results" style="margin-top:10px"></div>
+  <div id="inviteany-msg"></div>
+  <div class="row" style="margin-top:14px">
+    <span class="grow"></span>
+    <button type="button" id="inviteany-cancel">Close</button>
+  </div>
+</dialog>
+
+<!-- One player, from the Players tab, wherever they are (admin_message_player
+     with no clinic: a notification only). Tara, 2026-11-06: "Allow me to send
+     a message to anyone whenever they are (meaning in a clinic, not
+     registered, on a waitlist, etc)". The phone's MessagePlayerSheet. -->
+<dialog id="messageplayer">
+  <h3 style="margin-top:0">Message player</h3>
+  <p class="muted" id="mp-to" style="margin-top:0"></p>
+  <p id="mp-saved-label" class="muted" style="margin:10px 0 4px">Saved</p>
+  <div id="mp-saved" class="saved-list" role="group" aria-labelledby="mp-saved-label"></div>
+  <label for="mp-body">Message</label>
+  <textarea id="mp-body" rows="5"></textarea>
+  <button type="button" class="small" id="mp-save" style="margin-top:8px">Save this message</button>
+  <div id="messageplayer-msg"></div>
+  <div class="row" style="margin-top:14px">
+    <span class="grow"></span>
+    <button type="button" id="messageplayer-cancel">Cancel</button>
+    <button type="button" class="primary" id="messageplayer-send">Send</button>
   </div>
 </dialog>
 
@@ -420,6 +465,45 @@ const COURTS = [1, 2, 3, 4, 5];
 let clinicIndex = {};
 let regsByClinic = {};
 const unpaidIn = (c) => (regsByClinic[c.id] || []).filter(r => r.status === "in" && !r.paid);
+// Every player by id, from the last load, for names outside a card's own HTML.
+let playerIndex = {};
+const fullName = (id) => { const p = playerIndex[id]; return p ? `${p.first_name} ${p.last_name}` : "this player"; };
+// Tara, 2026-11-06 (item 5): "Alert admin (me) when clinic is full before I
+// start inviting someone. For example: clinic is 25/25. I invite someone, a
+// message comes up that says 'are you sure you want to invite ___ your clinic
+// is full.'" A question, never a refusal: capacity never blocks her
+// (place_player). The counts are the ones on her card; no capacity set means
+// never full. PHONE: FXETennis/Models/ClinicFull.swift says the same.
+// `what` is the button's own verb: "invite Jane Doe", "move Jane Doe in",
+// "add Jane Doe". True means go ahead.
+const goAheadIfFull = (clinicId, what) => {
+  const c = clinicIndex[clinicId];
+  const n = (regsByClinic[clinicId] || []).filter(r => r.status === "in").length;
+  if (!c || c.internal_capacity == null || n < c.internal_capacity) return true;
+  return confirm(`Are you sure you want to ${what}? Your clinic is full (${n}/${c.internal_capacity}).`);
+};
+// Who is on a clinic and not canceled, You're In! (in court order, as the card
+// reads) then Waitlist then Response Needed, one entry per player: the "One
+// player" list, and who Invite player marks as already there.
+const onClinic = (clinicId) => {
+  const regs = regsByClinic[clinicId] || [];
+  const ins = regs.filter(r => r.status === "in").sort((a, b) => (a.court_number ?? 99) - (b.court_number ?? 99));
+  const seen = new Set();
+  return [...ins, ...regs.filter(r => r.status === "pool"), ...regs.filter(r => r.status === "response_needed")]
+    .filter(r => !seen.has(r.player_id) && seen.add(r.player_id));
+};
+// admin_invite_player's refusals in words (the phone's ClinicFull.inviteError).
+const inviteError = (err, name) => {
+  const m = (err?.message || String(err)).toLowerCase();
+  if (m.includes("already_registered")) return `${name} is already on this clinic.`;
+  if (m.includes("clinic_not_published")) return "Publish the clinic first.";
+  if (m.includes("clinic_ended")) return "That clinic is over.";
+  if (m.includes("clinic_canceled")) return "That clinic is canceled.";
+  if (m.includes("player_not_found")) return "That player's account was deleted.";
+  if (m.includes("waiver_required")) return `${name} hasn't signed the waiver yet.`;
+  if (m.includes("not_authorized") || m.includes("permission denied")) return friendly(err);
+  return "Couldn't reach the server. Check your connection.";
+};
 // Tara's tap (decision 0010): a charge is never automatic. The button exists
 // only while payments are on; without a card there is nothing to charge and
 // the row says so instead.
@@ -577,6 +661,8 @@ function friendly(e) {
 let editingId = null;
 let messagingClinic = null;
 let walkupClinic = null;
+let invitingClinic = null;
+let messagingPlayer = null;
 let lateCancelReg = null;
 let templates = [];
 let signupMode = false;
@@ -1187,6 +1273,7 @@ async function loadClinics() {
   if (dueFailed) queueMicrotask(() => note($("msg"), "Couldn't load charges."));
   const byPlayer = Object.fromEntries((players || []).map(p => [p.id, p]));
   clinicIndex = Object.fromEntries(clinics.map(c => [c.id, c]));
+  playerIndex = byPlayer;
   regsByClinic = {};
   for (const r of (regs || [])) (regsByClinic[r.clinic_id] ||= []).push(r);
   await loadActionNeeded(clinics, byPlayer, owed, stale);
@@ -1237,13 +1324,14 @@ async function loadClinics() {
         <button class="small" data-edit="${c.id}">Edit</button>
         <button class="small" data-message="${c.id}">Message</button>
         <button class="small" data-walkup="${c.id}">Add player</button>
+        ${c.status === "published" && new Date(c.ends_at) > new Date() ? `<button class="small" data-inviteany="${c.id}">Invite player</button>` : ""}
         ${c.status !== "canceled" ? `<a class="button small" href="sheet.html?clinic=${c.id}" target="_blank" rel="noopener">Court sheet</a>` : ""}
         ${zelleOn && unpaidIn(c).length ? `<button class="small" data-remind="${c.id}" data-n="${unpaidIn(c).length}">Remind unpaid (${unpaidIn(c).length})</button>` : ""}
         ${c.status === "draft" ? `<button class="small primary" data-publish="${c.id}">Publish</button>` : ""}
         ${c.status !== "canceled" ? `<button class="small" data-cancelclinic="${c.id}">Cancel clinic</button>` : `<span class="chip canceled">Canceled</span>`}
       </div>
       ${section("in", r => `${courtSelect(r)}${zelleOn ? `<button class="small" data-paid="${r.id}" data-now="${r.paid}">${r.paid ? "Paid" : "Unpaid"}</button>` : ""}<button class="small${r.no_show ? " danger" : ""}" data-noshow="${r.id}" data-now="${r.no_show}">${r.no_show ? "No-show" : "Came"}</button>${lateOpen && !liveCharge(r) ? `<button class="small" data-latecancel="${r.id}" data-who="${esc(nameOf(r))}">Late cancel</button>` : ""}${!liveCharge(r) && c.status !== "canceled" ? `<button class="small" data-remove="${r.id}">Remove</button>` : ""}${chargeOne(r)}`)}
-      ${section("pool", r => c.status !== "canceled" ? `<button class="small primary" data-invite="${r.id}">${beforeClinicDay(c) ? "Move in" : "Invite"}</button><button class="small" data-remove="${r.id}">Remove</button>` : "")}
+      ${section("pool", r => c.status !== "canceled" ? `<button class="small primary" data-invite="${r.id}" data-clinic="${c.id}" data-who="${esc(nameOf(r))}" data-movein="${beforeClinicDay(c) ? "1" : ""}">${beforeClinicDay(c) ? "Move in" : "Invite"}</button><button class="small" data-remove="${r.id}">Remove</button>` : "")}
       ${section("response_needed", r => `<button class="small" data-uninvite="${r.id}">Cancel invite</button>`)}
       ${section("canceled", r => r.late_cancel
         // Tara's red flag (question 81): the name stays on her list, and she
@@ -1311,7 +1399,11 @@ document.addEventListener("click", async (e) => {
     const { error } = await sb.rpc(fn, params); if (error) throw error;
   };
 
-  if (b.dataset.invite)   return run(() => call("invite_from_pool",   { p_registration: b.dataset.invite }));
+  // Item 5: on a full clinic, her question first; Cancel does nothing.
+  if (b.dataset.invite) {
+    if (!goAheadIfFull(b.dataset.clinic, b.dataset.movein ? `move ${b.dataset.who} in` : `invite ${b.dataset.who}`)) return;
+    return run(() => call("invite_from_pool", { p_registration: b.dataset.invite }));
+  }
   if (b.dataset.uninvite) return run(() => call("cancel_invitation",  { p_registration: b.dataset.uninvite }));
   if (b.dataset.paid)     return run(() => call("set_paid", { p_registration: b.dataset.paid, p_paid: b.dataset.now !== "true" }));
   if (b.dataset.noshow)   return run(() => call("admin_set_no_show", { p_registration: b.dataset.noshow, p_no_show: b.dataset.now !== "true" }));
@@ -1439,9 +1531,35 @@ document.addEventListener("click", async (e) => {
     const { error } = await sb.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", b.dataset.seen);
     if (error) throw error;
   });
-  if (b.dataset.message)  { messagingClinic = b.dataset.message; $("m-body").value = ""; note($("message-msg"), ""); $("message").showModal(); return; }
+  if (b.dataset.message)  { messagingClinic = b.dataset.message; $("m-body").value = ""; note($("message-msg"), ""); fillOnePlayer(); $("message").showModal(); return; }
   if (b.dataset.walkup)   { walkupClinic = b.dataset.walkup; $("w-query").value = ""; $("w-results").innerHTML = ""; note($("walkup-msg"), ""); $("walkup").showModal(); $("w-query").focus(); return; }
-  if (b.dataset.place)    return run(() => call("place_player", { p_clinic: walkupClinic, p_player: b.dataset.place, p_status: "in" }).then(() => $("walkup").close()));
+  if (b.dataset.inviteany) { invitingClinic = b.dataset.inviteany; $("i-query").value = ""; $("i-results").innerHTML = ""; note($("inviteany-msg"), ""); $("inviteany").showModal(); $("i-query").focus(); return; }
+  if (b.dataset.messageplayer) {
+    messagingPlayer = b.dataset.messageplayer;
+    $("mp-to").textContent = `To ${b.dataset.name}`;
+    $("mp-body").value = ""; note($("messageplayer-msg"), "");
+    $("messageplayer").showModal();
+    return;
+  }
+  // Add player puts them straight in, so on a full clinic it asks too (not
+  // for someone already In: that adds nobody).
+  if (b.dataset.place) {
+    const alreadyIn = (regsByClinic[walkupClinic] || []).some(r => r.player_id === b.dataset.place && r.status === "in");
+    if (!alreadyIn && !goAheadIfFull(walkupClinic, `add ${b.dataset.name}`)) return;
+    return run(() => call("place_player", { p_clinic: walkupClinic, p_player: b.dataset.place, p_status: "in" }).then(() => $("walkup").close()));
+  }
+  if (b.dataset.inviteplayer) {
+    if (!goAheadIfFull(invitingClinic, `invite ${b.dataset.name}`)) return;
+    b.disabled = true;
+    try {
+      const { error } = await sb.rpc("admin_invite_player", { p_clinic: invitingClinic, p_player: b.dataset.inviteplayer });
+      if (error) throw error;
+      $("inviteany").close();
+      await loadClinics();
+    } catch (err) { note($("inviteany-msg"), inviteError(err, b.dataset.name)); }
+    finally { b.disabled = false; }
+    return;
+  }
   if (b.dataset.member || b.dataset.active || b.dataset.savenote || b.dataset.notes) {
     b.disabled = true;
     try {
@@ -1556,6 +1674,8 @@ $("copy-week").addEventListener("click", async () => {
 $("edit-cancel").onclick = () => $("edit").close();
 $("message-cancel").onclick = () => $("message").close();
 $("walkup-cancel").onclick = () => $("walkup").close();
+$("inviteany-cancel").onclick = () => $("inviteany").close();
+$("messageplayer-cancel").onclick = () => $("messageplayer").close();
 $("latecancel-keep").onclick = () => $("latecancel").close();
 $("latecancel-save").onclick = async () => {
   const btn = $("latecancel-save"); btn.disabled = true;
@@ -1576,7 +1696,6 @@ $("latecancel-save").onclick = async () => {
   } finally { btn.disabled = false; }
 };
 
-let searchTimer = null;
 // ── Player directory ──────────────────────────────────────────────────────
 // Everything Tara does to a PERSON rather than a registration: correct their
 // membership, retire them, keep a private note. Notes never reach a player
@@ -1616,6 +1735,7 @@ const playerRow = (pl, history, who, approved = []) => `<div class="row" data-pl
   ${who && !who.deleted && (who.role === "member" || who.role === "pro")
     ? `<label class="muted" style="white-space:nowrap;display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" data-pro="${who.account}"${who.role === "pro" ? " checked" : ""} style="width:auto;margin:0"> Pro</label>`
     : ""}
+  <button class="small" data-messageplayer="${pl.id}" data-name="${esc(pl.first_name + " " + pl.last_name)}">Message ${esc(pl.first_name)}</button>
   <button class="small" data-notes="${pl.id}">Note</button>
   <button class="small" data-resetlink="${pl.id}">Reset link</button>
 </div>
@@ -1746,21 +1866,39 @@ async function loadReviewResponses() {
   }));
 }
 
-$("w-query").addEventListener("input", () => {
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(async () => {
-    const q = $("w-query").value.trim();
-    if (q.length < 2) { $("w-results").innerHTML = ""; return; }
-    const { data, error } = await sb.rpc("search_players", { p_query: q, p_include_inactive: false });
-    if (error) return note($("walkup-msg"), friendly(error));
-    $("w-results").innerHTML = (data || []).length
-      ? data.map(pl => `<div class="row">
-          <span class="grow"><span class="name">${esc(pl.first_name)} ${esc(pl.last_name)}</span><br>
-          <span class="muted">${ntrp(pl.adult_rating)}, ${pl.is_member ? "Member" : "Non-member"}</span></span>
-          <button class="small primary" data-place="${pl.id}">Put in clinic</button>
-        </div>`).join("")
-      : `<p class="muted">Nobody by that name yet. They may need to sign up in the app first.</p>`;
-  }, 250);
+// The name search in Add player and Invite player: two letters, a quarter
+// second after typing stops. `row(pl)` draws one result.
+function wireNameSearch(input, results, msg, row) {
+  let timer = null;
+  input.addEventListener("input", () => {
+    clearTimeout(timer);
+    timer = setTimeout(async () => {
+      const q = input.value.trim();
+      if (q.length < 2) { results.innerHTML = ""; return; }
+      const { data, error } = await sb.rpc("search_players", { p_query: q, p_include_inactive: false });
+      if (q !== input.value.trim()) return;   // she kept typing; the next search draws
+      if (error) return note(msg, friendly(error));
+      results.innerHTML = (data || []).length
+        ? data.map(row).join("")
+        : `<p class="muted">Nobody by that name yet. They may need to sign up in the app first.</p>`;
+    }, 250);
+  });
+}
+wireNameSearch($("w-query"), $("w-results"), $("walkup-msg"), pl => `<div class="row">
+    <span class="grow"><span class="name">${esc(pl.first_name)} ${esc(pl.last_name)}</span><br>
+    <span class="muted">${ntrp(pl.adult_rating)}, ${pl.is_member ? "Member" : "Non-member"}</span></span>
+    <button class="small primary" data-place="${pl.id}" data-name="${esc(pl.first_name + " " + pl.last_name)}">Put in clinic</button>
+  </div>`);
+// Anyone already In, on the Waitlist or invited is marked, not offered: her
+// other buttons are for them, and the server would refuse (already_registered).
+wireNameSearch($("i-query"), $("i-results"), $("inviteany-msg"), pl => {
+  const already = onClinic(invitingClinic).some(r => r.player_id === pl.id);
+  const name = `${pl.first_name} ${pl.last_name}`;
+  return `<div class="row" data-invite-row="${pl.id}">
+    <span class="grow"><span class="name">${esc(name)}</span><br>
+    <span class="muted">${already ? "Already on this clinic" : `${ntrp(pl.adult_rating)}, ${pl.is_member ? "Member" : "Non-member"}`}</span></span>
+    ${already ? "" : `<button class="small primary" data-inviteplayer="${pl.id}" data-name="${esc(name)}" aria-label="Invite ${esc(name)}">Invite</button>`}
+  </div>`;
 });
 
 $("edit-save").onclick = async () => {
@@ -1791,22 +1929,66 @@ $("edit-save").onclick = async () => {
   finally { btn.disabled = false; }
 };
 
+// "One player": the list is this clinic's, read when the dialog opens. With
+// nobody on the clinic the choice is not offered (as on the phone).
+function fillOnePlayer() {
+  const people = onClinic(messagingClinic);
+  $("m-player").innerHTML = `<option value="">Choose a player</option>`
+    + people.map(r => `<option value="${r.player_id}">${esc(fullName(r.player_id))}</option>`).join("");
+  const one = $("m-audience").querySelector('option[value="player"]');
+  one.hidden = one.disabled = !people.length;
+  if (!people.length && $("m-audience").value === "player") $("m-audience").value = "everyone";
+  showOnePlayer();
+}
+const showOnePlayer = () => $("m-player").classList.toggle("hide", $("m-audience").value !== "player");
+$("m-audience").addEventListener("change", showOnePlayer);
+
 $("message-send").onclick = async () => {
-  const btn = $("message-send"); btn.disabled = true;
+  const btn = $("message-send");
+  const toOne = $("m-audience").value === "player";
+  if (toOne && !$("m-player").value) { $("m-player").focus(); return; }
+  btn.disabled = true;
   try {
     const body = $("m-body").value.trim();
     if (!body) throw new Error("Write a message first.");
-    const { error } = await sb.rpc("send_clinic_message", {
-      p_clinic: messagingClinic, p_audience: $("m-audience").value, p_body: body });
+    // One player goes through admin_message_player and stays on this clinic
+    // for them alone; send_clinic_message refuses 'player' (invalid_audience).
+    const { error } = toOne
+      ? await sb.rpc("admin_message_player", { p_player: $("m-player").value, p_body: body, p_clinic: messagingClinic })
+      : await sb.rpc("send_clinic_message", { p_clinic: messagingClinic, p_audience: $("m-audience").value, p_body: body });
     if (error) throw error;
     $("message").close();
-  } catch (err) { note($("message-msg"), friendly(err)); }
+  } catch (err) {
+    // player_not_on_clinic: they were canceled since the dialog opened.
+    const m = err?.message || "";
+    note($("message-msg"), m.includes("player_not_found") ? "That player's account was deleted."
+      : m.includes("player_not_on_clinic") ? "That just changed. Here's the latest." : friendly(err));
+  }
+  finally { btn.disabled = false; }
+};
+
+// The Players tab's message: a notification only, no clinic.
+$("messageplayer-send").onclick = async () => {
+  const btn = $("messageplayer-send"); btn.disabled = true;
+  try {
+    const body = $("mp-body").value.trim();
+    if (!body) throw new Error("Write a message first.");
+    const { error } = await sb.rpc("admin_message_player", { p_player: messagingPlayer, p_body: body });
+    if (error) throw error;
+    $("messageplayer").close();
+  } catch (err) {
+    note($("messageplayer-msg"), (err?.message || "").includes("player_not_found") ? "That player's account was deleted." : friendly(err));
+  }
   finally { btn.disabled = false; }
 };
 
 wireSavedMessages(sb, {
   dialog: $("message"), box: $("m-body"), list: $("m-saved"), save: $("m-save"),
   say: (text) => note($("message-msg"), text), friendly,
+});
+wireSavedMessages(sb, {
+  dialog: $("messageplayer"), box: $("mp-body"), list: $("mp-saved"), save: $("mp-save"),
+  say: (text) => note($("messageplayer-msg"), text), friendly, idPrefix: "mp-saved-",
 });
 
 $("forgot").onclick = async () => {

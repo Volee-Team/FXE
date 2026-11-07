@@ -683,6 +683,19 @@ for that hour to apply to.
 **141. Someone you invite on the day of the clinic has to accept. Should that invitation still run out after 1 hour, or stay open until you cancel it or the clinic starts?**
 *Default: stays open, as the app does today; you can cancel it and pick someone else. Status: open, asked 2026-11-05.*
 
+## AF. Her "Next update" list, the two that wait (added 2026-11-07)
+
+Her notes of 2026-11-06 (decision 0051). Items 1, 2, 5 and 6 are built; these
+two need her rules first.
+
+**143. Rain halfway through: who pays half, and what about anyone already charged?**
+Item 3: "Capabilities of charging 1/2 for a clinic in case it rains halfway through".
+*Default: a "Rained out at half" button on a clinic charges everyone in You're In! half their price, and anyone already charged the full price gets half back. Status: open, asked 2026-11-07.*
+
+**144. Adding someone who is not in the app: what do you need on the roster?**
+Item 4: "Allow me capabilities of adding someone that is not in the app. I'll take care of collecting payment from them."
+*Default: a first and last name only, shown on the roster and the court sheet as a guest; they get no messages and are never charged by the app. Status: open, asked 2026-11-07.*
+
 ### How 52 to 57 are being sent
 
 Round two of the review page (2026-09-21, later): the Words tab now shows her
