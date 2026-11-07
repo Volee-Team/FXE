@@ -71,6 +71,8 @@
   .chip.resp { color:#1F4E5A; background:#DDEEF0; }
   .chip.canc { color:#992E22; background:#F6DED9; }
   /* A guest (20261107000003): a name, not a status, so a neutral chip. */
+  /* Rain, half price (decision 0053): the Response Needed blue, with its words. */
+  .chip.rain { color:#1F4E5A; background:#DDEEF0; }
   .chip.guest { color: var(--fxe-text-primary); background: var(--fxe-surface-warm); }
   .err { color:#992E22; margin: 10px 0; }
   .ok  { color:#2C5A3E; margin: 10px 0; }
@@ -390,6 +392,26 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
      isn't in the app, I just want the capability of inputting their name
      first and last. And then I would just take care of the payment". A name
      on this clinic, not a player: never messaged, never charged by the app. -->
+<!-- Her rate, any time (decision 0053; admin_set_clinic_prices). Tara,
+     2026-11-07: "It might just be easiest if I have the option to change the
+     clinic rate always, even though I hardly will ever do that unless it
+     rains". The clinic's two prices and every registration on it that is not
+     Paid and holds no charge. -->
+<dialog id="price">
+  <h3 style="margin-top:0">Change price</h3>
+  <p class="muted" style="margin-top:0">Everyone not yet charged pays the new price.</p>
+  <div class="grid">
+    <div><label for="pr-member">Member price</label><input id="pr-member" inputmode="decimal" autocomplete="off"></div>
+    <div><label for="pr-nonmember">Non-member price</label><input id="pr-nonmember" inputmode="decimal" autocomplete="off"></div>
+  </div>
+  <div id="price-msg"></div>
+  <div class="row" style="margin-top:14px">
+    <span class="grow"></span>
+    <button type="button" id="price-cancel">Cancel</button>
+    <button type="button" class="primary" id="price-save">Save</button>
+  </div>
+</dialog>
+
 <dialog id="guest">
   <h3 style="margin-top:0">Add a guest</h3>
   <p class="muted" style="margin-top:0">For someone who isn't in the app. They get no messages and the app never charges them.</p>
@@ -474,6 +496,22 @@ const nyDay = (d) => d.toLocaleDateString("en-CA", { timeZone: "America/New_York
 const beforeClinicDay = (c) => nyDay(new Date(c.starts_at)) > nyDay(new Date())
   && new Date(c.starts_at) - Date.now() >= 3 * 3600_000; // and outside the 3-hour cancel cutoff
 const money = (c) => c == null ? "" : "$" + (c % 100 === 0 ? c / 100 : (c / 100).toFixed(2));
+// Rain, half price (decision 0053): what reprice_clinic charges, half of the
+// price rounded to the cent (Postgres round(), half up, as Math.round for
+// these positive amounts).
+const halfOf = (c) => c == null ? null : Math.round(c / 2);
+// The card's price line, halved while the clinic is rained out.
+const priceLine = (c) => c.rain_half
+  ? `${money(halfOf(c.member_price_cents))} member / ${money(halfOf(c.nonmember_price_cents))} non-member (half, rain)`
+  : `${money(c.member_price_cents)} member / ${money(c.nonmember_price_cents)} non-member`;
+// Dollars as she types them ("22", "22.50", "$22.5") to cents; null when it
+// is not a price.
+const toCents = (text) => {
+  const m = /^\$?\s*(\d{1,4})(?:\.(\d{1,2}))?$/.exec(String(text ?? "").trim());
+  return m ? Number(m[1]) * 100 + Number((m[2] || "").padEnd(2, "0")) : null;
+};
+// Cents to the box's starting text: "22", or "22.50".
+const toDollars = (c) => c == null ? "" : c % 100 === 0 ? String(c / 100) : (c / 100).toFixed(2);
 // Court 1-5 or unassigned, the same values assign_court accepts. A dropdown
 // rather than drag-and-drop on purpose: docs/web-admin.md section 4 says the
 // dropdown is the path that ships first and stays as the keyboard path.
@@ -697,6 +735,7 @@ let messagingClinic = null;
 let walkupClinic = null;
 let invitingClinic = null;
 let guestClinic = null;
+let priceClinic = null;
 let messagingPlayer = null;
 let lateCancelReg = null;
 let templates = [];
@@ -1368,13 +1407,15 @@ async function loadClinics() {
       <div class="row">
         <span class="grow"><span class="name">${esc(c.name)}</span><br>
           <span class="muted">${fmtDate(c.starts_at)}<br>${c.duration_minutes} min,
-          ${money(c.member_price_cents)} member / ${money(c.nonmember_price_cents)} non-member</span></span>
+          <span data-price-line="${c.id}">${priceLine(c)}</span></span>${c.rain_half ? ` <span class="chip rain" data-rain-chip="${c.id}">Rain: half price</span>` : ""}</span>
         <span class="muted" data-taken="${c.id}">${group("in").length + guests.length}/${c.internal_capacity}</span>
         <button class="small" data-edit="${c.id}">Edit</button>
         <button class="small" data-message="${c.id}">Message</button>
         <button class="small" data-walkup="${c.id}">Add player</button>
         ${c.status === "published" && new Date(c.ends_at) > new Date() ? `<button class="small" data-inviteany="${c.id}">Invite player</button>` : ""}
         ${c.status !== "canceled" ? `<button class="small" data-addguest="${c.id}">Add guest</button>` : ""}
+        ${c.status !== "canceled" ? `<button class="small" data-price="${c.id}">Change price</button>` : ""}
+        ${c.status !== "canceled" ? `<button class="small" data-rain="${c.id}" data-on="${c.rain_half ? "" : "1"}">${c.rain_half ? "Back to full price" : "Charge half (rain)"}</button>` : ""}
         ${c.status !== "canceled" ? `<a class="button small" href="sheet.html?clinic=${c.id}" target="_blank" rel="noopener">Court sheet</a>` : ""}
         ${zelleOn && unpaidIn(c).length ? `<button class="small" data-remind="${c.id}" data-n="${unpaidIn(c).length}">Remind unpaid (${unpaidIn(c).length})</button>` : ""}
         ${c.status === "draft" ? `<button class="small primary" data-publish="${c.id}">Publish</button>` : ""}
@@ -1579,6 +1620,34 @@ document.addEventListener("click", async (e) => {
     } catch (err) { note($("msg"), guestError(err)); b.disabled = false; }
     return;
   }
+  if (b.dataset.price) {
+    priceClinic = b.dataset.price;
+    const c = clinicIndex[priceClinic];
+    $("pr-member").value = toDollars(c && c.member_price_cents);
+    $("pr-nonmember").value = toDollars(c && c.nonmember_price_cents);
+    note($("price-msg"), "");
+    $("price").showModal(); $("pr-member").focus();
+    return;
+  }
+  // Tara, 2026-11-07: "if I could have the option to charge half, then that
+  // means everybody would be charged half if it were to rain". Asked first,
+  // both ways; Cancel does nothing.
+  // Half is for those In who came: a no-show and a late cancel still pay in
+  // full (her earlier answer; the server keeps those rows full).
+  if (b.dataset.rain) {
+    const c = clinicIndex[b.dataset.rain];
+    const on = b.dataset.on === "1";
+    const name = c ? c.name : "this clinic";
+    if (!confirm(on ? `Charge everyone who came half for ${name}? No-shows and late cancels still pay in full.`
+                    : `Charge the full price again for ${name}?`)) return;
+    let done = false;
+    await run(async () => {
+      await call("admin_set_rain_half", { p_clinic: b.dataset.rain, p_on: on });
+      done = true;
+    });
+    if (done) note($("msg"), "Saved.", true);   // run() reloads, which clears the line
+    return;
+  }
   if (b.dataset.addguest) {
     guestClinic = b.dataset.addguest;
     $("g-first").value = ""; $("g-last").value = ""; note($("guest-msg"), "");
@@ -1762,6 +1831,21 @@ $("message-cancel").onclick = () => $("message").close();
 $("walkup-cancel").onclick = () => $("walkup").close();
 $("inviteany-cancel").onclick = () => $("inviteany").close();
 $("guest-cancel").onclick = () => $("guest").close();
+$("price-cancel").onclick = () => $("price").close();
+$("price-save").onclick = async () => {
+  const member = toCents($("pr-member").value), nonmember = toCents($("pr-nonmember").value);
+  if (!member || !nonmember) return note($("price-msg"), "Enter a price above $0.");
+  const btn = $("price-save"); btn.disabled = true;
+  try {
+    const { error } = await sb.rpc("admin_set_clinic_prices", { p_clinic: priceClinic, p_member_cents: member, p_nonmember_cents: nonmember });
+    if (error) throw error;
+    $("price").close();
+    await loadClinics();
+    note($("msg"), "Saved.", true);   // after the reload, which clears the line
+  } catch (err) {
+    note($("price-msg"), (err?.message || "").includes("invalid_price") ? "Enter a price above $0." : friendly(err));
+  } finally { btn.disabled = false; }
+};
 // Add guest. On a full clinic, the same question as Add player; Cancel does
 // nothing. Capacity never blocks her: the server takes the guest regardless.
 $("guest-save").onclick = async () => {
@@ -2036,7 +2120,11 @@ $("edit-save").onclick = async () => {
       if (te) throw te;
     }
     $("edit").close(); await loadClinics();
-  } catch (err) { note($("edit-msg"), friendly(err)); }
+  } catch (err) {
+    // Decision 0053: the half was taken of this length's price.
+    note($("edit-msg"), (err?.message || "").includes("rain_half_on")
+      ? "Turn off Charge half (rain) before changing the length." : friendly(err));
+  }
   finally { btn.disabled = false; }
 };
 

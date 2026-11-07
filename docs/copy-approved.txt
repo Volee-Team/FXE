@@ -36,6 +36,7 @@ Cancel the invitation to \(entry.displayName)
 Canceled inside ${cutoffHours} hours
 Card payments
 Cards aren't set up yet.
+Change price
 Charge \(due.amountCents.centsAsPrice)
 Charge \(entry.displayName) \(due.amountCents.centsAsPrice)
 Charged
@@ -84,6 +85,7 @@ Download for email
 Draft
 Edit details
 Email
+Everyone not yet charged pays the new price.
 FROM TARA
 FXE Tennis
 FXE Tennis Admin
@@ -146,6 +148,7 @@ Manage
 Manage payments in Stripe
 Mark all read
 Max players must be at least 1.
+Member price
 Members attended
 Members get 24-hour early access to all clinics
 Members, 60 min
@@ -185,6 +188,7 @@ No templates yet.
 No upcoming clinics.
 Nobody by that name yet. They may need to sign up in the app first.
 Nobody is in yet.
+Non-member price
 Non-members attended
 Non-members can take one 105 a day until 48 hours before.
 Non-members, 60 min
@@ -223,6 +227,7 @@ Put them in
 QR code for fxe-tennis-admin.vercel.app/app
 QR code for the app
 Questions about the app or your clinics:
+Rain: half price
 Rating
 Rating Guide
 Rating \(bucket.label)

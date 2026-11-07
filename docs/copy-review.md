@@ -963,6 +963,21 @@ Decision 0052, Tara's laptop only.
 | ☐ | (guest) | After a guest's name on the court sheet |
 | ☐ | {First Last} is already on this clinic. (existing sentence, reused) | Adding the same guest twice |
 
+## Change price and Charge half (2026-11-07) — awaiting John
+
+Decision 0053, Tara's laptop.
+
+| ☐ | Words | Where |
+|---|---|---|
+| ☐ | Change price / Member price / Non-member price / Save | The clinic card's button and its dialog |
+| ☐ | Everyone not yet charged pays the new price. | The dialog's one line |
+| ☐ | Enter a price above $0. | A zero or unreadable price |
+| Tara's (built from her words) | Charge half (rain) | The clinic card's button ("the option to charge half ... if it were to rain") |
+| ☐ | Charge everyone who came half for {clinic}? No-shows and late cancels still pay in full. | Its question |
+| ☐ | Back to full price / Charge the full price again for {clinic}? | Turning it off, and its question |
+| ☐ | Rain: half price / (half, rain) | The chip on the card, and after the halved price line |
+| ☐ | Turn off Charge half (rain) before changing the length. | Editing a rained-out clinic's length |
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148

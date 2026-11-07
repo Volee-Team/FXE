@@ -34,6 +34,7 @@ admin_resolve_held_payment	{"p_outcome":"x","p_payment":"00000000-0000-0000-0000
 admin_review_responses	{}
 admin_save_message_template	{"p_body":"x"}
 admin_set_board_share_percent	{"p_percent":1}
+admin_set_clinic_prices	{"p_clinic":"00000000-0000-0000-0000-000000000000","p_member_cents":1,"p_nonmember_cents":1}
 admin_set_fee_waived	{"p_registration":"00000000-0000-0000-0000-000000000000","p_waived":false}
 admin_set_guest_court	{"p_court":1,"p_guest":"00000000-0000-0000-0000-000000000000"}
 admin_set_level_approval	{"p_approved":false,"p_level":1,"p_player":"00000000-0000-0000-0000-000000000000"}
@@ -43,6 +44,7 @@ admin_set_player_gender	{"p_gender":"x","p_player":"00000000-0000-0000-0000-0000
 admin_set_player_note	{"p_body":"x","p_player":"00000000-0000-0000-0000-000000000000"}
 admin_set_player_rating	{"p_player":"00000000-0000-0000-0000-000000000000","p_rating":1}
 admin_set_pro	{"p_account":"00000000-0000-0000-0000-000000000000","p_pro":false}
+admin_set_rain_half	{"p_clinic":"00000000-0000-0000-0000-000000000000","p_on":false}
 admin_set_template_archived	{"p_archived":false,"p_id":"00000000-0000-0000-0000-000000000000"}
 admin_upsert_clinic	{"p_audience":"x","p_category":"x","p_closes_at":"2026-01-01T00:00:00Z","p_description":"x","p_duration_minutes":1,"p_id":"00000000-0000-0000-0000-000000000000","p_internal_capacity":1,"p_member_opens_at":"2026-01-01T00:00:00Z","p_name":"x","p_public_opens_at":"2026-01-01T00:00:00Z","p_starts_at":"2026-01-01T00:00:00Z"}
 admin_upsert_template	{"p_audience":"x","p_category":"x","p_description":"x","p_duration_minutes":1,"p_id":"00000000-0000-0000-0000-000000000000","p_internal_capacity":1,"p_name":"x"}
@@ -59,6 +61,7 @@ card_consent_text	{}
 card_required	{}
 clean_player_note	{"p_note":"x"}
 clinic_level_from_name	{"p_name":"x"}
+clinic_price_for	{"p_clinic":"x","p_no_show":false,"p_status":"x","p_was_member":false}
 clinic_taken	{"p_clinic":"00000000-0000-0000-0000-000000000000"}
 courtesy_available	{"p_player":"00000000-0000-0000-0000-000000000000"}
 courtesy_cancel_days	{}
@@ -112,6 +115,7 @@ registration_has_live_fee	{"p_registration":"00000000-0000-0000-0000-00000000000
 registration_mark_late_cancel	{"p_note":"x","p_registration":"00000000-0000-0000-0000-000000000000"}
 registration_set_no_show	{"p_no_show":false,"p_registration":"00000000-0000-0000-0000-000000000000"}
 report_app_diagnostic	{"p_app_version":"x","p_build":"x","p_device":"x","p_kind":"x","p_os_version":"x","p_payload":{}}
+reprice_clinic	{"p_clinic":"00000000-0000-0000-0000-000000000000"}
 request_late_spot	{"p_clinic":"00000000-0000-0000-0000-000000000000","p_message":"x","p_player":"00000000-0000-0000-0000-000000000000"}
 request_level_approval	{"p_level":1,"p_player":"00000000-0000-0000-0000-000000000000"}
 require_admin	{}

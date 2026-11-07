@@ -44,6 +44,14 @@ courtside work; this does weekly setup.
   or not they are in any clinic). `admin_message_player`, 20261107000002
 * **Invite player** on a published clinic that has not ended: anyone not
   already on it gets an invitation to accept or decline (`admin_invite_player`)
+* **Change price** and **Charge half (rain)** on any clinic not canceled
+  (decision 0053): her two prices, in dollars, any time; or, after a
+  rainout, half for everyone In who came (a no-show and a late cancel still
+  pay in full). While half is on the card reads "(half, rain)" with a Rain:
+  half price chip, and "Back to full price" undoes it. Both reprice every
+  registration on the clinic that is not Paid and holds no charge
+  (`admin_set_clinic_prices`, `admin_set_rain_half`), so each person's
+  Charge button follows
 * **Add guest** on any clinic not canceled: a first and last name for
   someone who isn't in the app (`admin_add_guest`, 20261107000003). A guest
   sits in You're In! after the players with a Guest tag, a court and Remove
@@ -88,7 +96,7 @@ get committed aimed at the wrong project. Sign in as `tara@fxe.test` /
 
 ## Test it
 
-81 Playwright tests (`cat web/tests/*.spec.mjs | grep -cE '^\s*test\('`,
+83 Playwright tests (`cat web/tests/*.spec.mjs | grep -cE '^\s*test\('`,
 2026-11-07) walk this page the way Tara does, against the LOCAL stack on a
 fresh seed. They are the only automated check on the web admin,
 so they run in CI on every push (`web-browser-tests` in `probes.yml`).
