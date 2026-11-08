@@ -978,6 +978,19 @@ Decision 0053, Tara's laptop.
 | ☐ | Rain: half price / (half, rain) | The chip on the card, and after the halved price line |
 | ☐ | Turn off Charge half (rain) before changing the length. | Editing a rained-out clinic's length |
 
+## Sign-ups (2026-11-08) — awaiting John
+
+Tara's laptop, a read-only list (*"see all of the people who have signed up"*).
+
+| ☐ | Words | Where |
+|---|---|---|
+| Tara's (built from her words) | Sign-ups | The tab |
+| ☐ | {n} accounts, {n} players, {n} new in the last 7 days | The count above the list |
+| ☐ | Search by name, email or phone / Download CSV | The search box and its button |
+| ☐ | Name / Players / Email / Phone / Signed up / Member / Waiver | The columns |
+| ☐ | None yet / None / Unknown / Signed / Not signed | Empty cells |
+| ☐ | Nobody matches that. / Nobody has signed up yet. | An empty search, an empty list |
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148
