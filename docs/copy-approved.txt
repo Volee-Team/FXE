@@ -264,7 +264,9 @@ Saved. It may take a moment to show here.
 Saved. You can sign in with it now, on your phone or here.
 Saving\u2026
 Search by name
+Search by name, email or phone
 Search players by name
+Search sign-ups
 Sections
 Security of data
 Selected. Press and hold to copy.

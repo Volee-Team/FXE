@@ -99,6 +99,9 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
 /* Board report tables. Numbers right-aligned so a column of money reads down. */
 #br-report { margin-top: 12px; overflow-x: auto; }
 #br-report .print-only { display: none; }
+table.signups { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.signups th, table.signups td { text-align: left; vertical-align: top; padding: 6px 8px; border-bottom: 1px solid var(--border, #d8d3c7); }
+table.signups th { font-weight: 600; color: #6E6552; }
 #br-report table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
 #br-report th, #br-report td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--fxe-hairline); }
 #br-report th { color: var(--fxe-text-secondary); font-weight: 600; }
@@ -153,6 +156,7 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
     <nav class="tabs" role="tablist" aria-label="Sections">
       <button role="tab" data-tab="week" aria-selected="true">This week</button>
       <button role="tab" data-tab="players" aria-selected="false">Players</button>
+      <button role="tab" data-tab="signups" aria-selected="false">Sign-ups</button>
       <button role="tab" data-tab="money" aria-selected="false">Money</button>
     </nav>
     <div id="msg"></div>
@@ -203,6 +207,22 @@ button.danger { border-color: #9B2C2C; color: #9B2C2C; }
          the app installs from, so it never needs reprinting. -->
     <p class="muted" style="margin-top:14px"><a href="qr.html" target="_blank" rel="noopener" id="open-qr">QR code for the app</a> <span class="muted" id="qr-visits"></span></p>
 
+    </div>
+
+    <!-- Everyone who has made an account, newest first (Tara, 2026-11-08:
+         "see all of the people who have signed up"). Read only: changes are
+         made on the Players tab. Staff (her own account) are left off. -->
+    <div id="tab-signups" role="tabpanel" class="hide">
+    <h2>Sign-ups</h2>
+    <div class="card">
+      <p id="su-count" class="muted" style="margin:0 0 10px 0"></p>
+      <div class="row">
+        <input id="su-query" class="grow" placeholder="Search by name, email or phone" aria-label="Search sign-ups">
+        <button class="small" id="su-csv">Download CSV</button>
+      </div>
+      <div id="su-list" style="margin-top:10px;overflow-x:auto"></div>
+      <div id="su-msg"></div>
+    </div>
     </div>
 
     <div id="tab-money" role="tabpanel" class="hide">
@@ -765,6 +785,7 @@ async function showApp() {
   searchPlayers();
   loadReviewResponses();
   if (!$("tab-money").classList.contains("hide")) loadPayouts();
+  if (!$("tab-signups").classList.contains("hide")) loadSignups();
   loadBoardRate();
   loadAppLinkVisits();
 }
@@ -1448,7 +1469,7 @@ async function loadClinics() {
 // the database disagrees with.
 // Tabs. The last one opened is remembered per browser; a reload lands where
 // she was. Everything still loads on sign-in, so switching is instant.
-const TABS = ["week", "players", "money"];
+const TABS = ["week", "players", "signups", "money"];
 const showTab = (name) => {
   for (const b of document.querySelectorAll(".tabs [role=tab]")) b.setAttribute("aria-selected", String(b.dataset.tab === name));
   for (const n of [...TABS, "testing"]) $("tab-" + n).classList.toggle("hide", n !== name);
@@ -1458,6 +1479,7 @@ const showTab = (name) => {
 for (const b of document.querySelectorAll(".tabs [role=tab]")) b.addEventListener("click", () => {
   showTab(b.dataset.tab);
   if (b.dataset.tab === "money") loadPayouts();
+  if (b.dataset.tab === "signups") loadSignups();
 });
 $("open-testing").addEventListener("click", () => { showTab("testing"); window.scrollTo(0, 0); });
 try { const t = localStorage.getItem("fxe.tab"); if (TABS.includes(t)) showTab(t); } catch {}
@@ -2020,6 +2042,80 @@ document.addEventListener("change", async (e) => {
 });
 $("p-query").addEventListener("input", () => { clearTimeout(playerTimer); playerTimer = setTimeout(searchPlayers, 250); });
 $("p-inactive").addEventListener("change", searchPlayers);
+
+// Sign-ups: every account that is not staff, newest first, with the players
+// on it. Tara reads accounts and players under their is_admin() policies;
+// the waiver comes from search_players, the same answer the Players tab shows.
+// Read again each time the tab opens, so a new sign-up appears without a reload.
+let signups = [];
+const signupDate = (iso) => new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/New_York", month: "short", day: "numeric", year: "numeric" }).format(new Date(iso));
+const signupPlayers = (a) => (a.players || [])
+  .sort((x, y) => (x.kind === "junior") - (y.kind === "junior") || x.first_name.localeCompare(y.first_name))
+  .map(pl => `${pl.first_name} ${pl.last_name}${pl.kind === "junior" ? " (junior)" : ""}${pl.is_active ? "" : " (inactive)"}`);
+let signupSeq = 0;
+async function loadSignups() {
+  const seq = ++signupSeq;
+  const [acc, dir] = await Promise.all([
+    readAll(() => sb.from("accounts")
+      .select("id,first_name,last_name,email,phone,created_at,role,players(id,first_name,last_name,kind,is_member,is_active)")
+      .is("deleted_at", null).neq("role", "admin")
+      .order("created_at", { ascending: false }).order("id")),
+    sb.rpc("search_players", { p_query: "", p_include_inactive: true })]);
+  if (seq !== signupSeq) return;
+  if (acc.error) return note($("su-msg"), friendly(acc.error));
+  // No waiver answer shows no waiver column, never a wrong one.
+  const waiver = dir.error ? null : new Map((dir.data || []).map(pl => [pl.id, pl.waiver_accepted]));
+  signups = acc.data.map(a => ({
+    ...a,
+    member: (a.players || []).some(pl => pl.is_member),
+    waiver: waiver && (a.players || []).length ? (a.players || []).every(pl => waiver.get(pl.id)) : null,
+  }));
+  note($("su-msg"), "");
+  drawSignups();
+}
+function signupMatches(a, q) {
+  if (!q) return true;
+  const digits = q.replace(/\D/g, "");
+  const hay = [a.first_name, a.last_name, `${a.first_name} ${a.last_name}`, a.email,
+               ...signupPlayers(a)].join("\n").toLowerCase();
+  return hay.includes(q.toLowerCase()) || (digits.length >= 3 && (a.phone || "").replace(/\D/g, "").includes(digits));
+}
+function drawSignups() {
+  const q = $("su-query").value.trim();
+  const rows = signups.filter(a => signupMatches(a, q));
+  const week = Date.now() - 7 * 24 * 3600 * 1000;
+  const recent = signups.filter(a => new Date(a.created_at).getTime() >= week).length;
+  const people = signups.reduce((n, a) => n + (a.players || []).length, 0);
+  $("su-count").textContent = `${signups.length} ${signups.length === 1 ? "account" : "accounts"}, ${people} ${people === 1 ? "player" : "players"}, ${recent} new in the last 7 days`;
+  $("su-list").innerHTML = rows.length ? `<table class="signups">
+  <thead><tr><th>Name</th><th>Players</th><th>Email</th><th>Phone</th><th>Signed up</th><th>Member</th><th>Waiver</th></tr></thead>
+  <tbody>${rows.map(a => `<tr data-signup="${a.id}">
+    <td>${esc(a.first_name)} ${esc(a.last_name)}${a.role === "pro" ? ' <span class="muted">Pro</span>' : ""}</td>
+    <td>${signupPlayers(a).map(esc).join("<br>") || '<span class="muted">None yet</span>'}</td>
+    <td><a href="mailto:${esc(a.email)}">${esc(a.email)}</a></td>
+    <td>${a.phone ? `<a href="tel:${esc(a.phone)}">${esc(a.phone)}</a>` : '<span class="muted">None</span>'}</td>
+    <td style="white-space:nowrap">${signupDate(a.created_at)}</td>
+    <td>${a.member ? "Member" : "Non-member"}</td>
+    <td>${a.waiver == null ? '<span class="muted">Unknown</span>' : a.waiver ? "Signed" : "Not signed"}</td>
+  </tr>`).join("")}</tbody></table>`
+    : `<p class="muted">${q ? "Nobody matches that." : "Nobody has signed up yet."}</p>`;
+}
+function downloadSignupsCsv() {
+  const q = $("su-query").value.trim();
+  const lines = [["First name", "Last name", "Players", "Email", "Phone", "Signed up", "Member", "Waiver"],
+    ...signups.filter(a => signupMatches(a, q)).map(a => [a.first_name, a.last_name, signupPlayers(a).join("; "),
+      a.email, a.phone || "", signupDate(a.created_at), a.member ? "Member" : "Non-member",
+      a.waiver == null ? "" : a.waiver ? "Signed" : "Not signed"])];
+  const csv = lines.map(l => l.map(csvCell).join(",")).join("\r\n") + "\r\n";
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  const link = document.createElement("a");
+  link.href = url; link.download = `fxe-sign-ups-${nyDateTime(new Date().toISOString()).slice(0, 10)}.csv`;
+  document.body.appendChild(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+$("su-query").addEventListener("input", drawSignups);
+$("su-csv").addEventListener("click", downloadSignupsCsv);
 
 // Review links (20260921000010). admin_create_review_link mints the token;
 // the page at review.html?t=<token> saves through the review-submit edge

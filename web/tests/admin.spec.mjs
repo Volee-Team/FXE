@@ -345,8 +345,9 @@ test.describe("payments switch", () => {
 test.describe("review links", () => {
   test("Tara makes a review link and gets a URL carrying a long token", async ({ page }) => {
     await signIn(page, TARA);
-    // Testing is not a tab (Alex, 2026-09-27): three tabs, and a small link at the foot.
-    await expect(page.getByRole("tab")).toHaveText(["This week", "Players", "Money"]);
+    // Testing is not a tab (Alex, 2026-09-27): four tabs since Sign-ups
+    // (2026-11-08), and a small link at the foot.
+    await expect(page.getByRole("tab")).toHaveText(["This week", "Players", "Sign-ups", "Money"]);
     await page.getByRole("button", { name: "Testing" }).click();
     await page.getByLabel("Link label").fill(`Playwright ${Date.now()}`);
     await page.getByRole("button", { name: "Make link" }).click();
@@ -1381,5 +1382,42 @@ test.describe("clinic price and rain", () => {
       await db.patch("app_settings?key=eq.payments_enabled_at", { value: "" });
       await db.patch("app_settings?key=eq.payments_enabled", { value: "false" });
     }
+  });
+});
+
+// Sign-ups (Tara, 2026-11-08): everyone who has an account, newest first,
+// read only. Staff are left off; a search narrows the list and the CSV.
+test.describe("sign-ups", () => {
+  test("Tara sees every account with its contact details, searches it, and downloads it", async ({ page }) => {
+    await signIn(page, TARA);
+    await page.getByRole("tab", { name: "Sign-ups" }).click();
+    await expect(page.getByRole("heading", { name: "Sign-ups" })).toBeVisible();
+    const maria = page.locator("[data-signup]", { hasText: "Maria Alvarez" });
+    await expect(maria).toContainText("maria@fxe.test");
+    await expect(maria).toContainText("704-555-0101");
+    await expect(page.locator("#su-count")).toContainText(/\d+ accounts, \d+ players, \d+ new in the last 7 days/);
+    // Her own account is staff, not a sign-up.
+    await expect(page.locator("[data-signup]", { hasText: "tara@fxe.test" })).toHaveCount(0);
+    // The pro is a sign-up, marked as a pro.
+    await expect(page.locator("[data-signup]", { hasText: "pro@fxe.test" })).toContainText("Pro");
+    const all = await page.locator("[data-signup]").count();
+    expect(all).toBeGreaterThanOrEqual(9);
+
+    await page.getByLabel("Search sign-ups").fill("0103");
+    await expect(page.locator("[data-signup]")).toHaveCount(1);
+    await expect(page.locator("[data-signup]")).toContainText("Rob Delgado");
+
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: "Download CSV" }).click(),
+    ]);
+    const csv = await (await download.createReadStream()).toArray().then(b => Buffer.concat(b).toString("utf8"));
+    const lines = csv.trim().split("\r\n");
+    expect(lines[0]).toBe('"First name","Last name","Players","Email","Phone","Signed up","Member","Waiver"');
+    expect(lines).toHaveLength(2);
+    expect(lines[1]).toContain('"rob@fxe.test"');
+
+    await page.getByLabel("Search sign-ups").fill("");
+    await expect(page.locator("[data-signup]")).toHaveCount(all);
   });
 });
