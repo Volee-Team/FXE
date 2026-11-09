@@ -521,13 +521,16 @@ struct AdminClinicDetailView: View {
 
             // Admin-only counts, with capacity. Shown so Tara can decide, never
             // to stop her deciding.
-            // Her prices, halved while it rains (the laptop's line). In the
-            // primary ink: in the secondary grey on the court backdrop it
-            // failed the iOS 18 contrast audit twice (caption, then
-            // subheadline; 2026-11-09).
+            // Her prices, halved while it rains (the laptop's line). On the
+            // raised surface, like the pro's empty-clinic line: straight on
+            // the court backdrop it failed the iOS 18 contrast audit in grey
+            // and in the primary ink alike (2026-11-09).
             Text(priceLine)
                 .brandFont(.subheadline)
                 .foregroundStyle(Brand.textPrimary)
+                .padding(.horizontal, Brand.Spacing.xs)
+                .padding(.vertical, 3)
+                .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.sm))
                 .accessibilityIdentifier("admin.priceLine")
 
             HStack(spacing: Brand.Spacing.sm) {
