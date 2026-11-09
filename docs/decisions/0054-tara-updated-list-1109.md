@@ -58,7 +58,13 @@ Item 9 was already on her phone (the Court menu's "Remove from clinic", since
    someone who never asked, decision 0051). Her notice reads "{name} declined
    {clinic}." without "and is back on the Waitlist". "Same day clinic" read as
    the clinic's calendar day in New York: on clinic day her Waitlist tap is an
-   invitation (decision 0047), which is when this happens.
+   invitation (decision 0047), which is when this happens. So in practice
+   almost every decline of a Waitlist invitation now ends it; the old "back on
+   the Waitlist" is left only for an invitation sent inside the cutoff the
+   night before (a 12:30 AM clinic) and declined before midnight.
+   `notification_copy.sql` moved with it: its invitation steps sit on today,
+   so its decline row now reads without the tail, and Tara puts the player
+   back on the Waitlist by hand before inviting again.
 11. **"Warn me!": Tara is warned, never stopped; a player's Accept is
     stopped.** Her question ("Are you sure you want to add Jane Doe? Your
     clinic is full (12/12).") now also comes before Add guest on the phone;

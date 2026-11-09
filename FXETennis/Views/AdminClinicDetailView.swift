@@ -222,7 +222,14 @@ struct AdminClinicDetailView: View {
         _model = State(initialValue: AdminClinicModel(clinic: clinic))
     }
 
+    /// The page, then her guest, price and rounds dialogs (decisions 0052 to
+    /// 0054) as a second step: in one expression the compiler on CI's Mac
+    /// gave up type-checking it (2026-11-09).
     var body: some View {
+        extrasDialogs(page)
+    }
+
+    private var page: some View {
         ZStack {
             CourtBackdrop()
 
@@ -399,108 +406,6 @@ struct AdminClinicDetailView: View {
                 fullFor = nil
             }
             Button("Cancel", role: .cancel) { fullFor = nil }
-        }
-        .alert("Add a guest", isPresented: $addingGuest) {
-            TextField("First name", text: $guestFirst)
-                .textContentType(.givenName)
-            TextField("Last name", text: $guestLast)
-                .textContentType(.familyName)
-            Button("Add") {
-                let name = "\(guestFirst.trimmingCharacters(in: .whitespaces)) \(guestLast.trimmingCharacters(in: .whitespaces))"
-                if model.isFull { guestFullFor = name } else { addGuest() }
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("For someone who isn't in the app. They get no messages and the app never charges them.")
-        }
-        // "Warn me!" (decision 0054, item 11): the same question as Invite.
-        .confirmationDialog(
-            guestFullFor.map { ClinicFull.question(.add, name: $0, inCount: model.taken, capacity: clinic.internalCapacity ?? 0) } ?? "",
-            isPresented: Binding(get: { guestFullFor != nil }, set: { if !$0 { guestFullFor = nil } }),
-            titleVisibility: .visible
-        ) {
-            Button("Add") { addGuest(); guestFullFor = nil }
-            Button("Cancel", role: .cancel) { guestFullFor = nil }
-        }
-        .confirmationDialog(
-            "Remove \(removingGuest?.displayName ?? "this guest") from \(clinic.name)?",
-            isPresented: Binding(get: { removingGuest != nil }, set: { if !$0 { removingGuest = nil } }),
-            titleVisibility: .visible
-        ) {
-            Button("Remove", role: .destructive) {
-                if let g = removingGuest {
-                    Task { await model.perform(g.id) { try await AdminRepository.removeGuest(g.id) } }
-                }
-                removingGuest = nil
-            }
-            Button("Keep", role: .cancel) { removingGuest = nil }
-        }
-        .alert("Change price", isPresented: $pricing) {
-            TextField("Member price", text: $memberText)
-                .keyboardType(.decimalPad)
-            TextField("Non-member price", text: $nonmemberText)
-                .keyboardType(.decimalPad)
-            Button("Save") {
-                guard let m = DollarsInput.cents(memberText), let n = DollarsInput.cents(nonmemberText) else {
-                    model.error = "Enter a price above $0."
-                    return
-                }
-                Task { await model.perform(clinic.id) {
-                    try await AdminRepository.setClinicPrices(clinic: clinic.id, memberCents: m, nonmemberCents: n)
-                } }
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Everyone not yet charged pays the new price.")
-        }
-        // Tara, 2026-11-07: "if I could have the option to charge half, then
-        // that means everybody would be charged half if it were to rain".
-        // The laptop's question, both ways.
-        .confirmationDialog(
-            model.live.rainHalf == true
-                ? "Charge the full price again for \(clinic.name)?"
-                : "Charge everyone who came half for \(clinic.name)? No-shows and late cancels still pay in full.",
-            isPresented: $confirmRain, titleVisibility: .visible
-        ) {
-            Button(model.live.rainHalf == true ? "Back to full price" : "Charge half (rain)") {
-                let on = model.live.rainHalf != true
-                Task { await model.perform(clinic.id) { try await AdminRepository.setRainHalf(clinic: clinic.id, on: on) } }
-            }
-            Button("Cancel", role: .cancel) {}
-        }
-        // One person's amount (decision 0054, item 10). Tara, 2026-11-09: "I
-        // would type amount: for example 1.5 hour clinic is $28 for non. If
-        // we get 45 mins I would charge $14".
-        .alert("Price for \(priceFor?.displayName ?? "this player")",
-               isPresented: Binding(get: { priceFor != nil }, set: { if !$0 { priceFor = nil } })) {
-            TextField("Amount", text: $priceText)
-                .keyboardType(.decimalPad)
-            Button("Save") {
-                if let entry = priceFor {
-                    if let cents = DollarsInput.cents(priceText) {
-                        Task { await model.perform(entry.id) { try await AdminRepository.setRegistrationPrice(entry.id, cents: cents) } }
-                    } else {
-                        model.error = "Enter a price above $0."
-                    }
-                }
-                priceFor = nil
-            }
-            if priceFor?.registration.priceSetByAdmin == true {
-                Button("Use the clinic's price") {
-                    if let entry = priceFor {
-                        Task { await model.perform(entry.id) { try await AdminRepository.setRegistrationPrice(entry.id, cents: nil) } }
-                    }
-                    priceFor = nil
-                }
-            }
-            Button("Cancel", role: .cancel) { priceFor = nil }
-        } message: {
-            Text("Only this player pays it. A clinic price change or half price leaves it alone.")
-        }
-        .sheet(isPresented: $showRounds) {
-            RoundsSheet(clinicId: clinic.id, clinicName: clinic.name, people: model.roundPeople, editable: true) {
-                await model.load()
-            }
         }
         .sheet(isPresented: $invitingAnyone) {
             InvitePlayerSheet(clinic: clinic, inCount: model.taken, onClinic: model.onClinic) {
@@ -1140,6 +1045,112 @@ struct AdminClinicDetailView: View {
     }
 
     // MARK: - Guests, prices (decisions 0052 to 0054)
+
+    private func extrasDialogs(_ content: some View) -> some View {
+        content
+        .alert("Add a guest", isPresented: $addingGuest) {
+            TextField("First name", text: $guestFirst)
+                .textContentType(.givenName)
+            TextField("Last name", text: $guestLast)
+                .textContentType(.familyName)
+            Button("Add") {
+                let name = "\(guestFirst.trimmingCharacters(in: .whitespaces)) \(guestLast.trimmingCharacters(in: .whitespaces))"
+                if model.isFull { guestFullFor = name } else { addGuest() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("For someone who isn't in the app. They get no messages and the app never charges them.")
+        }
+        // "Warn me!" (decision 0054, item 11): the same question as Invite.
+        .confirmationDialog(
+            guestFullFor.map { ClinicFull.question(.add, name: $0, inCount: model.taken, capacity: clinic.internalCapacity ?? 0) } ?? "",
+            isPresented: Binding(get: { guestFullFor != nil }, set: { if !$0 { guestFullFor = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button("Add") { addGuest(); guestFullFor = nil }
+            Button("Cancel", role: .cancel) { guestFullFor = nil }
+        }
+        .confirmationDialog(
+            "Remove \(removingGuest?.displayName ?? "this guest") from \(clinic.name)?",
+            isPresented: Binding(get: { removingGuest != nil }, set: { if !$0 { removingGuest = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button("Remove", role: .destructive) {
+                if let g = removingGuest {
+                    Task { await model.perform(g.id) { try await AdminRepository.removeGuest(g.id) } }
+                }
+                removingGuest = nil
+            }
+            Button("Keep", role: .cancel) { removingGuest = nil }
+        }
+        .alert("Change price", isPresented: $pricing) {
+            TextField("Member price", text: $memberText)
+                .keyboardType(.decimalPad)
+            TextField("Non-member price", text: $nonmemberText)
+                .keyboardType(.decimalPad)
+            Button("Save") {
+                guard let m = DollarsInput.cents(memberText), let n = DollarsInput.cents(nonmemberText) else {
+                    model.error = "Enter a price above $0."
+                    return
+                }
+                Task { await model.perform(clinic.id) {
+                    try await AdminRepository.setClinicPrices(clinic: clinic.id, memberCents: m, nonmemberCents: n)
+                } }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Everyone not yet charged pays the new price.")
+        }
+        // Tara, 2026-11-07: "if I could have the option to charge half, then
+        // that means everybody would be charged half if it were to rain".
+        // The laptop's question, both ways.
+        .confirmationDialog(
+            model.live.rainHalf == true
+                ? "Charge the full price again for \(clinic.name)?"
+                : "Charge everyone who came half for \(clinic.name)? No-shows and late cancels still pay in full.",
+            isPresented: $confirmRain, titleVisibility: .visible
+        ) {
+            Button(model.live.rainHalf == true ? "Back to full price" : "Charge half (rain)") {
+                let on = model.live.rainHalf != true
+                Task { await model.perform(clinic.id) { try await AdminRepository.setRainHalf(clinic: clinic.id, on: on) } }
+            }
+            Button("Cancel", role: .cancel) {}
+        }
+        // One person's amount (decision 0054, item 10). Tara, 2026-11-09: "I
+        // would type amount: for example 1.5 hour clinic is $28 for non. If
+        // we get 45 mins I would charge $14".
+        .alert("Price for \(priceFor?.displayName ?? "this player")",
+               isPresented: Binding(get: { priceFor != nil }, set: { if !$0 { priceFor = nil } })) {
+            TextField("Amount", text: $priceText)
+                .keyboardType(.decimalPad)
+            Button("Save") {
+                if let entry = priceFor {
+                    if let cents = DollarsInput.cents(priceText) {
+                        Task { await model.perform(entry.id) { try await AdminRepository.setRegistrationPrice(entry.id, cents: cents) } }
+                    } else {
+                        model.error = "Enter a price above $0."
+                    }
+                }
+                priceFor = nil
+            }
+            if priceFor?.registration.priceSetByAdmin == true {
+                Button("Use the clinic's price") {
+                    if let entry = priceFor {
+                        Task { await model.perform(entry.id) { try await AdminRepository.setRegistrationPrice(entry.id, cents: nil) } }
+                    }
+                    priceFor = nil
+                }
+            }
+            Button("Cancel", role: .cancel) { priceFor = nil }
+        } message: {
+            Text("Only this player pays it. A clinic price change or half price leaves it alone.")
+        }
+        .sheet(isPresented: $showRounds) {
+            RoundsSheet(clinicId: clinic.id, clinicName: clinic.name, people: model.roundPeople, editable: true) {
+                await model.load()
+            }
+        }
+    }
 
     /// A guest in You're In!: the name, a Guest tag, and a Court menu with
     /// the same five courts plus Remove. Nothing that messages or charges:
