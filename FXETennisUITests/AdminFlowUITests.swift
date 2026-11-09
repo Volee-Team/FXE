@@ -151,6 +151,14 @@ final class AdminFlowUITests: XCTestCase {
         XCTAssertTrue(row.waitForExistence(timeout: 15), "Search found nobody for 'Mar'")
         row.tap()
 
+        // Tara, 2026-11-09: "would be great to have their cell number under
+        // name". Maria's own account, so plain "Phone", with Text and Call.
+        let phone = app.staticTexts["admin.player.phone"]
+        XCTAssertTrue(phone.waitForExistence(timeout: 15), "No phone number on the player page")
+        XCTAssertEqual(phone.label, "Phone: 704-555-0101")
+        XCTAssertTrue(app.links["admin.player.text"].exists || app.buttons["admin.player.text"].exists, "No Text link")
+        XCTAssertTrue(app.links["admin.player.call"].exists || app.buttons["admin.player.call"].exists, "No Call link")
+
         let note = app.textViews["admin.player.note"]
         XCTAssertTrue(note.waitForExistence(timeout: 10), "No note editor on the player page")
         let stamp = "XCUITest \(Int.random(in: 1000...9999))"

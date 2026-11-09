@@ -118,7 +118,18 @@ Item 9 was already on her phone (the Court menu's "Remove from clinic", since
       juniors' own design; this is the per-person override she asked for.
 
 Also in 1.0.3, build 17, so Tara has everything on her phone: guests
-(decision 0052) and the clinic's price and rain half (decision 0053).
+(decision 0052) and the clinic's price and rain half (decision 0053). And,
+from her the same day on her phone's Player page: *"Also from app would be
+great to have their cell number under name. Sure it's there on website"* and
+*"Will def need this juniors bc if something happens need to text parents
+immediate"*. Under the name: the account's phone (`accounts.phone` through
+`players.account_id`, so a junior's is the parent's), labelled "Phone",
+"Parent's phone (holder)" for a junior, or "Phone on holder's account" for
+another adult on someone's account, with Text and Call, or "No phone number".
+Read directly as Tara (`accounts_self` admits an admin; a pro or a player
+gets nothing back, checked on the local stack); no migration, so
+`search_players` and the 1.0.1 to 1.0.3 apps are untouched. Pros still see
+no phone anywhere.
 
 ## Rejected
 

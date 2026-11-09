@@ -86,6 +86,39 @@ final class ClinicExtrasTests: XCTestCase {
         XCTAssertEqual(row.priceSetByAdmin, true)
     }
 
+    // MARK: - The phone on her Player page
+
+    /// "Will def need this juniors bc if something happens need to text
+    /// parents immediate": a junior's number is the parent's, and says so.
+    func testWhoseNumberItIs() {
+        XCTAssertEqual(PlayerPhone.label(kind: "adult", playerFirst: "Maria", playerLast: "Alvarez",
+                                         holderFirst: "Maria", holderLast: "Alvarez"), "Phone")
+        XCTAssertEqual(PlayerPhone.label(kind: "adult", playerFirst: "maria", playerLast: "alvarez",
+                                         holderFirst: "Maria ", holderLast: "Alvarez"), "Phone")
+        XCTAssertEqual(PlayerPhone.label(kind: "junior", playerFirst: "Sam", playerLast: "Lee",
+                                         holderFirst: "Sarah", holderLast: "Lee"), "Parent's phone (Sarah Lee)")
+        XCTAssertEqual(PlayerPhone.label(kind: "junior", playerFirst: "Sam", playerLast: "Lee",
+                                         holderFirst: nil, holderLast: nil), "Parent's phone")
+        XCTAssertEqual(PlayerPhone.label(kind: "adult", playerFirst: "Jo", playerLast: "Lee",
+                                         holderFirst: "Sarah", holderLast: "Lee"), "Phone on Sarah Lee's account")
+    }
+
+    func testTextAndCallLinks() {
+        XCTAssertEqual(PlayerPhone.textURL("704-555-0101")?.absoluteString, "sms:7045550101")
+        XCTAssertEqual(PlayerPhone.callURL("(704) 555-0101")?.absoluteString, "tel:7045550101")
+        XCTAssertEqual(PlayerPhone.callURL("+1 704 555 0101")?.absoluteString, "tel:+17045550101")
+        XCTAssertNil(PlayerPhone.textURL(""))
+        XCTAssertNil(PlayerPhone.callURL("n/a"))
+        XCTAssertNil(PlayerPhone.callURL(nil))
+    }
+
+    func testTheAccountDecodesFromTheEmbed() throws {
+        let json = #"[{"accounts":{"phone":"704-555-0101","last_name":"Alvarez","first_name":"Maria"}}]"#
+        let rows = try JSONDecoder().decode([PlayerContact].self, from: Data(json.utf8))
+        XCTAssertEqual(rows.first?.accounts?.phone, "704-555-0101")
+        XCTAssertEqual(rows.first?.accounts?.firstName, "Maria")
+    }
+
     // MARK: - Guests and the full question
 
     func testAGuestDecodes() throws {

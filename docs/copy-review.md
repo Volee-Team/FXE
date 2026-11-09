@@ -1025,6 +1025,9 @@ Decision 0054 (her updated list, items 8 and 10, and "Warn me!"), and decisions 
 | ☐ | Change price / Member price / Non-member price / Everyone not yet charged pays the new price. | The phone's More menu and form (the laptop's words) |
 | ☐ | Charge half (rain) / Back to full price, and their two questions | The phone's More menu (the laptop's words) |
 | ☐ | {$18} member / {$23} non-member, and "(half, rain)" | The phone's price line under the date (the laptop's line) |
+| ☐ | Phone: {number} / Parent's phone ({holder}): {number} / Phone on {holder}'s account: {number} | Under the name on her phone's Player page (*"their cell number under name"*; a junior's is the parent's) |
+| ☐ | Text / Call | The two buttons under it |
+| ☐ | No phone number / Couldn't load the phone number. | No number on the account, and a failed read |
 
 ## The rule going forward
 

@@ -30,6 +30,7 @@ Ask Tara for approval first.
 At least 6 characters.
 Back
 Board report
+Call
 Cancel
 Cancel Invite
 Cancel Registration
@@ -67,6 +68,7 @@ Couldn't find your account. Sign out and sign in again.
 Couldn't load card payments.
 Couldn't load saved answers, still on this phone
 Couldn't load the numbers.
+Couldn't load the phone number.
 Couldn't load this clinic.
 Couldn't load your calendar link.
 Couldn't reach Stripe. Try again.
@@ -192,6 +194,7 @@ No deposits yet.
 No description yet.
 No earlier clinics.
 No notifications yet
+No phone number
 No players yet.
 No responses yet.
 No room
@@ -310,6 +313,7 @@ Stripe, Inc. processes card payments. Your card details go to Stripe directly an
 Subscribe in Calendar
 Tara has your message.
 Tara, only what's new
+Text
 Text this to them. It works once, within an hour.
 That account is an administrator.
 That account is not an administrator.
