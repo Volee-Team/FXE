@@ -51,6 +51,7 @@ Clinic updates come through the app. Keep notifications on so you don't miss the
 Clinics
 Close
 Collected by card
+Completed
 Contact Tara
 Continue
 Cookies and tracking technologies
