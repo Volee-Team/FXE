@@ -521,9 +521,11 @@ struct AdminClinicDetailView: View {
 
             // Admin-only counts, with capacity. Shown so Tara can decide, never
             // to stop her deciding.
-            // Her prices, halved while it rains (the laptop's line).
+            // Her prices, halved while it rains (the laptop's line). The date
+            // line's size and colour: as a caption on the court backdrop it
+            // failed the iOS 18 contrast audit (2026-11-09).
             Text(priceLine)
-                .brandFont(.caption)
+                .brandFont(.subheadline)
                 .foregroundStyle(Brand.textSecondary)
                 .accessibilityIdentifier("admin.priceLine")
 
