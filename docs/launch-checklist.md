@@ -52,14 +52,14 @@ How this file works, so it can be trusted:
   by John 2026-10-30 (PR #115, `f59677d`); the Waitlist wording (PR #116)
   missed it and rode in 1.0.1 (build 14), uploaded 2026-10-31 from `ed7d7f3`
   (PR #119), not yet submitted for review.
-- **Hosted:** 81 of 84 migrations paired (`supabase migration list`, 2026-11-07). **Payments live** since 2026-10-14:
+- **Hosted:** 81 of 85 migrations paired (`supabase migration list`, 2026-11-07). **Payments live** since 2026-10-14:
   3 charges succeeded, 1 refund, 0 failed; 10 members, 4 with a saved card
   (`scripts/live-status.sh`, 2026-10-21). No published clinic after 10-20
   (read-only query, 2026-10-21): Tara's next week is needed while Apple
   reviews. Stripe pays out daily to Tara's bank; receipts off
   (`docs/live-facts.md`).
-- **Tests:** 56 SQL probes plus 18 shell probes, 311 unit tests, 27
-  XCUITests, 85 browser tests (`scripts/check-doc-claims.sh`, 2026-10-21).
+- **Tests:** 57 SQL probes plus 19 shell probes, 321 unit tests, 27
+  XCUITests, 87 browser tests (`scripts/check-doc-claims.sh`, 2026-10-21).
 - **Waiting on others:** the App Transfer to Volee's LLC account (C12); Tara: next week's clinics, questions 109 to 125 (none answered in any
   channel the model can read, checked 2026-10-21), the Volee button words.
 
@@ -141,7 +141,7 @@ What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision
 | D1 | **A real email sender, so "Forgot password?" reaches members** | [Alex] | **DONE 2026-09-27**: Gmail `fxetennis.app@gmail.com` with an app password as custom SMTP; read back through the management API (`smtp_host` smtp.gmail.com, port 465, sender "FXE Tennis"). Delivery confirmed by Alex 2026-10-01: *"the reset emails came in just took a while"* |
 | D2 | Reset page allow-listed as a redirect on hosted | [Alex] | **DONE 2026-09-01**; verified 2026-09-27 (`uri_allow_list` is `https://fxe-tennis-admin.vercel.app/reset.html`) |
 | D3 | Supabase plan: the free tier pauses after a quiet week and has no point-in-time recovery; Pro is $25 a month | [Alex] | **LATER**: Alex, 2026-10-21: *"ig were fine for now, we dont rlly need it yet"*. What covers the gap meanwhile: real members use it daily now, the nightly keep-warm job pings it, and the nightly encrypted backup (restore drill passed 2026-10-12, D4). Revisit if the project pauses or before a busy season |
-| D4 | Restore drill (a backup nobody has restored is not a backup) | [me] | **DONE 2026-11-03**: the 2026-11-02 nightly backup (run 41483885958) decrypted with Alex's key and restored into a throwaway `supabase/postgres:17.6` container after `drop schema auth cascade`; one harmless error ("schema public already exists"). Restored: 26 sign-ins, 84 migrations (newest `20261101000001`), 24 accounts, 24 players, 37 clinics, 31 registrations, 6 payments. Hosted at the same moment: 28, 73, 24, 24, 37, 32, 6, and exactly 2 sign-ins and 1 registration on hosted postdate the backup (read-only query), so every row the backup should hold came back. Container and decrypted dump deleted. Monthly; next due 2026-12-03 |
+| D4 | Restore drill (a backup nobody has restored is not a backup) | [me] | **DONE 2026-11-03**: the 2026-11-02 nightly backup (run 41483885958) decrypted with Alex's key and restored into a throwaway `supabase/postgres:17.6` container after `drop schema auth cascade`; one harmless error ("schema public already exists"). Restored: 26 sign-ins, every migration through `20261101000001`, 24 accounts, 24 players, 37 clinics, 31 registrations, 6 payments. Hosted at the same moment: 28, 73, 24, 24, 37, 32, 6, and exactly 2 sign-ins and 1 registration on hosted postdate the backup (read-only query), so every row the backup should hold came back. Container and decrypted dump deleted. Monthly; next due 2026-12-03 |
 | D5 | Tara's real templates and clinics in hosted, through the admin site | [Tara] | **DONE 2026-10-11**: her real clinics are on hosted from 2026-10-04 to 2026-10-20 (read-only query 2026-10-21). **None scheduled after today** (`starts_at > now()` returns 0), and C14 needs next week's clinics published while the reviewer looks |
 | D6 | Crash reporting and error alerts: MetricKit crash and hang reports into `app_diagnostics` through `report_app_diagnostic` (decision 0035) | [me]/[Alex] | **OPEN**: shipped in build 12 (PR #97 merged 2026-10-19; hosted has `20261014000001` and `20261014000002`, 69 of 69 paired; the live privacy page carries the MetricKit sentence; the nightly retention job runs `purge_app_diagnostics()`). Not yet seen end to end: `app_diagnostics` has 0 rows on hosted (2026-10-21), expected until a build-12 phone reports |
 | D7 | Rate limits on the public functions and sign-up | [me] | **LATER**: low risk at club scale |
@@ -162,13 +162,13 @@ observer.
 
 | Layer | Runs where | Count (derived 2026-10-12 unless dated) | Gap |
 |---|---|---|---|
-| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 56 probes plus 18 shell probes (the races and the 200-request rush); the suite prints its own check total | none known |
+| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 57 probes plus 19 shell probes (the races and the 200-request rush); the suite prints its own check total | none known |
 | Stripe pipeline against stripe-mock | every PR | 94 checks as of 2026-09-28 | real Stripe behaviour: one live charge and refund, 2026-10-14 (A10) |
 | Push pipeline against a mock APNs | every PR | 57 checks as of 2026-09-28 | real APNs waits on C3 |
-| Web admin browser tests (Playwright, real sign-in) | every PR | 85 | a cold-start flake after a local reset (backlog) |
-| Swift unit tests (pure logic) | every PR | 311 | fine |
+| Web admin browser tests (Playwright, real sign-in) | every PR | 87 | a cold-start flake after a local reset (backlog) |
+| Swift unit tests (pure logic) | every PR | 321 | fine |
 | Hosted signed-out smoke (`scripts/hosted-smoke.sh`) | every PR, read-only against production | 162 targets as of 2026-10-11, including a browser preflight to each function the web admin calls | only the signed-out side |
-| XCUITests, player and admin flows, and Apple's accessibility audit | **local only** (section F) | 28 | run on a laptop before every TestFlight build, on iOS 17, 18 and 26 (`docs/ui-test-runs.log`) |
+| XCUITests, player and admin flows, and Apple's accessibility audit | **local only** (section F) | 29 | run on a laptop before every TestFlight build, on iOS 17, 18 and 26 (`docs/ui-test-runs.log`) |
 | Copy gate, secret scan (now Stripe keys too), migration immutability, icon gate, doc checks | every PR | – | none |
 | Nightly backup and consent purge | nightly | – | restored by hand monthly (D4, last 2026-10-12) |
 
@@ -238,10 +238,10 @@ each checked by an independent reviewer or the sql-auditor, then merged on
 
 ## F. The CI Supabase project (Alex asked 2026-09-12; corrected 2026-09-13; decided 2026-09-18)
 
-**Decided 2026-09-18: option 3.** Alex: *"nahh unless we really need it no more money for now."* No CI project, no Pro plan. The 28 XCUITests run on a laptop before every TestFlight build and the run is pasted into the changelog entry for that build; the `ios-ui-tests` job stays green with its notice until the three settings exist, so switching later is a dashboard visit and two secrets, nothing in the repo. Revisit when the first paying member exists (D3 wants point-in-time recovery then anyway). The rest of this section is kept as the record of why.
+**Decided 2026-09-18: option 3.** Alex: *"nahh unless we really need it no more money for now."* No CI project, no Pro plan. The 29 XCUITests run on a laptop before every TestFlight build and the run is pasted into the changelog entry for that build; the `ios-ui-tests` job stays green with its notice until the three settings exist, so switching later is a dashboard visit and two secrets, nothing in the repo. Revisit when the first paying member exists (D3 wants point-in-time recovery then anyway). The rest of this section is kept as the record of why.
 
 
-Alex gave the go-ahead on 2026-09-13 ("exact steps for me or can you do it all?"); the create was attempted the same day and refused, see below. Would it help a lot? Yes: it is the only way to run the 28 XCUITests on every PR, which is the layer that walks the app like a member does. The macOS runner has no Docker, so it cannot host the local stack; a small hosted project it can reset to the seed is the practical answer. Everything on our side is built and waiting (2026-09-13): the Debug app accepts `FXE_SUPABASE_URL` / `FXE_SUPABASE_ANON_KEY`, the UI tests forward them, and the `ios-ui-tests` job resets the project with `supabase db reset --db-url` and runs the suite with one retry. The job stays green with a notice until the secrets exist.
+Alex gave the go-ahead on 2026-09-13 ("exact steps for me or can you do it all?"); the create was attempted the same day and refused, see below. Would it help a lot? Yes: it is the only way to run the 29 XCUITests on every PR, which is the layer that walks the app like a member does. The macOS runner has no Docker, so it cannot host the local stack; a small hosted project it can reset to the seed is the practical answer. Everything on our side is built and waiting (2026-09-13): the Debug app accepts `FXE_SUPABASE_URL` / `FXE_SUPABASE_ANON_KEY`, the UI tests forward them, and the `ios-ui-tests` job resets the project with `supabase db reset --db-url` and runs the suite with one retry. The job stays green with a notice until the secrets exist.
 
 **Does it use the Volee slot? Yes, and Alex was right.** The 2026-09-12 version of this section said the free plan is two projects per organization. It is two active free projects per *user* across every org they own: `supabase projects create fxe-ci` on 2026-09-13 was refused with "Alex-Epstein (2 project limit)", because Volee and `fxe-tennis` already fill it. Three ways out, cheapest first:
 

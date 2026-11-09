@@ -86,6 +86,9 @@ struct ClinicAdmin: Codable, Identifiable, Sendable {
     let internalCapacity: Int?
     let memberPriceCents: Int?
     let nonmemberPriceCents: Int?
+    /// Charge half (rain) is on (decision 0053). Read on the clinic page only
+    /// (AdminRepository.clinic); the list does not ask for it.
+    var rainHalf: Bool? = nil
 
     enum CodingKeys: String, CodingKey {
         case id, name, audience, category, status
@@ -94,6 +97,7 @@ struct ClinicAdmin: Codable, Identifiable, Sendable {
         case internalCapacity = "internal_capacity"
         case memberPriceCents = "member_price_cents"
         case nonmemberPriceCents = "nonmember_price_cents"
+        case rainHalf = "rain_half"
     }
 
     var isCanceled: Bool { status == "canceled" }
@@ -125,6 +129,10 @@ struct RegistrationAdmin: Codable, Identifiable, Sendable {
     var playerNote: String? = nil
     /// Tara waived this late cancel's fee (question 106, decision 0040).
     var feeWaivedAt: Date? = nil
+    /// What this person owes for the clinic, and whether Tara typed it
+    /// (decision 0054, item 10). Optional: older servers do not send them.
+    var priceCentsCharged: Int? = nil
+    var priceSetByAdmin: Bool? = nil
 
     enum CodingKeys: String, CodingKey {
         case id, status, paid
@@ -141,6 +149,8 @@ struct RegistrationAdmin: Codable, Identifiable, Sendable {
         case hasCard = "has_card"
         case playerNote = "player_note"
         case feeWaivedAt = "fee_waived_at"
+        case priceCentsCharged = "price_cents_charged"
+        case priceSetByAdmin = "price_set_by_admin"
     }
 
     /// A charge that is pending, processing or went through. The server's rule

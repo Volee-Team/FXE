@@ -8,7 +8,8 @@
 //  invite ___ your clinic is full.'"
 //
 //  A question, never a refusal: capacity never blocks her (place_player; her
-//  for-tara.md answer to question 4). The counts are the ones on her screen.
+//  for-tara.md answer to question 4, and "Warn me!", 2026-11-09). The count
+//  is You're In! plus her guests, as the server counts (clinic_taken).
 //
 
 import Foundation
@@ -21,8 +22,10 @@ enum ClinicFull {
         return inCount >= capacity
     }
 
-    /// What she is about to do, in the words on the button she tapped.
-    enum Action: Sendable { case invite, moveIn }
+    /// What she is about to do, in the words on the button she tapped. `add`
+    /// is Add guest (decision 0054, item 11: "Warn me!"), the laptop's
+    /// "add Jane Doe".
+    enum Action: Sendable { case invite, moveIn, add }
 
     /// "Are you sure you want to invite Jane Doe? Your clinic is full (25/25)."
     static func question(_ action: Action, name: String, inCount: Int, capacity: Int) -> String {
@@ -30,6 +33,7 @@ enum ClinicFull {
         switch action {
         case .invite: what = "invite \(name)"
         case .moveIn: what = "move \(name) in"
+        case .add: what = "add \(name)"
         }
         return "Are you sure you want to \(what)? Your clinic is full (\(inCount)/\(capacity))."
     }

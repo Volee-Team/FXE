@@ -57,10 +57,10 @@ most important thing to understand here, and it is section 5.
 
 | Area | What exists |
 |---|---|
-| Postgres schema, RLS, narrow views, RPCs | 84 migrations (`ls supabase/migrations`), the newest `20261013000001_audit_fixes.sql`. 63 are on hosted: Alex's `supabase migration list --linked` on 2026-10-12 showed 63 of 63 paired; the 64th goes with the audit-fixes PR. Re-check with that command after any push; this line is not the record |
+| Postgres schema, RLS, narrow views, RPCs | 85 migrations (`ls supabase/migrations`), the newest `20261013000001_audit_fixes.sql`. 63 are on hosted: Alex's `supabase migration list --linked` on 2026-10-12 showed 63 of 63 paired; the 64th goes with the audit-fixes PR. Re-check with that command after any push; this line is not the record |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | Enumerated by probes (section 5) |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | Section 7 |
-| Probe suite: 56 SQL probes and 18 shell probes (races and the API rush); the suite prints its own total | Runs in CI on every push (section 9) |
+| Probe suite: 57 SQL probes and 19 shell probes (races and the API rush); the suite prints its own total | Runs in CI on every push (section 9) |
 | iOS: sign-in, sign-up with profile, the waiver and card steps, password reset, three tabs | In the app |
 | iOS: browse by week, per-viewer pricing, register / cancel (inside the 3-hour cutoff the full fee applies; the note is optional) / leave pool / respond, closed-clinic "Message Tara", the bell, My Clinics, profile edit, card on file | In the app |
 | iOS: a private note for Tara at Register, editable on the player's own live spot until the start (decision 0039) | In the app |
@@ -194,6 +194,10 @@ FXETennis/
 │   │                            three admin-only RPCs
 │   ├── AdminRepository.swift    every admin RPC + the roster/late-request/notice models, the money
 │   │                            models (MoneyClinic, MoneyDecline, MoneyDispute) and Stripe's decline codes in words
+│   ├── ClinicExtrasRepository.swift Tara's clinic page beyond the roster (1.0.3): guests (0052),
+│   │                            the clinic's price and rain half (0053), one player's price and the
+│   │                            105 rounds (0054, clinic_rounds also read by a pro); Rounds and
+│   │                            DollarsInput are pure and unit-tested (ClinicExtrasTests)
 │   ├── ProRepository.swift      a pro's calls (decision 0025): pro_week (the week, 20261107000002;
 │   │                            pro_today stays for 1.0.x), pro_assign_court, pro_set_no_show,
 │   │                            pro_mark_late_cancel; the writes return nothing
@@ -228,8 +232,8 @@ FXETennis/
 │   │                            in its name (Tara's sentence and button, or Register), her words
 │   │                            for the label and the profile line (pure, unit-tested)
 │   ├── ClinicFull.swift         Tara's "Your clinic is full (25/25). Are you sure..." question
-│   │                            before an invite or Move In, and the invite refusals in words
-│   │                            (item 5 of her 11-06 list; pure, unit-tested)
+│   │                            before an invite, Move In or Add guest, counting guests, and the
+│   │                            invite refusals in words (items 5 and 11 of her 11-06 list; pure, unit-tested)
 │   ├── ReviewPrompt.swift       Apple's rating popup: after a second You're In! or later, once per
 │   │                            app version, never in UI tests (pure rule, unit-tested)
 │   ├── RegistrationMoments.swift when a clinic's registration changes on its own (opening, close,
@@ -302,7 +306,14 @@ FXETennis/
     │                            list with the red "Late cancellation" flag and their note, and Waive / Undo while
     │                            no charge is taken (decision 0040); Paid and Remind unpaid only while
     │                            zelle_allowed. ChargeSummary and ChargeOutcome remain for
-    │                            AdminRepository.chargeClinic, which nothing calls
+    │                            AdminRepository.chargeClinic, which nothing calls. From 1.0.3: guests in
+    │                            You're In! with a Guest tag and a Court menu, More > Add guest (the full
+    │                            question first), Change price and Charge half (rain) with the price line
+    │                            under the date (0052, 0053), Set price on a row (0054), and on a 105 a
+    │                            Rounds button and the rounds as text (0054)
+    ├── RoundsSheet.swift        the 105 rounds (decision 0054): Round 1 to 3, courts 1 to 5, six pickers
+    │                            from You're In! and guests for Tara; the same rounds read-only for a pro;
+    │                            RoundsSummary, the text under the button
     ├── PlayersDirectoryView.swift search, member / active switches, private note, Message (one
     │                            player, wherever they are; 20261107000002)
     ├── MessagePlayerSheet.swift Tara writes to one player from the Players tab (admin_message_player,
@@ -312,7 +323,8 @@ FXETennis/
     └── ProTodayView.swift       a pro's Manage tab (decision 0025; named Today until 2026-11-07): the
                                  week's clinics by day (pro_week), who is You're In!, a court menu on
                                  every row (pro_assign_court), Came / No-show and Late cancel on
-                                 today's only (Tara's alert without "The fee applies."); nothing else
+                                 today's only (Tara's alert without "The fee applies."), and a
+                                 read-only Rounds on a 105 (clinic_rounds, decision 0054); nothing else
 ```
 
 Four ideas run through the client code:
@@ -778,8 +790,8 @@ revealing the same summary text the page's Copy my answers produces.
 
 ## 9. Testing and CI
 
-**SQL probes** in `tests/sql/`, 56 SQL probes, each printing PASS/FAIL rows,
-plus 18 shell probes that race transactions or call the API. `tests/run-probes.sh` prints its
+**SQL probes** in `tests/sql/`, 57 SQL probes, each printing PASS/FAIL rows,
+plus 19 shell probes that race transactions or call the API. `tests/run-probes.sh` prints its
 own total and fails on silent SQL errors or a probe with zero assertions.
 Every migration that adds a rule adds a probe that is **red first**.
 
@@ -856,8 +868,8 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `public_open_backfill.sh` | 20261101000001's backfill (decision 0046), run for real: three planted clinics, the migration file applied over them in one rolled-back transaction. A future week on the old Friday 08:00 moves to noon with its member open unchanged; a hand-set time and a week already open stay (each guard shown red by a copy of the migration without it, 2026-11-01) |
 | `beginner_backfill.sh` | 20261106000001's rewrite of existing clinics (decision 0049), run for real: two planted clinics carrying the old value, the migration file applied over them in one rolled-back transaction; the beginner row loses its minimum, the 3.0+ row keeps it, and neither row's published date or price moves |
 
-**Swift**: 311 unit tests (`FXETennisTests`: price formatting, per-viewer
-pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016; since 2026-09-27 the request-failure classifier, a failed load keeping who you are, the waiver and card refusals reopening their steps, the 30-second reload throttle, the redraw moments, and the type scale under Larger Text; since 2026-09-28 the invitation push's Accept and Decline, the Remind me reminder, the calendar entry, and the haptics and chip motion; a clinic the player holds beyond the list's five-week edge staying on their screens, the instant-open snapshot's per-person and ended-clinic rules, Siri's next-clinic answer, and the Player Pool's history line) and 28
+**Swift**: 321 unit tests (`FXETennisTests`: price formatting, per-viewer
+pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016; since 2026-09-27 the request-failure classifier, a failed load keeping who you are, the waiver and card refusals reopening their steps, the 30-second reload throttle, the redraw moments, and the type scale under Larger Text; since 2026-09-28 the invitation push's Accept and Decline, the Remind me reminder, the calendar entry, and the haptics and chip motion; a clinic the player holds beyond the list's five-week edge staying on their screens, the instant-open snapshot's per-person and ended-clinic rules, Siri's next-clinic answer, and the Player Pool's history line) and 29
 XCUITests: 9 player flows
 (`PlayerFlowUITests`: sign in / browse / register, undo, sign-up end to end,
 the bell, profile edit, My Clinics, prices, hidden information, a declined card
@@ -875,7 +887,7 @@ Supabase project was decided against on 2026-09-18 (`docs/launch-checklist.md`
 §F). They run on a Mac through `scripts/run-ui-tests.sh` on iOS 18 and 26 (17 too until 2026-10-30, when it stopped being downloadable),
 and the `ui-test-record` job fails a PR whose code has no green record.
 
-**Web admin**: 85 Playwright tests (`web/tests/*.spec.mjs`) walk Tara's
+**Web admin**: 87 Playwright tests (`web/tests/*.spec.mjs`) walk Tara's
 side against a fresh seed: sign-in and the non-admin door, prices, walk-up,
 courts, unpaid reminder, a note round-trip, cancel clinic, template archive
 and restore, Money counts, the card-payments ledger, payments off, the
@@ -948,7 +960,7 @@ that finishes it, `web/reset.html`, is the browser suite's "reset page" test.
 `project.yml` change? gates the next job so a docs PR does not wait on Xcode),
 `ios-build-and-test` (XcodeGen, Debug and Release builds, unit tests, app-icon
 gate, simulator chosen at run time), `copy-gate` (with `scripts/check-no-dots.sh` since 2026-10-01, decision 0034), `ui-test-record` ("UI tests passed on this exact code", 2026-10-01: `scripts/check-ui-test-record.sh` fails unless `docs/ui-test-runs.log` holds a green run of the whole suite for the fingerprint `scripts/app-fingerprint.sh` computes over the app, its tests, `project.yml`, the migrations and the seed; the runs are made on a Mac by `scripts/run-ui-tests.sh`, which holds a lock so two runs never overlap, resets the database, passes the service key, refuses skipped tests and writes the record), `secret-scan` (`scripts/secret-scan.sh`, which fails on a check that cannot run as well as on a match, 2026-10-13), `hosted-smoke` (read-only, printing its own count of hosted targets: every function taken from `scripts/hosted-smoke-functions.txt`, which `scripts/gen-smoke-functions.sh` writes from the schema and `check-doc-inventory.sh` keeps honest; every table, view, RPC and function must refuse a signed-out caller with 401/403, and the four functions the web admin calls from a browser must answer a preflight from the admin site with a 2xx and its origin; `scripts/hosted-smoke.sh`),
-`calendar-feed` (the calendar-feed harness against the served function), `migration-immutability`, `ios-ui-tests` (the 28 XCUITests against a
+`calendar-feed` (the calendar-feed harness against the served function), `migration-immutability`, `ios-ui-tests` (the 29 XCUITests against a
 throwaway CI Supabase project, reset to the seed first; added 2026-09-13 and
 green with a notice, because that project's secrets do not exist and §F of
 `docs/launch-checklist.md` decided not to create one), and `doc-paths` ("Docs are consistent": `scripts/check-doc-paths.sh`,

@@ -195,6 +195,70 @@ final class AdminFlowUITests: XCTestCase {
                       "List did not show a Canceled chip after cancel")
     }
 
+    // MARK: - C2. guests, the 105 rounds and the clinic's price, on the phone
+
+    /// Decisions 0052 to 0054, on Tara's phone (1.0.3). The seed's Sunday
+    /// Social is a 105 (category), ten days out, nobody in: she adds a guest
+    /// (More > Add guest), the guest reads in You're In! with the Guest tag,
+    /// she puts the guest on court 1 of round 1 from the roster picker, and
+    /// she changes the member price. Named C2 so it runs before D, which
+    /// cancels the last clinic on the list (this one).
+    func testAdminC2_GuestRoundsAndPriceOnA105() {
+        app.launch()
+        signIn(as: admin)
+        openAdminClinic(containing: "Sunday Social")
+
+        let more = app.buttons["admin.more"]
+        XCTAssertTrue(more.waitForExistence(timeout: 15), "No More menu on the 105")
+        more.tap()
+        let addGuest = app.buttons["Add guest"].firstMatch
+        XCTAssertTrue(addGuest.waitForExistence(timeout: 10), "No Add guest in More")
+        addGuest.tap()
+        let alert = app.alerts.firstMatch
+        XCTAssertTrue(alert.waitForExistence(timeout: 10), "No Add a guest form")
+        alert.textFields.element(boundBy: 0).typeText("Pat")
+        alert.textFields.element(boundBy: 1).tap()
+        alert.textFields.element(boundBy: 1).typeText("Visitor")
+        alert.buttons["Add"].tap()
+
+        let guestRow = app.descendants(matching: .any).matching(identifier: "admin.guestRow").firstMatch
+        XCTAssertTrue(guestRow.waitForExistence(timeout: 20), "The guest is not in You're In!")
+        XCTAssertTrue(app.staticTexts["Pat Visitor"].exists, "The guest's name is not on the roster")
+        XCTAssertTrue(app.staticTexts["admin.guestTag"].firstMatch.exists, "No Guest tag on the guest's row")
+
+        // Round 1, court 1, the first spot: picked from the roster.
+        let rounds = app.buttons["admin.rounds"]
+        XCTAssertTrue(rounds.waitForExistence(timeout: 10), "No Rounds on a 105")
+        rounds.tap()
+        let pick = app.descendants(matching: .any).matching(identifier: "rounds.pick").firstMatch
+        XCTAssertTrue(pick.waitForExistence(timeout: 15), "No pickers in Rounds")
+        pick.tap()
+        let pat = app.buttons["Pat Visitor (guest)"].firstMatch
+        XCTAssertTrue(pat.waitForExistence(timeout: 10), "The guest is not in the roster picker")
+        pat.tap()
+        app.buttons["rounds.save"].tap()
+        let summary = app.descendants(matching: .any).matching(identifier: "rounds.summary").firstMatch
+        XCTAssertTrue(summary.waitForExistence(timeout: 20), "No rounds on the clinic page after Save")
+        XCTAssertTrue(summary.label.contains("Court 1: Pat Visitor"), "The round reads \(summary.label)")
+
+        // Her rate, any time (decision 0053).
+        more.tap()
+        let changePrice = app.buttons["Change price"].firstMatch
+        XCTAssertTrue(changePrice.waitForExistence(timeout: 10), "No Change price in More")
+        changePrice.tap()
+        let priceAlert = app.alerts.firstMatch
+        XCTAssertTrue(priceAlert.waitForExistence(timeout: 10), "No Change price form")
+        let memberField = priceAlert.textFields.element(boundBy: 0)
+        // Filled with today's price, as on the laptop: cleared, then typed.
+        memberField.tap()
+        memberField.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 8) + "21")
+        priceAlert.buttons["Save"].tap()
+        let line = app.staticTexts["admin.priceLine"]
+        let updated = NSPredicate(format: "label BEGINSWITH '$21 member'")
+        expectation(for: updated, evaluatedWith: line)
+        waitForExpectations(timeout: 20)
+    }
+
     // MARK: - E. removing a player, from the same menu as the court
 
     /// A walk-up placed on the wrong clinic, or a player who told Tara in

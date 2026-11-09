@@ -76,6 +76,9 @@ struct ProTodayView: View {
     @State private var model = ProTodayModel()
     @State private var lateCanceling: ProTodayPlayer?
     @State private var lateNote = ""
+    /// A 105 whose rounds are open, read-only (decision 0054, item 8: "Just
+    /// me and pros for rounds").
+    @State private var roundsFor: ProTodayClinic?
 
     var body: some View {
         NavigationStack {
@@ -139,6 +142,9 @@ struct ProTodayView: View {
         }
         .task { await model.load() }
         .reloadOnForeground { await model.load() }
+        .sheet(item: $roundsFor) { clinic in
+            RoundsSheet(clinicId: clinic.id, clinicName: clinic.name, people: [], editable: false)
+        }
     }
 
     // MARK: - One clinic
@@ -151,6 +157,23 @@ struct ProTodayView: View {
             Text(timeLine(clinic))
                 .brandFont(.subheadline)
                 .foregroundStyle(Brand.textSecondary)
+
+            // Tara's rounds for a 105, to read (she makes them). The week's
+            // rows carry no category, so the name decides, as Tara names
+            // every 105.
+            if Rounds.is105(name: clinic.name, category: nil) {
+                Button { roundsFor = clinic } label: {
+                    Label("Rounds", systemImage: "square.grid.2x2")
+                        .brandFont(.chip)
+                        .foregroundStyle(Brand.navy)
+                        .padding(.horizontal, Brand.Spacing.sm)
+                        .frame(minHeight: Brand.Layout.minTapTarget)
+                        .background(Capsule().fill(Brand.surfaceRaised))
+                        .overlay(Capsule().stroke(Brand.navy, lineWidth: Brand.Layout.borderWidth))
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("pro.rounds")
+            }
 
             HStack {
                 StatusChip(.youreIn)

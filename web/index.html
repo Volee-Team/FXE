@@ -448,6 +448,43 @@ table.signups th { font-weight: 600; color: #6E6552; }
   </div>
 </dialog>
 
+<!-- One person's amount (decision 0054, item 10; admin_set_registration_price).
+     Tara, 2026-11-09: "I would type amount: for example 1.5 hour clinic is $28
+     for non. If we get 45 mins I would charge $14". Kept through a clinic
+     price change and the rain half; "Use the clinic's price" puts it back. -->
+<dialog id="regprice">
+  <h3 style="margin-top:0" id="rp-title">Price</h3>
+  <p class="muted" style="margin-top:0">Only this player pays it. A clinic price change or half price leaves it alone.</p>
+  <label for="rp-amount">Amount</label>
+  <input id="rp-amount" inputmode="decimal" autocomplete="off">
+  <div id="regprice-msg"></div>
+  <div class="row" style="margin-top:14px">
+    <button type="button" id="regprice-reset">Use the clinic's price</button>
+    <span class="grow"></span>
+    <button type="button" id="regprice-cancel">Cancel</button>
+    <button type="button" class="primary" id="regprice-save">Save</button>
+  </div>
+</dialog>
+
+<!-- Tara's 105 rounds (decision 0054, item 8). Her words, 2026-11-06: "Can
+     there be a place in every 105 on the app for me to make 2-3 rounds of
+     105. Like a message board or something like / Round 1 / Coirt 1: player
+     a,bc / player d,e,f / Coirt 2 / 3 / 4 / 5 / Round 2 Etc / Round 3 Etc".
+     2026-11-09: "Just me and pros for rounds", "Hmmm pick from roster great".
+     Picked from You're In! and her guests; players never see them. -->
+<dialog id="rounds">
+  <h3 style="margin-top:0" id="rd-title">Rounds</h3>
+  <label for="rd-round">Round</label>
+  <select id="rd-round"><option value="1">Round 1</option><option value="2">Round 2</option><option value="3">Round 3</option></select>
+  <div id="rd-courts"></div>
+  <div id="rounds-msg"></div>
+  <div class="row" style="margin-top:14px">
+    <span class="grow"></span>
+    <button type="button" id="rounds-cancel">Cancel</button>
+    <button type="button" class="primary" id="rounds-save">Save</button>
+  </div>
+</dialog>
+
 <!-- Tara invites anyone, not only the Waitlist (admin_invite_player,
      20261107000002). Her words, 2026-11-06: "Allow me to invite anyone to a
      clinic that is not on a waitlist". Always an invitation: they land in
@@ -630,6 +667,43 @@ const courtSelect = (r, attr = "court") => `<select class="court" data-${attr}="
   <option value=""${r.court_number == null ? " selected" : ""}>No court</option>
   ${COURTS.map(n => `<option value="${n}"${r.court_number === n ? " selected" : ""}>Court ${n}</option>`).join("")}
 </select>`;
+// A 105 by its name or category, as the "?" explainer and the server's
+// is_105 decide.
+const is105 = (c) => /105/.test(c.name || "") || /105/.test(c.category || "");
+// Who a round can be picked from: You're In! in court order, then guests.
+const roundPeople = (clinicId) => [
+  ...(regsByClinic[clinicId] || []).filter(r => r.status === "in")
+     .sort((a, b) => (a.court_number ?? 99) - (b.court_number ?? 99))
+     .map(r => ({ id: r.id, name: fullName(r.player_id) })),
+  ...(guestsByClinic[clinicId] || []).map(g => ({ id: g.id, name: `${g.first_name} ${g.last_name} (guest)` })),
+];
+// One court of one round as saved: six ids, side 1 then side 2, "" for open.
+const savedCourt = (round, court, withGone) => {
+  const six = ["", "", "", "", "", ""];
+  for (const sp of roundsSpots) {
+    if (sp.round_number === round && sp.court_number === court && (withGone || !sp.gone))
+      six[(sp.side - 1) * 3 + (sp.slot - 1)] = sp.person_id;
+  }
+  return six;
+};
+const renderRounds = () => {
+  const round = Number($("rd-round").value);
+  const people = roundPeople(roundsClinic);
+  $("rd-courts").innerHTML = COURTS.map(court => {
+    const six = roundsDraft[`${round}-${court}`] || ["", "", "", "", "", ""];
+    const pick = (i) => `<select data-rslot="${court}-${i}" aria-label="Court ${court}, side ${i < 3 ? 1 : 2}, spot ${(i % 3) + 1}">
+        <option value="">Open</option>
+        ${people.map(p => `<option value="${p.id}"${six[i] === p.id ? " selected" : ""}>${esc(p.name)}</option>`).join("")}
+      </select>`;
+    const left = roundsSpots.filter(sp => sp.round_number === round && sp.court_number === court && sp.gone);
+    return `<div class="card" style="margin-top:10px" data-round-court="${court}">
+      <span class="name">Court ${court}</span>
+      <div class="row"><span class="muted" style="width:54px">Side 1</span>${[0, 1, 2].map(pick).join("")}</div>
+      <div class="row"><span class="muted" style="width:54px">Side 2</span>${[3, 4, 5].map(pick).join("")}</div>
+      ${left.map(sp => `<p class="muted" style="color:#992E22;margin:4px 0 0">${esc(sp.first_name + " " + sp.last_name)} left the clinic.</p>`).join("")}
+    </div>`;
+  }).join("");
+};
 // Consecutive clinics (the list is in time order) folded under their service
 // week, so a published season reads in weeks the way the phone shows it.
 const byWeek = (clinics) => {
@@ -715,6 +789,10 @@ function friendly(e) {
   if (m.includes("capacity_must_be_positive")) return "Max players must be at least 1.";
   if (m.includes("duration_must_be_positive")) return "Length must be more than 0 minutes.";
   if (m.includes("clinic_full")) return "That clinic is full now.";
+  // Decision 0054: one person's price and the 105 rounds.
+  if (m.includes("invalid_price")) return "Enter a price above $0.";
+  if (m.includes("already_paid")) return "Already marked paid.";
+  if (m.includes("nothing_owed") || m.includes("not_in_clinic") || m.includes("already_in_round")) return "That just changed. Here's the latest.";
   if (m.includes("request_not_pending")) return "Someone already handled that one.";
   if (m.includes("already_canceled")) return "That clinic is already canceled.";
   // 20260927100001/2: one fee per player per clinic, and Tara's late cancel.
@@ -757,6 +835,12 @@ let walkupClinic = null;
 let invitingClinic = null;
 let guestClinic = null;
 let priceClinic = null;
+let regPriceId = null;
+// The rounds dialog: the clinic, its rounds as saved, and every court of
+// every round as she is editing it ("round-court" to six ids, "" for open).
+let roundsClinic = null;
+let roundsSpots = [];
+let roundsDraft = {};
 let messagingPlayer = null;
 let lateCancelReg = null;
 let templates = [];
@@ -1418,7 +1502,7 @@ async function loadClinics() {
           // player's history (decision 0027 §1).
           return `<div class="row">
             ${s === "pool" ? `<span class="muted" style="width:18px;text-align:right">${i + 1}</span>` : ""}
-            <span class="grow"><span class="name">${esc(who)}</span><br><span class="muted">${esc(sub)}</span>${s === "pool" ? historyHtml(history[r.player_id]) : ""}${r.player_note ? `<br><span class="player-note" data-player-note="${r.id}">“${esc(r.player_note)}”</span>` : ""}</span>
+            <span class="grow"><span class="name">${esc(who)}</span><br><span class="muted">${esc(sub)}</span>${r.price_set_by_admin ? `<br><span class="muted" data-price-set="${r.id}">Price set: ${money(r.price_cents_charged)}</span>` : ""}${s === "pool" ? historyHtml(history[r.player_id]) : ""}${r.player_note ? `<br><span class="player-note" data-player-note="${r.id}">“${esc(r.player_note)}”</span>` : ""}</span>
             ${extra(r)}
           </div>`;
         }).join("")}
@@ -1436,6 +1520,7 @@ async function loadClinics() {
         <button class="small" data-walkup="${c.id}">Add player</button>
         ${c.status === "published" && new Date(c.ends_at) > new Date() ? `<button class="small" data-inviteany="${c.id}">Invite player</button>` : ""}
         ${c.status !== "canceled" ? `<button class="small" data-addguest="${c.id}">Add guest</button>` : ""}
+        ${c.status !== "canceled" && is105(c) ? `<button class="small" data-rounds="${c.id}">Rounds</button>` : ""}
         ${c.status !== "canceled" ? `<button class="small" data-price="${c.id}">Change price</button>` : ""}
         ${c.status !== "canceled" ? `<button class="small" data-rain="${c.id}" data-on="${c.rain_half ? "" : "1"}">${c.rain_half ? "Back to full price" : "Charge half (rain)"}</button>` : ""}
         ${c.status !== "canceled" ? `<a class="button small" href="sheet.html?clinic=${c.id}" target="_blank" rel="noopener">Court sheet</a>` : ""}
@@ -1443,7 +1528,7 @@ async function loadClinics() {
         ${c.status === "draft" ? `<button class="small primary" data-publish="${c.id}">Publish</button>` : ""}
         ${c.status !== "canceled" ? `<button class="small" data-cancelclinic="${c.id}">Cancel clinic</button>` : `<span class="chip canceled">Canceled</span>`}
       </div>
-      ${section("in", r => `${courtSelect(r)}${zelleOn ? `<button class="small" data-paid="${r.id}" data-now="${r.paid}">${r.paid ? "Paid" : "Unpaid"}</button>` : ""}<button class="small${r.no_show ? " danger" : ""}" data-noshow="${r.id}" data-now="${r.no_show}">${r.no_show ? "No-show" : "Came"}</button>${lateOpen && !liveCharge(r) ? `<button class="small" data-latecancel="${r.id}" data-who="${esc(nameOf(r))}">Late cancel</button>` : ""}${!liveCharge(r) && c.status !== "canceled" ? `<button class="small" data-remove="${r.id}">Remove</button>` : ""}${chargeOne(r)}`)}
+      ${section("in", r => `${courtSelect(r)}${zelleOn ? `<button class="small" data-paid="${r.id}" data-now="${r.paid}">${r.paid ? "Paid" : "Unpaid"}</button>` : ""}<button class="small${r.no_show ? " danger" : ""}" data-noshow="${r.id}" data-now="${r.no_show}">${r.no_show ? "No-show" : "Came"}</button>${lateOpen && !liveCharge(r) ? `<button class="small" data-latecancel="${r.id}" data-who="${esc(nameOf(r))}">Late cancel</button>` : ""}${!liveCharge(r) && c.status !== "canceled" ? `<button class="small" data-remove="${r.id}">Remove</button>` : ""}${!r.paid && !liveCharge(r) && c.status !== "canceled" ? `<button class="small" data-regprice="${r.id}" data-who="${esc(nameOf(r))}">Set price</button>` : ""}${chargeOne(r)}`)}
       ${section("pool", r => c.status !== "canceled" ? `<button class="small primary" data-invite="${r.id}" data-clinic="${c.id}" data-who="${esc(nameOf(r))}" data-movein="${beforeClinicDay(c) ? "1" : ""}">${beforeClinicDay(c) ? "Move in" : "Invite"}</button><button class="small" data-remove="${r.id}">Remove</button>` : "")}
       ${section("response_needed", r => `<button class="small" data-uninvite="${r.id}">Cancel invite</button>`)}
       ${section("canceled", r => r.late_cancel
@@ -1671,6 +1756,37 @@ document.addEventListener("click", async (e) => {
     if (done) note($("msg"), "Saved.", true);   // run() reloads, which clears the line
     return;
   }
+  // One person's price (decision 0054, item 10).
+  if (b.dataset.regprice) {
+    regPriceId = b.dataset.regprice;
+    const r = Object.values(regsByClinic).flat().find(x => x.id === regPriceId);
+    $("rp-title").textContent = `Price for ${b.dataset.who}`;
+    $("rp-amount").value = r && r.price_set_by_admin ? toDollars(r.price_cents_charged) : "";
+    $("regprice-reset").classList.toggle("hide", !(r && r.price_set_by_admin));
+    note($("regprice-msg"), "");
+    $("regprice").showModal(); $("rp-amount").focus();
+    return;
+  }
+  // The 105 rounds (decision 0054, item 8).
+  if (b.dataset.rounds) {
+    roundsClinic = b.dataset.rounds;
+    const c = clinicIndex[roundsClinic];
+    $("rd-title").textContent = `Rounds: ${c ? c.name : ""}`;
+    $("rd-round").value = "1";
+    note($("rounds-msg"), "");
+    b.disabled = true;
+    try {
+      const { data, error } = await sb.rpc("clinic_rounds", { p_clinic: roundsClinic });
+      if (error) throw error;
+      roundsSpots = data || [];
+      roundsDraft = {};
+      for (const round of [1, 2, 3]) for (const court of COURTS) roundsDraft[`${round}-${court}`] = savedCourt(round, court, false);
+      renderRounds();
+      $("rounds").showModal();
+    } catch (err) { note($("msg"), friendly(err)); }
+    finally { b.disabled = false; }
+    return;
+  }
   if (b.dataset.addguest) {
     guestClinic = b.dataset.addguest;
     $("g-first").value = ""; $("g-last").value = ""; note($("guest-msg"), "");
@@ -1855,6 +1971,57 @@ $("walkup-cancel").onclick = () => $("walkup").close();
 $("inviteany-cancel").onclick = () => $("inviteany").close();
 $("guest-cancel").onclick = () => $("guest").close();
 $("price-cancel").onclick = () => $("price").close();
+$("regprice-cancel").onclick = () => $("regprice").close();
+const saveRegPrice = async (cents) => {
+  const btns = [$("regprice-save"), $("regprice-reset")];
+  btns.forEach(x => x.disabled = true);
+  try {
+    const { error } = await sb.rpc("admin_set_registration_price", { p_registration: regPriceId, p_cents: cents });
+    if (error) throw error;
+    $("regprice").close();
+    await loadClinics();
+    note($("msg"), "Saved.", true);
+  } catch (err) { note($("regprice-msg"), friendly(err)); }
+  finally { btns.forEach(x => x.disabled = false); }
+};
+$("regprice-save").onclick = () => {
+  const cents = toCents($("rp-amount").value);
+  if (!cents) return note($("regprice-msg"), "Enter a price above $0.");
+  return saveRegPrice(cents);
+};
+$("regprice-reset").onclick = () => saveRegPrice(null);
+$("rounds-cancel").onclick = () => $("rounds").close();
+$("rd-round").addEventListener("change", renderRounds);
+// Picking someone puts them here and takes them out of any other spot of
+// this round: one place per person per round, as the server keeps it.
+$("rd-courts").addEventListener("change", (e) => {
+  const sel = e.target.closest("select[data-rslot]"); if (!sel) return;
+  const round = Number($("rd-round").value);
+  const [court, i] = sel.dataset.rslot.split("-").map(Number);
+  if (sel.value) for (const c of COURTS) {
+    const six = roundsDraft[`${round}-${c}`];
+    for (let j = 0; j < 6; j++) if (six[j] === sel.value) six[j] = "";
+  }
+  roundsDraft[`${round}-${court}`][i] = sel.value;
+  renderRounds();
+});
+// Only the courts she changed, one call each; a court still holding someone
+// who has left is sent too, which clears them.
+$("rounds-save").onclick = async () => {
+  const btn = $("rounds-save"); btn.disabled = true;
+  try {
+    for (const round of [1, 2, 3]) for (const court of COURTS) {
+      const six = roundsDraft[`${round}-${court}`];
+      if (six.join(",") === savedCourt(round, court, true).join(",")) continue;
+      const { error } = await sb.rpc("admin_set_round_court", {
+        p_clinic: roundsClinic, p_round: round, p_court: court, p_people: six.map(x => x || null) });
+      if (error) throw error;
+    }
+    $("rounds").close();
+    note($("msg"), "Saved.", true);
+  } catch (err) { note($("rounds-msg"), friendly(err)); }
+  finally { btn.disabled = false; }
+};
 $("price-save").onclick = async () => {
   const member = toCents($("pr-member").value), nonmember = toCents($("pr-nonmember").value);
   if (!member || !nonmember) return note($("price-msg"), "Enter a price above $0.");
