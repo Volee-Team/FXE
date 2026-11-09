@@ -58,8 +58,8 @@ How this file works, so it can be trusted:
   (read-only query, 2026-10-21): Tara's next week is needed while Apple
   reviews. Stripe pays out daily to Tara's bank; receipts off
   (`docs/live-facts.md`).
-- **Tests:** 56 SQL probes plus 18 shell probes, 308 unit tests, 27
-  XCUITests, 84 browser tests (`scripts/check-doc-claims.sh`, 2026-10-21).
+- **Tests:** 56 SQL probes plus 18 shell probes, 311 unit tests, 27
+  XCUITests, 85 browser tests (`scripts/check-doc-claims.sh`, 2026-10-21).
 - **Waiting on others:** the App Transfer to Volee's LLC account (C12); Tara: next week's clinics, questions 109 to 125 (none answered in any
   channel the model can read, checked 2026-10-21), the Volee button words.
 
@@ -165,8 +165,8 @@ observer.
 | SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 56 probes plus 18 shell probes (the races and the 200-request rush); the suite prints its own check total | none known |
 | Stripe pipeline against stripe-mock | every PR | 94 checks as of 2026-09-28 | real Stripe behaviour: one live charge and refund, 2026-10-14 (A10) |
 | Push pipeline against a mock APNs | every PR | 57 checks as of 2026-09-28 | real APNs waits on C3 |
-| Web admin browser tests (Playwright, real sign-in) | every PR | 84 | a cold-start flake after a local reset (backlog) |
-| Swift unit tests (pure logic) | every PR | 308 | fine |
+| Web admin browser tests (Playwright, real sign-in) | every PR | 85 | a cold-start flake after a local reset (backlog) |
+| Swift unit tests (pure logic) | every PR | 311 | fine |
 | Hosted signed-out smoke (`scripts/hosted-smoke.sh`) | every PR, read-only against production | 162 targets as of 2026-10-11, including a browser preflight to each function the web admin calls | only the signed-out side |
 | XCUITests, player and admin flows, and Apple's accessibility audit | **local only** (section F) | 28 | run on a laptop before every TestFlight build, on iOS 17, 18 and 26 (`docs/ui-test-runs.log`) |
 | Copy gate, secret scan (now Stripe keys too), migration immutability, icon gate, doc checks | every PR | – | none |

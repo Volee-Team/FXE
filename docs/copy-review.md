@@ -991,6 +991,16 @@ Tara's laptop, a read-only list (*"see all of the people who have signed up"*).
 | ☐ | None yet / None / Unknown / Signed / Not signed | Empty cells |
 | ☐ | Nobody matches that. / Nobody has signed up yet. | An empty search, an empty list |
 
+## Completed clinics (2026-11-08) — awaiting John
+
+Tara's phone and laptop (*"Would be nice to have 'completed' next to clinics that have been completed and the action of that completed clinic cleared"*).
+
+| ☐ | Words | Where |
+|---|---|---|
+| Tara's (built from her words) | Completed | Beside a clinic's name once it has ended (not on a canceled one) |
+
+Once a clinic has ended, Action Needed drops its Waitlist, waiting-on-a-reply and late-request rows, and its card drops the Waitlist and reply counts; unpaid rows stay until charged.
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148

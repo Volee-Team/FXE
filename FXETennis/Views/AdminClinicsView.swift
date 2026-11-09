@@ -364,17 +364,17 @@ struct AdminClinicsView: View {
                             .buttonStyle(.plain)
                             .accessibilityIdentifier("admin.actionNeeded.notices")
                         }
-                        ForEach(perClinic { id in model.lateRequests.filter { $0.clinicId == id }.count }, id: \.clinic.id) { row in
+                        ForEach(perClinic(openOnly: true) { id in model.lateRequests.filter { $0.clinicId == id }.count }, id: \.clinic.id) { row in
                             clinicLink(row.clinic.id, identifier: "admin.actionNeeded.clinic") {
                                 needRow(Brand.Status.responseNeeded, "\(row.count) asking to get in after close", detail: clinicDetail(row.clinic))
                             }
                         }
-                        ForEach(perClinic { model.rosterCounts[$0]?.responseNeeded ?? 0 }, id: \.clinic.id) { row in
+                        ForEach(perClinic(openOnly: true) { model.rosterCounts[$0]?.responseNeeded ?? 0 }, id: \.clinic.id) { row in
                             clinicLink(row.clinic.id, identifier: "admin.actionNeeded.clinic") {
                                 needRow(Brand.Status.responseNeeded, "\(row.count) waiting on a reply", detail: clinicDetail(row.clinic))
                             }
                         }
-                        ForEach(perClinic { model.rosterCounts[$0]?.pool ?? 0 }, id: \.clinic.id) { row in
+                        ForEach(perClinic(openOnly: true) { model.rosterCounts[$0]?.pool ?? 0 }, id: \.clinic.id) { row in
                             clinicLink(row.clinic.id, identifier: "admin.actionNeeded.clinic") {
                                 needRow(Brand.Status.playerPool, "\(row.count) on the Waitlist", detail: clinicDetail(row.clinic))
                             }
@@ -461,8 +461,13 @@ struct AdminClinicsView: View {
     }
 
     /// The clinics a count applies to, soonest first, with their count.
-    private func perClinic(_ count: (UUID) -> Int) -> [(clinic: ClinicAdmin, count: Int)] {
+    /// `openOnly`: a clinic that is over drops out (Tara, 2026-11-08: "the
+    /// action of that completed clinic cleared"). A Waitlist, an unanswered
+    /// invitation or a late request means nothing once it has ended; money
+    /// still owed does, so the unpaid rows keep every clinic.
+    private func perClinic(openOnly: Bool = false, _ count: (UUID) -> Int) -> [(clinic: ClinicAdmin, count: Int)] {
         model.clinics.sorted { $0.startsAt < $1.startsAt }
+            .filter { !openOnly || !ClinicCompleted.isCompleted(endsAt: $0.endsAt, canceled: $0.isCanceled) }
             .map { ($0, count($0.id)) }
             .filter { $0.1 > 0 }
     }
@@ -533,6 +538,13 @@ private struct AdminClinicRow: View {
                     Text("Draft")
                         .brandFont(.chip)
                         .foregroundStyle(Brand.textSecondary)
+                } else if completed {
+                    // Tara, 2026-11-08: "Would be nice to have 'completed'
+                    // next to clinics that have been completed".
+                    Text("Completed")
+                        .brandFont(.chip)
+                        .foregroundStyle(Brand.textSecondary)
+                        .accessibilityIdentifier("admin.clinic.completed")
                 }
             }
 
@@ -545,8 +557,9 @@ private struct AdminClinicRow: View {
             if let c = counts, !clinic.isCanceled {
                 HStack(spacing: Brand.Spacing.sm) {
                     countPill(Brand.Status.youreIn, c.youreIn, of: clinic.internalCapacity)
-                    if c.pool > 0 { countPill(Brand.Status.playerPool, c.pool, of: nil) }
-                    if c.responseNeeded > 0 { countPill(Brand.Status.responseNeeded, c.responseNeeded, of: nil) }
+                    // Over: who came is the story; a Waitlist is not.
+                    if c.pool > 0 && !completed { countPill(Brand.Status.playerPool, c.pool, of: nil) }
+                    if c.responseNeeded > 0 && !completed { countPill(Brand.Status.responseNeeded, c.responseNeeded, of: nil) }
                 }
                 .padding(.top, 2)
             }
@@ -569,6 +582,10 @@ private struct AdminClinicRow: View {
             .accessibilityLabel("\(status.label): \(n)\(capacity.map { " of \($0)" } ?? "")")
     }
 
+    private var completed: Bool {
+        ClinicCompleted.isCompleted(endsAt: clinic.endsAt, canceled: clinic.isCanceled)
+    }
+
     private var timeLine: String {
         clinic.startsAt.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
         + " at "
@@ -581,5 +598,13 @@ private struct AdminClinicRow: View {
 enum PastWeek {
     static func contains(endsAt: Date, now: Date = .now) -> Bool {
         endsAt < now && endsAt >= now.addingTimeInterval(-7 * 24 * 3600)
+    }
+}
+
+/// A clinic is Completed once it has ended, unless it was canceled (the
+/// Canceled chip says that). Pure, so `PastWeekTests` can pin the edges.
+enum ClinicCompleted {
+    static func isCompleted(endsAt: Date, canceled: Bool, now: Date = .now) -> Bool {
+        !canceled && endsAt < now
     }
 }

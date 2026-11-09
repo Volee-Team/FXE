@@ -1421,3 +1421,27 @@ test.describe("sign-ups", () => {
     await expect(page.locator("[data-signup]")).toHaveCount(all);
   });
 });
+
+// Tara, 2026-11-08: "Would be nice to have 'completed' next to clinics that
+// have been completed". A clinic that ended a minute ago says so; one still
+// ahead does not.
+test.describe("completed clinics", () => {
+  test("a clinic that has ended says Completed and an upcoming one does not", async ({ page, request }) => {
+    const db = service(request);
+    const minutesAgo = (m) => new Date(Date.now() - m * 60_000).toISOString();
+    const clinic = await db.insert("clinics", { ...pastClinic("Browser Completed Clinic", 1),
+      starts_at: minutesAgo(61), ends_at: minutesAgo(1) });
+    try {
+      await signIn(page, TARA);
+      // Earlier today, or yesterday after midnight: behind Show earlier.
+      await page.getByLabel("Show earlier").check();
+      const card = page.locator(`#clinic-${clinic.id}`);
+      await expect(card.locator(`[data-completed="${clinic.id}"]`)).toHaveText("Completed");
+      const ahead = page.locator("#clinics .card", { hasText: "Thursday Morning Cardio" });
+      await expect(ahead).toBeVisible();
+      await expect(ahead.locator("[data-completed]")).toHaveCount(0);
+    } finally {
+      await db.del(`clinics?id=eq.${clinic.id}`);
+    }
+  });
+});

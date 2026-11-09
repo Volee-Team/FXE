@@ -73,6 +73,7 @@
   /* A guest (20261107000003): a name, not a status, so a neutral chip. */
   /* Rain, half price (decision 0053): the Response Needed blue, with its words. */
   .chip.rain { color:#1F4E5A; background:#DDEEF0; }
+  .chip.done { color: var(--fxe-text-secondary, #6E6552); background: var(--fxe-surface-warm, #F1ECE2); }
   .chip.guest { color: var(--fxe-text-primary); background: var(--fxe-surface-warm); }
   .err { color:#992E22; margin: 10px 0; }
   .ok  { color:#2C5A3E; margin: 10px 0; }
@@ -1428,7 +1429,7 @@ async function loadClinics() {
       <div class="row">
         <span class="grow"><span class="name">${esc(c.name)}</span><br>
           <span class="muted">${fmtDate(c.starts_at)}<br>${c.duration_minutes} min,
-          <span data-price-line="${c.id}">${priceLine(c)}</span></span>${c.rain_half ? ` <span class="chip rain" data-rain-chip="${c.id}">Rain: half price</span>` : ""}</span>
+          <span data-price-line="${c.id}">${priceLine(c)}</span></span>${c.rain_half ? ` <span class="chip rain" data-rain-chip="${c.id}">Rain: half price</span>` : ""}${c.status !== "canceled" && new Date(c.ends_at) < new Date() ? ` <span class="chip done" data-completed="${c.id}">Completed</span>` : ""}</span>
         <span class="muted" data-taken="${c.id}">${group("in").length + guests.length}/${c.internal_capacity}</span>
         <button class="small" data-edit="${c.id}">Edit</button>
         <button class="small" data-message="${c.id}">Message</button>
