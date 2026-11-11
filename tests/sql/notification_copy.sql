@@ -288,6 +288,11 @@ begin
   insert into _probe_result values ('accept_sends_no_1', '0', n::text);
 
   -- 10. Tara invites Priya; 11. Priya declines: #14 to Tara, nothing to her.
+  --     On clinic day (these steps sit on today), so since decision 0054
+  --     (item 7, "don't put them back on waitlist. Their name can be
+  --     removed") the decline ends it and #14 drops "and is back on the
+  --     Waitlist"; the tail is pinned for a decline before clinic day in
+  --     tara_items_0054.sql.
   perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
   perform set_config('role', 'authenticated', true);
   perform public.invite_from_pool(reg_priya_fri);
@@ -298,14 +303,21 @@ begin
   perform public.respond_to_invitation(reg_priya_fri, false);
   perform set_config('role', 'postgres', true);
   insert into _probe_result values ('decline_sends_14_to_tara_only',
-    'tara:invitation_declined:registration=ref:Priya Raman declined Probe Copy Friday and is back on the Waitlist.',
+    'tara:invitation_declined:registration=ref:Priya Raman declined Probe Copy Friday.',
     pg_temp.delta(reg_priya_fri));
   select count(*) into n from public.notifications where entity_id = reg_priya_fri and type = 'added_to_pool';
   insert into _probe_result values ('decline_sends_no_5', '0', n::text);
 
   -- 12. Tara invites Priya again, then 13. takes the invitation back: her
   --     uninvite words to Priya (20260928500001, decision 0024), and no #5.
+  --     Her declined row is canceled now (decision 0054), so Tara puts her
+  --     back on the Waitlist by hand first (nothing is sent: step 7).
   perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
+  perform set_config('role', 'authenticated', true);
+  r := public.place_player(fri, PRIYA_P, 'pool');
+  reg_priya_fri := r.id;
+  perform set_config('role', 'postgres', true);
+  insert into _probe_result values ('back_on_the_waitlist_by_hand_sends_nothing', '', pg_temp.delta(reg_priya_fri));
   perform set_config('role', 'authenticated', true);
   perform public.invite_from_pool(reg_priya_fri);
   perform set_config('role', 'postgres', true);

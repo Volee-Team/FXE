@@ -1001,6 +1001,42 @@ Tara's phone and laptop (*"Would be nice to have 'completed' next to clinics tha
 
 Once a clinic has ended, Action Needed drops its Waitlist, waiting-on-a-reply and late-request rows, and its card drops the Waitlist and reply counts; unpaid rows stay until charged.
 
+## Rounds, one player's price, and guests and prices on the phone (2026-11-09) — awaiting John
+
+Decision 0054 (her updated list, items 8 and 10, and "Warn me!"), and decisions 0052 and 0053 brought to Tara's phone in 1.0.3 (build 17). Every line is Tara's own screens; no player sees any of it.
+
+| ☐ | Words | Where |
+|---|---|---|
+| Tara's (built from her words) | Rounds / Round 1, Round 2, Round 3 / Court 1 to Court 5 | The 105's Rounds button, its sheet or dialog, and the summary under it ("Round 1 / Coirt 1: player a,bc / player d,e,f") |
+| ☐ | Side 1 / Side 2 / Open | The two halves of a court, and an empty spot |
+| ☐ | {name} (guest) | A guest in the rounds' pickers (the court sheet's word) |
+| ☐ | {name} left the clinic. / (left) | Someone placed who has since left, under the court and in the summary |
+| ☐ | No rounds yet. / Couldn't load the rounds. | A pro's Rounds with nothing in it, and a failed read |
+| ☐ | Set price / Price for {name} / Amount / Save | One player's price: the row's button (phone: Court menu before, beside Charge after), its form |
+| ☐ | Only this player pays it. A clinic price change or half price leaves it alone. | That form's line |
+| ☐ | Use the clinic's price | Puts the clinic's price back |
+| ☐ | Price set: {$14} | Under the name on her roster |
+| ☐ | Already marked paid. | Set price on a row marked Paid (a stale page) |
+| ☐ | Add guest / Add a guest / First name / Last name / Add / Remove guest | The phone's More menu and form (the laptop's words), and the guest's Court menu |
+| ☐ | For someone who isn't in the app. They get no messages and the app never charges them. | The phone's Add a guest line (the laptop's) |
+| ☐ | Are you sure you want to add {name}? Your clinic is full ({n}/{cap}). | Add guest on a full clinic, phone (the laptop's question) |
+| ☐ | Guest | The tag beside a guest's name on the phone |
+| ☐ | That guest is already on this clinic. / Enter a first and last name. / That name is too long. / Couldn't load guests. | The phone's guest refusals |
+| ☐ | Change price / Member price / Non-member price / Everyone not yet charged pays the new price. | The phone's More menu and form (the laptop's words) |
+| ☐ | Charge half (rain) / Back to full price, and their two questions | The phone's More menu (the laptop's words) |
+| ☐ | {$18} member / {$23} non-member, and "(half, rain)" | The phone's price line under the date (the laptop's line) |
+| ☐ | Phone: {number} / Parent's phone ({holder}): {number} / Phone on {holder}'s account: {number} | Under the name on her phone's Player page (*"their cell number under name"*; a junior's is the parent's) |
+| ☐ | Text / Call | The two buttons under it |
+| ☐ | No phone number / Couldn't load the phone number. | No number on the account, and a failed read |
+
+## Reply to Tara, and the phone on the laptop's Players tab (2026-11-10) — approved by John
+
+John: "do the quick reply button in build 17".
+
+- `Reply to Tara`: under each of Tara's messages, on the clinic page and in the bell. It opens an email to her address.
+- The email's subject: `Re: your message`, or `Re: {clinic name}` on a clinic page. Its body: two empty lines, then `You wrote:` and her message.
+- Laptop, Players tab, under the name: `Phone: {number}` with `Text`; `Parent's phone ({holder})` for a junior; `Phone on {holder}'s account`; `No phone number`. The phone's own words (2026-11-09).
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148

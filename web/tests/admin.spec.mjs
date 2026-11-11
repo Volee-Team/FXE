@@ -113,6 +113,10 @@ test.describe("the directory", () => {
     await expect(page.locator("[data-player-row]", { hasText: "Rob Delgado" })).toHaveCount(0);
     const row = page.locator("[data-player-row]", { hasText: "Maria Alvarez" });
     await expect(row).toBeVisible();
+    // Her phone under her name, to call or text (Tara, 2026-11-10).
+    await expect(row.locator("[data-phone]")).toHaveText("Phone: 704-555-0101 Text");
+    await expect(row.getByRole("link", { name: "704-555-0101" })).toHaveAttribute("href", "tel:7045550101");
+    await expect(row.getByRole("link", { name: "Text" })).toHaveAttribute("href", "sms:7045550101");
     await row.getByRole("button", { name: "Note" }).click();
     const box = page.getByLabel("Private note").filter({ visible: true });
     await expect(box).toBeVisible();
@@ -1442,6 +1446,123 @@ test.describe("completed clinics", () => {
       await expect(ahead.locator("[data-completed]")).toHaveCount(0);
     } finally {
       await db.del(`clinics?id=eq.${clinic.id}`);
+    }
+  });
+});
+
+// Decision 0054, Tara's updated list (2026-11-09). Item 10: "I would type
+// amount: for example 1.5 hour clinic is $28 for non. If we get 45 mins I
+// would charge $14". Item 8: "a place in every 105 on the app for me to make
+// 2-3 rounds of 105", "pick from roster". Players never see rounds.
+test.describe("one player's price and the 105 rounds", () => {
+  const clinicRow = (name, category) => ({
+    name, audience: "coed", category, description: "browser test",
+    starts_at: daysAgo(-2), ends_at: daysAgo(-2, 1),
+    member_opens_at: daysAgo(3), public_opens_at: daysAgo(2),
+    internal_capacity: 8, status: "published", duration_minutes: 60,
+    member_price_cents: 1800, nonmember_price_cents: 2800,
+  });
+  const inReg = (db, clinic, player, member, cents) => db.insert("registrations", { clinic_id: clinic.id,
+    player_id: player, status: "in", source: "admin", price_cents_charged: cents, was_member: member, duration_minutes: 60 });
+  const cleanup = async (db, clinic) => {
+    const regs = await db.get(`registrations?clinic_id=eq.${clinic.id}&select=id`);
+    if (regs.length) await db.del(`notifications?entity_id=in.(${regs.map(r => r.id).join(",")})`);
+    await db.del(`clinic_round_spots?clinic_id=eq.${clinic.id}`);
+    await db.del(`clinic_guests?clinic_id=eq.${clinic.id}`);
+    await db.del(`registrations?clinic_id=eq.${clinic.id}`);
+    await db.del(`clinics?id=eq.${clinic.id}`);
+  };
+
+  test("Set price: one person pays her amount, kept through a clinic price change, and put back", async ({ page, request }) => {
+    const db = service(request);
+    const clinic = await db.insert("clinics", clinicRow("Browser One Price Clinic", "Clinic"));
+    try {
+      const rob = await inReg(db, clinic, ROB_P, false, 2800);
+      const maria = await inReg(db, clinic, MARIA_P, true, 1800);
+      const cents = async (id) => (await db.get(`registrations?id=eq.${id}&select=price_cents_charged,price_set_by_admin`))[0];
+
+      await signIn(page, TARA);
+      const card = page.locator("#clinics .card", { hasText: "Browser One Price Clinic" });
+      const robRow = card.locator(".row", { hasText: "Rob Delgado" });
+      await robRow.getByRole("button", { name: "Set price" }).click({ timeout: 15_000 });
+      const dialog = page.locator("dialog#regprice");
+      await expect(dialog.locator("#rp-title")).toHaveText("Price for Rob Delgado");
+      await expect(page.locator("#regprice-reset")).toBeHidden();
+      await dialog.getByLabel("Amount").fill("0");
+      await dialog.getByRole("button", { name: "Save" }).click();
+      await expect(dialog).toContainText("Enter a price above $0.");
+      await dialog.getByLabel("Amount").fill("14");
+      await dialog.getByRole("button", { name: "Save" }).click();
+      await expect(dialog).toBeHidden({ timeout: 15_000 });
+      await expect(card.locator(`[data-price-set="${rob.id}"]`)).toHaveText("Price set: $14", { timeout: 15_000 });
+      expect(await cents(rob.id)).toEqual({ price_cents_charged: 1400, price_set_by_admin: true });
+
+      // A new clinic rate moves Maria, not Rob.
+      await card.getByRole("button", { name: "Change price" }).click();
+      const price = page.locator("dialog#price");
+      await price.getByLabel("Member price", { exact: true }).fill("20");
+      await price.getByLabel("Non-member price").fill("30");
+      await price.getByRole("button", { name: "Save" }).click();
+      await expect(price).toBeHidden({ timeout: 15_000 });
+      await expect.poll(async () => (await cents(maria.id)).price_cents_charged).toBe(2000);
+      expect((await cents(rob.id)).price_cents_charged).toBe(1400);
+
+      // Put back: the clinic's non-member price now.
+      await card.locator(".row", { hasText: "Rob Delgado" }).getByRole("button", { name: "Set price" }).click();
+      await expect(dialog.getByLabel("Amount")).toHaveValue("14");
+      await page.locator("#regprice-reset").click();
+      await expect(dialog).toBeHidden({ timeout: 15_000 });
+      await expect(card.locator(`[data-price-set="${rob.id}"]`)).toHaveCount(0, { timeout: 15_000 });
+      expect(await cents(rob.id)).toEqual({ price_cents_charged: 3000, price_set_by_admin: false });
+    } finally {
+      await cleanup(db, clinic);
+    }
+  });
+
+  test("Rounds: only on a 105, picked from You're In! and guests, one place per round", async ({ page, request }) => {
+    const db = service(request);
+    const c105 = await db.insert("clinics", clinicRow("Browser Coed 105", "105"));
+    const plain = await db.insert("clinics", clinicRow("Browser Plain Clinic", "Clinic"));
+    try {
+      const ken = await inReg(db, c105, KEN_P, true, 1800);
+      const maria = await inReg(db, c105, MARIA_P, true, 1800);
+      const guest = await db.insert("clinic_guests", { clinic_id: c105.id, first_name: "Pat", last_name: "Visitor" });
+
+      await signIn(page, TARA);
+      const card = page.locator("#clinics .card", { hasText: "Browser Coed 105" });
+      await expect(card.getByRole("button", { name: "Rounds" })).toBeVisible({ timeout: 15_000 });
+      await expect(page.locator("#clinics .card", { hasText: "Browser Plain Clinic" }).getByRole("button", { name: "Rounds" })).toHaveCount(0);
+
+      await card.getByRole("button", { name: "Rounds" }).click();
+      const dialog = page.locator("dialog#rounds");
+      await expect(dialog.locator("#rd-title")).toHaveText("Rounds: Browser Coed 105");
+      const spot = (court, side, n) => dialog.getByLabel(`Court ${court}, side ${side}, spot ${n}`);
+      await spot(1, 1, 1).selectOption({ label: "Ken Whitfield" });
+      await spot(1, 2, 1).selectOption({ label: "Pat Visitor (guest)" });
+      // Picked again on court 2: moved there, not doubled.
+      await spot(2, 1, 1).selectOption({ label: "Ken Whitfield" });
+      await expect(spot(1, 1, 1)).toHaveValue("");
+      await spot(1, 1, 2).selectOption({ label: "Maria Alvarez" });
+      await dialog.getByRole("button", { name: "Save" }).click();
+      await expect(dialog).toBeHidden({ timeout: 15_000 });
+
+      const rows = await db.get(`clinic_round_spots?clinic_id=eq.${c105.id}&select=round_number,court_number,side,slot,registration_id,guest_id&order=court_number,side,slot`);
+      expect(rows).toEqual([
+        { round_number: 1, court_number: 1, side: 1, slot: 2, registration_id: maria.id, guest_id: null },
+        { round_number: 1, court_number: 1, side: 2, slot: 1, registration_id: null, guest_id: guest.id },
+        { round_number: 1, court_number: 2, side: 1, slot: 1, registration_id: ken.id, guest_id: null },
+      ]);
+
+      // Opened again: what she saved, and Maria, who has since left, named.
+      await db.patch(`registrations?id=eq.${maria.id}`, { status: "canceled", canceled_at: new Date().toISOString() });
+      await page.reload();
+      await card.getByRole("button", { name: "Rounds" }).click({ timeout: 15_000 });
+      await expect(spot(2, 1, 1)).toHaveValue(ken.id);
+      await expect(spot(1, 1, 2)).toHaveValue("");
+      await expect(dialog).toContainText("Maria Alvarez left the clinic.");
+    } finally {
+      await cleanup(db, c105);
+      await cleanup(db, plain);
     }
   });
 });

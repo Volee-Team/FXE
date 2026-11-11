@@ -25,6 +25,7 @@ import SwiftUI
 struct NotificationsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(SessionStore.self) private var session
+    @Environment(\.openURL) private var openURL
     @State private var items: [PlayerNotification] = []
     /// The screen a tapped row (or a tapped push) resolved to; drives navigation.
     @State private var destination: NotificationDestination?
@@ -85,6 +86,21 @@ struct NotificationsView: View {
                                     .buttonStyle(.plain)
                                     .accessibilityIdentifier("notifications.row")
                                     .accessibilityLabel("\(item.isUnread ? "Unread. " : "")\(item.body)")
+                                    // Under one of Tara's messages, a way to
+                                    // answer it (ReplyToTara). Beside the row,
+                                    // not inside it: a button in a button's
+                                    // label never gets its own tap.
+                                    if item.type == "clinic_message", !isAdmin,
+                                       let reply = ReplyToTara.url(replyingTo: item.body) {
+                                        Button("Reply to Tara") { openURL(reply) }
+                                            .brandFont(.subheadline)
+                                            .foregroundStyle(Brand.navy)
+                                            .frame(minHeight: 44)
+                                            .contentShape(Rectangle())
+                                            .padding(.leading, 8 + Brand.Spacing.sm)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                            .accessibilityIdentifier("notifications.reply")
+                                    }
                                     if item.id != items.last?.id {
                                         Divider().background(Brand.hairline)
                                     }

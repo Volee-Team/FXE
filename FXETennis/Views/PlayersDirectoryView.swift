@@ -175,6 +175,10 @@ private struct PlayerAdminDetailView: View {
     @State private var levels: [AdminLevelApproval] = []
     /// Message them, whatever clinic they are or are not in (20261107000002).
     @State private var messaging = false
+    /// The account's phone and holder (PlayerContact); nil until read.
+    @State private var contact: PlayerContact?
+    @State private var contactLoaded = false
+    @State private var contactFailed = false
 
     init(player: PlayerSearchResult, onChange: @escaping () -> Void) {
         self.player = player
@@ -193,6 +197,11 @@ private struct PlayerAdminDetailView: View {
                         Text("\(player.firstName) \(player.lastName)")
                             .brandFont(.title)
                             .foregroundStyle(Brand.textPrimary)
+                        // Tara, 2026-11-09: "would be great to have their cell
+                        // number under name", "if something happens need to text
+                        // parents immediate". The account's number: a junior's is
+                        // the parent's, and the label says so.
+                        phoneLine
                         if let r = player.adultRating, let bucket = NTRPRating(rating: r) {
                             Text("Rating \(bucket.label)")
                                 .brandFont(.subheadline)
@@ -316,12 +325,71 @@ private struct PlayerAdminDetailView: View {
         .navyTitle("Player")
         .navigationBarTitleDisplayMode(.inline)
         .task {
+            if !contactLoaded {
+                // A failed read is said, never shown as "No phone number".
+                do { contact = try await AdminRepository.playerContact(player.id); contactFailed = false }
+                catch { contactFailed = true }
+                contactLoaded = true
+            }
             await loadLevels()
             history = (try? await AdminRepository.playerHistory(player: player.id)) ?? history
             guard !loadedNote else { return }
             note = (try? await AdminRepository.playerNote(player.id)) ?? ""
             savedNote = note
             loadedNote = true
+        }
+    }
+
+    /// "Phone 704-555-0101" with Text and Call, or "No phone number". Shown
+    /// once the account is read; nothing while it loads.
+    @ViewBuilder private var phoneLine: some View {
+        if contactFailed {
+            Text("Couldn't load the phone number.")
+                .brandFont(.subheadline)
+                .foregroundStyle(Brand.Status.canceled.ink)
+        } else if contactLoaded {
+            let phone = contact?.accounts?.phone?.trimmingCharacters(in: .whitespaces)
+            let label = PlayerPhone.label(kind: player.kind, playerFirst: player.firstName, playerLast: player.lastName,
+                                          holderFirst: contact?.accounts?.firstName, holderLast: contact?.accounts?.lastName)
+            if let phone, !phone.isEmpty {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("\(label): \(phone)")
+                        .brandFont(.subheadline)
+                        .foregroundStyle(Brand.textPrimary)
+                        .textSelection(.enabled)
+                        .accessibilityIdentifier("admin.player.phone")
+                    HStack(spacing: Brand.Spacing.sm) {
+                        if let text = PlayerPhone.textURL(phone) {
+                            Link(destination: text) {
+                                Label("Text", systemImage: "message")
+                                    .brandFont(.chip)
+                                    .foregroundStyle(Brand.textOnNavy)
+                                    .padding(.horizontal, Brand.Spacing.sm)
+                                    .frame(minHeight: Brand.Layout.minTapTarget)
+                                    .background(Capsule().fill(Brand.navy))
+                            }
+                            .accessibilityIdentifier("admin.player.text")
+                        }
+                        if let call = PlayerPhone.callURL(phone) {
+                            Link(destination: call) {
+                                Label("Call", systemImage: "phone")
+                                    .brandFont(.chip)
+                                    .foregroundStyle(Brand.navy)
+                                    .padding(.horizontal, Brand.Spacing.sm)
+                                    .frame(minHeight: Brand.Layout.minTapTarget)
+                                    .background(Capsule().fill(Brand.surfaceRaised))
+                                    .overlay(Capsule().stroke(Brand.navy, lineWidth: Brand.Layout.borderWidth))
+                            }
+                            .accessibilityIdentifier("admin.player.call")
+                        }
+                    }
+                }
+            } else {
+                Text("No phone number")
+                    .brandFont(.subheadline)
+                    .foregroundStyle(Brand.textSecondary)
+                    .accessibilityIdentifier("admin.player.phone")
+            }
         }
     }
 

@@ -55,8 +55,25 @@ final class AdminClinicModel {
     /// Player ids already on the clinic (In, Waitlist or invited): the invite
     /// sheet marks them instead of letting the server refuse.
     var onClinic: Set<UUID> { Set((youreIn + pool + responseNeeded).map(\.registration.playerId)) }
+    /// Her guests (decision 0052): in You're In!, after the players.
+    var guests: [ClinicGuest] = []
+    /// The clinic as it is now (its prices and the rain half can change on
+    /// this page); the row she opened until the first load.
+    var current: ClinicAdmin?
+    var live: ClinicAdmin { current ?? clinic }
+    /// The 105 rounds (decision 0054, item 8), when this is a 105.
+    var rounds: [RoundSpot] = []
+    var is105: Bool { Rounds.is105(name: clinic.name, category: clinic.category) }
+    /// You're In! plus guests: what the server counts against capacity
+    /// (clinic_taken), and what her count and the full question show.
+    var taken: Int { youreIn.count + guests.count }
     /// Tara's "clinic is full" question (ClinicFull).
-    var isFull: Bool { ClinicFull.isFull(inCount: youreIn.count, capacity: clinic.internalCapacity) }
+    var isFull: Bool { ClinicFull.isFull(inCount: taken, capacity: clinic.internalCapacity) }
+    /// Who a round can be picked from: You're In! then the guests.
+    var roundPeople: [RoundPerson] {
+        youreIn.map { RoundPerson(id: $0.id, name: $0.displayName, isGuest: false) }
+            + guests.map { RoundPerson(id: $0.id, name: $0.displayName, isGuest: true) }
+    }
     /// Decision 0013: false, so Paid/Unpaid and the reminder stay hidden.
     var zelleAllowed = false
     /// app_settings.cancel_cutoff_hours (3, decision 0013), for Late cancel.
@@ -90,6 +107,12 @@ final class AdminClinicModel {
             roster = try await AdminRepository.roster(clinic: clinic.id)
             zelleAllowed = (try? await AdminRepository.zelleAllowed()) ?? false
             cutoffHours = (try? await RegistrationRepository.cancelCutoffHours()) ?? 3
+            // Guests count toward the clinic's total, so a failed read is
+            // said rather than shown as none (the charges line below).
+            var guestsLine: String?
+            do { guests = try await AdminRepository.guests(clinic: clinic.id) } catch { guestsLine = "Couldn't load guests." }
+            if let fresh = try? await AdminRepository.clinic(clinic.id) { current = fresh }
+            if is105 { rounds = (try? await RoundsRepository.rounds(clinic: clinic.id)) ?? rounds }
             let asks = (try? await AdminRepository.pendingLateRequests(clinic: clinic.id)) ?? []
             let people = (try? await AdminRepository.players(ids: asks.map(\.playerId))) ?? []
             let byId = Dictionary(uniqueKeysWithValues: people.map { ($0.id, $0) })
@@ -110,7 +133,7 @@ final class AdminClinicModel {
                 feesDue = [:]
                 chargesLine = "Couldn't load charges."
             }
-            error = chargesLine
+            error = chargesLine ?? guestsLine
         } catch {
             self.error = "Couldn't load the roster. Pull to refresh."
         }
@@ -151,7 +174,8 @@ final class AdminClinicModel {
         if e.contains("clinic_not_over") { return "The clinic hasn't ended yet." }
         if e.contains("not_owed") || e.contains("already_charged") || e.contains("not_waivable") { return changedUnderYou }
         if e.contains("registration_not_in") || e.contains("already_canceled") { return changedUnderYou }
-        return "That didn't go through. Check your connection and try again."
+        // Guests, prices and rounds (decision 0054).
+        return ClinicExtrasError.message(error)
     }
 }
 
@@ -175,6 +199,22 @@ struct AdminClinicDetailView: View {
     @State private var invitingAnyone = false
     @State private var confirmRemind = false
     @State private var remindNote: String?
+    /// Add guest (decision 0052): her two fields, then the full question.
+    @State private var addingGuest = false
+    @State private var guestFirst = ""
+    @State private var guestLast = ""
+    @State private var guestFullFor: String?
+    @State private var removingGuest: ClinicGuest?
+    /// The clinic's price (decision 0053), as on the laptop.
+    @State private var pricing = false
+    @State private var memberText = ""
+    @State private var nonmemberText = ""
+    @State private var confirmRain = false
+    /// One player's price (decision 0054, item 10).
+    @State private var priceFor: RosterEntry?
+    @State private var priceText = ""
+    /// The 105 rounds (decision 0054, item 8).
+    @State private var showRounds = false
 
     init(clinic: ClinicAdmin, onChanged: @escaping () async -> Void = {}) {
         self.clinic = clinic
@@ -182,7 +222,14 @@ struct AdminClinicDetailView: View {
         _model = State(initialValue: AdminClinicModel(clinic: clinic))
     }
 
+    /// The page, then her guest, price and rounds dialogs (decisions 0052 to
+    /// 0054) as a second step: in one expression the compiler on CI's Mac
+    /// gave up type-checking it (2026-11-09).
     var body: some View {
+        extrasDialogs(page)
+    }
+
+    private var page: some View {
         ZStack {
             CourtBackdrop()
 
@@ -199,7 +246,8 @@ struct AdminClinicDetailView: View {
                     rosterSection(
                         Brand.Status.youreIn, model.youreIn,
                         empty: "Nobody is in yet.",
-                        controlsBelow: model.isOver()
+                        controlsBelow: model.isOver(),
+                        guests: model.guests
                     ) { entry in AnyView(youreInControls(entry)) }
 
                     rosterSection(
@@ -258,6 +306,16 @@ struct AdminClinicDetailView: View {
                         if clinic.status == "published" && !model.isOver() {
                             Button("Invite a player") { invitingAnyone = true }
                         }
+                        // Someone who isn't in the app (decision 0052).
+                        Button("Add guest") { guestFirst = ""; guestLast = ""; addingGuest = true }
+                        // Her rate, any time, and the rain half (decision
+                        // 0053): the laptop's two buttons.
+                        Button("Change price") {
+                            memberText = DollarsInput.text(model.live.memberPriceCents)
+                            nonmemberText = DollarsInput.text(model.live.nonmemberPriceCents)
+                            pricing = true
+                        }
+                        Button(model.live.rainHalf == true ? "Back to full price" : "Charge half (rain)") { confirmRain = true }
                         // Charge clinic was here until 2026-10-02: Tara charges
                         // each person on the row instead (decision 0037).
                         Button("Cancel clinic", role: .destructive) { confirmCancelClinic = true }
@@ -339,7 +397,7 @@ struct AdminClinicDetailView: View {
         .reloadOnForeground { await model.load() }
         .confirmationDialog(
             fullFor.map { ClinicFull.question(movesIn ? .moveIn : .invite, name: $0.displayName,
-                                              inCount: model.youreIn.count, capacity: clinic.internalCapacity ?? 0) } ?? "",
+                                              inCount: model.taken, capacity: clinic.internalCapacity ?? 0) } ?? "",
             isPresented: Binding(get: { fullFor != nil }, set: { if !$0 { fullFor = nil } }),
             titleVisibility: .visible
         ) {
@@ -350,7 +408,7 @@ struct AdminClinicDetailView: View {
             Button("Cancel", role: .cancel) { fullFor = nil }
         }
         .sheet(isPresented: $invitingAnyone) {
-            InvitePlayerSheet(clinic: clinic, inCount: model.youreIn.count, onClinic: model.onClinic) {
+            InvitePlayerSheet(clinic: clinic, inCount: model.taken, onClinic: model.onClinic) {
                 await model.load()
             }
         }
@@ -368,8 +426,20 @@ struct AdminClinicDetailView: View {
 
             // Admin-only counts, with capacity. Shown so Tara can decide, never
             // to stop her deciding.
+            // Her prices, halved while it rains (the laptop's line). On the
+            // raised surface, like the pro's empty-clinic line: straight on
+            // the court backdrop it failed the iOS 18 contrast audit in grey
+            // and in the primary ink alike (2026-11-09).
+            Text(priceLine)
+                .brandFont(.subheadline)
+                .foregroundStyle(Brand.textPrimary)
+                .padding(.horizontal, Brand.Spacing.xs)
+                .padding(.vertical, 3)
+                .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.sm))
+                .accessibilityIdentifier("admin.priceLine")
+
             HStack(spacing: Brand.Spacing.sm) {
-                countPill(Brand.Status.youreIn, model.youreIn.count, of: clinic.internalCapacity)
+                countPill(Brand.Status.youreIn, model.taken, of: clinic.internalCapacity)
                 countPill(Brand.Status.playerPool, model.pool.count, of: nil)
                 if !model.responseNeeded.isEmpty {
                     countPill(Brand.Status.responseNeeded, model.responseNeeded.count, of: nil)
@@ -388,6 +458,25 @@ struct AdminClinicDetailView: View {
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("admin.messagePlayers")
+
+            // Tara, 2026-11-06 (item 8): "a place in every 105 on the app for
+            // me to make 2-3 rounds of 105". Only on a 105.
+            if model.is105 {
+                Button {
+                    showRounds = true
+                } label: {
+                    Label("Rounds", systemImage: "square.grid.2x2")
+                        .brandFont(.button)
+                        .frame(maxWidth: .infinity)
+                        .frame(minHeight: Brand.Layout.comfortableTapTarget)
+                        .foregroundStyle(Brand.navy)
+                        .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.sm))
+                        .overlay(RoundedRectangle(cornerRadius: Brand.Radius.sm).stroke(Brand.navy, lineWidth: Brand.Layout.borderWidth))
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("admin.rounds")
+                RoundsSummary(spots: model.rounds)
+            }
 
             // One tap plus a confirmation: it messages several people at once,
             // and a mis-tap standing courtside should not do that.
@@ -439,19 +528,20 @@ struct AdminClinicDetailView: View {
         numbered: Bool = false,
         showsHistory: Bool = false,
         controlsBelow: Bool = false,
+        guests: [ClinicGuest] = [],
         @ViewBuilder trailing: @escaping (RosterEntry) -> AnyView
     ) -> some View {
         VStack(alignment: .leading, spacing: Brand.Spacing.xs) {
             HStack {
                 StatusChip(status)
                 Spacer()
-                Text("\(entries.count)")
+                Text("\(entries.count + guests.count)")
                     .brandFont(.chip)
                     .foregroundStyle(Brand.textSecondary)
                     .accessibilityIdentifier("roster.count")
             }
 
-            if entries.isEmpty {
+            if entries.isEmpty && guests.isEmpty {
                 if !empty.isEmpty {
                     Text(empty)
                         .brandFont(.body)
@@ -486,7 +576,14 @@ struct AdminClinicDetailView: View {
                         .padding(.vertical, Brand.Spacing.xs)
                         .frame(minHeight: Brand.Layout.comfortableTapTarget)
 
-                        if entry.id != entries.last?.id {
+                        if entry.id != entries.last?.id || !guests.isEmpty {
+                            Divider().background(Brand.hairline)
+                        }
+                    }
+                    // Guests after the players, in the order she added them.
+                    ForEach(guests) { guest in
+                        guestRow(guest)
+                        if guest.id != guests.last?.id {
                             Divider().background(Brand.hairline)
                         }
                     }
@@ -599,6 +696,13 @@ struct AdminClinicDetailView: View {
                         .foregroundStyle(Brand.textSecondary)
                         .accessibilityIdentifier("admin.poolHistory")
                 }
+                // A price she typed for this one person (item 10).
+                if entry.registration.priceSetByAdmin == true, let cents = entry.registration.priceCentsCharged {
+                    Text("Price set: \(cents.centsAsPrice)")
+                        .brandFont(.caption)
+                        .foregroundStyle(Brand.navy)
+                        .accessibilityIdentifier("admin.priceSet")
+                }
                 // The player's note to her from Register (decision 0039).
                 if let note = entry.playerNote {
                     Text(note)
@@ -707,6 +811,9 @@ struct AdminClinicDetailView: View {
             if model.canLateCancel(entry) {
                 Button("Late cancel") { lateNote = ""; lateCanceling = entry }
             }
+            if canSetPrice(entry) {
+                Button("Set price") { openPrice(entry) }
+            }
             // A walk-up placed on the wrong clinic, or a player who told Tara
             // in person. Same RPC the player's own Cancel uses; the row is
             // kept as canceled, never deleted (hard rule 4). Never late, and
@@ -742,6 +849,7 @@ struct AdminClinicDetailView: View {
             HStack(spacing: Brand.Spacing.xs) {
                 noShowToggle(entry)
                 removeButton(entry)
+                setPriceButton(entry)
                 Spacer(minLength: 0)
                 declinedLabel(entry)
                 chargeControl(entry)
@@ -934,6 +1042,212 @@ struct AdminClinicDetailView: View {
         .disabled(model.busy.contains(entry.id))
         .accessibilityIdentifier("admin.cancelInvite")
         .accessibilityLabel("Cancel the invitation to \(entry.displayName)")
+    }
+
+    // MARK: - Guests, prices (decisions 0052 to 0054)
+
+    private func extrasDialogs(_ content: some View) -> some View {
+        content
+        .alert("Add a guest", isPresented: $addingGuest) {
+            TextField("First name", text: $guestFirst)
+                .textContentType(.givenName)
+            TextField("Last name", text: $guestLast)
+                .textContentType(.familyName)
+            Button("Add") {
+                let name = "\(guestFirst.trimmingCharacters(in: .whitespaces)) \(guestLast.trimmingCharacters(in: .whitespaces))"
+                if model.isFull { guestFullFor = name } else { addGuest() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("For someone who isn't in the app. They get no messages and the app never charges them.")
+        }
+        // "Warn me!" (decision 0054, item 11): the same question as Invite.
+        .confirmationDialog(
+            guestFullFor.map { ClinicFull.question(.add, name: $0, inCount: model.taken, capacity: clinic.internalCapacity ?? 0) } ?? "",
+            isPresented: Binding(get: { guestFullFor != nil }, set: { if !$0 { guestFullFor = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button("Add") { addGuest(); guestFullFor = nil }
+            Button("Cancel", role: .cancel) { guestFullFor = nil }
+        }
+        .confirmationDialog(
+            "Remove \(removingGuest?.displayName ?? "this guest") from \(clinic.name)?",
+            isPresented: Binding(get: { removingGuest != nil }, set: { if !$0 { removingGuest = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button("Remove", role: .destructive) {
+                if let g = removingGuest {
+                    Task { await model.perform(g.id) { try await AdminRepository.removeGuest(g.id) } }
+                }
+                removingGuest = nil
+            }
+            Button("Keep", role: .cancel) { removingGuest = nil }
+        }
+        .alert("Change price", isPresented: $pricing) {
+            TextField("Member price", text: $memberText)
+                .keyboardType(.decimalPad)
+            TextField("Non-member price", text: $nonmemberText)
+                .keyboardType(.decimalPad)
+            Button("Save") {
+                guard let m = DollarsInput.cents(memberText), let n = DollarsInput.cents(nonmemberText) else {
+                    model.error = "Enter a price above $0."
+                    return
+                }
+                Task { await model.perform(clinic.id) {
+                    try await AdminRepository.setClinicPrices(clinic: clinic.id, memberCents: m, nonmemberCents: n)
+                } }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Everyone not yet charged pays the new price.")
+        }
+        // Tara, 2026-11-07: "if I could have the option to charge half, then
+        // that means everybody would be charged half if it were to rain".
+        // The laptop's question, both ways.
+        .confirmationDialog(
+            model.live.rainHalf == true
+                ? "Charge the full price again for \(clinic.name)?"
+                : "Charge everyone who came half for \(clinic.name)? No-shows and late cancels still pay in full.",
+            isPresented: $confirmRain, titleVisibility: .visible
+        ) {
+            Button(model.live.rainHalf == true ? "Back to full price" : "Charge half (rain)") {
+                let on = model.live.rainHalf != true
+                Task { await model.perform(clinic.id) { try await AdminRepository.setRainHalf(clinic: clinic.id, on: on) } }
+            }
+            Button("Cancel", role: .cancel) {}
+        }
+        // One person's amount (decision 0054, item 10). Tara, 2026-11-09: "I
+        // would type amount: for example 1.5 hour clinic is $28 for non. If
+        // we get 45 mins I would charge $14".
+        .alert("Price for \(priceFor?.displayName ?? "this player")",
+               isPresented: Binding(get: { priceFor != nil }, set: { if !$0 { priceFor = nil } })) {
+            TextField("Amount", text: $priceText)
+                .keyboardType(.decimalPad)
+            Button("Save") {
+                if let entry = priceFor {
+                    if let cents = DollarsInput.cents(priceText) {
+                        Task { await model.perform(entry.id) { try await AdminRepository.setRegistrationPrice(entry.id, cents: cents) } }
+                    } else {
+                        model.error = "Enter a price above $0."
+                    }
+                }
+                priceFor = nil
+            }
+            if priceFor?.registration.priceSetByAdmin == true {
+                Button("Use the clinic's price") {
+                    if let entry = priceFor {
+                        Task { await model.perform(entry.id) { try await AdminRepository.setRegistrationPrice(entry.id, cents: nil) } }
+                    }
+                    priceFor = nil
+                }
+            }
+            Button("Cancel", role: .cancel) { priceFor = nil }
+        } message: {
+            Text("Only this player pays it. A clinic price change or half price leaves it alone.")
+        }
+        .sheet(isPresented: $showRounds) {
+            RoundsSheet(clinicId: clinic.id, clinicName: clinic.name, people: model.roundPeople, editable: true) {
+                await model.load()
+            }
+        }
+    }
+
+    /// A guest in You're In!: the name, a Guest tag, and a Court menu with
+    /// the same five courts plus Remove. Nothing that messages or charges:
+    /// the app never does either for a guest.
+    private func guestRow(_ guest: ClinicGuest) -> some View {
+        HStack(spacing: Brand.Spacing.sm) {
+            HStack(spacing: Brand.Spacing.xs) {
+                Text(guest.displayName)
+                    .brandFont(.bodyEmphasis)
+                    .foregroundStyle(Brand.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("Guest")
+                    .brandFont(.chip)
+                    .foregroundStyle(Brand.textPrimary)
+                    .padding(.horizontal, Brand.Spacing.xs)
+                    .padding(.vertical, 2)
+                    .background(Capsule().fill(Brand.surfaceWarm))
+                    .accessibilityIdentifier("admin.guestTag")
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            if clinic.status != "canceled" {
+                Menu {
+                    Button("No court") { assignGuest(guest, nil) }
+                    ForEach(1...5, id: \.self) { n in
+                        Button("Court \(n)") { assignGuest(guest, n) }
+                    }
+                    Divider()
+                    Button("Remove guest", role: .destructive) { removingGuest = guest }
+                } label: {
+                    Label(guest.courtNumber.map { "Court \($0)" } ?? "Court", systemImage: "rectangle.split.2x1")
+                        .brandFont(.chip)
+                        .foregroundStyle(guest.courtNumber == nil ? Brand.textSecondary : Brand.navy)
+                        .frame(minHeight: Brand.Layout.minTapTarget)
+                }
+                .disabled(model.busy.contains(guest.id))
+                .accessibilityIdentifier("admin.guestCourt")
+                .accessibilityLabel("\(guest.displayName), guest, \(guest.courtNumber.map { "court \($0)" } ?? "no court"). Tap to change.")
+            }
+        }
+        .padding(.vertical, Brand.Spacing.xs)
+        .frame(minHeight: Brand.Layout.comfortableTapTarget)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("admin.guestRow")
+    }
+
+    private func assignGuest(_ guest: ClinicGuest, _ court: Int?) {
+        Task { await model.perform(guest.id) { try await AdminRepository.setGuestCourt(guest.id, court: court) } }
+    }
+
+    private func addGuest() {
+        let first = guestFirst.trimmingCharacters(in: .whitespacesAndNewlines)
+        let last = guestLast.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !first.isEmpty, !last.isEmpty else {
+            model.error = "Enter a first and last name."
+            return
+        }
+        Task { await model.perform(clinic.id) { try await AdminRepository.addGuest(clinic: clinic.id, first: first, last: last) } }
+    }
+
+    /// Item 10: a person who can still owe, nothing taken yet, not marked Paid.
+    private func canSetPrice(_ entry: RosterEntry) -> Bool {
+        clinic.status != "canceled" && !entry.registration.paid && !entry.registration.hasLiveCharge
+    }
+
+    private func openPrice(_ entry: RosterEntry) {
+        priceText = entry.registration.priceSetByAdmin == true ? DollarsInput.text(entry.registration.priceCentsCharged) : ""
+        priceFor = entry
+    }
+
+    /// After the clinic, beside Charge: the usual moment for "they only
+    /// stayed an hour".
+    @ViewBuilder private func setPriceButton(_ entry: RosterEntry) -> some View {
+        if canSetPrice(entry) {
+            Button { openPrice(entry) } label: {
+                Text("Set price")
+                    .brandFont(.chip)
+                    .foregroundStyle(Brand.navy)
+                    .padding(.horizontal, Brand.Spacing.xs)
+                    .frame(minHeight: Brand.Layout.minTapTarget)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .disabled(model.busy.contains(entry.id))
+            .accessibilityIdentifier("admin.setPrice")
+            .accessibilityLabel("Set \(entry.displayName)'s price")
+        }
+    }
+
+    /// "$18 member / $23 non-member", halved while it rains: the laptop's
+    /// priceLine.
+    private var priceLine: String {
+        let c = model.live
+        guard let m = c.memberPriceCents, let n = c.nonmemberPriceCents else { return "" }
+        if c.rainHalf == true {
+            return "\(Int((Double(m) / 2).rounded()).centsAsPrice) member / \(Int((Double(n) / 2).rounded()).centsAsPrice) non-member (half, rain)"
+        }
+        return "\(m.centsAsPrice) member / \(n.centsAsPrice) non-member"
     }
 
     private func countPill(_ status: Brand.Status, _ n: Int, of capacity: Int?) -> some View {

@@ -2,7 +2,9 @@
 
 **Status:** accepted by John, 2026-11-07 (*"build this"*); built in
 `supabase/migrations/20261107000004_clinic_price_and_rain.sql` and the laptop
-site. The phone gets it in 1.0.3.
+site. On Tara's phone from 1.0.3 (build 17): More > Change price and Charge
+half (rain) / Back to full price, with the laptop's words, and the clinic's
+price line under the date. One player's own price is decision 0054.
 
 ## Her words
 

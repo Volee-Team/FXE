@@ -92,8 +92,14 @@ that shape gets the same three layers.
 whose `role` is `pro`, asked by `is_pro()` (false once deleted). `is_admin()`
 is unchanged: Tara is the only admin. No policy, view or grant mentions a
 pro, so from every table and view a pro reads exactly what a member reads.
-A pro's reach is five functions, each gated by `require_pro()` (the week
-and its courts added by decision 0051, `20261107000002`):
+A pro's reach is six functions, each gated by `require_pro()` (the week
+and its courts added by decision 0051, `20261107000002`; the 105 rounds,
+read-only, by decision 0054, `20261109000001`):
+- `clinic_rounds()`: Tara's 105 rounds for one clinic in the pro's week
+  (`not_this_week` otherwise): round, court, side, spot, the person's id
+  (registration or guest), first and last name, guest or not, and whether
+  they have since left. No price, paid flag, note or count. Only Tara writes
+  rounds (`admin_set_round_court`); players and anon read nothing.
 - `pro_week()`: `pro_today()`'s columns exactly, for today and the six New
   York days after it. `pro_assign_court()`: court 1 to 5 or none on a You're
   In! row of one of those clinics; returns nothing; every refusal reads

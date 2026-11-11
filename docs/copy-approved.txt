@@ -3,9 +3,11 @@ ACTION NEEDED
 About this clinic
 Accept
 Action Needed
+Add
 Add a card
 Add a card on your Profile to register.
 Add a player
+Add guest
 Add to Calendar
 Add your first and last name.
 Add your name, phone number, and tennis rating. Please answer the membership and gender questions to continue
@@ -14,7 +16,9 @@ Agree and sign
 Alex sees your answers as they save. Copy them here if you want to text them as well.
 Almost there!
 Already charged: refund it first.
+Already marked paid.
 America/New_York
+Amount
 Ann finds Anna, Annette, Joann…
 Any personal information that we collect is stored on secure hosted servers. We are always striving to ensure a safe and convenient experience with the Services. This goes beyond our technologies to include physical, contractual, and managerial safeguards to protect your personal information.
 Apple Inc. delivers notifications to your device.
@@ -26,6 +30,7 @@ Ask Tara for approval first.
 At least 6 characters.
 Back
 Board report
+Call
 Cancel
 Cancel Invite
 Cancel Registration
@@ -63,6 +68,7 @@ Couldn't find your account. Sign out and sign in again.
 Couldn't load card payments.
 Couldn't load saved answers, still on this phone
 Couldn't load the numbers.
+Couldn't load the phone number.
 Couldn't load this clinic.
 Couldn't load your calendar link.
 Couldn't reach Stripe. Try again.
@@ -70,6 +76,9 @@ Couldn't reach the server. Check your connection.
 Couldn't save your note.
 Couldn't save, still on this phone
 Court
+Court ${court}, side ${i < 3 ? 1 : 2}, spot ${(i % 3) + 1}
+Court \(court)
+Court \(court): \(line)
 Court \(n)
 Data retention
 Date &amp; time
@@ -86,6 +95,7 @@ Download for email
 Draft
 Edit details
 Email
+Enter a price above $0.
 Everyone not yet charged pays the new price.
 FROM TARA
 FXE Tennis
@@ -102,6 +112,7 @@ FXE-Tennis-QR.png
 Fee waived
 Fees at clinic prices
 First and last name
+First name
 First time? Create your account
 For someone who called or grabbed you at the club. They go straight to You&rsquo;re In!
 For someone who isn't in the app. They get no messages and the app never charges them.
@@ -113,6 +124,7 @@ Full legal name
 Gender
 Gender not set
 Give the link a label.
+Guest
 Has a note
 Home
 How we use your information
@@ -134,6 +146,7 @@ Keep my account
 Keep my spot
 Keep the clinic
 Label
+Last name
 Last updated: October 13, 2026
 Late cancel
 Late cancel \(player.name)
@@ -181,9 +194,11 @@ No deposits yet.
 No description yet.
 No earlier clinics.
 No notifications yet
+No phone number
 No players yet.
 No responses yet.
 No room
+No rounds yet.
 No saved messages yet.
 No templates yet.
 No upcoming clinics.
@@ -206,7 +221,9 @@ Only Tara sees this
 Only Tara sees this.
 Only a You're In! player can be a no-show.
 Only a paid charge can be refunded.
+Only this player pays it. A clinic price change or half price leaves it alone.
 Only you can see this.
+Open
 Open FXE Tennis and sign in first.
 Open for Registration
 Our hosting provider stores the Services' data on servers in the United States.
@@ -218,6 +235,7 @@ Pick something you'll remember. At least 8 characters.
 Player
 Players
 Policy changes
+Price set: \(cents.centsAsPrice)
 Privacy Policy
 Private note
 Processing
@@ -252,10 +270,15 @@ Remove
 Remove \(entry.displayName)
 Remove \(entry.displayName) from the Waitlist
 Remove from clinic
+Remove guest
+Reply to Tara
 Request sent. Tara will let you know.
 Resolved
 Response Needed
 Review links
+Round \($0)
+Round \(round)
+Rounds
 Save
 Save note
 Save password
@@ -272,7 +295,10 @@ Sections
 Security of data
 Selected. Press and hold to copy.
 Send reminder
+Set \(entry.displayName)'s price
+Set price
 She will let you know as soon as possible if there is room in this clinic
+Side \(side)
 Sign Out
 Sign in on the admin page first.
 Sign out
@@ -288,6 +314,7 @@ Stripe, Inc. processes card payments. Your card details go to Stripe directly an
 Subscribe in Calendar
 Tara has your message.
 Tara, only what's new
+Text
 Text this to them. It works once, within an hour.
 That account is an administrator.
 That account is not an administrator.
@@ -342,6 +369,7 @@ Type your first and last name.
 USTA ${ratingLabel(r)}
 USTA \(level.label)
 Undo
+Use the clinic's price
 View Open Clinics
 Waive
 Waive \(entry.displayName)'s fee

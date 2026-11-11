@@ -242,25 +242,32 @@ test.describe("a laptop outside Eastern time", () => {
       .map(l => { const i = l.indexOf("="); return [l.slice(0, i), l.slice(i + 1).replace(/^"|"$/g, "")]; }));
     const headers = { apikey: env.SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SERVICE_ROLE_KEY}` };
     const name = `LA laptop clinic ${Date.now()}`;
+    // Today in Charlotte, so the clinic is on This week whatever day the
+    // suite runs (it was 2026-11-10, written out, and failed once that week
+    // had passed). 10:00 there is 15:00Z in winter and 14:00Z in summer.
+    const day = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
+    const [y, m, d] = day.split("-").map(Number);
+    const tenET = [15, 14].map(h => new Date(Date.UTC(y, m - 1, d, h)))
+      .find(t => new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "numeric", hour12: false }).format(t) === "10");
     try {
       await signIn(page, TARA);
       await expect(page.getByRole("button", { name: "New clinic" })).toBeVisible();
       await page.getByRole("button", { name: "New clinic" }).click();
       await page.locator("#f-name").fill(name);
-      await page.locator("#f-starts").fill("2026-11-10T10:00");
+      await page.locator("#f-starts").fill(`${day}T10:00`);
       await page.locator("#f-duration").fill("60");
       await page.locator("#edit-save").click();
       await expect(page.locator("dialog#edit")).toBeHidden({ timeout: 15_000 });
 
       const rows = await request.fetch(`${env.API_URL}/rest/v1/clinics?name=eq.${encodeURIComponent(name)}&select=starts_at`, { headers })
         .then(r => r.json());
-      expect(rows.map(r => new Date(r.starts_at).toISOString())).toEqual(["2026-11-10T15:00:00.000Z"]);
+      expect(rows.map(r => new Date(r.starts_at).toISOString())).toEqual([tenET.toISOString()]);
 
       // The card and the edit form read it back as 10:00, not 7:00.
       const card = page.locator("#clinics .card", { hasText: name });
       await expect(card).toContainText("10:00");
       await card.getByRole("button", { name: "Edit" }).click();
-      await expect(page.locator("#f-starts")).toHaveValue("2026-11-10T10:00");
+      await expect(page.locator("#f-starts")).toHaveValue(`${day}T10:00`);
     } finally {
       await request.fetch(`${env.API_URL}/rest/v1/clinics?name=eq.${encodeURIComponent(name)}`, { method: "DELETE", headers });
     }

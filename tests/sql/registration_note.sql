@@ -125,8 +125,9 @@ begin
      and prorettype = 'public.registrations'::regtype
      and has_function_privilege('authenticated', oid, 'EXECUTE');
   -- admin_invite_player (20261107000002): Tara's alone (require_admin).
+  -- admin_set_registration_price (20261109000001): Tara's alone too.
   insert into _probe_result values ('whole_row_functions_pinned',
-    '[admin_invite_player, admin_mark_late_cancel, admin_set_no_show, assign_court, cancel_invitation, cancel_registration, invite_from_pool, place_player, register_for_clinic, respond_to_invitation, set_paid]',
+    '[admin_invite_player, admin_mark_late_cancel, admin_set_no_show, admin_set_registration_price, assign_court, cancel_invitation, cancel_registration, invite_from_pool, place_player, register_for_clinic, respond_to_invitation, set_paid]',
     '[' || coalesce(v, '') || ']');
   select count(*) into n from pg_proc where proname = 'register_for_clinic';
   insert into _probe_result values ('one_register_for_clinic', '1', n::text);

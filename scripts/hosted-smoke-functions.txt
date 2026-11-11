@@ -45,6 +45,8 @@ admin_set_player_note	{"p_body":"x","p_player":"00000000-0000-0000-0000-00000000
 admin_set_player_rating	{"p_player":"00000000-0000-0000-0000-000000000000","p_rating":1}
 admin_set_pro	{"p_account":"00000000-0000-0000-0000-000000000000","p_pro":false}
 admin_set_rain_half	{"p_clinic":"00000000-0000-0000-0000-000000000000","p_on":false}
+admin_set_registration_price	{"p_cents":1,"p_registration":"00000000-0000-0000-0000-000000000000"}
+admin_set_round_court	{"p_clinic":"00000000-0000-0000-0000-000000000000","p_court":1,"p_people":[],"p_round":1}
 admin_set_template_archived	{"p_archived":false,"p_id":"00000000-0000-0000-0000-000000000000"}
 admin_upsert_clinic	{"p_audience":"x","p_category":"x","p_closes_at":"2026-01-01T00:00:00Z","p_description":"x","p_duration_minutes":1,"p_id":"00000000-0000-0000-0000-000000000000","p_internal_capacity":1,"p_member_opens_at":"2026-01-01T00:00:00Z","p_name":"x","p_public_opens_at":"2026-01-01T00:00:00Z","p_starts_at":"2026-01-01T00:00:00Z"}
 admin_upsert_template	{"p_audience":"x","p_category":"x","p_description":"x","p_duration_minutes":1,"p_id":"00000000-0000-0000-0000-000000000000","p_internal_capacity":1,"p_name":"x"}
@@ -62,6 +64,7 @@ card_required	{}
 clean_player_note	{"p_note":"x"}
 clinic_level_from_name	{"p_name":"x"}
 clinic_price_for	{"p_clinic":"x","p_no_show":false,"p_status":"x","p_was_member":false}
+clinic_rounds	{"p_clinic":"00000000-0000-0000-0000-000000000000"}
 clinic_taken	{"p_clinic":"00000000-0000-0000-0000-000000000000"}
 courtesy_available	{"p_player":"00000000-0000-0000-0000-000000000000"}
 courtesy_cancel_days	{}
@@ -71,6 +74,7 @@ current_waiver	{}
 default_closes_at	{"p_starts_at":"2026-01-01T00:00:00Z"}
 default_price_cents	{"p_duration_minutes":1,"p_is_member":false}
 delete_my_account	{}
+follow_membership	{"p_player":"00000000-0000-0000-0000-000000000000"}
 invite_from_pool	{"p_registration":"00000000-0000-0000-0000-000000000000"}
 is_105	{"p_category":"x","p_name":"x"}
 is_admin	{}

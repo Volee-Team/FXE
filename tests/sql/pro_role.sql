@@ -402,7 +402,10 @@ begin
      where ns.nspname = 'public' and p.prokind = 'f'
        and p.prosrc ~ '(require_admin|is_admin)\(\)'
        and p.proname not in ('require_admin', 'cancel_registration', 'register_for_clinic',
-                             'respond_to_invitation', 'my_courtesy_available', 'revenue_summary')
+                             'respond_to_invitation', 'my_courtesy_available', 'revenue_summary',
+                             -- Tara's and a pro's read of the 105 rounds
+                             -- (decision 0054); tara_items_0054.sql checks both.
+                             'clinic_rounds')
        and has_function_privilege('authenticated', p.oid, 'EXECUTE')
      order by p.proname
   loop
@@ -466,7 +469,9 @@ begin
                              'pro_set_no_show', 'pro_mark_late_cancel', 'admin_set_pro',
                              'guard_account_privilege_columns',
                              -- The week and its courts (decision 0051, 20261107000002).
-                             'pro_week', 'pro_assign_court')
+                             'pro_week', 'pro_assign_court',
+                             -- Reading a 105's rounds, read-only (decision 0054).
+                             'clinic_rounds')
     union all
     select 'policy ' || pol.tablename || '.' || pol.policyname
       from pg_policies pol
@@ -663,7 +668,7 @@ begin
      and p.proname in ('new_york_date', 'is_pro', 'require_pro', 'require_pro_today', 'pro_today',
                        'pro_set_no_show', 'pro_mark_late_cancel', 'admin_set_pro',
                        'registration_set_no_show', 'registration_mark_late_cancel', 'pro_clinic_locked',
-                       'pro_week', 'pro_assign_court')
+                       'pro_week', 'pro_assign_court', 'clinic_rounds')
      and has_function_privilege('anon', p.oid, 'EXECUTE');
   insert into _probe_result values ('r9_anon_executes_none_of_it', '', v);
   select coalesce(string_agg(p.proname, ', ' order by p.proname), '') into v
@@ -676,7 +681,7 @@ begin
     from pg_proc p join pg_namespace ns on ns.oid = p.pronamespace
    where ns.nspname = 'public'
      and p.proname in ('is_pro', 'pro_today', 'pro_set_no_show', 'pro_mark_late_cancel', 'admin_set_pro',
-                       'pro_week', 'pro_assign_court')
+                       'pro_week', 'pro_assign_court', 'clinic_rounds')
      and not has_function_privilege('authenticated', p.oid, 'EXECUTE');
   insert into _probe_result values ('r9_signed_in_clients_can_call_the_rpcs', '', v);
 end $$;
