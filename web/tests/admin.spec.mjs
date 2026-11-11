@@ -113,6 +113,10 @@ test.describe("the directory", () => {
     await expect(page.locator("[data-player-row]", { hasText: "Rob Delgado" })).toHaveCount(0);
     const row = page.locator("[data-player-row]", { hasText: "Maria Alvarez" });
     await expect(row).toBeVisible();
+    // Her phone under her name, to call or text (Tara, 2026-11-10).
+    await expect(row.locator("[data-phone]")).toHaveText("Phone: 704-555-0101 Text");
+    await expect(row.getByRole("link", { name: "704-555-0101" })).toHaveAttribute("href", "tel:7045550101");
+    await expect(row.getByRole("link", { name: "Text" })).toHaveAttribute("href", "sms:7045550101");
     await row.getByRole("button", { name: "Note" }).click();
     const box = page.getByLabel("Private note").filter({ visible: true });
     await expect(box).toBeVisible();

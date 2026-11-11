@@ -2093,10 +2093,35 @@ let playerTimer;
 // the database would refuse.
 // `approved` is this player's approvals from admin_level_approvals (decision
 // 0048), each in Tara's words with a Remove beside it.
+// The account's phone under the player's name (Tara, 2026-11-10: "I don't
+// see players cell number on my laptop either"; juniors' parents first).
+// PHONE: PlayerPhone in FXETennis/Data/PlayerContact.swift says the same:
+// "Phone", "Parent's phone (holder)" for a junior, "Phone on holder's
+// account" for another adult on someone's account. No account read (a failed
+// playerRoles) shows nothing, never "No phone number".
+function phoneLabel(pl, who) {
+  const t = (x) => (x || "").trim();
+  const holder = [t(who.holderFirst), t(who.holderLast)].filter(Boolean).join(" ");
+  const same = t(who.holderFirst).toLowerCase() === t(pl.first_name).toLowerCase()
+    && t(who.holderLast).toLowerCase() === t(pl.last_name).toLowerCase();
+  if (pl.kind === "junior") return holder ? `Parent's phone (${holder})` : "Parent's phone";
+  if (same || !holder) return "Phone";
+  return `Phone on ${holder}'s account`;
+}
+function dialable(phone) {
+  const v = (phone || "").trim(), digits = v.replace(/\D/g, "");
+  return digits.length >= 7 ? (v.startsWith("+") ? "+" : "") + digits : null;
+}
+function phoneHtml(pl, who) {
+  if (!who) return "";
+  const phone = (who.phone || "").trim(), dial = dialable(phone);
+  if (!phone) return `<br><span class="muted" data-phone="${pl.id}">No phone number</span>`;
+  return `<br><span data-phone="${pl.id}">${esc(phoneLabel(pl, who))}: ${dial ? `<a href="tel:${esc(dial)}" style="white-space:nowrap">${esc(phone)}</a> <a class="muted" href="sms:${esc(dial)}">Text</a>` : esc(phone)}</span>`;
+}
 const RATING_STEPS = [2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0];
 const playerRow = (pl, history, who, approved = []) => `<div class="row" data-player-row="${pl.id}">
   <span class="grow"><span class="name">${esc(pl.first_name)} ${esc(pl.last_name)}</span>${pl.has_notes ? ' <span class="muted" title="Has a note">✎</span>' : ""}<br>
-    <span class="muted">${ntrp(pl.adult_rating)}, ${pl.is_member ? "Member" : "Non-member"}${pl.is_active ? "" : ", Inactive"}${pl.waiver_accepted ? "" : ", Waiver not signed"}</span>${historyHtml(history)}${pl.level_note ? `<br><span class="muted" title="The player's note at level entry; only you see it">“${esc(pl.level_note)}”</span>` : ""}
+    <span class="muted">${ntrp(pl.adult_rating)}, ${pl.is_member ? "Member" : "Non-member"}${pl.is_active ? "" : ", Inactive"}${pl.waiver_accepted ? "" : ", Waiver not signed"}</span>${phoneHtml(pl, who)}${historyHtml(history)}${pl.level_note ? `<br><span class="muted" title="The player's note at level entry; only you see it">“${esc(pl.level_note)}”</span>` : ""}
     <span class="levels" style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px">
       ${approved.map(a => `<span class="muted" data-approved="${pl.id}">Approved to attend: ${esc(a.label)}</span>
         <button class="small" data-levelremove="${pl.id}" data-level="${a.level}">Remove</button>`).join("")}
@@ -2167,9 +2192,10 @@ async function playerRoles(ids) {
   if (!ids.length) return out;
   // In chunks (read.js): 700 ids in one URL is past what the gateway takes,
   // and a refusal hid the Pro box for everyone (review, 2026-10-04).
-  const { data, error } = await readByIds(ids, (part) => sb.from("players").select("id,account_id,accounts(role,deleted_at)").in("id", part).order("id"));
+  const { data, error } = await readByIds(ids, (part) => sb.from("players").select("id,account_id,accounts(role,deleted_at,first_name,last_name,phone)").in("id", part).order("id"));
   if (error) return out;
-  for (const r of data || []) out.set(r.id, { account: r.account_id, role: r.accounts?.role, deleted: !!r.accounts?.deleted_at });
+  for (const r of data || []) out.set(r.id, { account: r.account_id, role: r.accounts?.role, deleted: !!r.accounts?.deleted_at,
+    holderFirst: r.accounts?.first_name, holderLast: r.accounts?.last_name, phone: r.accounts?.phone });
   return out;
 }
 // Tara's switch, member <-> pro (admin_set_pro). The list is read again after
