@@ -1037,6 +1037,15 @@ John: "do the quick reply button in build 17".
 - The email's subject: `Re: your message`, or `Re: {clinic name}` on a clinic page. Its body: two empty lines, then `You wrote:` and her message.
 - Laptop, Players tab, under the name: `Phone: {number}` with `Text`; `Parent's phone ({holder})` for a junior; `Phone on {holder}'s account`; `No phone number`. The phone's own words (2026-11-09).
 
+## A pro sets the 105 rounds (2026-11-11) — approved by John
+
+Decision 0056. Tara: "I think can change the rounds. That's totally fine. Probably need it in case I'm out of town". John approved it for 1.0.4. A pro's Rounds sheet now has Tara's words (Round 1 to 3, Court 1 to 5, Side 1 / Side 2, Open, {name} (guest), Save, Cancel); two lines are new, both seen only by a pro:
+
+- `Couldn't load the roster.`: the pro's Rounds sheet could not read who can be picked; the rounds stay read-only.
+- `That clinic isn't in your week anymore.`: a pro's Save refused because the clinic has left their week (`not_this_week`).
+
+Neither is visible to the extractor (an assigned and a returned string), so `docs/copy-approved.txt` did not change; they are listed here instead (the known gap below).
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148

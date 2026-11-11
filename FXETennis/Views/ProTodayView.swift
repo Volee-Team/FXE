@@ -27,6 +27,13 @@
 //  and every row has Tara's court menu (pro_assign_court). Came / No-show and
 //  Late cancel stay on today's clinics only, as the server allows.
 //
+//  The 105 rounds (decision 0056). Tara, 2026-11-11: "Just wanna make sure
+//  that they can position people on the courts like I can do now", and "I
+//  think can change the rounds. That's totally fine. Probably need it in case
+//  I'm out of town". A 105 in the week has Rounds, and a pro sets them as
+//  Tara does, picking from clinic_round_people (decision 0054 had pros read
+//  them only). The server holds the pro to the week (admin_set_round_court).
+//
 
 import SwiftUI
 
@@ -76,8 +83,8 @@ struct ProTodayView: View {
     @State private var model = ProTodayModel()
     @State private var lateCanceling: ProTodayPlayer?
     @State private var lateNote = ""
-    /// A 105 whose rounds are open, read-only (decision 0054, item 8: "Just
-    /// me and pros for rounds").
+    /// A 105 whose rounds are open: the pro sets them in their week
+    /// (decision 0056; 0054 had them read-only).
     @State private var roundsFor: ProTodayClinic?
 
     var body: some View {
@@ -143,7 +150,9 @@ struct ProTodayView: View {
         .task { await model.load() }
         .reloadOnForeground { await model.load() }
         .sheet(item: $roundsFor) { clinic in
-            RoundsSheet(clinicId: clinic.id, clinicName: clinic.name, people: [], editable: false)
+            RoundsSheet(clinicId: clinic.id, clinicName: clinic.name, people: [], editable: true,
+                        onSaved: { await model.load() },
+                        loadPeople: { try await RoundsRepository.people(clinic: clinic.id) })
         }
     }
 
@@ -158,9 +167,9 @@ struct ProTodayView: View {
                 .brandFont(.subheadline)
                 .foregroundStyle(Brand.textSecondary)
 
-            // Tara's rounds for a 105, to read (she makes them). The week's
-            // rows carry no category, so the name decides, as Tara names
-            // every 105.
+            // The rounds for a 105, which a pro sets too (decision 0056). The
+            // week's rows carry no category, so the name decides, as Tara
+            // names every 105.
             if Rounds.is105(name: clinic.name, category: nil) {
                 Button { roundsFor = clinic } label: {
                     Label("Rounds", systemImage: "square.grid.2x2")

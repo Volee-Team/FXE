@@ -131,6 +131,19 @@ final class ClinicExtrasTests: XCTestCase {
         XCTAssertEqual(g.courtNumber, 2)
     }
 
+    /// clinic_round_people's row (decision 0056): the name a pro picks is
+    /// first then last, and a guest stays marked as one.
+    func testWhoCanBePickedDecodes() throws {
+        let ken = UUID(), pat = UUID()
+        let json = """
+        [{"person_id":"\(ken.uuidString)","first_name":"Ken","last_name":"Whitfield","is_guest":false},
+         {"person_id":"\(pat.uuidString)","first_name":"Pat","last_name":"Visitor","is_guest":true}]
+        """
+        let people = try JSONDecoder().decode([RoundPersonRow].self, from: Data(json.utf8)).map(\.person)
+        XCTAssertEqual(people, [RoundPerson(id: ken, name: "Ken Whitfield", isGuest: false),
+                                RoundPerson(id: pat, name: "Pat Visitor", isGuest: true)])
+    }
+
     func testAddingAGuestToAFullClinicAsks() {
         XCTAssertEqual(ClinicFull.question(.add, name: "Pat Visitor", inCount: 25, capacity: 25),
                        "Are you sure you want to add Pat Visitor? Your clinic is full (25/25).")
@@ -142,6 +155,8 @@ final class ClinicExtrasTests: XCTestCase {
         XCTAssertEqual(ClinicExtrasError.message(E(description: "invalid_price")), "Enter a price above $0.")
         XCTAssertEqual(ClinicExtrasError.message(E(description: "already_paid")), "Already marked paid.")
         XCTAssertEqual(ClinicExtrasError.message(E(description: "not_in_clinic")), "That just changed. Here's the latest.")
+        // A pro saving rounds after the clinic left their week (decision 0056).
+        XCTAssertEqual(ClinicExtrasError.message(E(description: "not_this_week")), "That clinic isn't in your week anymore.")
         XCTAssertEqual(ClinicExtrasError.message(E(description: "offline")),
                        "That didn't go through. Check your connection and try again.")
     }

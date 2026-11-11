@@ -92,14 +92,21 @@ that shape gets the same three layers.
 whose `role` is `pro`, asked by `is_pro()` (false once deleted). `is_admin()`
 is unchanged: Tara is the only admin. No policy, view or grant mentions a
 pro, so from every table and view a pro reads exactly what a member reads.
-A pro's reach is six functions, each gated by `require_pro()` (the week
+A pro's reach is eight functions, each gated by `require_pro()` (the week
 and its courts added by decision 0051, `20261107000002`; the 105 rounds,
-read-only, by decision 0054, `20261109000001`):
+read, by decision 0054, `20261109000001`, and set, by decision 0056,
+`20261111000002`):
 - `clinic_rounds()`: Tara's 105 rounds for one clinic in the pro's week
   (`not_this_week` otherwise): round, court, side, spot, the person's id
   (registration or guest), first and last name, guest or not, and whether
-  they have since left. No price, paid flag, note or count. Only Tara writes
-  rounds (`admin_set_round_court`); players and anon read nothing.
+  they have since left. No price, paid flag, note or count.
+- `admin_set_round_court()`: Tara, or a pro for a published clinic in the
+  week (today to six New York days out); outside it a pro gets one answer,
+  `not_this_week`, whatever the reason (far off, draft, canceled, no such
+  clinic). Every other refusal is Tara's. `clinic_round_people()`: who a
+  round is picked from (You're In! and live guests: id, first and last name,
+  guest or not), the same access as `clinic_rounds()`. Players and anon
+  read and write nothing.
 - `pro_week()`: `pro_today()`'s columns exactly, for today and the six New
   York days after it. `pro_assign_court()`: court 1 to 5 or none on a You're
   In! row of one of those clinics; returns nothing; every refusal reads
