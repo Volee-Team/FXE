@@ -74,6 +74,7 @@ current_waiver	{}
 default_closes_at	{"p_starts_at":"2026-01-01T00:00:00Z"}
 default_price_cents	{"p_duration_minutes":1,"p_is_member":false}
 delete_my_account	{}
+follow_membership	{"p_player":"00000000-0000-0000-0000-000000000000"}
 invite_from_pool	{"p_registration":"00000000-0000-0000-0000-000000000000"}
 is_105	{"p_category":"x","p_name":"x"}
 is_admin	{}
