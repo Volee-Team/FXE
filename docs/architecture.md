@@ -234,6 +234,8 @@ FXETennis/
 │   ├── LevelApproval.swift      decision 0048: what a clinic page offers a player below the level
 │   │                            in its name (Tara's sentence and button, or Register), her words
 │   │                            for the label and the profile line (pure, unit-tested)
+│   ├── ReplyToTara.swift        Reply to Tara under her messages (bell, clinic page): an email to her
+│   │                            address with her message quoted; Contact Tara's address (pure, unit-tested)
 │   ├── ClinicFull.swift         Tara's "Your clinic is full (25/25). Are you sure..." question
 │   │                            before an invite, Move In or Add guest, counting guests, and the
 │   │                            invite refusals in words (items 5 and 11 of her 11-06 list; pure, unit-tested)
@@ -876,7 +878,7 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `public_open_backfill.sh` | 20261101000001's backfill (decision 0046), run for real: three planted clinics, the migration file applied over them in one rolled-back transaction. A future week on the old Friday 08:00 moves to noon with its member open unchanged; a hand-set time and a week already open stay (each guard shown red by a copy of the migration without it, 2026-11-01) |
 | `beginner_backfill.sh` | 20261106000001's rewrite of existing clinics (decision 0049), run for real: two planted clinics carrying the old value, the migration file applied over them in one rolled-back transaction; the beginner row loses its minimum, the 3.0+ row keeps it, and neither row's published date or price moves |
 
-**Swift**: 324 unit tests (`FXETennisTests`: price formatting, per-viewer
+**Swift**: 329 unit tests (`FXETennisTests`: price formatting, per-viewer
 pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016; since 2026-09-27 the request-failure classifier, a failed load keeping who you are, the waiver and card refusals reopening their steps, the 30-second reload throttle, the redraw moments, and the type scale under Larger Text; since 2026-09-28 the invitation push's Accept and Decline, the Remind me reminder, the calendar entry, and the haptics and chip motion; a clinic the player holds beyond the list's five-week edge staying on their screens, the instant-open snapshot's per-person and ended-clinic rules, Siri's next-clinic answer, and the Player Pool's history line) and 29
 XCUITests: 9 player flows
 (`PlayerFlowUITests`: sign in / browse / register, undo, sign-up end to end,

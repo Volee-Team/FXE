@@ -307,6 +307,7 @@ struct ClinicDetailView: View {
     /// Accept and Decline stack at the accessibility text sizes.
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.requestReview) private var requestReview
+    @Environment(\.openURL) private var openURL
     @State private var model = ClinicDetailModel()
 
     var body: some View {
@@ -496,6 +497,16 @@ struct ClinicDetailView: View {
                         Text(msg.body).brandFont(.body).foregroundStyle(Brand.textPrimary)
                         Text(msg.sentAt.formatted(.dateTime.month().day().hour().minute()))
                             .brandFont(.caption).foregroundStyle(Brand.textSecondary)
+                        // An email to Tara quoting her message (ReplyToTara).
+                        // Players only: Tara and the pros have no player here.
+                        if hasPlayer, let reply = ReplyToTara.url(replyingTo: msg.body, clinic: clinic.name) {
+                            Button("Reply to Tara") { openURL(reply) }
+                                .brandFont(.subheadline)
+                                .foregroundStyle(Brand.navy)
+                                .frame(minHeight: 44)
+                                .contentShape(Rectangle())
+                                .accessibilityIdentifier("clinic.message.reply")
+                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(Brand.Spacing.sm)

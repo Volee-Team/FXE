@@ -326,6 +326,10 @@ final class PlayerFlowUITests: XCTestCase {
         XCTAssertTrue(rows.firstMatch.waitForExistence(timeout: 20),
                       "No notification rows: the seed has two for Maria")
         XCTAssertGreaterThanOrEqual(rows.count, 2)
+        // Tara's message has a way to answer it (2026-11-10): the seed's
+        // "Courts are wet" row. Not tapped: it leaves the app for Mail.
+        XCTAssertTrue(app.buttons["notifications.reply"].waitForExistence(timeout: 10),
+                      "No Reply to Tara under Tara's seeded message")
 
         let markAll = app.buttons["notifications.markAllRead"]
         XCTAssertTrue(markAll.waitForExistence(timeout: 10), "The seed has unread rows for Maria")

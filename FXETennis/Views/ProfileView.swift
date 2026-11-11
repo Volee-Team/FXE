@@ -101,7 +101,7 @@ struct ProfileView: View {
                         // 2026-09-28 (decision 0024). Her address, the one the
                         // privacy policy and the App Store listing show.
                         Button("Contact Tara") {
-                            openURL(URL(string: "mailto:fersctennispro@gmail.com")!)
+                            openURL(ReplyToTara.contactURL)
                         }
                         .brandFont(.caption)
                         .foregroundStyle(Brand.textPrimary)

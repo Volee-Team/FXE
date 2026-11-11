@@ -1029,6 +1029,14 @@ Decision 0054 (her updated list, items 8 and 10, and "Warn me!"), and decisions 
 | ☐ | Text / Call | The two buttons under it |
 | ☐ | No phone number / Couldn't load the phone number. | No number on the account, and a failed read |
 
+## Reply to Tara, and the phone on the laptop's Players tab (2026-11-10) — approved by John
+
+John: "do the quick reply button in build 17".
+
+- `Reply to Tara`: under each of Tara's messages, on the clinic page and in the bell. It opens an email to her address.
+- The email's subject: `Re: your message`, or `Re: {clinic name}` on a clinic page. Its body: two empty lines, then `You wrote:` and her message.
+- Laptop, Players tab, under the name: `Phone: {number}` with `Text`; `Parent's phone ({holder})` for a junior; `Phone on {holder}'s account`; `No phone number`. The phone's own words (2026-11-09).
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148

@@ -271,6 +271,7 @@ Remove \(entry.displayName)
 Remove \(entry.displayName) from the Waitlist
 Remove from clinic
 Remove guest
+Reply to Tara
 Request sent. Tara will let you know.
 Resolved
 Response Needed
