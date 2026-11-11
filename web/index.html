@@ -33,6 +33,11 @@
   .row { display: flex; align-items: center; gap: 12px; }
   .row + .row { border-top: 1px solid var(--fxe-hairline); padding-top: 10px; margin-top: 10px; }
   .grow { flex: 1; min-width: 0; }
+  /* A row's buttons wrap under the words instead of squeezing them into a
+     column a word wide (Tara's laptop, 2026-11-11: a clinic card read
+     "Ladies / 3.0+ / Clinic / Tue, / Nov 10" beside ten buttons). */
+  .row { flex-wrap: wrap; }
+  .row > .grow { min-width: min(16em, 100%); }
   .muted { color: var(--fxe-text-secondary); font-size: 14px; }
   /* The player's private note to Tara from Register (decision 0039). */
   .player-note { color: var(--fxe-text-primary, inherit); font-size: 14px; font-style: italic; overflow-wrap: anywhere; }
