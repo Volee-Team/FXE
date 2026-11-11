@@ -1,6 +1,6 @@
 # 0002 — Copy the price onto the registration
 
-**Date:** 2026-08-10 · **Status:** Active
+**Date:** 2026-08-10 · **Status:** Active (the membership clause narrowed by 0055, 2026-11-11: a correction now moves clinics not yet over; history stays)
 
 ## Decision
 
