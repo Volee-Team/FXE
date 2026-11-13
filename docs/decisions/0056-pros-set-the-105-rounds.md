@@ -45,8 +45,12 @@ of the six after it (the window of `pro_week` and `clinic_rounds`).
   registrations and guests not removed, with the id `admin_set_round_court`
   takes and the first and last name, by last name. Tara's screens build this
   list from her own roster; a pro has no roster read that includes guests,
-  so the server gives it. Same access as `clinic_rounds`. Names only: no
-  price, paid flag, note, phone, email or count.
+  so the server gives it. Tara for any clinic; a pro for a 105 in their
+  week only (`not_105` on any other clinic in the week, `not_this_week`
+  outside it). Names only: no price, paid flag, note, phone, email or count.
+  The sql-auditor (2026-11-12) found the first version answered a pro for
+  every clinic in the week, which showed guests that `pro_week` never does;
+  narrowed before it reached hosted.
 - The pro's Manage tab: Rounds on a 105 in the week opens the same sheet as
   Tara's, with Round 1 to 3 and the six pickers per court, and Save. The
   sheet reads `clinic_round_people` itself; if that read fails it shows the
@@ -78,4 +82,7 @@ touched, or asks to see who last changed them. Neither is recorded today
 `tests/sql/pro_rounds.sql`; `tests/sql/tara_items_0054.sql`'s pro row now
 reads `a_pro_sets_rounds_in_the_week`; `pro_role.sql` names both functions
 among a pro's declared reach; `ClinicExtrasTests` (the people row and the
-`not_this_week` words).
+`not_this_week` words). The auditor's edges are rows in `pro_rounds.sql`
+(37 checks): the week answer before the 105 answer, yesterday, a canceled
+105, noon on day 7, no roster off a 105, and `p4`, which names every
+`admin_*` function that does not open with `require_admin()`.

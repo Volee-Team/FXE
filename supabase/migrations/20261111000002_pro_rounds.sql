@@ -126,7 +126,7 @@ grant execute on function public.admin_set_round_court(uuid, integer, integer, u
 
 -- Who a round can be picked from: You're In! then live guests, by last name.
 -- person_id is the registration's id or the guest's, what
--- admin_set_round_court takes. Tara, and a pro for a clinic in their week;
+-- admin_set_round_court takes. Tara, and a pro for a 105 in their week;
 -- nobody else. Positional ORDER BY: the output names are also this
 -- function's OUT parameters, which plpgsql would read as ambiguous.
 create or replace function public.clinic_round_people(p_clinic uuid)
@@ -147,6 +147,11 @@ begin
        or public.new_york_date(c.starts_at) not between public.new_york_date(now())
                                                     and public.new_york_date(now()) + 6 then
       raise exception 'not_this_week' using errcode = 'P0001';
+    end if;
+    -- Rounds are a 105 thing: a pro's other clinics already show their
+    -- players (pro_week), never their guests, so this is no wider than that.
+    if not public.is_105(c.name, c.category) then
+      raise exception 'not_105' using errcode = 'P0001';
     end if;
   end if;
   return query

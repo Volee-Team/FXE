@@ -42,6 +42,7 @@ declare
   KEN_P   constant uuid := 'a0000000-0000-0000-0000-000000000002';
   DANA_P  constant uuid := 'a0000000-0000-0000-0000-000000000004';
   c_week uuid; c_far uuid; c_draft uuid; c_plain uuid;
+  c_plain_far uuid; c_plain_draft uuid; c_yesterday uuid; c_canceled uuid; c_day7 uuid;
   r_ken uuid; r_maria uuid; r_dana_pool uuid; r_ken_far uuid; r_ken_draft uuid;
   g_pat uuid; g_gone uuid;
   err text; got text;
@@ -92,6 +93,34 @@ begin
       member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
   values ('Probe Pro Plain', 'coed', 'Clinic', 'probe', now() + interval '2 days', now() + interval '2 days 1 hour',
           now() - interval '2 days', now() - interval '1 day', 8, 'published', 60) returning id into c_plain;
+  insert into public.clinic_guests (clinic_id, first_name, last_name) values (c_plain, 'Gina', 'Plainguest');
+
+  -- The edges the sql-auditor named (2026-11-12): a non-105 past the week
+  -- and a draft one (the week answer must come before the 105 answer, or a
+  -- pro learns which ids exist), yesterday, a canceled 105, and noon on
+  -- day 7 (today + 7 is outside; the week is today to today + 6).
+  insert into public.clinics (name, audience, category, description, starts_at, ends_at,
+      member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
+  values ('Probe Pro Plain Far', 'coed', 'Clinic', 'probe', now() + interval '9 days', now() + interval '9 days 1 hour',
+          now() - interval '2 days', now() - interval '1 day', 8, 'published', 60) returning id into c_plain_far;
+  insert into public.clinics (name, audience, category, description, starts_at, ends_at,
+      member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
+  values ('Probe Pro Plain Draft', 'coed', 'Clinic', 'probe', now() + interval '3 days', now() + interval '3 days 1 hour',
+          now() - interval '2 days', now() - interval '1 day', 8, 'draft', 60) returning id into c_plain_draft;
+  insert into public.clinics (name, audience, category, description, starts_at, ends_at,
+      member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
+  values ('Probe Pro Yesterday "105"', 'coed', 'Clinic', 'probe', now() - interval '1 day', now() - interval '23 hours',
+          now() - interval '5 days', now() - interval '4 days', 24, 'published', 60) returning id into c_yesterday;
+  insert into public.clinics (name, audience, category, description, starts_at, ends_at,
+      member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
+  values ('Probe Pro Canceled "105"', 'coed', 'Clinic', 'probe', now() + interval '2 days', now() + interval '2 days 1 hour',
+          now() - interval '2 days', now() - interval '1 day', 24, 'canceled', 60) returning id into c_canceled;
+  insert into public.clinics (name, audience, category, description, starts_at, ends_at,
+      member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
+  values ('Probe Pro Day Seven "105"', 'coed', 'Clinic', 'probe',
+          ((public.new_york_date(now()) + 7) + time '12:00') at time zone 'America/New_York',
+          ((public.new_york_date(now()) + 7) + time '13:00') at time zone 'America/New_York',
+          now() - interval '2 days', now() - interval '1 day', 24, 'published', 60) returning id into c_day7;
 
   perform set_config('role', 'authenticated', true);
 
@@ -128,8 +157,23 @@ begin
   begin perform public.admin_set_round_court(gen_random_uuid(), 1, 1, array[null, null, null, null, null, null]::uuid[]); err := 'set';
   exception when others then err := sqlerrm; end;
   insert into _probe_result values ('w2_a_pro_refused_no_clinic_alike', 'not_this_week', err);
+  begin perform public.admin_set_round_court(c_plain_far, 1, 1, array[null, null, null, null, null, null]::uuid[]); err := 'set';
+  exception when others then err := sqlerrm; end;
+  insert into _probe_result values ('w2_a_pro_refused_a_non_105_past_the_week', 'not_this_week', err);
+  begin perform public.admin_set_round_court(c_plain_draft, 1, 1, array[null, null, null, null, null, null]::uuid[]); err := 'set';
+  exception when others then err := sqlerrm; end;
+  insert into _probe_result values ('w2_a_pro_refused_a_draft_non_105', 'not_this_week', err);
+  begin perform public.admin_set_round_court(c_yesterday, 1, 1, array[null, null, null, null, null, null]::uuid[]); err := 'set';
+  exception when others then err := sqlerrm; end;
+  insert into _probe_result values ('w2_a_pro_refused_yesterday', 'not_this_week', err);
+  begin perform public.admin_set_round_court(c_canceled, 1, 1, array[null, null, null, null, null, null]::uuid[]); err := 'set';
+  exception when others then err := sqlerrm; end;
+  insert into _probe_result values ('w2_a_pro_refused_a_canceled_105', 'not_this_week', err);
+  begin perform public.admin_set_round_court(c_day7, 1, 1, array[null, null, null, null, null, null]::uuid[]); err := 'set';
+  exception when others then err := sqlerrm; end;
+  insert into _probe_result values ('w2_a_pro_refused_day_seven', 'not_this_week', err);
   perform set_config('role', 'postgres', true);
-  select count(*)::text into got from public.clinic_round_spots where clinic_id in (c_far, c_draft);
+  select count(*)::text into got from public.clinic_round_spots where clinic_id in (c_far, c_draft, c_yesterday, c_canceled, c_day7, c_plain_far, c_plain_draft);
   insert into _probe_result values ('w2_nothing_written_outside_the_week', '0', got);
   perform set_config('role', 'authenticated', true);
 
@@ -182,10 +226,32 @@ begin
   begin perform count(*) from public.clinic_round_people(c_draft); err := 'read';
   exception when others then err := sqlerrm; end;
   insert into _probe_result values ('p2_a_pro_reads_no_draft', 'not_this_week', err);
+  begin perform count(*) from public.clinic_round_people(c_yesterday); err := 'read';
+  exception when others then err := sqlerrm; end;
+  insert into _probe_result values ('p2_a_pro_reads_no_past_clinic', 'not_this_week', err);
+  begin perform count(*) from public.clinic_round_people(c_canceled); err := 'read';
+  exception when others then err := sqlerrm; end;
+  insert into _probe_result values ('p2_a_pro_reads_no_canceled_clinic', 'not_this_week', err);
+  begin perform count(*) from public.clinic_round_people(c_day7); err := 'read';
+  exception when others then err := sqlerrm; end;
+  insert into _probe_result values ('p2_a_pro_reads_nothing_on_day_seven', 'not_this_week', err);
+  begin perform count(*) from public.clinic_round_people(gen_random_uuid()); err := 'read';
+  exception when others then err := sqlerrm; end;
+  insert into _probe_result values ('p2_a_pro_reads_no_clinic_alike', 'not_this_week', err);
+  begin perform count(*) from public.clinic_round_people(c_plain_far); err := 'read';
+  exception when others then err := sqlerrm; end;
+  insert into _probe_result values ('p2_a_pro_reads_no_non_105_past_the_week', 'not_this_week', err);
+  -- A non-105 in the week: its guests are not the pro's (pro_week lists
+  -- registrations only), so no roster off a 105.
+  begin perform count(*) from public.clinic_round_people(c_plain); err := 'read';
+  exception when others then err := sqlerrm; end;
+  insert into _probe_result values ('p2_a_pro_reads_no_roster_off_a_105', 'not_105', err);
 
   perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
   select count(*)::text into got from public.clinic_round_people(c_far);
   insert into _probe_result values ('p2_tara_reads_any_clinic', '1', got);
+  select count(*)::text into got from public.clinic_round_people(c_plain);
+  insert into _probe_result values ('p2_tara_reads_a_non_105_too', '1', got);
 
   perform set_config('request.jwt.claims', json_build_object('sub', KEN)::text, true);
   begin perform count(*) from public.clinic_round_people(c_week); err := 'read';
@@ -214,6 +280,17 @@ begin
    where ns.nspname = 'public' and p.proname in ('admin_set_round_court', 'clinic_round_people')
      and has_function_privilege('authenticated', p.oid, 'EXECUTE');
   insert into _probe_result values ('p3_signed_in_clients_call_both', '2', got);
+
+  -- p4: every admin_* function opens with require_admin() but the ones
+  -- named here, each for a reason (decision 0056: admin_set_round_court
+  -- lets a pro through for their week). A new one fails this row until it
+  -- is either gated or added with its reason.
+  select '[' || coalesce(string_agg(p.proname, ', ' order by p.proname), '') || ']' into got
+    from pg_proc p join pg_namespace ns on ns.oid = p.pronamespace
+   where ns.nspname = 'public' and p.proname like 'admin\_%'
+     and p.prosrc !~ 'perform public\.require_admin\(\)';
+  insert into _probe_result values ('p4_admin_functions_without_the_gate_are_named',
+    '[admin_account_ids, admin_set_round_court]', got);
 end $$;
 
 select check_name, expected, actual,
