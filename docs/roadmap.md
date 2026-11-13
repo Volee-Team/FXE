@@ -199,7 +199,7 @@ a decision for her.
 
 | Feature | |
 |---|---|
-| **Pros** (question 71, decisions 0024 and 0025): her pros see that day's clinics and who is in them, mark Came, No-show and late cancels; never anything financial, never an invitation. Only she makes someone a pro. Pros skip the waiver and the card step (question 96, decision 0040) | built (`pro_role.sql`, `ProTodayView.swift`) |
+| **Pros** (question 71, decisions 0024 and 0025): her pros see that day's clinics and who is in them, mark Came, No-show and late cancels; never anything financial, never an invitation. Only she makes someone a pro. Pros skip the waiver and the card step (question 96, decision 0040). Since then the week ahead and its courts (decision 0051), and the 105 rounds in that week (read, 0054; set, 0056) | built (`pro_role.sql`, `pro_rounds.sql`, `ProTodayView.swift`) |
 | **A declined card blocks sign-up until a new card is saved** (question 78), and **Resolved** on a declined card she won't chase (question 83) | built (decision 0026) |
 | **A court sheet to print**, in place of the handwritten one | built (`web/sheet.html`, decision 0027) |
 | **A player's history at a glance** on her directory and beside each name in the Player Pool; every cancel counted, "12 played, 5 canceled (2 late), 1 no-show" (question 105) | built (`admin_player_history`, decisions 0027 and 0040) |

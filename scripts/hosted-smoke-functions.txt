@@ -64,6 +64,7 @@ card_required	{}
 clean_player_note	{"p_note":"x"}
 clinic_level_from_name	{"p_name":"x"}
 clinic_price_for	{"p_clinic":"x","p_no_show":false,"p_status":"x","p_was_member":false}
+clinic_round_people	{"p_clinic":"00000000-0000-0000-0000-000000000000"}
 clinic_rounds	{"p_clinic":"00000000-0000-0000-0000-000000000000"}
 clinic_taken	{"p_clinic":"00000000-0000-0000-0000-000000000000"}
 courtesy_available	{"p_player":"00000000-0000-0000-0000-000000000000"}

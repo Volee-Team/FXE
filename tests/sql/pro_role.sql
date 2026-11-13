@@ -27,7 +27,10 @@
 --   r4  A pro never invites, places, removes, messages, sets a court, edits a
 --       clinic, reads the directory or sees money: every admin RPC refuses a
 --       pro, every admin view is empty to one, and a pro reads exactly what a
---       member reads from every table and view a client can read.
+--       member reads from every table and view a client can read. (Since
+--       then a pro sets courts and reads the 105 rounds in their week,
+--       decisions 0051 and 0054, and sets those rounds, decision 0056: the
+--       functions named in the exclusions below, each with its own probe.)
 --   r5  Only Tara changes a role, only between member and pro, never an
 --       admin's, a deleted account's or her own. No other path can change a
 --       role, and a pro cannot change anyone's, their own included.
@@ -405,7 +408,11 @@ begin
                              'respond_to_invitation', 'my_courtesy_available', 'revenue_summary',
                              -- Tara's and a pro's read of the 105 rounds
                              -- (decision 0054); tara_items_0054.sql checks both.
-                             'clinic_rounds')
+                             'clinic_rounds',
+                             -- A pro writes the 105 rounds in their week, and
+                             -- reads who can be picked (decision 0056);
+                             -- pro_rounds.sql checks both ways.
+                             'admin_set_round_court', 'clinic_round_people')
        and has_function_privilege('authenticated', p.oid, 'EXECUTE')
      order by p.proname
   loop
@@ -470,8 +477,9 @@ begin
                              'guard_account_privilege_columns',
                              -- The week and its courts (decision 0051, 20261107000002).
                              'pro_week', 'pro_assign_court',
-                             -- Reading a 105's rounds, read-only (decision 0054).
-                             'clinic_rounds')
+                             -- Reading a 105's rounds (decision 0054), and
+                             -- setting them in the week (decision 0056).
+                             'clinic_rounds', 'admin_set_round_court', 'clinic_round_people')
     union all
     select 'policy ' || pol.tablename || '.' || pol.policyname
       from pg_policies pol
@@ -668,7 +676,8 @@ begin
      and p.proname in ('new_york_date', 'is_pro', 'require_pro', 'require_pro_today', 'pro_today',
                        'pro_set_no_show', 'pro_mark_late_cancel', 'admin_set_pro',
                        'registration_set_no_show', 'registration_mark_late_cancel', 'pro_clinic_locked',
-                       'pro_week', 'pro_assign_court', 'clinic_rounds')
+                       'pro_week', 'pro_assign_court', 'clinic_rounds',
+                       'admin_set_round_court', 'clinic_round_people')
      and has_function_privilege('anon', p.oid, 'EXECUTE');
   insert into _probe_result values ('r9_anon_executes_none_of_it', '', v);
   select coalesce(string_agg(p.proname, ', ' order by p.proname), '') into v
@@ -681,7 +690,8 @@ begin
     from pg_proc p join pg_namespace ns on ns.oid = p.pronamespace
    where ns.nspname = 'public'
      and p.proname in ('is_pro', 'pro_today', 'pro_set_no_show', 'pro_mark_late_cancel', 'admin_set_pro',
-                       'pro_week', 'pro_assign_court', 'clinic_rounds')
+                       'pro_week', 'pro_assign_court', 'clinic_rounds',
+                       'admin_set_round_court', 'clinic_round_people')
      and not has_function_privilege('authenticated', p.oid, 'EXECUTE');
   insert into _probe_result values ('r9_signed_in_clients_can_call_the_rpcs', '', v);
 end $$;

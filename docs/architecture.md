@@ -57,10 +57,10 @@ most important thing to understand here, and it is section 5.
 
 | Area | What exists |
 |---|---|
-| Postgres schema, RLS, narrow views, RPCs | 86 migrations (`ls supabase/migrations`), the newest `20261013000001_audit_fixes.sql`. 63 are on hosted: Alex's `supabase migration list --linked` on 2026-10-12 showed 63 of 63 paired; the 64th goes with the audit-fixes PR. Re-check with that command after any push; this line is not the record |
+| Postgres schema, RLS, narrow views, RPCs | 87 migrations (`ls supabase/migrations`), the newest `20261013000001_audit_fixes.sql`. 63 are on hosted: Alex's `supabase migration list --linked` on 2026-10-12 showed 63 of 63 paired; the 64th goes with the audit-fixes PR. Re-check with that command after any push; this line is not the record |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | Enumerated by probes (section 5) |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | Section 7 |
-| Probe suite: 58 SQL probes and 19 shell probes (races and the API rush); the suite prints its own total | Runs in CI on every push (section 9) |
+| Probe suite: 59 SQL probes and 19 shell probes (races and the API rush); the suite prints its own total | Runs in CI on every push (section 9) |
 | iOS: sign-in, sign-up with profile, the waiver and card steps, password reset, three tabs | In the app |
 | iOS: browse by week, per-viewer pricing, register / cancel (inside the 3-hour cutoff the full fee applies; the note is optional) / leave pool / respond, closed-clinic "Message Tara", the bell, My Clinics, profile edit, card on file | In the app |
 | iOS: a private note for Tara at Register, editable on the player's own live spot until the start (decision 0039) | In the app |
@@ -196,7 +196,8 @@ FXETennis/
 │   │                            models (MoneyClinic, MoneyDecline, MoneyDispute) and Stripe's decline codes in words
 │   ├── ClinicExtrasRepository.swift Tara's clinic page beyond the roster (1.0.3): guests (0052),
 │   │                            the clinic's price and rain half (0053), one player's price and the
-│   │                            105 rounds (0054, clinic_rounds also read by a pro); Rounds and
+│   │                            105 rounds (0054, clinic_rounds also read by a pro; a pro sets them in
+│   │                            the week from clinic_round_people, 0056); Rounds and
 │   │                            DollarsInput are pure and unit-tested (ClinicExtrasTests)
 │   ├── PlayerContact.swift      the phone under the name on Tara's Player page (1.0.3): the account's
 │   │                            holder and phone through players.account_id, admin-only by RLS; whose
@@ -317,7 +318,8 @@ FXETennis/
     │                            under the date (0052, 0053), Set price on a row (0054), and on a 105 a
     │                            Rounds button and the rounds as text (0054)
     ├── RoundsSheet.swift        the 105 rounds (decision 0054): Round 1 to 3, courts 1 to 5, six pickers
-    │                            from You're In! and guests for Tara; the same rounds read-only for a pro;
+    │                            from You're In! and guests for Tara, and for a pro in the week, whose
+    │                            list the sheet reads itself (clinic_round_people, 0056; read-only if it fails);
     │                            RoundsSummary, the text under the button
     ├── PlayersDirectoryView.swift search, member / active switches, private note, Message (one
     │                            player, wherever they are; 20261107000002); the account's phone under
@@ -330,7 +332,8 @@ FXETennis/
                                  week's clinics by day (pro_week), who is You're In!, a court menu on
                                  every row (pro_assign_court), Came / No-show and Late cancel on
                                  today's only (Tara's alert without "The fee applies."), and a
-                                 read-only Rounds on a 105 (clinic_rounds, decision 0054); nothing else
+                                 Rounds on a 105, which the pro sets (admin_set_round_court and
+                                 clinic_round_people, decision 0056; read-only under 0054); nothing else
 ```
 
 Four ideas run through the client code:
@@ -471,7 +474,7 @@ future code path can demote Tara or promote anyone to admin
 | `late_requests` | "Can I still get in?" after the close; Tara approves or declines. |
 | `level_approvals` | Decision 0048: a player's request for, or Tara's approval of, clinics above their rating, one row per level. Read by its player and Tara; written only by `request_level_approval` and `admin_set_level_approval`. |
 | `clinic_guests` | Decision 0052: Tara's guests, a first and last name on one clinic for someone not in the app. Closed to clients; read and written only by the `admin_*` guest RPCs. Removed is `removed_at`, never a delete. |
-| `clinic_round_spots` | Decision 0054: Tara's 105 rounds. Round 1 to 3, court 1 to 5, side 1 or 2, spot 1 to 3, each a You're In! registration or a live guest of the clinic; one place per person per round. Closed to clients: written only by `admin_set_round_court`, read only by `clinic_rounds` (Tara, and a pro for a clinic in their week). A layout she rewrites, so a court is replaced whole. `registrations` gained `invited_when_full` (stamped by a trigger whenever a row enters Response Needed) and `price_set_by_admin` (decision 0054) |
+| `clinic_round_spots` | Decision 0054: Tara's 105 rounds. Round 1 to 3, court 1 to 5, side 1 or 2, spot 1 to 3, each a You're In! registration or a live guest of the clinic; one place per person per round. Closed to clients: written only by `admin_set_round_court` (Tara, and since decision 0056 a pro for a clinic in their week), read only by `clinic_rounds` (Tara, and a pro for a clinic in their week). A layout she rewrites, so a court is replaced whole. `registrations` gained `invited_when_full` (stamped by a trigger whenever a row enters Response Needed) and `price_set_by_admin` (decision 0054) |
 | `clinic_messages` + `clinic_message_recipients` | Broadcasts; targeted audiences are snapshotted at send time. |
 | `news_posts` + `news_reads` | Announcements; read state per account. |
 | `notifications` | In-app rows written by RPCs (players and Tara). Readable by the owner, eight named columns; only `read_at` is writable. `delivered_at` / `delivery_error` are written by the `push` edge function and readable by no client (20260923000001). Every insert fires `push_on_notification`, which posts the row id to `push` through pg_net once the vault secrets `push_function_url` and `push_webhook_secret` exist, and does nothing until then. |
@@ -524,7 +527,13 @@ charged:** once any row of a clinic holds a live fee (the internal
 charged rows and uncharged alike, and a charge that commits while a mark waits
 for its row is caught by a second look after the row lock (the sql-auditor's
 finding, 2026-09-28: a per-row refusal had told a pro who was charged and whose
-card was declined). `new_york_date` is the date helper both use.
+card was declined). `new_york_date` is the date helper both use. The 105
+rounds in the week (decision 0056, 20261111000002): `admin_set_round_court`
+lets a pro through for a published clinic from today to six days out
+(`not_this_week` otherwise, one answer for everything outside), and
+`clinic_round_people` is who a round is picked from (You're In! and live
+guests: the id, first and last name, guest or not, by last name), read by Tara
+and by a pro in the week; `clinic_rounds` is the read (decision 0054).
 
 **Admin** (each opens with `require_admin()`):
 
@@ -542,7 +551,7 @@ card was declined). `new_york_date` is the date helper both use.
 | `send_clinic_message` | Audiences `everyone` / `in` / `pool` / `response_needed` / `unpaid`, resolved server-side. The one-tap unpaid reminder is this with a fixed body. Refuses `player` (`invalid_audience`): that audience is `admin_message_player`'s. |
 | `admin_set_clinic_prices`, `admin_set_rain_half`, `reprice_clinic` | Decision 0053 (20261107000004). A clinic's two prices any time, and `clinics.rain_half` ("Charge half (rain)", shown in `clinics_admin`); either reprices, through the internal `reprice_clinic`, every registration on the clinic not marked Paid and holding no charge (`registration_has_live_fee`) to the clinic's price for its member status (`clinic_price_for`), halved to the cent while `rain_half` is on for someone You're In! who came; a no-show and a late cancel pay in full (question 103). The trigger `keep_rain_price` keeps each row right while `rain_half` is on. `invalid_price` outside 1 to 100000 cents. |
 | `admin_add_guest`, `admin_remove_guest`, `admin_set_guest_court`, `admin_clinic_guests`, `clinic_taken` | Decision 0052 (20261107000003). A guest is a first and last name on one clinic in `clinic_guests` (closed to clients; removed is `removed_at`), never a player or a registration, so nothing notifies, charges or shows one to a player. `clinic_taken` (internal) is You're In! plus live guests, the count `register_for_clinic`, `request_late_spot` and `resolve_late_request` compare with capacity. |
-| `admin_set_registration_price`, `admin_set_round_court`, `clinic_rounds` | Decision 0054 (20261109000001). One registration's amount typed by Tara (null puts the clinic's back), kept through `reprice_clinic` and the rain trigger; never on Paid or a live fee. One court of one round of a 105, six ids (side 1 then 2, null for open), from You're In! and guests; someone on another court of the round moves. `clinic_rounds`: every spot with the name, guest or not, and `gone` once they left; Tara, or a pro for a clinic in their week (`not_this_week` otherwise). Also `respond_to_invitation`: a decline on the clinic's own day is canceled, and a player's Accept into a full clinic is `clinic_full` unless `invited_when_full` |
+| `admin_set_registration_price`, `admin_set_round_court`, `clinic_rounds` | Decision 0054 (20261109000001). One registration's amount typed by Tara (null puts the clinic's back), kept through `reprice_clinic` and the rain trigger; never on Paid or a live fee. One court of one round of a 105, six ids (side 1 then 2, null for open), from You're In! and guests; someone on another court of the round moves. `clinic_rounds`: every spot with the name, guest or not, and `gone` once they left; Tara, or a pro for a clinic in their week (`not_this_week` otherwise). Since decision 0056 (20261111000002) `admin_set_round_court` also takes a pro for a clinic in their week, and `clinic_round_people` lists who can be picked. Also `respond_to_invitation`: a decline on the clinic's own day is canceled, and a player's Accept into a full clinic is `clinic_full` unless `invited_when_full` |
 | `admin_message_player`, `admin_invite_player` | Tara's 11-06 list (20261107000002). `admin_message_player(player, body, clinic?)`: one player, wherever they are; with a clinic it is a `clinic_messages` row of audience `player` and one recipient (so only they read it there), without one a notification only (entity `player`); `message_empty`, `message_too_long` (over 2000), `player_not_found` for a deleted account. `admin_invite_player(clinic, player)`: anyone not already In, waiting or invited (`already_registered`, the status in the hint) on a published clinic that has not ended; always Response Needed with "A spot opened in ... Accept or decline.", whatever the capacity; source `invite`, so `respond_to_invitation`'s decline cancels it (Tara's notice: "... declined X.") instead of the Waitlist. |
 | `search_players`, `admin_player_note`, `admin_player_note_edited`, `admin_set_player_note`, `admin_set_membership`, `set_player_active` | The directory. `search_players` returns `has_notes`, never the note; `admin_player_note_edited` returns the note's `updated_at` or null (20260912000004). |
 | `set_my_gender`, `admin_set_player_gender`, `audience_open_to` | Decision 0044 (20261030000001). The player answers `players.gender` once (`gender_already_set` for a different second answer); Tara changes or clears it; `audience_open_to` is the rule `clinics_public` and the `audience_mismatch` trigger on `registrations` and `late_requests` share. `search_players` returns `gender`. |
@@ -798,7 +807,7 @@ revealing the same summary text the page's Copy my answers produces.
 
 ## 9. Testing and CI
 
-**SQL probes** in `tests/sql/`, 58 SQL probes, each printing PASS/FAIL rows,
+**SQL probes** in `tests/sql/`, 59 SQL probes, each printing PASS/FAIL rows,
 plus 19 shell probes that race transactions or call the API. `tests/run-probes.sh` prints its
 own total and fails on silent SQL errors or a probe with zero assertions.
 Every migration that adds a rule adds a probe that is **red first**.
@@ -836,7 +845,8 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `next_update_1107` | Tara's 11-06 list (20261107000002), from the rule: one player's message reaches only them (and shows on that clinic for them alone, not for the rest of it); a player in nothing can be messaged; empty refused; the group sender refuses `player`; players and pros cannot message. Invite anyone: Response Needed, source `invite`, her sentence; a full clinic still invites; never someone already In or waiting, never a draft, never by a player or a pro; a decline cancels (Tara reads "Rob Delgado declined Probe Next Week.") and asked again he accepts; a Waitlist decline still waits. The pros' week: today to six days out, You're In! only, `pro_today`'s exact columns; a court set and cleared; refused past the week, on a Waitlist row and court 0; players cannot read it or set courts. |
 | `clinic_guests` | Decision 0052, from the rule: only Tara adds, lists, courts and removes a guest (a player and a pro are refused; nobody reads the table); both names needed, trimmed; never on a canceled clinic; a guest notifies nobody and is not a registration; a guest takes the spot (a member in the window waits, a late request is `clinic_full`), and once removed the row is kept and the spot is free again; `clinic_taken` is internal. |
 | `clinic_price_and_rain` | Decision 0053, from the rule: a new rate reprices the unpaid, uncharged registrations (In, Waitlist, a no-show, a late cancel) and never the Paid or charged ones; the same rate again moves nothing; rain half halves those In who came and shows on `clinics_admin`, while a no-show and a late cancel pay in full; marked a no-show while raining goes back to full and unmarked is half again; added while raining owes half; a new rate while raining stays half ($23 to $11.50); off puts the full rate back; a zero rate is refused and moves nothing; a player and a pro are refused; the reprice is internal. |
-| `tara_items_0054` | Decision 0054, from her words: a same-day decline is removed and not counted as her cancel, a decline days ahead still waits; invited while full accepts, invited with room is refused once a guest fills it and accepts once a spot opens, every path into Response Needed is stamped, Tara still adds past the cap; one player's price survives a rate change, the rain half and the rain trigger, is put back with null, and is refused on Paid, charged, a plain cancel, $0 and over $1,000, and to a player or a pro; rounds only on a 105, from You're In! and guests, one place per round, a pro reads the week's and writes none, a player reads nothing, someone who left is marked gone |
+| `tara_items_0054` | Decision 0054, from her words: a same-day decline is removed and not counted as her cancel, a decline days ahead still waits; invited while full accepts, invited with room is refused once a guest fills it and accepts once a spot opens, every path into Response Needed is stamped, Tara still adds past the cap; one player's price survives a rate change, the rain half and the rain trigger, is put back with null, and is refused on Paid, charged, a plain cancel, $0 and over $1,000, and to a player or a pro; rounds only on a 105, from You're In! and guests, one place per round, a pro reads the week's and (since decision 0056) writes them, a player reads nothing, someone who left is marked gone |
+| `pro_rounds` | Decision 0056 (20261111000002), from Tara's words: a pro sets a court of a 105's round in the week and the rounds read it back to the pro and to Tara, a move is a move; a 105 eight days out, a draft and an id that is no clinic are each `not_this_week` with nothing written; a player is refused with nothing written; Tara still sets rounds, past the week too, and a non-105 is `not_105` for her and a pro; `clinic_round_people` lists You're In! and live guests by last name (not the Waitlist, not a removed guest) with the ids a court takes, to Tara and a pro in the week only, a player refused; names only; anon executes neither |
 | `membership_reprice` | 20261111000001: Tara changing a membership moves the player's registrations not yet charged to the new price (You're In!, Waitlist, a late cancel, the rain half), and leaves Paid, charged, a plain cancel and a canceled clinic alone; a typed price keeps its amount; both ways; a player is refused and the helper is internal |
 | `move_in_cancel_race` | Tara's Move In racing her own cancel of the clinic: the player does not end in You're In! and no "You're all set" is written. Red with the clinic's FOR SHARE removed |
 | `accept_full_race` | Two players accepting the last spot of a clinic at once: one ends In, the other stays invited, the clinic holds its capacity. Red with the old FOR SHARE (3 in a clinic of 2) |
@@ -879,7 +889,7 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `public_open_backfill.sh` | 20261101000001's backfill (decision 0046), run for real: three planted clinics, the migration file applied over them in one rolled-back transaction. A future week on the old Friday 08:00 moves to noon with its member open unchanged; a hand-set time and a week already open stay (each guard shown red by a copy of the migration without it, 2026-11-01) |
 | `beginner_backfill.sh` | 20261106000001's rewrite of existing clinics (decision 0049), run for real: two planted clinics carrying the old value, the migration file applied over them in one rolled-back transaction; the beginner row loses its minimum, the 3.0+ row keeps it, and neither row's published date or price moves |
 
-**Swift**: 329 unit tests (`FXETennisTests`: price formatting, per-viewer
+**Swift**: 330 unit tests (`FXETennisTests`: price formatting, per-viewer
 pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016; since 2026-09-27 the request-failure classifier, a failed load keeping who you are, the waiver and card refusals reopening their steps, the 30-second reload throttle, the redraw moments, and the type scale under Larger Text; since 2026-09-28 the invitation push's Accept and Decline, the Remind me reminder, the calendar entry, and the haptics and chip motion; a clinic the player holds beyond the list's five-week edge staying on their screens, the instant-open snapshot's per-person and ended-clinic rules, Siri's next-clinic answer, and the Player Pool's history line) and 29
 XCUITests: 9 player flows
 (`PlayerFlowUITests`: sign in / browse / register, undo, sign-up end to end,
