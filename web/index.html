@@ -1087,6 +1087,7 @@ const REASON = {
   account_deleted: "Account deleted",
   retry_window_passed: "Too old to retry",
   idempotency_error: "Card changed between attempts",
+  canceled_at_stripe: "Canceled at Stripe, nothing charged",
 };
 const reasonLabel = (why) => REASON[why] || why;
 // A chargeback on a card payment (payments.dispute_status, 20260928200001).

@@ -628,7 +628,7 @@ read of it with the player and clinic named. Three Deno edge functions do the
 Stripe half with `service_role`: `stripe-setup-intent` (customer + SetupIntent
 for PaymentSheet; a stored customer Stripe does not have, as every sandbox
 customer is after the live swap, is replaced and its stale card summary
-cleared), `stripe-webhook` (the only writer of card summaries and
+cleared), `stripe-webhook` (the only writer of card summaries, and the first writer of
 ledger outcomes; records the signed event's `livemode`, and attaches a payment
 event that beat stripe-charge to the row named in the PaymentIntent's
 metadata; stores the PaymentMethod id with the summary and clears the summary
@@ -639,7 +639,9 @@ refusal marks a row failed, while anything that may have reached Stripe goes
 back to pending for a retry under the same key, and a sweep returns rows a dead
 call left in processing without an id; the rule is
 `supabase/functions/_shared/stripe-errors.ts`; a deleted account is never
-charged). `delete-account` deletes the Stripe customer before it removes the
+charged; and a fee with a PaymentIntent id that no webhook settled for 30
+minutes is looked up at Stripe and recorded by the webhook's own rule,
+`supabase/functions/_shared/payment-outcome.ts`, decision 0057). `delete-account` deletes the Stripe customer before it removes the
 sign-in. Switched off: `payments_enabled` is `'false'` in every migration, and switching it on is
 checklist A9 (the sandbox keys themselves are A1). Tara's policy answers are
 decisions 0012 and 0013. `tests/stripe/run.sh` proves the

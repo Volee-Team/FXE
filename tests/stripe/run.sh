@@ -319,6 +319,32 @@ fn stripe-charge "$TARA_JWT" '{}' >/dev/null
 check "a pending retry past the key's lifetime is held, never re-sent" "processing retry_window_passed NULL" "$(sql "select status||' '||coalesce(failure_reason,'NULL')||' '||coalesce(stripe_payment_intent_id,'NULL') from public.payments where id='$PAY_R1'")"
 check "an old row never attempted is still sent, and stamped" "processing pi_ true" "$(sql "select status||' '||coalesce(left(stripe_payment_intent_id,3),'NULL')||' '||(first_attempted_at > now() - interval '1 hour') from public.payments where id='$PAY_R2'")"
 
+# ---- 9c. A fee Stripe has an id for, but no webhook ever settled (decision
+#          0057; a real $23 fee sat in Processing on 2026-11-13 with nothing
+#          anyone could click). Silent for 30 minutes, stripe-charge asks
+#          Stripe for the PaymentIntent and records what it says, by the rule
+#          in _shared/payment-outcome.ts (pinned in tests/stripe/outcome.test.ts,
+#          below: stripe-mock answers every retrieve with the same undecided
+#          fixture, so it cannot show a late success or decline). What this
+#          section proves is the wiring: the look-up runs, an undecided answer
+#          changes nothing, the charge call still works, and a held row and a
+#          fee sent moments ago are never looked up at all.
+# Its own clinic, so none of these players' registrations collides with a
+# later section's; removed at the end of the section.
+QC=$(sql "with i as (insert into public.clinics (name, audience, category, description, starts_at, ends_at, member_opens_at, public_opens_at, internal_capacity, status, duration_minutes) values ('Harness Silent Fees', 'coed', 'Clinic', 'harness', now() - interval '26 hours', now() - interval '25 hours', now() - interval '9 days', now() - interval '8 days', 8, 'published', 60) returning id) select id from i")
+REG_Q1=$(reg "$QC" "$DANA_P" 1800 true 60); REG_Q2=$(reg "$QC" "$KEN_P" 1800 true 60); REG_Q3=$(reg "$QC" "$ROB_P" 2300 false 60)
+PAY_Q1=$(sql "with i as (insert into public.payments (registration_id, account_id, kind, amount_cents, status, stripe_payment_intent_id, created_at, updated_at, first_attempted_at) values ('$REG_Q1','$DANA','clinic_fee',1800,'processing','pi_harness_silent', now() - interval '2 hours', now() - interval '2 hours', now() - interval '2 hours') returning id) select id from i")
+PAY_Q2=$(sql "with i as (insert into public.payments (registration_id, account_id, kind, amount_cents, status, stripe_payment_intent_id, failure_reason, created_at, updated_at, first_attempted_at) values ('$REG_Q2','$KEN','clinic_fee',1800,'processing','pi_harness_held','idempotency_error', now() - interval '2 hours', now() - interval '2 hours', now() - interval '2 hours') returning id) select id from i")
+PAY_Q3=$(sql "with i as (insert into public.payments (registration_id, account_id, kind, amount_cents, status, stripe_payment_intent_id, first_attempted_at) values ('$REG_Q3','$ROB','clinic_fee',2300,'processing','pi_harness_fresh', now()) returning id) select id from i")
+out=$(fn stripe-charge "$TARA_JWT" '{}')
+check "stripe-charge still answers with the look-up in front" "yes" "$(echo "$out" | grep -q '"processed"' && echo yes || echo "$out")"
+MOCK_PI=$(curl -s "${STRIPE_MOCK_URL:-http://127.0.0.1:12111}/v1/payment_intents/pi_harness_silent" -H "Authorization: Bearer sk_test_ci" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("status"))')
+check "stripe-mock's PaymentIntent is one the rule leaves alone" "requires_payment_method" "$MOCK_PI"
+check "an undecided answer leaves the silent fee as it was" "processing NULL NULL" "$(sql "select status||' '||coalesce(failure_reason,'NULL')||' '||coalesce(failure_code,'NULL') from public.payments where id='$PAY_Q1'")"
+check "a held fee is Tara's to answer, never looked up" "processing idempotency_error" "$(sql "select status||' '||failure_reason from public.payments where id='$PAY_Q2'")"
+check "a fee sent moments ago is left to the webhook" "processing NULL" "$(sql "select status||' '||coalesce(failure_reason,'NULL') from public.payments where id='$PAY_Q3'")"
+sql "delete from public.payments where id in ('$PAY_Q1','$PAY_Q2','$PAY_Q3'); delete from public.registrations where clinic_id='$QC'; delete from public.clinics where id='$QC'" >/dev/null
+
 # ---- 10. A dropped connection may have charged, so the row goes back to
 #          pending (it used to be marked failed, and Tara's second tap made a
 #          new row, a new key and a second charge). The next call reaches
@@ -607,13 +633,15 @@ sql "delete from public.card_consents where account_id='$MARIA'; delete from pub
 sql "update public.accounts set card_declined_at=null, card_decline_code=null where id in ($HARNESS_PEOPLE)" >/dev/null 2>&1
 
 # ---- E. The error rule stripe-mock cannot exercise, with the Stripe SDK's
-#         own error objects (tests/stripe/errors.test.ts).
+#         own error objects (tests/stripe/errors.test.ts), and what a
+#         PaymentIntent's state means for its row (tests/stripe/outcome.test.ts,
+#         decision 0057).
 if command -v deno >/dev/null 2>&1; then
-  unit=$(NO_COLOR=1 deno test --allow-env --allow-read tests/stripe/errors.test.ts 2>&1)
+  unit=$(NO_COLOR=1 deno test --allow-env --allow-read tests/stripe/errors.test.ts tests/stripe/outcome.test.ts 2>&1)
   echo "$unit" | grep -E '\.\.\. (ok|FAILED)' | sed 's/^/        /'
-  check "error rule, SDK error objects (deno test)" "ok" "$(echo "$unit" | grep -qE '^ok \|' && echo ok || echo "$(echo "$unit" | tail -1)")"
+  check "error rule and PaymentIntent outcomes (deno test)" "ok" "$(echo "$unit" | grep -qE '^ok \|' && echo ok || echo "$(echo "$unit" | tail -1)")"
 else
-  check "error rule, SDK error objects (deno test)" "ok" "deno is not installed"
+  check "error rule and PaymentIntent outcomes (deno test)" "ok" "deno is not installed"
 fi
 
 echo ""

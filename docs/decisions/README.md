@@ -65,6 +65,7 @@ The history of what we believed is part of the record.
 | [0053](0053-clinic-price-and-rain-half.md) | Tara changes a clinic's price any time, and "Charge half (rain)" makes everyone owe half; both reprice only registrations not Paid and not charged; laptop, and the phone from 1.0.3 | 2026-11-07 | Active |
 | [0054](0054-tara-updated-list-1109.md) | Tara's updated list, items 7, 8, 10, 11: a same-day decline is removed, not the Waitlist; 105 rounds picked from the roster (Tara writes, pros read, players never); one player's price typed by Tara, kept through rate and rain changes; "Warn me!" at the cap while a player's Accept into a full clinic is refused unless she invited past it | 2026-11-09 | Active |
 | [0055](0055-membership-follows-upcoming-clinics.md) | Tara's membership correction moves the player's registrations on clinics not yet over and not charged to the new price, both ways; an ended clinic keeps what it was (narrows 0002) | 2026-11-11 | Active |
+| [0057](0057-a-silent-charge-asks-stripe.md) | A fee in Processing with a Stripe id that no webhook settled for 30 minutes is looked up at Stripe on the next Charge and recorded by the webhook's own rule (`supabase/functions/_shared/payment-outcome.ts`); read only, the webhook wins a race, held rows stay Tara's (narrows 0009's only-writer line) | 2026-11-14 | Active |
 
 Tara's own numbered decisions (1–23, calls of 2026-08-02 and 2026-08-12) are
 tabled in CLAUDE.md; a bare "decision 17" in a record means that list. Not yet

@@ -28,6 +28,7 @@ import { getStripe, admin, callerId, json, safeError } from "../_shared/stripe.t
 import { withCors } from "../_shared/cors.ts";
 
 import { classifyChargeError, isMissingCustomer, RETRY_WINDOW_HOURS } from "../_shared/stripe-errors.ts";
+import { outcomeOf } from "../_shared/payment-outcome.ts";
 
 // withCors: the web admin calls this from the browser (_shared/cors.ts).
 Deno.serve(withCors(async (req) => { try { return await handle(req); } catch (e) { const m = safeError(e, "stripe-charge"); return json({ error: m }, m === "stripe_not_configured" ? 503 : 500); } }));
@@ -35,6 +36,10 @@ Deno.serve(withCors(async (req) => { try { return await handle(req); } catch (e)
 // Longer than any call runs: a row processing this long with no Stripe id
 // belongs to a call that died between the claim and storing the id.
 const STUCK_AFTER_MS = 5 * 60_000;
+
+// A fee Stripe has an id for normally hears back from the webhook within
+// seconds. Silent this long, it is asked about (decision 0057).
+const SILENT_AFTER_MS = 30 * 60_000;
 
 async function handle(req: Request): Promise<Response> {
   if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
@@ -44,6 +49,7 @@ async function handle(req: Request): Promise<Response> {
   if (me?.role !== "admin") return json({ error: "not_authorized" }, 403);
 
   await sweepStuck();
+  await askStripeAboutSilent();
 
   const { data: rows, error } = await admin
     .from("payments")
@@ -212,6 +218,41 @@ async function sweepStuck() {
       .filter("kind", kindOp, "refund")
       .lt("updated_at", stuckBefore)
       .or(`first_attempted_at.lte."${windowStart}",and(first_attempted_at.is.null,created_at.lte."${windowStart}")`);
+  }
+}
+
+// A fee that reached Stripe (it has a PaymentIntent id) but whose outcome no
+// webhook ever recorded sits in processing for good: never paid, never
+// chargeable again (the unique index), and not held, so Tara has no button
+// for it. On 2026-11-13 one did, and nobody on the team could open Stripe's
+// dashboard to look (decision 0057). So: past SILENT_AFTER_MS, ask Stripe for
+// the PaymentIntent and record what it says, by the rule the webhook uses
+// (_shared/payment-outcome.ts). Read only at Stripe: it never charges,
+// confirms, or cancels anything. Every write is conditional on the row still
+// being processing with the same PaymentIntent, so an outcome the webhook
+// recorded meanwhile stands (hard rule 3). A held row (failure_reason set) is
+// Tara's to answer and is left alone, as is a refund. A look-up that fails is
+// logged and tried again on the next call; it never stops the charges below.
+async function askStripeAboutSilent() {
+  const silentBefore = new Date(Date.now() - SILENT_AFTER_MS).toISOString();
+  const { data: rows, error } = await admin.from("payments")
+    .select("id, stripe_payment_intent_id")
+    .eq("status", "processing").neq("kind", "refund")
+    .not("stripe_payment_intent_id", "is", null).is("failure_reason", null)
+    .lt("updated_at", silentBefore)
+    .order("created_at").limit(25);
+  if (error) { console.error("stripe-charge: silent look-up", error.message); return; }
+  for (const row of rows ?? []) {
+    try {
+      const pi = await getStripe().paymentIntents.retrieve(row.stripe_payment_intent_id as string);
+      const outcome = outcomeOf(pi);
+      if (!outcome) continue;
+      const { error: writeError } = await admin.from("payments").update({ ...outcome, livemode: pi.livemode })
+        .eq("id", row.id).eq("status", "processing").eq("stripe_payment_intent_id", pi.id);
+      if (writeError) console.error("stripe-charge: could not record Stripe's answer for", row.id, writeError.message);
+    } catch (e) {
+      console.error("stripe-charge: could not ask Stripe about", row.id, String((e as Error)?.message ?? e));
+    }
   }
 }
 

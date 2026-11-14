@@ -38,6 +38,7 @@
 import Stripe from "npm:stripe@17.5.0";
 import { getStripe, admin, json } from "../_shared/stripe.ts";
 import { isMissingCustomer } from "../_shared/stripe-errors.ts";
+import { succeededOutcome, failedOutcome } from "../_shared/payment-outcome.ts";
 
 Deno.serve(async (req) => { try { return await handle(req); } catch (e) { const m = String((e as Error).message ?? e); return json({ error: m }, m === "stripe_not_configured" ? 503 : 500); } });
 
@@ -110,27 +111,14 @@ async function handle(req: Request): Promise<Response> {
       const pi = event.data.object as Stripe.PaymentIntent;
       // A PaymentIntent that failed and later went through (the cardholder
       // approved it, or fixed the card) must not keep reading "Declined".
-      await recordPaymentOutcome(pi, { status: "succeeded", failure_code: null, failure_reason: null, ...mode(event) });
+      await recordPaymentOutcome(pi, { ...succeededOutcome(), ...mode(event) });
       break;
     }
     case "payment_intent.payment_failed": {
       const pi = event.data.object as Stripe.PaymentIntent;
-      // failure_code (20260926000010) is Stripe's machine code: decline_code
-      // when the bank gave one (insufficient_funds, expired_card, ...), else
-      // the error code (card_declined, incorrect_cvc, ...). The web admin turns
-      // it into words; failure_reason keeps Stripe's own sentence.
-      // Only for a card_error (20260928700001): a code means Stripe said no to
-      // the CARD, and the database then blocks the player's next registration
-      // (decision 0026). A request Stripe refused (invalid_request_error: our
-      // parameters, nothing reached the bank) keeps only its sentence, as
-      // stripe-charge's _shared/stripe-errors.ts does for the same error.
-      const err = pi.last_payment_error;
-      await recordPaymentOutcome(pi, {
-        status: "failed",
-        failure_reason: err?.message ?? err?.code ?? "declined",
-        failure_code: err?.type === "card_error" ? (err.decline_code ?? err.code ?? null) : null,
-        ...mode(event),
-      });
+      // Stripe's sentence, and its code for a card_error only: the rule is in
+      // _shared/payment-outcome.ts, shared with stripe-charge's look-up.
+      await recordPaymentOutcome(pi, { ...failedOutcome(pi), ...mode(event) });
       break;
     }
     case "refund.updated":
