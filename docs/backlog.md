@@ -90,6 +90,7 @@ Priority: 🔴 blocks a person · 🟡 should fix · 🟢 whenever
 
 | | Item | Fixed | Fix |
 |---|---|---|---|
+| ✅ | **A charge Stripe took sat at Processing: the webhook answered 200 and recorded nothing** (found 2026-11-14, Tara's Ladies 105 of 11-13) | 2026-11-14 | `stripe-webhook` matched in two statements and stripe-charge's store of the id landed between them (1 charge of 221). One `or()` UPDATE for payments and refunds, and an event that names our row but records nothing answers 500 so Stripe resends it. `tests/stripe/run.sh` section 8b holds the store open while the event lands: red on 4 checks with the old webhook, `134 pass, 0 fail` after. `scripts/live-status.sh` now names any charge at Processing with a Stripe id after an hour |
 | ✅ | **The level gate blocked 2.0 players from the beginner clinics** (found 2026-11-05) | 2026-11-05 | Decision 0049, `20261106000001`: a beginner clinic carries no minimum. `level_approval.sql` red on `beginner_name_carries_no_minimum` and `a_2_0_registers_for_a_beginner_clinic` before the fix |
 | ✅ | **Nothing in this code had ever talked to real Stripe** (found 2026-10-04) | 2026-10-14 | a live card saved through the app, a live $23 charge and its refund, then two real clinic fees on 2026-10-17, all matching Stripe's Transactions list (`docs/live-facts.md`) |
 | ✅ | **The go-live migrations would replay on every local and CI reset** (found 2026-10-04) | 2026-10-13 | `supabase/seed.sql` puts the pre-live state back after every replay, pinned by `tests/sql/golive_state.sql` (shipped in build 12) |
