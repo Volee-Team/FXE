@@ -57,17 +57,19 @@ gh auth login
 supabase login
 ```
 
-- **Simulators for the UI tests:** iOS 26.2 (iPhone 17 Pro), 18.6 (iPhone SE
-  3rd generation) and 17.5 (iPhone 15). `scripts/run-ui-tests.sh` makes its
-  own "FXE UI" copies and records green runs in `docs/ui-test-runs.log`;
-  CI refuses a PR whose app code has no green record on all three.
+- **Simulators for the UI tests:** iOS 26.2 (iPhone 17 Pro) and 18.6 (iPhone
+  SE 3rd generation). `scripts/run-ui-tests.sh` makes its own "FXE UI" copies
+  and records green runs in `docs/ui-test-runs.log`; CI refuses a PR whose app
+  code has no green record on both (iOS 17 was required until 2026-10-30;
+  `REQUIRED_IOS="26 18 17"` restores it).
 - **Hosted access:** `scripts/live-status.sh` reads hosted through the
   Supabase CLI's login, so it works only if Alex has invited you to the FXE
   organization on supabase.com. Pushing migrations also needs the database
   password in `.env.local` (repo root, gitignored), shared by Alex through
   LastPass, never in chat.
-- **The website** deploys with `scripts/deploy-web.sh` through Vercel on
-  Alex's account; without access to that project, ask Alex to deploy.
+- **The website** deploys itself from GitHub on every merge to `main` that
+  touches `web/` (`.github/workflows/deploy-web.yml`, checked byte for byte).
+  `scripts/deploy-web.sh` is the manual fallback and needs Alex's Vercel login.
 
 ## 4. How work is done here
 
@@ -78,7 +80,7 @@ supabase login
   write production (CLAUDE.md, "Hosted is written by supabase db push").
   No test data in hosted, ever.
 - **Tests:** `bash tests/run-probes.sh` for SQL; `bash
-  scripts/run-ui-tests.sh` three times (the three iOS versions) for app
+  scripts/run-ui-tests.sh` twice (iOS 26 and 18) for app
   changes; `cd web && npx playwright test` for the website. A new rule gets a
   test written from Tara's words, shown failing first, one break at a time.
 - **Words a player sees** are Tara's or approved by Alex
@@ -106,9 +108,9 @@ supabase login
 |---|---|
 | The chat history with Alex | His laptop only (`docs/prompt-log/`, gitignored: it holds private details). Anything that mattered was written into a doc, a decision or the changelog; if it is not there, ask Alex |
 | Tara's texts | Alex's phone. An answer that has not been pasted into a session is not known; ask Alex |
-| Secrets: the database password, Stripe keys, the APNs `.p8`, the App Review login | Supabase secrets, LastPass, John's Apple account. Never in the repo or in chat, and never typed by a Claude |
+| Secrets: the database password, Stripe keys, the APNs `.p8`, the App Review login | Supabase secrets, LastPass, Volee LLC's Apple account. Never in the repo or in chat, and never typed by a Claude |
 | Stripe's dashboard (Tara's account) | Alex has access; facts read from it go into `docs/live-facts.md` with a date |
-| Apple: Developer account, App Store Connect, APNs keys | John's account (decision 0042) until the transfer to the LLC |
+| Apple: Developer account, App Store Connect, APNs keys | Volee LLC's account (team FBJXDTHTN4) since the App Transfer of 2026-11-11 (C12); John uploads |
 | Supabase and Vercel dashboards | Alex's accounts |
 | What is true on hosted right now | `bash scripts/live-status.sh`; never a doc's memory of it |
 | Work on another laptop that is not pushed | Ask before starting anything that may overlap |
@@ -119,6 +121,6 @@ supabase login
 |---|---|
 | Tara | Every decision about how her program runs, and every word a player reads |
 | Alex | Engineering calls, relaying Tara, Stripe and Supabase access |
-| John | The Apple account, uploads to App Store Connect, the APNs key |
+| John | Uploads to App Store Connect on Volee LLC's account, the APNs key |
 | Kat | Product questions and the style guide (`docs/style-guide.md`) |
 | Claude | Building, testing, and keeping the docs true |

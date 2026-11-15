@@ -7,6 +7,8 @@ Same day, same PR: the non-member 90-minute price goes from $28 to $30 for
 clinics from the week of 2026-11-08
 (`supabase/migrations/20261105000001_nonmember_ninety_thirty.sql`).
 
+**Price reversed 2026-11-07 (forward note added 2026-11-14):** back to $28 at Tara's text (20261107000001). Beginner clinics carry no minimum since 0049 (20261106000001).
+
 ## Her words
 
 Email of 2026-10-15 (decision 0041): *"For a 2.5 player who hasn't been
@@ -98,7 +100,8 @@ everyone. Approvals already given are kept. **The lesson:** a server refusal
 the app in the store does not know becomes the wrong sentence on every
 member's phone, so a new refusal ships after the app that explains it, or
 behind a switch that starts off. Turning it back on (one migration) waits
-for 1.0.2 in the store and Tara's yes.
+on Tara's yes (checklist J3); the App Store has had 1.0.3 since 2026-11-13,
+and Request Approval has been in the store app since 1.0.2.
 
 ## Rating change dropped quietly, 2026-11-06
 

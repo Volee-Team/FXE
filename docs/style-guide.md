@@ -137,7 +137,7 @@ Needed" survives the largest Larger Text size.
 | Status (locked label) | Symbol | Ink | Tint | Ink on tint | Ink on porcelain | VoiceOver |
 |---|---|---|---|---|---|---|
 | You're In! | `checkmark.circle.fill` | `#2C5A3E` forest | `#E7F0E7` | 6.83:1 | 6.99:1 | "Status: you're in" |
-| Player Pool | `hourglass` | `#7A5E24` brass | `#F5EBD8` | 5.14:1 | 5.34:1 | "Status: in the Player Pool" |
+| Waitlist | `hourglass` | `#7A5E24` brass | `#F5EBD8` | 5.14:1 | 5.34:1 | "Status: on the Waitlist" |
 | Response Needed | `exclamationmark.circle.fill` | `#1F4E5A` deep teal | `#DDEEF0` | 7.65:1 | 8.04:1 | "Status: response needed" |
 | Canceled | `xmark.circle.fill` | `#992E22` brick red | `#F6DED9` | 5.91:1 | 6.66:1 | "Status: canceled" |
 

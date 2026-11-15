@@ -14,5 +14,5 @@ Alex, 2026-10-04: *"i need to be able to be repeatedly giving u info withOUT loo
 
 **How to apply:**
 - Every reply ends with a section "Still open" listing: his to-dos, questions he has not answered, things waiting on Tara/John/Apple/Stripe, and anything said earlier that he has not acknowledged. Drop an item only when he acknowledges or does it.
-- The list lives in [[open-items-for-alex]] (this memory folder, so it survives compaction and stays out of the public repo). Update that file in the same turn whenever an item is added, done or acknowledged, then print it.
+- The list lives in the private memory file `open-items-for-alex.md` on Alex's laptop (not in this repo: it holds private items). On another laptop, build it from `scripts/live-status.sh` and `docs/launch-checklist.md`. Update that file in the same turn whenever an item is added, done or acknowledged, then print it.
 - Keep each item one line; group by who acts (You / Tara / John / Me / Waiting on).

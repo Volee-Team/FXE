@@ -1,6 +1,6 @@
 # 0003 — Zelle plus a report for v1, Stripe in v1.1
 
-**Date:** 2026-08-10 · **Status:** Active
+**Date:** 2026-08-10 · **Status:** Superseded in part by 0009 and 0013; revenue_summary() stands
 
 **Superseded by 0009 and 0013 (forward note added 2026-10-12):** Stripe moved into v1 with a card on file (0009), and the card is the only way to pay; Zelle is not a payment path (0013 §3, `zelle_allowed` false). `revenue_summary()` stands.
 

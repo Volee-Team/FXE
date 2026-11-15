@@ -30,7 +30,7 @@ time they open the app.
   `registrations` and `late_requests` raises `audience_mismatch` for a
   player's own insert. A trigger rather than a line in `register_for_clinic`,
   so every path that inserts is covered and that function's body is not copied
-  a fourth time (decision 0041's rewrite of it is still to come). Tara is
+  a fourth time (decisions 0045 and 0050 later changed its member branch). Tara is
   exempt: she places anyone anywhere (decision 4). The app and `/play` show the
   existing line "That just changed. Here's the latest." and reload, which
   drops the clinic; it is only met on a page loaded before the answer.

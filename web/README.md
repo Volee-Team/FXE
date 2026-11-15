@@ -13,8 +13,8 @@ courtside work; this does weekly setup.
 
 ## What she can do here
 
-* See this week's clinics and everything after, including drafts, with capacity
-  and both prices. Older clinics wait behind "Show earlier" (newest first), except
+* See today's clinics and everything after, including drafts, with capacity
+  and both prices. Earlier ones wait behind "Show earlier" (newest first), except
   that while payments are on, a finished clinic nobody has charged stays in view
 * **Create and edit clinics** — the thing she asked for directly
 * Publish a draft
@@ -23,14 +23,15 @@ courtside work; this does weekly setup.
   windows and prices; a second click copies nothing (decision 0027)
 * **Court sheet** on each clinic card: `sheet.html`, the You're In! players by
   court with their ratings, to print instead of the handwritten sheet
-* A player's history beside the name in every Player Pool and on the Players
+* A player's history beside the name in every Waitlist and on the Players
   tab: "12 played, 5 canceled (2 late), 1 no-show", or "New" (decision 0040)
-* On each roster: courts, **Add player** (a walk-up), invite from the Player
-  Pool, cancel an invitation, Remove, Came / No-show, **Late cancel** for
+* On each roster: courts, **Add player** (a walk-up), invite from the
+  Waitlist, cancel an invitation, Remove, Came / No-show, **Late cancel** for
   someone who told her, and the player's private note under the name
   (decision 0039). A late cancel stays in the Canceled list with a red **Late
   cancellation** flag, and **Waive** with Undo drops its fee while no charge is
-  taken (decision 0040)
+  taken (decision 0040). **Set price** on a row and, on a 105, the **Rounds**
+  (decision 0054)
 * After a clinic, while payments are on: **Charge $N** on each row that owes,
   one person at a time (decision 0037), with Declined or No card beside it.
   (The Paid toggle and "Remind unpaid" are gated on `zelle_allowed`, which
@@ -64,15 +65,20 @@ courtside work; this does weekly setup.
 * **Action Needed** at the top: players asking in after the 3-hour close (Put
   them in / No room), cancellations or invitation replies she has not seen, a
   clinic that ended and is not charged yet, a declined card (with Resolved),
-  and an open dispute
+  an open dispute, and a player asking to play above their level (Approve /
+  Decline, decision 0048)
 * **Players** tab: search, member and active switches, her private note per
-  player, the Pro box (decision 0025), a one-time Reset link for a member who
-  cannot sign in (decision 0017), Review links, and the QR code for the app
-  with how often it was opened
+  player, the rating and gender she sets, level approvals (Approve for /
+  Remove), the account's phone, the Pro box (decision 0025), a one-time Reset
+  link for a member who cannot sign in (decision 0017), Review links, and the
+  QR code for the app with how often it was opened
+* **Sign-ups** tab: every account that is not deleted and not staff, newest
+  first, with its players, email, phone, sign-up date, member and waiver;
+  search by name, email or phone; Download CSV of what the search shows
 * **Money** tab: the board report (Download CSV, Print, Foxcroft's share),
   Charged / Declined / Not charged yet, Payouts from Stripe, the card-payments
-  list with Refund, and a line per clinic. Three tabs across the top: This
-  week, Players, Money; the last one opened is remembered
+  list with Refund, and a line per clinic. Four tabs across the top: This
+  week, Players, Sign-ups, Money; the last one opened is remembered
 * Forgot password? on the sign-in card, landing on `reset.html`
 * Canceled clinics are hidden until "Show canceled" is ticked; they stay in
   the database (archive, never delete)
@@ -142,6 +148,9 @@ the repo root:
 bash scripts/deploy-web.sh
 ```
 
+`deploy-web.yml` runs the same script on every merge to `main` that touches
+`web/` (2026-10-24).
+
 It deploys to Vercel production, then fetches every live page, script and
 stylesheet and compares it with this folder byte for byte, deploying once
 more if the first deploy silently did nothing (three times in September a
@@ -187,6 +196,6 @@ looking like two different products. `tokens.css` once sat on palette A for
 two weeks after `Brand.swift` moved to B, so a style change goes into the
 guide's mapping and `Brand.swift` first, then here.
 
-Status chips use the locked terminology (**You're In!**, **Player Pool**,
+Status chips use the locked terminology (**You're In!**, **Waitlist**,
 **Response Needed**, **Canceled**) and pair colour with the label, never colour
 alone.

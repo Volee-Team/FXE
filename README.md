@@ -2,7 +2,8 @@
 
 Clinic registration and roster management for the FXE tennis program: a
 native iOS app (Swift / SwiftUI) for players and for Tara's courtside admin
-work, a static web admin for her weekly setup on a laptop, and one Supabase
+work, a static web admin for her weekly setup on a laptop, a members' website
+at `/play/` for members without an iPhone (decision 0043), and one Supabase
 backend (Postgres + Auth + Edge Functions) that holds every rule about who can
 see and do what. Not Volee: separate repo, project, bundle id and listing.
 

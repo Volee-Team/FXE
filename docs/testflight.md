@@ -1,15 +1,11 @@
 # TestFlight runbook
 
-How a build of this repo gets onto a phone. Written 2026-09-21 for John, who
-uploads TestFlight builds from his own Apple Developer account while the FXE
-Tennis, LLC enrollment sits in Apple's queue (decision 0014; checklist C1).
-Everything a build needs is on `main`; nothing lives only on Alex's machine.
-
-**The next upload is build 11, the tag `v0.1.0-rc11`** (checklist C8, tagged
-2026-10-13 on `355f546`, PR #96). It goes up as **App Store Connect**,
-not TestFlight Internal Only, and then to External Testing (checklist C11):
-see "External Testing" below. Archive the tag, not `main`, so John gets
-exactly the build that was tested whatever lands on `main` afterwards.
+How a build of this repo gets onto a phone. Written 2026-09-21 for John. Since 2026-11-11 the app is on Volee LLC's
+developer account (team FBJXDTHTN4, C12) and ships to the App Store; the
+latest upload is 1.0.3 build 18 (tag `v1.0.3-18`). TestFlight for testers is
+C8 (LATER). Everything a build needs is on `main`; nothing lives only on
+Alex's machine. Archive the tag, not `main`, so John gets exactly the build
+that was tested whatever lands on `main` afterwards.
 
 ## Before the first build (once)
 
@@ -36,11 +32,11 @@ exactly the build that was tested whatever lands on `main` afterwards.
 
 ## Every build
 
-1. `git fetch --tags && git checkout v0.1.0-rc<build>`, the tag Alex names
-   (build 11 was `v0.1.0-rc11`). The build number is
-   `CURRENT_PROJECT_VERSION` in `project.yml` (`MARKETING_VERSION` is 0.1.0);
-   the model bumps it in the PR that makes the tag, so the tag already
-   carries the right number and CI was green on it.
+1. `git fetch --tags && git checkout v<version>[-<build>]`, the tag the model
+   names (latest `v1.0.3-18`). The version is `MARKETING_VERSION` and the
+   build number `CURRENT_PROJECT_VERSION` in `project.yml`; the model bumps
+   them in the PR that makes the tag, so the tag already carries the right
+   number and CI was green on it.
 2. `xcodegen generate` again (the project file reflects `project.yml`).
 3. In Xcode, scheme `FXETennis`, destination *Any iOS Device*, then
    **Product → Archive**. Archive builds the **Release** configuration, and
@@ -57,11 +53,14 @@ exactly the build that was tested whatever lands on `main` afterwards.
    the external group (below).
 6. Tag the commit and add the changelog line (launch checklist C10):
    ```bash
-   git tag -a v0.1.0-tf<build> -m "TestFlight build <build>, uploaded by John"
-   git push origin v0.1.0-tf<build>
+   git tag -a v<version>-<build> -m "<version> build <build>"
+   git push origin v<version>-<build>
    ```
 
 ## External Testing (checklist C11)
+
+Not used: members install from the App Store (C11 LATER). Kept in case
+TestFlight is wanted again (C8).
 
 The public link is how members install the app before the LLC's App Store
 listing exists. It needs Apple's beta review, which usually takes 1 to 2
@@ -84,10 +83,9 @@ days.
 
 Sign up with a real email (the app sends no confirmation email; decision
 0011), fill the profile (name, phone, rating, member yes/no, an optional note
-for Tara), sign the waiver (typed full name), then Home. Nothing charges
-anyone: the payment switch stays off (launch checklist A9) until Apple has
-approved the external build (C11) and the live keys and their rehearsal are
-done (A10, A13), and then only when Alex says go. Tara's account
+for Tara), sign the waiver (typed full name), then Home. Payments are
+live (A9, 2026-10-14): Register and Accept ask for a card, and a real card is
+charged after a clinic Tara charges. Tara's account
 is the one with the Manage tab; she creates it herself the same way and Alex
 promotes it once (`bootstrap_first_admin`, already done on hosted).
 
@@ -98,20 +96,11 @@ promotes it once (`bootstrap_first_admin`, already done on hosted).
   is junk forever in Tara's Money tab.
 * **Hosted is written only by `supabase db push`** from a merged `main`. A
   TestFlight upload never touches the database.
-* Push is configured on hosted with John's APNs key (checklist C3), so a
-  TestFlight build can receive it; the first push seen on a real lock screen
-  is C3's row.
+* Push is configured on hosted with Volee LLC's APNs key `42D24JXB54`
+  (C2, 2026-11-11), so any build signed by the LLC receives it.
 
-## When the LLC account is approved
+## After the transfer (2026-11-11)
 
-**The bundle id cannot move.** Apple transfers an app between accounts only
-if it has had at least one App Store release, and uploading a build ties the
-bundle id to the account that uploaded it. `com.fxetennis.app` is therefore
-John's for good unless the app is released under his name first, which the
-roadmap rules out (2026-08-19: the seller is the LLC). So the LLC's app gets a
-**new bundle id** (launch checklist C12, Alex decides the name), a new App
-Store Connect record, and the LLC's Team in Xcode; testers install it once as
-a new app and sign in with the same account, because accounts live on our
-server, not on the phone. Public TestFlight and the App Store listing are the
-LLC's. Until then, members install through external TestFlight on John's
-account (checklist C11).
+The app was released on John's account first (C14, 1.0.0), then moved by
+App Transfer to Volee LLC with its bundle id `com.fxetennis.app` (C12).
+Builds are signed by team FBJXDTHTN4 (C2); testers reinstall nothing.
