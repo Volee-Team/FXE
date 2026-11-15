@@ -3,7 +3,7 @@
 **Status:** accepted by John, 2026-11-07 (*"yeah start on 5, 1, 6 and 2"*);
 built in `supabase/migrations/20261107000002_tara_next_update.sql`, the app and
 the laptop site. Items 3 (half charge for rain) and 4 (adding someone who is
-not in the app) wait on her answers (questions 143 and 144).
+not in the app) were answered the same day and built as decisions 0053 and 0052.
 
 ## Her words
 

@@ -4,6 +4,7 @@
 
 **Amended 2026-08-15 (Alex):** an administrator account sees a fourth tab,
 Manage; players still see three. See the `MainTabView.swift` header.
+Since 0025 a pro also sees a fourth tab (Today, named Manage since 0051).
 
 ## Decision
 

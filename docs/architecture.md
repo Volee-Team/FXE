@@ -37,7 +37,7 @@ clinic messages, and reconciles who has paid. The app manages information; Tara
 manages tennis. Nothing is ever auto-promoted off the Pool: she picks every
 player by hand, on purpose.
 
-The product has three surfaces on one backend:
+The product has four surfaces on one backend:
 
 - **The player iOS app** (SwiftUI). Section 4.
 - **The admin tab inside that same app**, for what Tara does standing on a
@@ -46,6 +46,9 @@ The product has three surfaces on one backend:
 - **The web admin**, a static page for the laptop half of her week: building
   clinics from templates, Action Needed, Money, and the same directory. Live
   at `fxe-tennis-admin.vercel.app`. Section 8.
+- **The members' website** (`web/play/`, decision 0043): the player side for
+  members without an iPhone, at `/play/` on the same deploy and at
+  `fxeclinics.com`. Section 8.
 
 Everything of consequence, every rule about who can see what and who can do
 what, lives in the Postgres database, not in any client. That is the single
@@ -57,24 +60,24 @@ most important thing to understand here, and it is section 5.
 
 | Area | What exists |
 |---|---|
-| Postgres schema, RLS, narrow views, RPCs | 86 migrations (`ls supabase/migrations`), the newest `20261013000001_audit_fixes.sql`. 63 are on hosted: Alex's `supabase migration list --linked` on 2026-10-12 showed 63 of 63 paired; the 64th goes with the audit-fixes PR. Re-check with that command after any push; this line is not the record |
+| Postgres schema, RLS, narrow views, RPCs | 87 migrations (`ls supabase/migrations`), the newest `20261114000001_revoke_hosted_grant_drift.sql`. Hosted holds the same set once it is pushed (`supabase migration list --linked`; read-only query of `supabase_migrations.schema_migrations`). Re-check with that command after any push; this line is not the record |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | Enumerated by probes (section 5) |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | Section 7 |
 | Probe suite: 58 SQL probes and 19 shell probes (races and the API rush); the suite prints its own total | Runs in CI on every push (section 9) |
-| iOS: sign-in, sign-up with profile, the waiver and card steps, password reset, three tabs | In the app |
+| iOS: sign-in, sign-up with profile, the waiver step, password reset, three tabs | In the app |
 | iOS: browse by week, per-viewer pricing, register / cancel (inside the 3-hour cutoff the full fee applies; the note is optional) / leave pool / respond, closed-clinic "Message Tara", the bell, My Clinics, profile edit, card on file | In the app |
 | iOS: a private note for Tara at Register, editable on the player's own live spot until the start (decision 0039) | In the app |
 | iOS admin tab: rosters, invite, courts, Came / No-show, per-person Charge after a clinic (decision 0037), Waive and Undo on a late cancel and the red "Late cancellation" flag (decision 0040), the player's note under the name, message audiences, late requests, Action Needed (open disputes too), player directory | In the app |
-| iOS pro role: a Today tab in place of Manage, Came / No-show and Late cancel on today's clinics, no waiver or card step (decisions 0025, 0040) | In the app |
+| iOS pro role: a Manage tab (`ProTodayView`, the week by day, courts on every row; Came / No-show and Late cancel on today's), no waiver or card step (decisions 0025, 0040, 0051) | In the app |
 | Web admin: clinic + template CRUD (archive, never delete), rosters, walk-up, courts, per-person Charge, Waive, the late-cancel flag, the player's note, Action Needed, Money with the card ledger, Payouts and dispute alerts, the board report, directory with the Pro box and Reset link, Sign-ups (every account, newest first, with CSV), court sheet, Copy to next week, password reset | Live on Vercel, deployed only by `bash scripts/deploy-web.sh` |
 | Nightly `pg_dump` backup + keep-warm | Running since 2026-09-01; encrypted since 2026-09-22 (checklist D10) |
 | APNs push delivery | Sender and client both in the code (decision 0008); the keys and vault secrets are set on hosted, and the first push seen on a real lock screen is checklist C3. Client half: permission sheet, registration, `register_device`; since 2026-09-27 also receiving (MVP audit item 12): a push that lands while the app is open shows as a banner and reloads Home, a tap opens its clinic through the same resolver as the bell (`NotificationRouter.swift`), and the icon's number is the bell's count, cleared at sign-out. Checked on the simulator with `tests/push/simctl-push.sh`, which pushes the payload the sender builds. Sender (2026-09-23): trigger `push_on_notification` → pg_net → the `push` edge function → APNs, with `delivered_at` / `delivery_error` on each row, proven against a mock by `tests/push/run.sh`. Since 2026-09-28 the payload also carries `category: INVITATION` on an invitation (the category the app registers Accept and Decline under, `FXETennis/App/InvitationActions.swift`, 2026-09-28) and `thread-id`, the clinic's id, on every row about a clinic, so the lock screen groups them. The secrets it reads are listed in `supabase/functions/README.md` |
-| Stripe card payments | In the code, switched off (decision 0009): ledger, RPCs, the Stripe edge functions, card screen, `payments_ledger`, per-person Charge (decision 0037), Waive (decision 0040). `stripe-payouts` (Tara's Payouts card) and chargebacks recorded from `charge.dispute.*` webhooks (`stripe_record_dispute`, `admin_money_disputes`), a lost one subtracted from Charged and Collected. The sandbox keys are set on hosted (checklist A1); `app_settings.payments_enabled` is `'false'` in every migration (`grep -n "'payments_enabled'" supabase/migrations/*.sql`), and switching it on is checklist A9, the live keys A10. Her policy answers are decisions 0012 and 0013. The sandbox-to-live switch is `stripe_cutover_to_live()`, run once by a person at the key swap (20260927200001; procedure in `supabase/functions/README.md`). A card Stripe declines blocks Register and Accept until a card is saved again or a later charge goes through, and says why in Tara's words; her **Resolved** clears a decline from her lists without unblocking the player (decision 0026). Accept also needs a saved card while cards are required, as Register does (decision 0040) |
+| Stripe card payments | Live since 2026-10-14 (decision 0009; checklist A9, A10): ledger, RPCs, the Stripe edge functions, card screen, `payments_ledger`, per-person Charge (decision 0037), Waive (decision 0040). `stripe-payouts` (Tara's Payouts card) and chargebacks recorded from `charge.dispute.*` webhooks (`stripe_record_dispute`, `admin_money_disputes`), a lost one subtracted from Charged and Collected. Her policy answers are decisions 0012 and 0013. The sandbox-to-live switch was `stripe_cutover_to_live()` (20260927200001), run by migration `20261014000004`, then `20261014000005` set `payments_enabled` and `payments_enabled_at` together; `supabase/seed.sql` puts both back locally and in CI (`golive_state`; procedure in `supabase/functions/README.md`). A card Stripe declines blocks Register and Accept until a card is saved again or a later charge goes through, and says why in Tara's words; her **Resolved** clears a decline from her lists without unblocking the player (decision 0026). Accept also needs a saved card while cards are required, as Register does (decision 0040) |
 | A player's clinics as a subscribed calendar | Subscribe in Calendar on Profile, the `calendar-feed` edge function, `calendar_feeds` (decision 0029) |
 | Counting opens of the app link and QR scans | The `app-visit` edge function (no JWT, counts only), `app_link_visits`, the count beside Tara's QR link (decision 0031) |
 | Crash and hang reports from members' phones | MetricKit on the phone (`DiagnosticsReporter.swift`), `report_app_diagnostic` into `app_diagnostics`, read by an admin through `admin_app_diagnostics`; no third party (decision 0035) |
 | Juniors / parent accounts | Not in v1: November or the spring session (decision 0007) |
-| App Store / TestFlight | TestFlight builds go out on John's account (decision 0014); the LLC's own enrollment and app are checklist C1, C2, C12; the next build is C8 |
+| App Store / TestFlight | On the App Store since 2026-10-28 (decision 0042, checklist C14); on Volee LLC's account since the App Transfer of 2026-11-11 (C12, C2); the current build is in the checklist's State today |
 
 ---
 
@@ -91,7 +94,7 @@ flowchart TD
     end
 
     subgraph web["Web admin  -  static HTML + supabase-js, Vercel"]
-        page["index.html / reset.html"]
+        page["index.html, reset.html, review.html, sheet.html; play/ (members' site)"]
     end
 
     repos -->|"supabase-swift, publishable key + JWT"| supa
@@ -102,7 +105,7 @@ flowchart TD
         subgraph pg["Postgres 17 + Row Level Security"]
             vws["Narrow views<br/>clinics_public, my_registrations, my_clinic_messages, my_news<br/>clinics_admin, registrations_admin, templates_admin, revenue_*, payments_ledger"]
             rpc["SECURITY DEFINER RPCs<br/>every write in the system"]
-            tbl[("Base tables<br/>no client grants except SELECT on accounts, players, notifications,<br/>app_settings, late_requests, payments")]
+            tbl[("Base tables<br/>no client grants except SELECT on accounts, players, app_settings, late_requests,<br/>and by column on notifications, payments, level_approvals")]
             vws --> tbl
             rpc --> tbl
         end
@@ -257,7 +260,7 @@ FXETennis/
     ├── GenderQuestionView.swift the gender question, asked once of anyone who signed up before it (decision 0044)
     ├── NotificationPermissionView.swift shown once after the profile exists, before iOS's own dialog;
     │                            Tara's Screen-3 sentence, two equal buttons
-    ├── MainTabView.swift        Home, Clinics, Profile, plus Manage when isAdmin or Today for a pro
+    ├── MainTabView.swift        Home, Clinics, Profile, plus Manage for an admin (AdminClinicsView) or a pro (ProTodayView)
     ├── HomeView.swift           the front page (decision 0015): My Clinics on top, then what is open for
     │                            registration while fewer than two are yours, else the one blue button; the bell
     ├── NotificationsView.swift  what the bell opens: rows the RPCs wrote, newest first, mark read;
@@ -277,8 +280,8 @@ FXETennis/
     ├── ProfileView.swift        the player's own details, Subscribe in Calendar (decision 0029), Payment method (only while payments are on), version, sign out, Delete my account
     ├── EditProfileView.swift    name, phone, rating; membership shown as Tara's to correct
     ├── CardOnFileView.swift     the permission box (their words), the card as •••• 4242 with its decline under it ("Declined: Insufficient funds (NSF)", CardDecline), or Add a card → Stripe's PaymentSheet; after it, CardSavePoll waits about 30 s for the webhook's summary (for a declined card, for the decline to clear), then Refresh
-    ├── CardStepView.swift       onboarding after the waiver while cards are required: the card screen as a step, Sign out as the exit;
-    │                            the same step, with a Close, after Register or Accept is refused for a declined card
+    ├── CardStepView.swift       the card screen with a Close, opened when Register or Accept is refused for no card or a
+    │                            declined card (no longer an onboarding step since decision 0041)
     ├── Components/BrandHeader.swift the straight navy header with the green line, the Wordmark, NavRowLabel
     ├── Components/CourtBackdrop.swift Tara's court photo under a porcelain wash, behind the main screens
     ├── Components/AccountExitFooter.swift Sign out and Delete my account (Profile's dialog) at the foot of
@@ -296,7 +299,9 @@ FXETennis/
     ├── LoadFailedView.swift     signed in but the profile could not load: the connection line, Try again, Sign out
     ├── WaiverView.swift         Tara's waiver, her checkbox sentence, the typed legal name; gates the app until signed;
     │                            Try again when it fails to load, Sign out / Delete at the foot
-    ├── AdminClinicsView.swift   Manage: Action Needed (a clinic ended and not charged yet, a declined
+    ├── AdminClinicsView.swift   Manage: Action Needed (a level request with Approve and Decline (0048); per
+    │                            clinic, N waiting on a reply and N on the Waitlist, each opening it; late
+    │                            requests, cancellations and replies; a clinic ended and not charged yet, a declined
     │                            card, each opening its clinic, the card with Resolved beside it;
     │                            an open dispute, opening Stripe;
     │                            "N unpaid" only while zelle_allowed),
@@ -392,28 +397,33 @@ JSON. The hiding is done in the database by three mechanisms:
    Postgres gives PUBLIC `EXECUTE` on every new function. Every migration
    therefore revokes before it grants (hard rule 11), and `authenticated` is
    granted exactly (`information_schema.table_privileges` and
-   `column_privileges`, 2026-09-12): `SELECT` on `accounts`, `players`,
-   `notifications`, `late_requests`, `payments` and `app_settings` (RLS scopes
-   the first five to the caller; settings are player-safe by rule; on
+   `column_privileges`, 2026-09-12; re-derived on hosted 2026-11-14): `SELECT`
+   on `accounts`, `players`, `late_requests` and `app_settings`, and by column
+   on `notifications`, `payments` and `level_approvals` (RLS scopes all but
+   `app_settings` to the caller; settings are player-safe by rule; on
    `notifications` the SELECT is a column list since 20260923000001, so the
    push audit columns `delivered_at` and `delivery_error` are withheld), column
    `UPDATE` on `accounts(first_name, last_name, phone)`,
-   `players(first_name, last_name, adult_rating, date_of_birth)` and
+   `players(first_name, last_name, adult_rating, date_of_birth, level_note)`
+   (a rating change is dropped by `guard_player_rating`) and
    `notifications(read_at)`, `SELECT` on the narrow views, and `EXECUTE` on the
-   client RPCs. `anon` holds nothing: no table, no view, no function. `tests/sql/grants_are_explicit.sql`
+   client RPCs. Nothing on `news_reads`, and `MAINTAIN` on no table: hosted had
+   kept a bootstrap grant of both that no migration wrote, revoked by
+   `20261114000001_revoke_hosted_grant_drift.sql` and pinned by
+   `authenticated_has_no_maintain_anywhere`. `anon` holds nothing: no table, no view, no function. `tests/sql/grants_are_explicit.sql`
    enumerates `pg_class` and `pg_proc` rather than naming objects, so an
    object added next month is covered before anyone remembers to list it.
 2. **Narrow views** expose exactly the safe columns:
 
    | View | What it is | Who sees what |
    |---|---|---|
-   | `clinics_public` | Published/canceled clinics that have not ended, both price rates, no capacity or counts | any authenticated user |
+   | `clinics_public` | Published clinics, and canceled ones that were once published, that have not ended; both price rates and `min_rating` (null while the level check is off); no capacity or counts | any authenticated user; a Ladies or Men clinic only for a player its audience is open to, or one already on it (decision 0044) |
    | `my_registrations` | The caller's own registrations (no court, no `canceled_by`), with her own note for Tara (`player_note`, decision 0039) | scoped by `owns_player()` |
    | `my_clinic_messages` | `everyone` messages for your clinics plus targeted messages sent to you | scoped to the caller |
    | `my_news` | Published news for your audience with a per-account read flag | scoped to the caller |
-   | `clinics_admin`, `registrations_admin`, `templates_admin` | Explicit column lists (never `select *`, which freezes at creation) `where is_admin()`. `registrations_admin` adds the computed `has_card` and `charge_status` so the roster can offer Charge, and carries `player_note` (decision 0039) and `fee_waived_at` (decision 0040) | admin only, else zero rows |
+   | `clinics_admin`, `registrations_admin`, `templates_admin` | Explicit column lists (never `select *`, which freezes at creation) `where is_admin()`. `registrations_admin` adds the computed `has_card` and `charge_status` so the roster can offer Charge, and carries `player_note` (decision 0039), `fee_waived_at` (decision 0040), `price_cents_charged` and `price_set_by_admin` (decision 0054) | admin only, else zero rows |
    | `revenue_by_clinic`, `revenue_by_segment` | Reconciliation aggregates | admin only |
-   | `payments_ledger` | Card payments with player and clinic named (2026-09-12): `id, kind, amount_cents, currency, status, failure_reason, created_at, updated_at, registration_id, refunds_payment_id, account_id, first_name, last_name, clinic_id, clinic_name, clinic_starts_at, failure_code, livemode, dispute_status` (`failure_code` appended 2026-09-26, 20260926000010; `livemode` 2026-09-27, 20260927200001, which also hides test-mode rows once `app_settings.stripe_live_since` exists; `dispute_status` 2026-09-28, 20260928200001). Exists because `registrations` is unreadable to clients on purpose, so PostgREST cannot embed through it | admin only |
+   | `payments_ledger` | Card payments with player and clinic named (2026-09-12): `id, kind, amount_cents, currency, status, failure_reason, created_at, updated_at, registration_id, refunds_payment_id, account_id, first_name, last_name, clinic_id, clinic_name, clinic_starts_at, failure_code, livemode, dispute_status, resolved_at` (`failure_code` appended 2026-09-26, 20260926000010; `livemode` 2026-09-27, 20260927200001, which also hides test-mode rows once `app_settings.stripe_live_since` exists; `dispute_status` 2026-09-28, 20260928200001; `resolved_at` 2026-09-28, 20260928700001). Exists because `registrations` is unreadable to clients on purpose, so PostgREST cannot embed through it | admin only |
 
    Views run with owner rights (not `security_invoker`), which is why writes
    through them are revoked outright: an auto-updatable view would bypass RLS.
@@ -432,7 +442,8 @@ JSON. The hiding is done in the database by three mechanisms:
   opens with it.
 - **`is_pro()` / `require_pro()`** (decision 0025, 20260928600001): the
   caller's live account has `role = 'pro'`; a deleted account is never a pro.
-  Asked only by the three pro RPCs below; no policy, view or grant mentions a
+  Asked only by the pro RPCs below (`pro_today`, `pro_week`, `pro_assign_court`,
+  `pro_set_no_show`, `pro_mark_late_cancel`) and `clinic_rounds`; no policy, view or grant mentions a
   pro, so a pro reads from every table and view exactly what a member reads
   (`tests/sql/pro_role.sql` counts it relation by relation).
 - **Becoming a pro.** Only `admin_set_pro(account, bool)`, only Tara's, and
@@ -450,7 +461,7 @@ JSON. The hiding is done in the database by three mechanisms:
 A player could once `update accounts set role = 'admin'`. Migration
 `20260802000003` closed it three ways, any one sufficient: column-level
 grants (`authenticated` may update `accounts`: name and phone; `players`: name,
-rating, date of birth; never `is_member`, `role` or `account_id`), `WITH CHECK` pinning
+rating, date of birth, level note; never `is_member`, `role` or `account_id`), `WITH CHECK` pinning
 identity columns, and triggers (`guard_account_privilege_columns`,
 `guard_player_owner_column`). `tests/sql/privilege_escalation.sql` performs
 the attack and asserts it fails. Since 20260928600001 the account trigger
@@ -462,7 +473,7 @@ future code path can demote Tara or promote anyone to admin
 
 | Table | What it holds |
 |---|---|
-| `accounts` | Login identity. `role` is `member`, `pro` (decision 0025) or `admin`. One row per `auth.users` row, created by `create_my_account`. Also `stripe_customer_id` and the card *summary* (`card_brand`, `card_last4`, `card_added_at`), written only by the webhook, so a player cannot forge one. Since 20260928700001 `card_declined_at` and `card_decline_code`: set when a charge on the account goes from pending or processing to `failed` with a Stripe code (trigger `payments_card_decline`), at the time that charge was **attempted**, and only if it was attempted after the card on file was saved and no charge attempted after it has gone through; cleared by a success attempted no earlier than it, by a card saved by the Stripe pipeline (trigger `accounts_card_decline`, which also refuses any change to the two made for a signed-in person and clears nothing when such a path writes a card date), and by `stripe_cutover_to_live`; a card removed leaves it. The code is Stripe's except `lost_card`, `stolen_card`, `fraudulent`, `merchant_blacklist` and `pickup_card`, kept as `generic_decline`. No client may write them, the owner reads them to be told why, and while they are set `register_for_clinic` and an Accept refuse `card_declined`. |
+| `accounts` | Login identity. `role` is `member`, `pro` (decision 0025) or `admin`. One row per `auth.users` row, created by `create_my_account`. Also `stripe_customer_id` and the card *summary* (`card_brand`, `card_last4`, `card_added_at`, and since 20261014000003 `card_payment_method_id`, which `payment_method.detached` matches), written only by the webhook, so a player cannot forge one. Since 20260928700001 `card_declined_at` and `card_decline_code`: set when a charge on the account goes from pending or processing to `failed` with a Stripe code (trigger `payments_card_decline`), at the time that charge was **attempted**, and only if it was attempted after the card on file was saved and no charge attempted after it has gone through; cleared by a success attempted no earlier than it, by a card saved by the Stripe pipeline (trigger `accounts_card_decline`, which also refuses any change to the two made for a signed-in person and clears nothing when such a path writes a card date), and by `stripe_cutover_to_live`; a card removed leaves it. The code is Stripe's except `lost_card`, `stolen_card`, `fraudulent`, `merchant_blacklist` and `pickup_card`, kept as `generic_decline`. No client may write them, the owner reads them to be told why, and while they are set `register_for_clinic` and an Accept refuse `card_declined`. |
 | `players` | One row per person who can be registered. `adult_rating`, `is_member` (self-reported, corrected by Tara), `is_active` (archive, never delete). |
 | `player_notes` | Tara's private note per player. Reached only through `admin_player_note` / `admin_set_player_note`. |
 | `clinic_templates` | Reusable definitions; prices derive from duration via `default_price_cents`. |
@@ -479,12 +490,12 @@ future code path can demote Tara or promote anyone to admin
 | `my_past_clinics` (view) | A player's own finished clinics with only their own outcome: name, time, status, no-show, late, price snapshot, paid. Own rows only, none of the nine hidden facts (feature review 09-02; decision 0012 §10). |
 | `card_consents` | One row per card permission (decision 0015 §7): the server's copy of the words, their version, the time, the app build. Written only by `record_card_consent`; read by `my_card_consent` and by `stripe-setup-intent`, which refuses a card setup without one; kept while the account exists and 90 days after `deleted_at`, then removed by `purge_expired_card_consents()` from the nightly `retention` job. No client privilege |
 | `waivers` + `waiver_acceptances` | Tara's Adult Tennis Participation Waiver, one row per version, and each electronic signature (typed legal name, account email, time, app build). Reached only through `current_waiver`, `my_waiver_accepted`, `accept_waiver` (decision 0013). A signature RESTRICTs a hard delete of its account (20260927200002), as a card consent does: nothing deletes a signature. |
-| `payments` | The money ledger (decision 0009): one row per clinic fee, late cancel, no show or refund, with Stripe ids and a status only the edge functions or admin RPCs change. On a decline, `failure_reason` is Stripe's sentence and `failure_code` its machine code (`decline_code`, else `code`: `insufficient_funds`, `expired_card`, ..., 20260926000010), both written only by the Stripe edge functions. `livemode` is Stripe's own flag for the row's PaymentIntent or Refund (20260927200001): false (test mode) is never money, so the board report skips it and it never moves the Paid flag; since 20260927300001 it also stops counting as a charge anywhere once the club has switched to live (`payment_is_real`), and the one-charge unique indexes skip it. `first_attempted_at` (20260927300003) is stamped by `stripe-charge` at a row's first claim and measures the retry window; no client role can read or write it, so players read their own rows through a column-level SELECT of every other column. Chargebacks (20260928200001): `stripe_dispute_id`, `dispute_status` (Stripe's word), `dispute_reason`, `dispute_amount_cents` (what the bank disputes), `dispute_withdrawn_cents` (what Stripe actually took from the balance for it, from the dispute's balance transactions: nothing for an inquiry, a won dispute, or a charge already refunded), `disputed_at`, `dispute_due_by` (Stripe's respond-by) and `dispute_event_at` (the event that last wrote them), written only by `stripe-webhook` through `stripe_record_dispute`; not in the column list, so no client reads them, not even the payer (who can see `updated_at` move); a check constraint refuses a status without its id, amounts and event time. One dispute per payment. `resolved_at` and `resolved_by` (20260928700001): Tara's Resolved on a declined charge, written only by `admin_resolve_decline`, not in the column list; an update that writes only these (or nothing at all) keeps `updated_at`, which is when the charge failed. |
+| `payments` | The money ledger (decision 0009): one row per clinic fee, late cancel, no show or refund, with Stripe ids and a status only the edge functions or admin RPCs change. On a decline, `failure_reason` is Stripe's sentence and `failure_code` its machine code (`decline_code`, else `code`, for a `card_error` only since 20260928700001: `insufficient_funds`, `expired_card`, ..., 20260926000010), both written only by the Stripe edge functions. `livemode` is Stripe's own flag for the row's PaymentIntent or Refund (20260927200001): false (test mode) is never money, so the board report skips it and it never moves the Paid flag; since 20260927300001 it also stops counting as a charge anywhere once the club has switched to live (`payment_is_real`), and the one-charge unique indexes skip it. `first_attempted_at` (20260927300003) is stamped by `stripe-charge` at a row's first claim and measures the retry window; no client role can read or write it, so players read their own rows through a column-level SELECT of every other column. Chargebacks (20260928200001): `stripe_dispute_id`, `dispute_status` (Stripe's word), `dispute_reason`, `dispute_amount_cents` (what the bank disputes), `dispute_withdrawn_cents` (what Stripe actually took from the balance for it, from the dispute's balance transactions: nothing for an inquiry, a won dispute, or a charge already refunded), `disputed_at`, `dispute_due_by` (Stripe's respond-by) and `dispute_event_at` (the event that last wrote them), written only by `stripe-webhook` through `stripe_record_dispute`; not in the column list, so no client reads them, not even the payer (who can see `updated_at` move); a check constraint refuses a status without its id, amounts and event time. One dispute per payment. `resolved_at` and `resolved_by` (20260928700001): Tara's Resolved on a declined charge, written only by `admin_resolve_decline`, not in the column list; an update that writes only these (or nothing at all) keeps `updated_at`, which is when the charge failed. |
 | `message_templates` | Tara's saved messages (decision 0030): her own text, trimmed at its two ends, 1 to 1000 characters, `archived_at` for Remove. One live copy of any text, by a unique index on `md5(body)` over live rows. RLS on, no policy, no client privilege; reached only through the three `admin_*message_template*` RPCs. Nothing seeds it and nothing writes to it but her. |
 | `admin_settings` | Admin-only key/value (20260929000004): no client grant at all, unlike `app_settings`, which every member may read. Holds `board_share_percent`, Foxcroft's share on the board report (10 until Tara sets it; question 101) |
 | `app_link_visits` | Opens of the app link per New York day and source, `qr` or `link`, a count only (decision 0031, 20260929000005). No client grant; written by the `app-visit` edge function through `record_app_link_visit` (service_role only), read by Tara through `admin_app_link_visits` |
 | `app_diagnostics` | Crash, hang, CPU, disk-write and launch reports from MetricKit (decision 0035, 20261014000001): `kind`, the app version, build, iOS version and model, and MetricKit's JSON (`payload`, at most 64 KB of its text form, by a check). `account_id` is who sent it, kept only for the rate limit: `purge_app_diagnostics()` (the nightly `retention` job in `backup.yml`, 20261014000002) nulls it on rows older than 24 hours and deletes rows older than 90 days, the trigger `app_diagnostics_forget_deleted_account` nulls it the moment `accounts.deleted_at` is set (so `delete_my_account` unlinks at once), and the foreign key is `on delete set null`. RLS on, no client privilege at all, column-level included; written only through `report_app_diagnostic` (the account is `auth.uid()`, 20 per account per rolling 24 hours), read only through `admin_app_diagnostics`, which returns no account |
-| `app_settings` | Small admin-editable strings, e.g. Tara's payment line, and the payment policy keys (`payments_enabled`, `cancel_cutoff_hours`, …). `stripe_live_since` appears only when `stripe_cutover_to_live()` has run. Never anything hidden. |
+| `app_settings` | Player-safe strings and switches, set only by migration (no client or admin RPC writes it), e.g. Tara's payment line, and the payment policy keys (`payments_enabled`, `cancel_cutoff_hours`, …). `stripe_live_since` appears only when `stripe_cutover_to_live()` has run. Never anything hidden. |
 | `calendar_feeds` | One calendar-feed token per account (decision 0029, 20260929000003): 32 random bytes as hex, the only credential for `GET /functions/v1/calendar-feed?t=<token>` (calendar apps send nothing else). No client privilege and RLS with no policy; made by `my_calendar_feed_token`, replaced by `reset_my_calendar_feed`, read by `calendar_feed_events`; removed by the trigger `calendar_feed_forget_deleted_account` when `accounts.deleted_at` is set, and cascaded by a hard delete. A token is a credential, not history |
 | `review_links` | One row per link to Tara's review page (`web/review.html?t=<token>`, 20260921000010). The token is the credential: 24 random bytes, URL-safe, minted by `admin_create_review_link`; `revoked_at` retires a link without deleting what it collected. No client role holds anything on it. |
 | `reset_links_issued` | One row per password-reset link Tara makes for a member (decision 0017): whose account, who made it, when. Written by the `admin-reset-link` edge function as `service_role` before the link exists; no client privilege. Audit only: a reset link signs whoever opens it in as the member |
@@ -492,16 +503,17 @@ future code path can demote Tara or promote anyone to admin
 
 Enums: `account_type`, `account_role` (`member` / `admin` / `pro`), `player_kind`, `clinic_audience`
 (`juniors` kept, not offered), `clinic_status`, `registration_status`
-(`in` / `pool` / `response_needed` / `canceled`), `message_audience`,
-`news_audience`, `news_status`, `registration_source`, and since decision 0009
+(`in` / `pool` / `response_needed` / `canceled`), `message_audience`
+(`everyone` / `in` / `pool` / `response_needed` / `unpaid` / `player`),
+`news_audience`, `news_status`, `registration_source`, since decision 0009
 `payment_kind` (`clinic_fee` / `late_cancel` / `no_show` / `refund`) and
 `payment_status` (`pending` / `processing` / `succeeded` / `failed` /
-`canceled`).
+`canceled`), and `player_gender` (`female` / `male`, decision 0044).
 
 ### The RPCs
 
 **Player-facing** (self-gated by `owns_player()` or `auth.uid()`):
-`create_my_account`, `register_for_clinic` (takes the player's private note for Tara as an optional third argument, decision 0039, read only through `registrations_admin` and `my_registrations`; `set_my_registration_note` changes or clears it on her own live spot until the clinic starts; refuses `card_required` once payments are on unless a card is saved, meaning `card_last4` and not merely a Stripe customer; `waiver_required` until the current waiver is signed; `back_to_back_105` for a non-member taking a second 105 the same New York day earlier than 48 hours before the earlier start, decision 0015, using `is_105` and `back_to_back_105_opens_at`; `card_declined`, with Stripe's code in the hint, while the account's card is declined, checked after `card_required` and under the same two switches, 20260928700001; since 20260928000001 it tells the player in Tara's words, #1 You're In with the New York day and time or #5 Added to Player Pool), `record_card_consent` / `my_card_consent` / `card_consent_text` (the permission box, decision 0015 §7), `respond_to_invitation` (an Accept is refused `card_declined` while the card is declined, 20260928700001, and `card_required` while payments are on, cards are required and none is saved, 20261012000001, decision 0040; nothing moves on either refusal, and Decline still works; an accept sends the player her #3, never #1 as well, and not at all once Tara has canceled the clinic; the admins read "{player} accepted their spot in {clinic}." or "{player} declined {clinic} and is back in the Player Pool.", 20260928000001),
+`create_my_account`, `register_for_clinic` (takes the player's private note for Tara as an optional third argument, decision 0039, read only through `registrations_admin` and `my_registrations`; `set_my_registration_note` changes or clears it on her own live spot until the clinic starts; refuses `card_required` once payments are on unless a card is saved, meaning `card_last4` and not merely a Stripe customer; `waiver_required` until the current waiver is signed; `back_to_back_105` for a non-member taking a second 105 the same New York day earlier than 48 hours before the earlier start, decision 0015, using `is_105` and `back_to_back_105_opens_at`; `card_declined`, with Stripe's code in the hint, while the account's card is declined, checked after `card_required` and under the same two switches, 20260928700001; since 20260928000001 it tells the player in Tara's words, #1 You're In with the New York day and time or #5 Added to Player Pool), `record_card_consent` / `my_card_consent` / `card_consent_text` (the permission box, decision 0015 §7), `respond_to_invitation` (an Accept is refused `card_declined` while the card is declined, 20260928700001, and `card_required` while payments are on, cards are required and none is saved, 20261012000001, decision 0040; nothing moves on either refusal, and Decline still works; an accept sends the player her #3, never #1 as well, and not at all once Tara has canceled the clinic; the admins read "{player} accepted their spot in {clinic}." or "{player} declined {clinic} and is back on the Waitlist.", or "{player} declined {clinic}." when the decline cancels the spot (0051, 0054), 20260928000001),
 `cancel_registration(p_registration, p_note)` (inside the 3-hour cutoff the cancel is late and the fee applies; the note is optional, decisions 0012/0013; the admins are told only when the caller owns the player, "{player} canceled {clinic}." plus the late and note suffixes, so Tara's own removal no longer reads in her Action Needed as the player canceling, 20260927100002; since 20260928000001 Tara removing someone from the Player Pool of a published clinic sends them her #6, and her removal from You're In! still tells nobody), `leave_pool` (archives the row as canceled since 2026-09-21), `request_late_spot`,
 `mark_news_read`, `register_device` / `unregister_device` (the account is
 always `auth.uid()`; `devices` stays client-unreadable), `current_waiver` / `waiver_version` / `my_waiver_accepted` / `accept_waiver` (the waiver, decision 0013 §4), `my_calendar_feed_token` / `reset_my_calendar_feed` (the account's calendar-feed token, made on first use, the same until a reset; the account is `auth.uid()`, never a parameter; `account_not_found` once deleted; decision 0029), `delete_my_account` (scrubs the person, keeps history; the `delete-account` edge function then removes the sign-in through Supabase's admin API, decision 0013 §5), `zelle_allowed` (false: the card is the only way to pay).
@@ -532,7 +544,7 @@ card was declined). `new_york_date` is the date helper both use.
 |---|---|
 | `admin_upsert_clinic`, `admin_upsert_template`, `admin_set_template_archived`, `create_clinic_from_template` | Build the week. Templates are copy-on-create; archived, never deleted (`admin_delete_template` remains but the web admin no longer offers it). |
 | `publish_clinic`, `cancel_clinic` | Draft to published; cancel and notify everyone live. |
-| `invite_from_pool`, `cancel_invitation` | Tara's hand-pick, and taking it back. |
+| `invite_from_pool`, `cancel_invitation` | Tara's hand-pick from the Waitlist: before the clinic's New York day and outside the cutoff it puts the player straight into You're In! with #1 (Move In, decision 0047); on clinic day it is an invitation; and taking it back. |
 | `admin_set_pro` | Tara's switch, member <-> pro (decision 0025): a conditional update that touches only a live member or pro account; refuses an admin (`cannot_change_an_admin`), a deleted account (`account_deleted`), her own (`cannot_change_own_role`) and an unknown one (`account_not_found`); setting the state an account already has returns it again. Returns the role afterwards. |
 | `admin_mark_late_cancel` | Tara records a late cancellation for someone who told her (a text an hour before; 20260927100002): You're In! to Canceled, `late_cancel` set, `canceled_by` her, optional note; after the clinic her Charge on that row charges it as a late cancel, or she waives it. Only inside the cutoff or later (`not_late_yet`), never once the row is charged (`charged_refund_first`) or on a canceled clinic; tells nobody. Her plain Remove (`cancel_registration`) stays free. |
 | `resolve_late_request` | Put a late asker in, or say no room. |
@@ -544,7 +556,7 @@ card was declined). `new_york_date` is the date helper both use.
 | `admin_add_guest`, `admin_remove_guest`, `admin_set_guest_court`, `admin_clinic_guests`, `clinic_taken` | Decision 0052 (20261107000003). A guest is a first and last name on one clinic in `clinic_guests` (closed to clients; removed is `removed_at`), never a player or a registration, so nothing notifies, charges or shows one to a player. `clinic_taken` (internal) is You're In! plus live guests, the count `register_for_clinic`, `request_late_spot` and `resolve_late_request` compare with capacity. |
 | `admin_set_registration_price`, `admin_set_round_court`, `clinic_rounds` | Decision 0054 (20261109000001). One registration's amount typed by Tara (null puts the clinic's back), kept through `reprice_clinic` and the rain trigger; never on Paid or a live fee. One court of one round of a 105, six ids (side 1 then 2, null for open), from You're In! and guests; someone on another court of the round moves. `clinic_rounds`: every spot with the name, guest or not, and `gone` once they left; Tara, or a pro for a clinic in their week (`not_this_week` otherwise). Also `respond_to_invitation`: a decline on the clinic's own day is canceled, and a player's Accept into a full clinic is `clinic_full` unless `invited_when_full` |
 | `admin_message_player`, `admin_invite_player` | Tara's 11-06 list (20261107000002). `admin_message_player(player, body, clinic?)`: one player, wherever they are; with a clinic it is a `clinic_messages` row of audience `player` and one recipient (so only they read it there), without one a notification only (entity `player`); `message_empty`, `message_too_long` (over 2000), `player_not_found` for a deleted account. `admin_invite_player(clinic, player)`: anyone not already In, waiting or invited (`already_registered`, the status in the hint) on a published clinic that has not ended; always Response Needed with "A spot opened in ... Accept or decline.", whatever the capacity; source `invite`, so `respond_to_invitation`'s decline cancels it (Tara's notice: "... declined X.") instead of the Waitlist. |
-| `search_players`, `admin_player_note`, `admin_player_note_edited`, `admin_set_player_note`, `admin_set_membership`, `set_player_active` | The directory. `search_players` returns `has_notes`, never the note; `admin_player_note_edited` returns the note's `updated_at` or null (20260912000004). |
+| `search_players`, `admin_player_note`, `admin_player_note_edited`, `admin_set_player_note`, `admin_set_membership`, `set_player_active` | The directory. `search_players` returns `has_notes`, never the note; `admin_player_note_edited` returns the note's `updated_at` or null (20260912000004). `admin_set_membership` also moves the player's registrations in clinics not yet over, not Paid and not charged, to the new member status and its price (decision 0055, 20261111000001). |
 | `set_my_gender`, `admin_set_player_gender`, `audience_open_to` | Decision 0044 (20261030000001). The player answers `players.gender` once (`gender_already_set` for a different second answer); Tara changes or clears it; `audience_open_to` is the rule `clinics_public` and the `audience_mismatch` trigger on `registrations` and `late_requests` share. `search_players` returns `gender`. |
 | `request_level_approval`, `admin_set_level_approval`, `admin_level_approvals`, `admin_set_player_rating`, `clinic_level_from_name`, `level_approval_label` | Decision 0048 (20261105000002). `clinics.min_rating` is generated from the NTRP number in the name (`clinic_level_from_name`); a player rated below it registers or asks late only with an approval at that level or above (trigger `guard_clinic_level`, `level_approval_required`). The player asks once (Tara is notified); Tara approves (the player is notified), declines or removes, and lists every row with its label ("Ladies 3.0+", `level_approval_label`). The rating is Tara's once set (`guard_player_rating`: a player's change is dropped quietly and the rest of the update saves, since 20261106000004; she sets it with `admin_set_player_rating`). INSERT on `players` is revoked from clients so a second player row cannot dodge the gate. |
 | `level_check_enabled` | 20261106000002: the level check's on/off switch (`app_settings.level_check_enabled`). Off on hosted from 2026-11-06 (Tara: *"Turn off now!"*, the store app could not ask); while off, `guard_clinic_level` lets everything through and both clinic views show `min_rating` as null. The seed turns it on locally and in CI so the gate stays tested. |
@@ -567,7 +579,7 @@ card was declined). `new_york_date` is the date helper both use.
 | `stripe_record_dispute` | Not a client RPC: `service_role` only, SECURITY INVOKER (20260928200001). `stripe-webhook`'s writer for `charge.dispute.created` / `.updated` / `.closed`: finds the fee by its PaymentIntent (never a refund row), else by the row the PaymentIntent's metadata names while that row has no PaymentIntent (a held charge Tara marked "Went through"), and writes the eight dispute columns unless the event is older than the one recorded, is a non-decision for a dispute already decided (won, lost, warning_closed), or is a different dispute on a payment whose dispute was lost (`second_dispute`: the lost one and its money stay). The guards are in the UPDATE's WHERE, so a concurrent delivery re-checks them on the locked row (`dispute_race.sh`). Answers `recorded`, `stale`, `second_dispute` or `no_payment`; never touches status, amount, the Paid flag or another row. |
 | `calendar_feed_events` | Not a client RPC: `service_role` only, SECURITY INVOKER (20260929000003, decision 0029). The `calendar-feed` edge function's read: for a live token, the account's You're In! and Response Needed registrations in published clinics that ended at most 30 days ago, as `registration_id, status, clinic_name, starts_at, ends_at` and nothing else; `feed_not_found` (P0002) for an unknown token or a deleted account. |
 | `stripe_cutover_to_live` | Not a client RPC: postgres and `service_role` only (20260927200001). Run once at the sandbox-to-live key swap: clears every account's Stripe customer and card summary, cancels ledger rows still pending or processing (`live_cutover`), marks rows with no recorded mode as test mode, records `app_settings.stripe_live_since`; refuses a second run (`already_live`) and refuses once a live payment exists (`live_payments_exist`). |
-| `admin_board_report`, `admin_board_report_clinics` | The board report (Tara, 2026-09-26; 20260926000010): for New York dates `p_from..p_to` inclusive, attendances and distinct players by the `was_member` snapshot (You're In!, not a no-show, clinic ended and not canceled), clinics, fees due at the snapshot prices, card income net of refunds and, since 20260928200001, of lost disputes (clinic, late-cancel and no-show fees), and 10% of each, rounded half up; the second returns the same per clinic, adding up to the first. `invalid_period` for a null or backwards range. The 10% base is question 58. |
+| `admin_board_report`, `admin_board_report_clinics` | The board report (Tara, 2026-09-26; 20260926000010): for New York dates `p_from..p_to` inclusive, attendances and distinct players by the `was_member` snapshot (You're In!, not a no-show, clinic ended and not canceled), clinics, fees due at the snapshot prices, card income net of refunds and, since 20260928200001, of lost disputes (clinic, late-cancel and no-show fees), and Foxcroft's share of each at `board_share_percent()` (10 until Tara changes it, question 101), rounded half up; the second returns the same per clinic, adding up to the first. `invalid_period` for a null or backwards range. The base is question 73 (answered). |
 | `admin_create_review_link`, `admin_review_responses` | Tara's review page (section 8): mint a link token with a label; list every saved response newest first, revoked links included (archive, never delete). |
 
 **Internal** (`notify_account`, `admin_account_ids`, and since 20260927100001 `registration_has_live_fee` and `player_has_live_fee`, the live-fee test, and since 20260927100003 `money_rows`, the Money tab's one definition, and since 20260927300001 `payments_enabled_at` and `payment_is_real`, and since 20261011000001 `clean_player_note`, the note's one rule (trimmed, blank is none, more than 300 characters `note_too_long`); and the trigger functions, among them since 20260928700001 `payments_card_decline` and `accounts_card_decline`) is executable by no
@@ -586,8 +598,9 @@ for all of them.
 
 **Service-week windows.** Registration opens per **service week**
 (Sunday-Saturday, `America/New_York`), not per clinic (decision 0001).
-Members: 8:00 AM the Thursday before; everyone: 8:00 AM the Friday, 24 hours
-later (decision 0007 confirmed both). Stored per clinic so Tara can override,
+Members: 8:00 AM the Thursday before; everyone: 12:00 noon the Friday, 28 hours
+later (decision 0046; 8:00 AM until 2026-11-01). A member registering after the
+public open goes to the Waitlist (decision 0050). Stored per clinic so Tara can override,
 defaulted by trigger. Registration **closes 3 hours before start**
 (`closes_at`, also a trigger default); after that a player can only ask, via
 `request_late_spot`, and Tara answers.
@@ -601,7 +614,8 @@ idempotent. `tests/sql/capacity_race.sh` races it for real, and since
 status they ended with (#1 in, #5 pooled).
 
 **Nothing auto-promotes.** A spot opening does not pull the next person in.
-Tara invites; the player accepts or declines; both are conditional updates so a
+Before clinic day Tara's Move In is the confirmation; on clinic day she invites
+and the player accepts or declines; both are conditional updates so a
 race with her canceling resolves cleanly (hard rules 2 and 3).
 
 ---
@@ -613,8 +627,10 @@ Decision 0003 put Zelle and Venmo outside the app; decision 0013 §3
 way to pay, and the Paid toggle and unpaid reminder are hidden on both admin
 surfaces while it stays false. The app still gives Tara a report. Prices are member/non-member by length: $18 /
 $23 for 60 minutes, $22 / $28 for 90. At registration the price, membership and
-duration are **snapshotted** onto the row (decision 0002), so editing a clinic
-or correcting a membership never rewrites history. `revenue_summary()` returns
+duration are **snapshotted** onto the row (decision 0002). A Paid or charged
+row, and any row in a clinic already over, keeps its snapshot; Tara's price
+change (decision 0053) or membership change (decision 0055) moves only rows not
+yet Paid or charged. `revenue_summary()` returns
 the four counts, expected, collected and outstanding; `revenue_by_clinic` and
 `revenue_by_segment` break it down. Only `status = 'in'` counts. Its money columns
 are the Zelle era's (the Paid flag, future and canceled clinics included), so
@@ -631,7 +647,8 @@ customer is after the live swap, is replaced and its stale card summary
 cleared), `stripe-webhook` (the only writer of card summaries and
 ledger outcomes; records the signed event's `livemode`, and attaches a payment
 event that beat stripe-charge to the row named in the PaymentIntent's
-metadata; stores the PaymentMethod id with the summary and clears the summary
+metadata in the same single UPDATE as the match by id, answering 500 when an
+event naming our row records nothing (2026-11-14); stores the PaymentMethod id with the summary and clears the summary
 when `payment_method.detached` names that exact PaymentMethod, 2026-10-13), `stripe-charge` (each pending row becomes one off-session
 PaymentIntent or Refund, idempotency key per row, claim-then-call so a crash
 never double-charges; only a decline, a request Stripe refused or our own
@@ -640,8 +657,8 @@ back to pending for a retry under the same key, and a sweep returns rows a dead
 call left in processing without an id; the rule is
 `supabase/functions/_shared/stripe-errors.ts`; a deleted account is never
 charged). `delete-account` deletes the Stripe customer before it removes the
-sign-in. Switched off: `payments_enabled` is `'false'` in every migration, and switching it on is
-checklist A9 (the sandbox keys themselves are A1). Tara's policy answers are
+sign-in. Switched on 2026-10-14 by `20261014000005_payments_on.sql` (checklist
+A9); the seed switches it off again locally and in CI. Tara's policy answers are
 decisions 0012 and 0013. `tests/stripe/run.sh` proves the
 pipeline against stripe-mock.
 
@@ -687,7 +704,7 @@ waives it (questions 81 and 106, decision 0040).
 the one link the code says, forwarding to the install link in `web/app/target.js`;
 `web/qr.html`, Tara's printable card; `web/app-qr.svg` and `web/app-qr.png`, drawn and
 decode-checked by `scripts/make-qr.swift`; `web/gator.png`, the mark on navy, and `web/gator-tile.png`, on light pages, both written with the app icon and the in-app mark by `scripts/make-logo-assets.py` from `docs/brand/gator-2026-09-29.webp`, decision 0032), `web/sheet.html`
-(a clinic's court sheet to print, decision 0027 §3), `config.js` (which picks local vs hosted by hostname), `tokens.css`,
+(a clinic's court sheet to print, decision 0027 §3), `play/` (the members' website, decision 0043), `support.html`, `vercel.json` (redirects: `fxeclinics.com` and `/play` to `/play/`, `/app` to `/app/`), `config.js` (which picks local vs hosted by hostname), `tokens.css`,
 three small modules the admin page imports (`week.js`: the service week and which
 clinics This week lists; `read.js`: reads that page past PostgREST's 1000-row
 cap; `saved-messages.js`: Tara's saved messages in the Message dialog), and `vendor/supabase-js.js`, plus the Playwright tooling (`package.json`,
@@ -737,8 +754,9 @@ list and per-clinic rows from `admin_money_declined` and `admin_money_clinics`
 (the four counts stay on `revenue_summary`). The Charge clinic button and
 its summary were removed by decision 0037 (2026-10-02).
 Also 2026-09-27 (MVP audit item 14): This week
-lists clinics that end after the current service week began (Sunday 00:00,
-New York), plus, while payments are on, any older clinic where someone still
+lists clinics that end after the start of today in New York (since 2026-11-07,
+Tara: earlier days only behind a drop-down; until then, after the current
+service week began), plus, while payments are on, any older clinic where someone still
 owes a fee; everything older sits behind **Show earlier**, under
 an Earlier heading, newest first. Rosters are read only for the clinics on
 screen, in registration order, a page at a time, and a failed read says
@@ -780,6 +798,13 @@ roster row (decision 0039; not on the printed court sheet, question 110); the
 red "Late cancellation" flag on a late cancel in the Canceled list, and Waive
 with Undo beside "Fee waived" while no charge is taken (`admin_set_fee_waived`,
 decision 0040); and the history line counting cancels (decision 0040).
+
+Added 2026-11-05 to 11-11: level requests in Action Needed and Approve for /
+Remove on a player, and Tara's rating and gender pickers (0044, 0048); Invite
+player and Message one player (0051); Add guest (0052); Change price and Charge
+half (rain) (0053); Set price on a row and the 105 rounds (0054); and a fourth
+tab, **Sign-ups**: every account that is not deleted and not staff, newest
+first, with search and Download CSV (2026-11-08).
 
 Added 2026-09-21: **Tara's review page lives here too.** `web/review.html`
 is what `scripts/build-tara-review.py` writes by default (since 2026-10-12;
@@ -891,7 +916,7 @@ each row and Remove after a clinic (decision 0037), a player's note reaching
 Tara (0039), Waive and Undo on a late cancel (0040)), Apple's
 accessibility audit (`AccessibilityAuditUITests`, 5: the player's, Tara's and
 the pro's screens, the status bar, the Return key) and 2 pro flows
-(`ProFlowUITests`: the Today tab and a No-show; only a pro has the tab). The UI tests run against the
+(`ProFlowUITests`: the pro's Manage tab and a No-show; only a pro has it). The UI tests run against the
 local stack and are order-dependent on a fresh seed. **They do not run in
 CI**: the macOS runner has no Docker for the stack, and a separate CI
 Supabase project was decided against on 2026-09-18 (`docs/launch-checklist.md`
@@ -992,19 +1017,18 @@ repository secret. Nightly (`backup.yml`): `pg_dump` of hosted (`public`, `auth`
 and `supabase_migrations`, so a restore keeps the ledger `db push` reads),
 encrypted with `age` to the public key in `.github/backup-recipient.txt`, to
 an artifact, with a size floor so an empty dump fails loudly, and a keep-warm
-query. Nightly too (`hosted-watch.yml`, 2026-10-01): the auth health endpoint answers, `scripts/hosted-smoke.sh` against production, and the admin site, `/app` and the privacy page answer 200, so a change to production between pull requests (a dashboard click, a pause, a platform upgrade) is caught the next morning. The website deploys itself on every merge that touches `web/` (`deploy-web.yml`, 2026-10-24): the job runs `scripts/deploy-web.sh` with a Vercel token from the repository's secrets, so the live site is still compared byte for byte with `main` and the job goes red if it differs. The day itself: `docs/launch-runbook.md`.
+query. Nightly too (`hosted-watch.yml`, 2026-10-01): the auth health endpoint answers, `scripts/hosted-smoke.sh` against production, and the admin site, `/app` and the privacy page answer 200, so a change to production between pull requests (a dashboard click, a pause, a platform upgrade) is caught the next morning. `review-watch.yml` opens a `tara-answers` issue whenever Tara saves on her review page (never her words). The website deploys itself on every merge that touches `web/` (`deploy-web.yml`, 2026-10-24): the job runs `scripts/deploy-web.sh` with a Vercel token from the repository's secrets, so the live site is still compared byte for byte with `main` and the job goes red if it differs. The day itself: `docs/launch-runbook.md`.
 
 Merging: CI is the gate; there is no code review by a second person. Branch
-protection on `main` requires "SQL probes + concurrency" and "Build iOS app +
-unit tests" green before a merge (`gh api
-repos/Volee-Team/FXE/branches/main/protection`, 2026-09-12); no review
-requirement, and it is not enforced for admins.
+protection on `main` requires all 15 checks green, admins included (`gh api
+repos/Volee-Team/FXE/branches/main/protection`, 2026-11-14); no review
+requirement.
 
 ---
 
 ## 10. Where decisions live
 
-`docs/decisions/` (0001 to 0040, indexed with their status in
+`docs/decisions/` (0001 to 0055, indexed with their status in
 `docs/decisions/README.md`; among them 0008 push, 0009 Stripe card on file,
 0013 Tara's 2026-09-21 review, 0025 the pro role, 0027 her laptop tools, 0037
 per-person Charge, 0039 the note for Tara, 0040 Waive and her 2026-10-12
@@ -1024,6 +1048,7 @@ and `CLAUDE.md` (the working rules and the changelog).
 - **Showing players any capacity, count, court, or other player.**
 - **Juniors and parent-managed child accounts.** Schema ready; UI later.
 - **Charging anyone on the app's own initiative.** Every charge is Tara's tap
-  on one person's row (decisions 0013, 0037). Push and card payments are in v1;
-  what is left of them is checklist C3 and A9 to A11.
-- **Drag-and-drop courts, a category filter, a custom domain.**
+  on one person's row (decisions 0013, 0037). Push and card payments are live;
+  anything left is a checklist row.
+- **Drag-and-drop courts and a category filter.** (The members' site has
+  `fxeclinics.com`; the admin stays on `fxe-tennis-admin.vercel.app`.)

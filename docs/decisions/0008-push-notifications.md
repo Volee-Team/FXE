@@ -2,6 +2,8 @@
 
 **Date:** 2026-09-02 · **Status:** Active · **Supersedes:** nothing
 
+**Delivered (forward note added 2026-11-14):** key 94698TDPGY on hosted 2026-11-06, replaced by the LLC's key 42D24JXB54 on 2026-11-11; the first push was seen on Alex's iPhone 2026-11-05 (checklist C3, C2).
+
 ## What we decided
 
 1. **Delivery path.** A Supabase edge function, `push`, sends to Apple Push

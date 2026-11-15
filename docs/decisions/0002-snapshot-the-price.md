@@ -1,6 +1,6 @@
 # 0002 — Copy the price onto the registration
 
-**Date:** 2026-08-10 · **Status:** Active (the membership clause narrowed by 0055, 2026-11-11: a correction now moves clinics not yet over; history stays)
+**Date:** 2026-08-10 · **Status:** Active (the price clause narrowed by 0053, 2026-11-07: Tara's price change and rain half move registrations not Paid and not charged; the membership clause by 0055, 2026-11-11; history stays)
 
 ## Decision
 
@@ -32,8 +32,8 @@ protect a report is the tail wagging the dog.
 ## How we would know this was wrong
 
 If Tara ever says "no, if I change the price it should update everyone who
-already signed up." She has never said anything like it, and the reconciliation
-use case points hard the other way.
+already signed up." She said it on 2026-11-07 (0053), for registrations not
+yet paid or charged; paid and charged rows still never move.
 
 ## Pinned by
 

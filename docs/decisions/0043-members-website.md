@@ -5,12 +5,14 @@ review before it merges. Roadmap v1.1, "A members' website with the app's
 full functionality", from the call of 2026-10-19 (Tara, Kat, John, Wayne):
 the club has members on Android, and the App Store build does not reach them.
 
+**Merged 2026-10-25 (PR #104)** and live at /play/ (forward note added 2026-11-14).
+
 ## What it is
 
 `web/play/` (`index.html`, `play.js`, `play.css`): the iOS app's player side
 in a browser. Sign in, Create an account, Forgot password; the profile step;
 the waiver; Home; Clinics by service week; a clinic with its one action
-(Register with the note for Tara, Leave Player Pool, Accept and Decline,
+(Register with the note for Tara, Leave Waitlist, Accept and Decline,
 Cancel Registration with the late-cancel note inside the cutoff, Message Tara
 after the close); My Clinics with Past; the bell; Profile with the card on
 file, Subscribe in Calendar, Edit details, Contact Tara, Privacy Policy,

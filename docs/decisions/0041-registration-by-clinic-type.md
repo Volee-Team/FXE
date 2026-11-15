@@ -12,6 +12,8 @@ the source; the bullets after each are how they map onto what exists.
 - the onboarding card step (decision 0015 §5's order: the card now comes at
   sign-up, after the clinic list).
 
+**Forward note (2026-11-14):** the 1-hour expiry was never built, so hard rule 2's "never auto-expires" still holds (question 141; 0047 moves Waitlist players straight in before clinic day). Item 1 built 2026-10-19 (698e998); the other-clinics rule became 0045, then 0050; the 3.0+ approval became 0048.
+
 ## Her email, verbatim
 
 > 1. Let people view clinics before requiring a credit card
