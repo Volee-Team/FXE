@@ -30,6 +30,13 @@ q "select key, case when key in ('payments_enabled','card_required') then value 
 echo "-- Money on hosted (live mode only)"
 q "select count(*) filter (where kind<>'refund' and status='succeeded') as charged, count(*) filter (where kind='refund' and status='succeeded') as refunded, count(*) filter (where status='failed') as failed, count(*) filter (where status in ('pending','processing')) as waiting, coalesce(to_char(max(created_at) at time zone 'America/New_York','Mon DD HH12:MI AM'),'never') as last from public.payments where livemode is true" |
   python3 -c "import json,sys; r=json.load(sys.stdin)[0]; print(f\"   charges succeeded {r['charged']}, refunds {r['refunded']}, failed {r['failed']}, waiting {r['waiting']}, last {r['last']}\")" 2>/dev/null
+# A charge with a Stripe id still at Processing after an hour is an outcome
+# the webhook lost (2026-11-13: one sat a day until Tara noticed, because
+# "waiting" above counted it as normal). Named here so the next one is seen
+# by whoever runs this, not by her. A row with no id is stripe-charge's own
+# sweep's business (it retries or holds it).
+q "select count(*) as n, coalesce(string_agg(stripe_payment_intent_id, ' '), '') as ids from public.payments where status='processing' and coalesce(stripe_payment_intent_id, stripe_refund_id) is not null and first_attempted_at < now() - interval '1 hour'" |
+  python3 -c "import json,sys; r=json.load(sys.stdin)[0]; print(f\"   STUCK at Processing over an hour with a Stripe id: {r['n']} ({r['ids']}); see Stripe's event and resend it\" if r['n'] else '   none stuck at Processing')" 2>/dev/null
 q "select count(*) filter (where card_last4 is not null and deleted_at is null) as cards, count(*) filter (where deleted_at is null and role::text='member') as members from public.accounts" |
   python3 -c "import json,sys; r=json.load(sys.stdin)[0]; print(f\"   members {r['members']}, with a saved card {r['cards']}\")" 2>/dev/null
 
