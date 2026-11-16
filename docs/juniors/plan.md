@@ -69,7 +69,72 @@ two places to leak instead of one.
 Each phase ships on its own: migrations pushed, the laptop site deployed, and
 the app in a 1.0.x build. The questions only block their own phase.
 
-### Phase 1: families and programs (no blocking question). Start now.
+### Phase 0: one account, several players, safely (before any child row exists)
+
+Today every account has exactly one `players` row. An audit of 2026-11-14
+read the latest definition of all 223 SQL objects, the app, both websites and
+the edge functions, asking what goes wrong once an account owns a child row
+too. It found 16 problems: 4 that break, 10 that are silently wrong, and 2
+labels. The ones that decide the design:
+
+- **The app picks "me" as the first row**:
+  - `Session.swift` `activePlayer = players.first`, fed by `myPlayers()` with
+    no order and no kind filter.
+  - Row order is not stable: an update moves a row, so a parent could become
+    their child.
+  - Edit Profile would then write the parent's name and rating onto the
+    child.
+  - `web/play/play.js` falls back to a child when there is no adult row.
+- **Registrations are looked up by clinic alone**:
+  - `ClinicDetailView`, `ClinicsView`, `HomeView` and `play.js`.
+  - A child's spot reads as the parent's, and Cancel or Respond can act on
+    the wrong one.
+  - Siblings in one clinic collapse into one entry.
+- **`delete_my_account`** blanks `date_of_birth` on every row of the account,
+  which the `junior_has_dob` check refuses. A parent could not delete their
+  account.
+- **No kind rule on registration**:
+  - `register_for_clinic`, the audience guards and `level_ok` never look at
+    `kind`.
+  - `level_ok` passes an unrated row.
+  - A child row is therefore the "second players row, unrated" that the
+    2026-11-05 level audit closed by revoking INSERT. A child could be
+    registered into an adult 3.5.
+  - `clinics_public`'s gender check runs over any player on the account. A
+    mother with a son would see Men's clinics, and a child with no gender
+    opens both.
+- **Account-level outputs need a name**:
+  - `my_past_clinics`, the calendar feed, and every notification's text
+    (two children in one clinic get the same push twice).
+  - Tara's Players tab gives a child row the parent's Pro switch and Reset
+    link.
+- **The waiver is per account** (`waiver_accepted(account)`), not per child.
+
+**The rule that follows: an app already on someone's phone sees exactly what
+it sees today.** 1.0.3 will be on phones for weeks, and it would hit every
+item above the moment a parent on a newer app adds a child. So:
+
+- Client SELECT on `players` and `my_registrations` keeps returning adult
+  rows only.
+- Children and their bookings are read through new functions (`my_children`,
+  `my_family_registrations`) that only the new app and the members' site
+  call.
+- Every registration path checks kind against audience: a junior only in
+  `juniors` clinics, an adult never in them.
+- `level_ok` and the gender rule look at the player being registered, never
+  at the account.
+- `delete_my_account` clears a child's name and keeps the birthday, which the
+  check requires. The child row is anonymised like the adult's.
+- Notifications and the calendar name the child.
+- Tara's Players tab shows a child under the parent, without the adult
+  controls.
+
+Each item gets a probe, red first: a parent on the old query shapes sees no
+child, a child is refused an adult clinic, an adult is refused a juniors
+clinic, and so on. The phase ships before Phase 1's Add a Child appears
+anywhere.
+
+### Phase 1: families and programs (no blocking question)
 
 1. **My Children** on Profile, in the app and on `web/play/`: add, edit and
    remove a child (first and last name, birthday). An adult account becomes
