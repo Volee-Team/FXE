@@ -702,9 +702,13 @@ the one link the code says, forwarding to the install link in `web/app/target.js
 `web/qr.html`, Tara's printable card; `web/app-qr.svg` and `web/app-qr.png`, drawn and
 decode-checked by `scripts/make-qr.swift`; `web/gator.png`, the mark on navy, and `web/gator-tile.png`, on light pages, both written with the app icon and the in-app mark by `scripts/make-logo-assets.py` from `docs/brand/gator-2026-09-29.webp`, decision 0032), `web/sheet.html`
 (a clinic's court sheet to print, decision 0027 §3), `config.js` (which picks local vs hosted by hostname), `tokens.css`,
-three small modules the admin page imports (`week.js`: the service week and which
+four small modules the admin page imports (`week.js`: the service week and which
 clinics This week lists; `read.js`: reads that page past PostgREST's 1000-row
-cap; `saved-messages.js`: Tara's saved messages in the Message dialog), and `vendor/supabase-js.js`, plus the Playwright tooling (`package.json`,
+cap; `saved-messages.js`: Tara's saved messages in the Message dialog;
+`courts.js`: the Courts tab, decision 0058: a day of the five courts from
+`admin_court_day`, Book a court, Block courts listing the bookings under a
+block, a warning for every booking a clinic or block overlaps, and Court rules
+with the members switch and the hours), and `vendor/supabase-js.js`, plus the Playwright tooling (`package.json`,
 `playwright.config.mjs`, `tests/`). **supabase-js is vendored**, never loaded
 from a CDN (MVP audit 2026-09-27, item 17; it came from esm.sh at a floating
 `@2` until then): the npm package's own browser bundle at the exact version
@@ -916,7 +920,7 @@ Supabase project was decided against on 2026-09-18 (`docs/launch-checklist.md`
 §F). They run on a Mac through `scripts/run-ui-tests.sh` on iOS 18 and 26 (17 too until 2026-10-30, when it stopped being downloadable),
 and the `ui-test-record` job fails a PR whose code has no green record.
 
-**Web admin**: 87 Playwright tests (`web/tests/*.spec.mjs`) walk Tara's
+**Web admin**: 92 Playwright tests (`web/tests/*.spec.mjs`) walk Tara's
 side against a fresh seed: sign-in and the non-admin door, prices, walk-up,
 courts, unpaid reminder, a note round-trip, cancel clinic, template archive
 and restore, Money counts, the card-payments ledger, payments off, the
@@ -929,7 +933,11 @@ three laptop time zones, the This week split, a read past a 1000-row cap, and
 a past clinic kept off the tab until Show earlier (`week.spec.mjs`); Copy to
 next week making drafts once and then nothing, the court sheet by court with
 No court yet last and a member reading nothing there, and the history line on
-a Pool row and the Players tab (`tools.spec.mjs`); and the members' site
+a Pool row and the Players tab (`tools.spec.mjs`); the Courts tab (`courts.spec.mjs`):
+the day with a seed clinic holding its courts, a booking for a member with her
+note then canceled, a block listing the booking under it and canceling nobody,
+a clinic published over a booking warned, and the court rules refusing a bad
+value then saving with the members switch; and the members' site
 (`play.spec.mjs`, since 2026-10-25): a fresh browser signed out with only
 this site's scripts, its own sign-in apart from the admin's, Register with a
 note, the Player Pool when full, Accept and Decline, the 3-hour late cancel

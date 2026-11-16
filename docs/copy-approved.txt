@@ -1,4 +1,6 @@
+60,90
 A clinic needs a name.
+A new day opens at
 ACTION NEEDED
 About this clinic
 Accept
@@ -29,11 +31,17 @@ Are you currently a Foxcroft East Racquet &amp; Swim Club member?
 Ask Tara for approval first.
 At least 6 characters.
 Back
+Block courts
+Blocked. These bookings are under it.
 Board report
+Book a court
+Book up to (days ahead)
+Bookings a day, per person
 Call
 Cancel
 Cancel Invite
 Cancel Registration
+Cancel booking
 Cancel clinic
 Cancel invite
 Cancel my spot
@@ -46,10 +54,12 @@ Charge \(due.amountCents.centsAsPrice)
 Charge \(entry.displayName) \(due.amountCents.centsAsPrice)
 Charged
 Check the box to continue
+Check these bookings
 Check this charge in Stripe.
 Check your email for a reset link. It can take a few minutes.
 Checking your reset link…
 Children's privacy
+Choose ${esc(name)}
 Choose a new password
 Choose a player
 Clinic updates come through the app. Keep notifications on so you don't miss them.
@@ -154,6 +164,7 @@ Late cancellation
 Leave Waitlist
 Length (minutes)
 Length must be more than 0 minutes.
+Lengths (minutes, comma between)
 Let's Play.
 Level requests
 Link label
@@ -164,6 +175,9 @@ Mark all read
 Max players must be at least 1.
 Member price
 Members attended
+Members can book courts
+Members can book courts.
+Members can't see or book courts yet. Only you can book until you turn on court booking for members in Court rules.
 Members get 24-hour early access to all clinics
 Members, 60 min
 Members, 90 min
@@ -190,6 +204,7 @@ No clinics scheduled yet.
 No clinics this week or later. Use “New clinic” to add one.
 No clinics this week.
 No court
+No court hours for this day.
 No deposits yet.
 No description yet.
 No earlier clinics.
@@ -203,7 +218,10 @@ No saved messages yet.
 No templates yet.
 No upcoming clinics.
 Nobody by that name yet. They may need to sign up in the app first.
+Nobody can book a blocked court. Bookings already made stay until you cancel them.
+Nobody chosen yet.
 Nobody is in yet.
+Nobody was canceled. Call them, or cancel a booking here.
 Non-member price
 Non-members attended
 Non-members can take one 105 a day until 48 hours before.
@@ -212,8 +230,10 @@ Non-members, 90 min
 Not available yet.
 Not charged yet
 Not late yet.
+Note (only you see this)
 Note (optional)
 Note for Tara (optional)
+Nothing on the courts this day.
 Notifications
 On your laptop, with your real account. Whatever you set up here is real: it is your schedule.
 One player
@@ -234,7 +254,9 @@ Payments are switched off.
 Pick something you'll remember. At least 8 characters.
 Player
 Players
+Players per court (for clinics)
 Policy changes
+Previous day
 Price set: \(cents.centsAsPrice)
 Privacy Policy
 Private note
@@ -246,6 +268,7 @@ Put them in
 QR code for fxe-tennis-admin.vercel.app/app
 QR code for the app
 Questions about the app or your clinics:
+Rain, resurfacing, a private lesson
 Rain: half price
 Rating
 Rating Guide
@@ -269,6 +292,7 @@ Reminder set
 Remove
 Remove \(entry.displayName)
 Remove \(entry.displayName) from the Waitlist
+Remove block
 Remove from clinic
 Remove guest
 Reply to Tara
@@ -307,6 +331,7 @@ Signs you out, you can finish later if needed
 Someone already handled that one.
 Something went wrong. Please try again.
 Sorry, someone beat you to the punch. Here's the latest!
+Start every (minutes)
 Start from a template
 Stripe
 Stripe isn't connected yet.
@@ -362,6 +387,8 @@ To provide and maintain our Services, including to monitor the usage of our Serv
 Too many attempts. Try again in a minute.
 Too many reset emails. Try again later.
 Try again
+Turn off court booking for members? They won't be able to book or cancel. Bookings already made stay.
+Turn on court booking for members? Every member will be able to see the courts and book from the app and the website.
 Turn on notifications
 Type at least two letters of a name.
 Type it again
@@ -369,6 +396,7 @@ Type your first and last name.
 USTA ${ratingLabel(r)}
 USTA \(level.label)
 Undo
+Upcoming at once, per person
 Use the clinic's price
 View Open Clinics
 Waive
@@ -390,6 +418,8 @@ What happened? Anything odd?
 What is 105?
 When we believe it is necessary to disclose personal information to investigate, prevent, or take action regarding illegal activities, suspected fraud, potential threats to anyone's physical safety, or as otherwise required by law.
 When's my next clinic in \(.applicationName)
+While this is off, members can't see or book courts. Only you can.
+Who is it for?
 Write a message first.
 Write it the way you'd say it
 You can still ask Tara to fit you in.

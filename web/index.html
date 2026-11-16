@@ -92,6 +92,29 @@
                overflow-wrap: anywhere; }
   .saved-empty { margin: 4px 0; }
   .hide { display: none !important; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
+             clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  /* The Courts tab (decision 0058): a day of the five courts. One row is 15
+     minutes; every item says what it is in words, never colour alone. */
+  #ct-grid { display: grid; grid-template-columns: 76px repeat(5, minmax(120px, 1fr));
+             column-gap: 6px; overflow-x: auto; padding: 12px; }
+  .ct-head { font-weight: 600; font-size: 14px; align-self: end; padding-bottom: 6px; }
+  .ct-col { background: repeating-linear-gradient(to bottom, var(--fxe-hairline) 0 1px, transparent 1px 56px);
+            border-left: 1px solid var(--fxe-hairline); }
+  .ct-col.closed { background-color: var(--fxe-surface-warm); }
+  .ct-time { font-size: 12px; color: var(--fxe-text-secondary); margin-top: -7px; }
+  .ct-item { position: relative; z-index: 1; border-radius: 8px; padding: 3px 6px; margin: 1px 0;
+             font-size: 12px; line-height: 1.25; overflow: hidden; border: 1px solid transparent; }
+  .ct-item .ct-kind { font-weight: 600; }
+  .ct-item .ct-label { font-weight: 600; overflow-wrap: anywhere; }
+  .ct-item .ct-when { display: block; }
+  .ct-item.booking { color: var(--fxe-status-in-ink); background: var(--fxe-status-in-tint); }
+  .ct-item.clinic  { color: var(--fxe-status-respond-ink); background: var(--fxe-status-respond-tint); }
+  .ct-item.block   { color: var(--fxe-text-primary); background: var(--fxe-surface-warm); border-color: var(--fxe-border); }
+  .ct-item.clash   { border: 2px solid var(--fxe-status-canceled-ink); }
+  .ct-item.lane0   { margin-right: 50%; }
+  .ct-item.lane1   { margin-left: 50%; }
+  #ct-warn { border-color: var(--fxe-status-canceled-ink); }
   .signin { max-width: 380px; margin: 12vh auto; }
 select.court { width: auto; flex: 0 0 auto; margin: 0; font: inherit; font-size: 13px; padding: 4px 6px; border: 1px solid var(--border, #d8d3c7); border-radius: 6px; background: #fff; color: inherit; }
 button.danger { border-color: #9B2C2C; color: #9B2C2C; }
@@ -161,6 +184,7 @@ table.signups th { font-weight: 600; color: #6E6552; }
          (docs/feature-review-2026-09-02.md). -->
     <nav class="tabs" role="tablist" aria-label="Sections">
       <button role="tab" data-tab="week" aria-selected="true">This week</button>
+      <button role="tab" data-tab="courts" aria-selected="false">Courts</button>
       <button role="tab" data-tab="players" aria-selected="false">Players</button>
       <button role="tab" data-tab="signups" aria-selected="false">Sign-ups</button>
       <button role="tab" data-tab="money" aria-selected="false">Money</button>
@@ -196,6 +220,31 @@ table.signups th { font-weight: 600; color: #6E6552; }
       </div>
       <div id="tpl-list" style="margin-top:8px"></div>
     </div>
+    </div>
+
+    <!-- Court reservations (decision 0058, docs/courts/plan.md step 3). Drawn
+         by courts.js from admin_court_day; nothing here decides who may book. -->
+    <div id="tab-courts" role="tabpanel" class="hide">
+    <div class="row">
+      <h2 style="margin:0" class="grow" id="ct-title">Courts</h2>
+      <button class="small" id="ct-prev">Previous day</button>
+      <label for="ct-day" class="sr-only">Day</label>
+      <input id="ct-day" type="date" style="width:auto">
+      <button class="small" id="ct-next">Next day</button>
+      <button class="small" id="ct-today">Today</button>
+    </div>
+    <div class="card row" id="ct-live" style="margin-top:12px"></div>
+    <div class="row" style="margin:0 0 12px;padding-top:0;border-top:none">
+      <span class="grow"></span>
+      <button id="ct-settings">Court rules</button>
+      <button id="ct-block">Block courts</button>
+      <button class="primary" id="ct-book">Book a court</button>
+    </div>
+    <div id="ct-msg"></div>
+    <div id="ct-warn" class="card hide" role="alert"></div>
+    <div id="ct-grid" class="card" role="img"></div>
+    <h2>On this day</h2>
+    <div id="ct-list" class="card"></div>
     </div>
 
     <div id="tab-players" role="tabpanel" class="hide">
@@ -299,6 +348,87 @@ table.signups th { font-weight: 600; color: #6E6552; }
     <p class="devlink"><button id="open-testing" type="button">Testing</button></p>
   </section>
 </main>
+
+<dialog id="court-book">
+  <h3 style="margin-top:0">Book a court</h3>
+  <label for="cb-query">Who is it for?</label>
+  <input id="cb-query" placeholder="Search by name">
+  <div id="cb-results" style="margin-top:10px"></div>
+  <p class="name" id="cb-who" style="margin:8px 0 0">Nobody chosen yet.</p>
+  <div class="grid">
+    <div><label for="cb-court">Court</label><select id="cb-court"></select></div>
+    <div><label for="cb-day">Day</label><input id="cb-day" type="date"></div>
+    <div><label for="cb-start">Start</label><select id="cb-start"></select></div>
+    <div><label for="cb-length">Length</label><select id="cb-length"></select></div>
+  </div>
+  <label for="cb-note">Note (only you see this)</label>
+  <textarea id="cb-note" rows="2" maxlength="200"></textarea>
+  <div id="cb-msg"></div>
+  <div class="row" style="margin-top:14px">
+    <span class="grow"></span>
+    <button type="button" id="cb-cancel">Cancel</button>
+    <button type="button" class="primary" id="cb-save">Book</button>
+  </div>
+</dialog>
+
+<!-- A block never cancels anyone: admin_block_courts returns the bookings
+     under it and this lists them, for her to call or cancel one by one. -->
+<dialog id="court-block">
+  <h3 style="margin-top:0">Block courts</h3>
+  <div id="bk-form">
+    <p class="muted" style="margin-top:0">Nobody can book a blocked court. Bookings already made stay until you cancel them.</p>
+    <div class="grid">
+      <div><label for="bk-court">Court</label><select id="bk-court"></select></div>
+      <div><label for="bk-day">Day</label><input id="bk-day" type="date"></div>
+      <div><label for="bk-from">From</label><input id="bk-from" type="time" step="900"></div>
+      <div><label for="bk-to">To</label><input id="bk-to" type="time" step="900"></div>
+    </div>
+    <label for="bk-reason">Reason</label>
+    <input id="bk-reason" maxlength="200" placeholder="Rain, resurfacing, a private lesson">
+  </div>
+  <div id="bk-after" class="hide">
+    <p class="name" style="margin-top:0">Blocked. These bookings are under it.</p>
+    <p class="muted">Nobody was canceled. Call them, or cancel a booking here.</p>
+    <div id="bk-conflicts"></div>
+  </div>
+  <div id="bk-msg"></div>
+  <div class="row" style="margin-top:14px">
+    <span class="grow"></span>
+    <button type="button" id="bk-cancel">Close</button>
+    <button type="button" class="primary" id="bk-save">Block</button>
+  </div>
+</dialog>
+
+<dialog id="court-rules">
+  <h3 style="margin-top:0">Court rules</h3>
+  <label style="display:flex;align-items:center;gap:8px;margin-top:0;cursor:pointer;color:var(--fxe-text-primary)">
+    <input type="checkbox" id="rs-live" style="width:18px;height:18px;min-height:0">
+    <span><span class="name">Members can book courts</span><br>
+    <span class="muted">While this is off, members can't see or book courts. Only you can.</span></span>
+  </label>
+  <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--fxe-text-primary)">
+    <input type="checkbox" id="rs-members" style="width:18px;height:18px;min-height:0">
+    Members only (non-members can't book)
+  </label>
+  <div class="grid">
+    <div><label for="rs-lengths">Lengths (minutes, comma between)</label><input id="rs-lengths" placeholder="60,90"></div>
+    <div><label for="rs-step">Start every (minutes)</label>
+      <select id="rs-step"><option value="15">15</option><option value="30">30</option><option value="60">60</option></select></div>
+    <div><label for="rs-advance">Book up to (days ahead)</label><input id="rs-advance" type="number" min="0" max="60"></div>
+    <div><label for="rs-opens">A new day opens at</label><input id="rs-opens" type="time" step="900"></div>
+    <div><label for="rs-per-day">Bookings a day, per person</label><input id="rs-per-day" type="number" min="1" max="10"></div>
+    <div><label for="rs-upcoming">Upcoming at once, per person</label><input id="rs-upcoming" type="number" min="1" max="20"></div>
+    <div><label for="rs-per-court">Players per court (for clinics)</label><input id="rs-per-court" type="number" min="1" max="8"></div>
+  </div>
+  <p class="name" style="margin:14px 0 4px">Hours</p>
+  <div id="rs-hours"></div>
+  <div id="rs-msg"></div>
+  <div class="row" style="margin-top:14px">
+    <span class="grow"></span>
+    <button type="button" id="rs-cancel">Cancel</button>
+    <button type="button" class="primary" id="rs-save">Save</button>
+  </div>
+</dialog>
 
 <dialog id="edit">
   <h3 id="edit-title" style="margin-top:0">New clinic</h3>
@@ -533,6 +663,7 @@ import { CONFIG, ENV } from "./config.js";
 import { serviceWeekStart, nyDayStart, splitThisWeek, weekLabel, nyFromInput, nyInputValue } from "./week.js";
 import { readAll, readByIds } from "./read.js";
 import { wireSavedMessages } from "./saved-messages.js";
+import { wireCourts } from "./courts.js";
 
 // implicit flow: a reset started on one device (the phone) must finish on
 // another (this page). PKCE ties the emailed code to the device that asked.
@@ -876,6 +1007,7 @@ async function showApp() {
   loadReviewResponses();
   if (!$("tab-money").classList.contains("hide")) loadPayouts();
   if (!$("tab-signups").classList.contains("hide")) loadSignups();
+  if (!$("tab-courts").classList.contains("hide")) courts.load();
   loadBoardRate();
   loadAppLinkVisits();
 }
@@ -1560,7 +1692,9 @@ async function loadClinics() {
 // the database disagrees with.
 // Tabs. The last one opened is remembered per browser; a reload lands where
 // she was. Everything still loads on sign-in, so switching is instant.
-const TABS = ["week", "players", "signups", "money"];
+// The Courts tab (decision 0058): its own module, drawn when the tab opens.
+const courts = wireCourts(sb, { $, esc, friendly, note });
+const TABS = ["week", "courts", "players", "signups", "money"];
 const showTab = (name) => {
   for (const b of document.querySelectorAll(".tabs [role=tab]")) b.setAttribute("aria-selected", String(b.dataset.tab === name));
   for (const n of [...TABS, "testing"]) $("tab-" + n).classList.toggle("hide", n !== name);
@@ -1571,6 +1705,7 @@ for (const b of document.querySelectorAll(".tabs [role=tab]")) b.addEventListene
   showTab(b.dataset.tab);
   if (b.dataset.tab === "money") loadPayouts();
   if (b.dataset.tab === "signups") loadSignups();
+  if (b.dataset.tab === "courts") courts.load();
 });
 $("open-testing").addEventListener("click", () => { showTab("testing"); window.scrollTo(0, 0); });
 try { const t = localStorage.getItem("fxe.tab"); if (TABS.includes(t)) showTab(t); } catch {}
