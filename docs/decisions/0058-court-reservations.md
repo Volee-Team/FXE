@@ -111,6 +111,24 @@ not seen at all (sql-auditor, 2026-11-16). Question 165 may change how many.
 `accounts.deleted_at`, so every path that deletes is covered. Past bookings
 stay.
 
+## Addendum: John is an admin (2026-11-16)
+
+John: *"Every permission alex and tara have, I should have."* On the live
+server that is Tara's `role = 'admin'` (Alex has no admin account there;
+Stripe is outside the database). `20261116000002_john_admin.sql` sets it on
+John's own account, by id only, a no-op wherever that id does not exist. It
+switches `guard_account_privilege_columns` off for that one statement and on
+again in the same transaction, because the guard (rightly) refuses every
+role change but member and pro. Tried on a stand-in account with his id in a
+rolled-back transaction: member before, admin after, the guard back on and
+still refusing an ordinary role change.
+
+What it gives him, exactly as Tara: the Manage tab and the laptop site,
+every `admin_*` function, court testing while courts are off (an admin
+needs no member switch), and **the admin notifications 13, 14 and 15**
+(Player Accepted, Declined, Canceled) and LATE_REQUEST, on his phone as on
+hers.
+
 ## Open, for John and Tara
 
 **BLOCKING `courts_live`: what "taken" tells a member about a clinic.**

@@ -57,7 +57,7 @@ How this file works, so it can be trusted:
   transfer and did not carry over; build 18, the same code signed by the LLC
   (tag `v1.0.3-18`), was uploaded and submitted for review by John on
   2026-11-12.
-- **Hosted:** 87 of 88 migrations applied, newest `20261111000002` (the pros' rounds, pushed 2026-11-15); `20261116000001` (court reservations, decision 0058) is pushed when its PR merges
+- **Hosted:** 87 of 89 migrations applied, newest `20261111000002` (the pros' rounds, pushed 2026-11-15); `20261116000001` (court reservations, decision 0058) and `20261116000002` (John an admin) are pushed when their PR merges
   (read-only query of `supabase_migrations.schema_migrations`, 2026-11-12; 87 after the push of 2026-11-15, same query);
   the project is ACTIVE_HEALTHY (management API). **Payments live** since
   2026-10-14: 166 charges succeeded, 3 refunds, 0 failed; 338 member
