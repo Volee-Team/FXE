@@ -13,6 +13,21 @@ This file is a plan, not a status. Rows that get built move to
 `docs/architecture.md`, open questions live in `docs/questions-for-tara.md`
 (145 to 155), and decisions get their own records.
 
+## Releases
+
+John, 2026-11-15: *"get started on juniors and plan for that to be as 1.0.5"*.
+
+| Release | What | When |
+|---|---|---|
+| 1.0.4 | Pro rounds (0056) and the pros' roster at large text sizes. No juniors | submitted after its UI runs, mid-November |
+| server, ahead of 1.0.5 | Phase 0 (`20261115000001`): live as soon as it is green, since it changes nothing anyone sees today | November |
+| **1.0.5** | **Juniors**: phases 1 to 3 in the app, the members' site and Tara's laptop. Parents add children, sign a waiver per child, register for the spring session or ask for drop-ins; Tara runs programs, approvals, sessions and walk-ins; pros see the juniors' week | submitted by about 2026-12-20, so Apple's review and Tara's checks finish before 2027-01-01 |
+| 1.0.6 or later | Summer camp (phase 4) and linked parents (phase 5) | before summer registration opens (question 154) |
+
+The server parts of each phase can go live before 1.0.5 is on phones, as
+long as the 1.0.3 and 1.0.4 apps see nothing new (phase 0's rule). The laptop
+and members' site deploy when ready.
+
 ## The one big choice: a junior class is a clinic
 
 Every school-year class date and every summer camp day is a row in `clinics`
@@ -114,8 +129,9 @@ labels. The ones that decide the design:
 it sees today.** 1.0.3 will be on phones for weeks, and it would hit every
 item above the moment a parent on a newer app adds a child. So:
 
-- Client SELECT on `players` and `my_registrations` keeps returning adult
-  rows only.
+- Client SELECT and UPDATE on `players`, and `my_registrations`,
+  `my_past_clinics` and `clinics_public`, keep returning adult rows only, and
+  no juniors clinics.
 - Children and their bookings are read through new functions (`my_children`,
   `my_family_registrations`) that only the new app and the members' site
   call.
@@ -123,8 +139,8 @@ item above the moment a parent on a newer app adds a child. So:
   `juniors` clinics, an adult never in them.
 - `level_ok` and the gender rule look at the player being registered, never
   at the account.
-- `delete_my_account` clears a child's name and keeps the birthday, which the
-  check requires. The child row is anonymised like the adult's.
+- `delete_my_account` anonymises a child like the adult: name and birthday
+  blanked, row inactive. The birthday check now applies to active rows only.
 - Notifications and the calendar name the child.
 - Tara's Players tab shows a child under the parent, without the adult
   controls.
