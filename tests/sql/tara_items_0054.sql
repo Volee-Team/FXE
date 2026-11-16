@@ -21,7 +21,10 @@
 --                          admin_set_round_court (Tara only, 105s only, from
 --                          You're In! and guests, one place per round) and
 --                          clinic_rounds (Tara, and a pro in their week).
---                          Players never.
+--                          Players never. Since 2026-11-11 a pro writes the
+--                          rounds in their week too (decision 0056; the rule
+--                          is pinned in pro_rounds.sql), so the pro row
+--                          below reads the new rule.
 --
 -- Expected values are written from the rule, not copied from a run.
 
@@ -330,13 +333,18 @@ begin
   exception when others then err := sqlerrm; end;
   insert into _probe_result values ('six_spots_a_court', 'invalid_people', err);
 
-  -- A pro reads the week's rounds; never writes, never past the week.
+  -- A pro reads the week's rounds, and never past the week. A pro also
+  -- writes them in the week: Tara, 2026-11-11, "I think can change the
+  -- rounds. That's totally fine. Probably need it in case I'm out of town"
+  -- (decision 0056, 20261111000002). This row asserted not_authorized until
+  -- then, when 0054's "Just me and pros for rounds" was read as pros read
+  -- only. pro_rounds.sql pins the pro's writes and refusals.
   perform set_config('request.jwt.claims', json_build_object('sub', CASEY)::text, true);
   select count(*)::text into got from public.clinic_rounds(c_105);
   insert into _probe_result values ('a_pro_reads_the_rounds', '5', got);
   begin perform public.admin_set_round_court(c_105, 3, 1, array[r_ken_105, null, null, null, null, null]::uuid[]); err := 'set';
   exception when others then err := sqlerrm; end;
-  insert into _probe_result values ('a_pro_cannot_set_rounds', 'not_authorized', err);
+  insert into _probe_result values ('a_pro_sets_rounds_in_the_week', 'set', err);
   begin perform count(*) from public.clinic_rounds(c_far105); err := 'read';
   exception when others then err := sqlerrm; end;
   insert into _probe_result values ('a_pro_reads_only_the_week', 'not_this_week', err);

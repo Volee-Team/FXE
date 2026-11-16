@@ -53,18 +53,18 @@ How this file works, so it can be trusted:
   since the App Transfer of 2026-11-11 (C12). The App Store has 1.0.2,
   released 2026-11-07, seller Volee LLC
   (`curl "https://itunes.apple.com/lookup?bundleId=com.fxetennis.app"`,
-  2026-11-12). 1.0.3 build 17 went up under John's team minutes before the
+  2026-11-12). 1.0.3 build 17 was uploaded under John's team minutes before the
   transfer and did not carry over; build 18, the same code signed by the LLC
   (tag `v1.0.3-18`), was uploaded and submitted for review by John on
   2026-11-12.
-- **Hosted:** 86 of 86 migrations applied, newest `20261111000001`
-  (read-only query of `supabase_migrations.schema_migrations`, 2026-11-12);
+- **Hosted:** 87 of 87 migrations applied, newest `20261111000002` (the pros' rounds, pushed 2026-11-15)
+  (read-only query of `supabase_migrations.schema_migrations`, 2026-11-12; 87 after the push of 2026-11-15, same query);
   the project is ACTIVE_HEALTHY (management API). **Payments live** since
   2026-10-14: 166 charges succeeded, 3 refunds, 0 failed; 338 member
   accounts, 218 with a saved card. Push: 631 of 719 delivered in 14 days, 302
   devices (`scripts/live-status.sh`, 2026-11-12). 14 clinics published
   through 2026-11-20 (read-only query).
-- **Tests:** 58 SQL probes plus 19 shell probes, 329 unit tests, 29
+- **Tests:** 59 SQL probes plus 19 shell probes, 330 unit tests, 29
   XCUITests, 87 browser tests (`scripts/check-doc-claims.sh`, 2026-11-12).
 - **Waiting on others:** Apple's review of 1.0.3 (18); Tara: the juniors
   decisions and the open questions (`docs/questions-for-tara.md`).
@@ -95,8 +95,7 @@ the record. Re-derived 2026-11-12.
 7. **The move to the LLC** (C1, C12): done 2026-11-11: App Transfer
    accepted, the LLC's APNs key on hosted the same day (C2), build 18 signed
    by the LLC. [John]
-8. **Supabase Pro** (D3): deferred by Alex on 2026-10-21; the keep-warm job
-   and our own nightly backup cover it until then. [Alex]
+8. **Supabase Pro** (D3): done 2026-11-13 (the Volee org). [John]
 
 ---
 ## A. Payments
@@ -148,7 +147,7 @@ What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision
 | D0 | "Confirm email" off on hosted (decision 0011) | [Alex] | **DONE**; verified 2026-09-27 through the management API (`mailer_autoconfirm` true). Re-check on any new project Re-read 2026-11-12 (management API): `mailer_autoconfirm` true |
 | D1 | **A real email sender, so "Forgot password?" reaches members** | [Alex] | **DONE 2026-09-27**: Gmail `fxetennis.app@gmail.com` with an app password as custom SMTP; read back through the management API (`smtp_host` smtp.gmail.com, port 465, sender "FXE Tennis"). Delivery confirmed by Alex 2026-10-01: *"the reset emails came in just took a while"* Re-read 2026-11-12 (management API): smtp.gmail.com, port 465, sender "FXE Tennis" |
 | D2 | Reset page allow-listed as a redirect on hosted | [Alex] | **DONE 2026-09-01**; verified 2026-09-27 (`uri_allow_list` is `https://fxe-tennis-admin.vercel.app/reset.html`) Re-read 2026-11-12 (management API): `reset.html` on `fxe-tennis-admin.vercel.app`, `fxeclinics.com` and `www.fxeclinics.com` |
-| D3 | Supabase plan: the free tier pauses after a quiet week and has no point-in-time recovery; Pro is $25 a month | [Alex] | **LATER**: Alex, 2026-10-21: *"ig were fine for now, we dont rlly need it yet"*. What covers the gap meanwhile: real members use it daily now, the nightly keep-warm job pings it, and the nightly encrypted backup (restore drill passed 2026-10-12, D4). Revisit if the project pauses or before a busy season Re-read 2026-11-12: the project is ACTIVE_HEALTHY (management API) |
+| D3 | Supabase plan: the free tier pauses after a quiet week and has no point-in-time recovery; Pro is $25 a month | [John] | **DONE 2026-11-13**: John moved the Volee org, which holds `fxe-tennis`, to Pro (management API, 2026-11-13: plan `pro`; the project ACTIVE_HEALTHY; Supabase's daily backups listed, newest 2026-11-13 06:51 UTC). No pause after a quiet week; point-in-time recovery is a separate add-on, not bought. Our own nightly encrypted backup stays (D4). Before: Alex, 2026-10-21, *"ig were fine for now"* |
 | D4 | Restore drill (a backup nobody has restored is not a backup) | [me] | **DONE 2026-11-03**: the 2026-11-02 nightly backup (run 41483885958) decrypted with Alex's key and restored into a throwaway `supabase/postgres:17.6` container after `drop schema auth cascade`; one harmless error ("schema public already exists"). Restored: 26 sign-ins, every migration through `20261101000001`, 24 accounts, 24 players, 37 clinics, 31 registrations, 6 payments. Hosted at the same moment: 28, 73, 24, 24, 37, 32, 6, and exactly 2 sign-ins and 1 registration on hosted postdate the backup (read-only query), so every row the backup should hold came back. Container and decrypted dump deleted. Monthly; next due 2026-12-03 The nightly backup succeeded 2026-11-12 (run 43250303851); 2026-11-11's failed on the runner's DNS (apt could not resolve its mirror) and the next night's passed |
 | D5 | Tara's real templates and clinics in hosted, through the admin site | [Tara] | **DONE 2026-10-11**: her real clinics are on hosted from 2026-10-04 (read-only query 2026-10-21). Re-read 2026-11-12: 14 published clinics ahead, through 2026-11-20 (read-only query) |
 | D6 | Crash reporting and error alerts: MetricKit crash and hang reports into `app_diagnostics` through `report_app_diagnostic` (decision 0035) | [me]/[Alex] | **OPEN**: shipped in build 12 (PR #97 merged 2026-10-19; hosted has `20261014000001` and `20261014000002`, 69 of 69 paired; the live privacy page carries the MetricKit sentence; the nightly retention job runs `purge_app_diagnostics()`). Not yet seen end to end: `app_diagnostics` has 0 rows on hosted (2026-10-21), expected until a build-12 phone reports Re-read 2026-11-12: still 0 rows, with 302 devices on hosted; either no phone has crashed or reports are not arriving |
@@ -170,13 +169,13 @@ observer.
 
 | Layer | Runs where | Count (derived 2026-11-12 unless dated) | Gap |
 |---|---|---|---|
-| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 58 probes plus 19 shell probes (the races and the 200-request rush); the suite prints its own check total | none known |
+| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 59 probes plus 19 shell probes (the races and the 200-request rush); the suite prints its own check total | none known |
 | Stripe pipeline against stripe-mock | every PR | 94 checks as of 2026-09-28 | real Stripe behaviour: one live charge and refund, 2026-10-14 (A10) |
 | Push pipeline against a mock APNs | every PR | 57 checks as of 2026-09-28 | real APNs delivering since 2026-11-05 (C3) |
 | Web admin browser tests (Playwright, real sign-in) | every PR | 87 | a cold-start flake after a local reset (backlog) |
-| Swift unit tests (pure logic) | every PR | 329 | fine |
+| Swift unit tests (pure logic) | every PR | 330 | fine |
 | Hosted signed-out smoke (`scripts/hosted-smoke.sh`) | every PR, read-only against production | 162 targets as of 2026-10-11, including a browser preflight to each function the web admin calls | only the signed-out side |
-| XCUITests, player and admin flows, and Apple's accessibility audit | **local only** (section F) | 29 | run on a laptop before every TestFlight build, on iOS 17, 18 and 26 (`docs/ui-test-runs.log`) |
+| XCUITests, player and admin flows, and Apple's accessibility audit | **local only** (section F) | 30 | run on a laptop before every TestFlight build, on iOS 17, 18 and 26 (`docs/ui-test-runs.log`) |
 | Copy gate, secret scan (now Stripe keys too), migration immutability, icon gate, doc checks | every PR | – | none |
 | Nightly backup and consent purge | nightly | – | restored by hand monthly (D4, last 2026-11-03) |
 
@@ -246,10 +245,10 @@ each checked by an independent reviewer or the sql-auditor, then merged on
 
 ## F. The CI Supabase project (Alex asked 2026-09-12; corrected 2026-09-13; decided 2026-09-18)
 
-**Decided 2026-09-18: option 3.** Alex: *"nahh unless we really need it no more money for now."* No CI project, no Pro plan. The 29 XCUITests run on a laptop before every TestFlight build and the run is pasted into the changelog entry for that build; the `ios-ui-tests` job stays green with its notice until the three settings exist, so switching later is a dashboard visit and two secrets, nothing in the repo. Revisit when the first paying member exists (D3 wants point-in-time recovery then anyway). The rest of this section is kept as the record of why.
+**Decided 2026-09-18: option 3.** Alex: *"nahh unless we really need it no more money for now."* No CI project, no Pro plan. The 30 XCUITests run on a laptop before every TestFlight build and the run is pasted into the changelog entry for that build; the `ios-ui-tests` job stays green with its notice until the three settings exist, so switching later is a dashboard visit and two secrets, nothing in the repo. Revisit when the first paying member exists (D3 wants point-in-time recovery then anyway). The rest of this section is kept as the record of why.
 
 
-Alex gave the go-ahead on 2026-09-13 ("exact steps for me or can you do it all?"); the create was attempted the same day and refused, see below. Would it help a lot? Yes: it is the only way to run the 29 XCUITests on every PR, which is the layer that walks the app like a member does. The macOS runner has no Docker, so it cannot host the local stack; a small hosted project it can reset to the seed is the practical answer. Everything on our side is built and waiting (2026-09-13): the Debug app accepts `FXE_SUPABASE_URL` / `FXE_SUPABASE_ANON_KEY`, the UI tests forward them, and the `ios-ui-tests` job resets the project with `supabase db reset --db-url` and runs the suite with one retry. The job stays green with a notice until the secrets exist.
+Alex gave the go-ahead on 2026-09-13 ("exact steps for me or can you do it all?"); the create was attempted the same day and refused, see below. Would it help a lot? Yes: it is the only way to run the 30 XCUITests on every PR, which is the layer that walks the app like a member does. The macOS runner has no Docker, so it cannot host the local stack; a small hosted project it can reset to the seed is the practical answer. Everything on our side is built and waiting (2026-09-13): the Debug app accepts `FXE_SUPABASE_URL` / `FXE_SUPABASE_ANON_KEY`, the UI tests forward them, and the `ios-ui-tests` job resets the project with `supabase db reset --db-url` and runs the suite with one retry. The job stays green with a notice until the secrets exist.
 
 **Does it use the Volee slot? Yes, and Alex was right.** The 2026-09-12 version of this section said the free plan is two projects per organization. It is two active free projects per *user* across every org they own: `supabase projects create fxe-ci` on 2026-09-13 was refused with "Alex-Epstein (2 project limit)", because Volee and `fxe-tennis` already fill it. Three ways out, cheapest first:
 

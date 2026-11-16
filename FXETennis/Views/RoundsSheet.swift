@@ -10,9 +10,12 @@
 //  roster great".
 //
 //  Tara picks from You're In! and her guests: up to 3 rounds, courts 1 to 5,
-//  two sides of up to 3 (admin_set_round_court). A pro sees the same rounds,
-//  read-only, for a clinic in their week (clinic_rounds). Players never: the
-//  server gives them nothing to read.
+//  two sides of up to 3 (admin_set_round_court). A pro does the same for a
+//  clinic in their week (decision 0056, Tara 2026-11-11: "I think can change
+//  the rounds. That's totally fine. Probably need it in case I'm out of
+//  town"), picking from clinic_round_people, which this sheet reads itself
+//  for a pro; if that read fails the pro gets the rounds read-only, with the
+//  error line. Players never: the server gives them nothing to read or write.
 //
 
 import SwiftUI
@@ -55,11 +58,17 @@ struct RoundsSummary: View {
 struct RoundsSheet: View {
     let clinicId: UUID
     let clinicName: String
-    /// Who can be picked: You're In! then the guests. Empty for a pro.
+    /// Who can be picked: You're In! then the guests. Empty for a pro,
+    /// whose list comes from loadPeople.
     let people: [RoundPerson]
-    /// Tara edits; a pro only reads.
+    /// Tara edits, and a pro in their week (decision 0056).
     let editable: Bool
     var onSaved: () async -> Void = {}
+    /// A pro's sheet reads who can be picked from the server
+    /// (clinic_round_people) on every load. Until it answers, or if it
+    /// fails, the sheet only reads. Declared after onSaved so Tara's
+    /// trailing closure still lands on onSaved.
+    var loadPeople: (() async throws -> [RoundPerson])?
 
     @Environment(\.dismiss) private var dismiss
     @State private var spots: [RoundSpot] = []
@@ -71,6 +80,13 @@ struct RoundsSheet: View {
     @State private var loading = true
     @State private var saving = false
     @State private var error: String?
+    /// loadPeople's answer; nil before it and after a failed read.
+    @State private var loadedPeople: [RoundPerson]?
+
+    private var pickable: [RoundPerson] { loadedPeople ?? people }
+    /// Editing needs the list to pick from: with loadPeople, only once it
+    /// has answered.
+    private var canEdit: Bool { editable && (loadPeople == nil || loadedPeople != nil) }
 
     var body: some View {
         NavigationStack {
@@ -78,7 +94,7 @@ struct RoundsSheet: View {
                 Brand.surfaceGradient.ignoresSafeArea()
                 ScrollView {
                     VStack(alignment: .leading, spacing: Brand.Spacing.md) {
-                        if editable {
+                        if canEdit {
                             Picker("Round", selection: $round) {
                                 ForEach(Array(Rounds.rounds), id: \.self) { Text("Round \($0)").tag($0) }
                             }
@@ -94,7 +110,7 @@ struct RoundsSheet: View {
 
                         if loading {
                             ProgressView().frame(maxWidth: .infinity)
-                        } else if editable {
+                        } else if canEdit {
                             ForEach(Array(Rounds.courts), id: \.self) { court in courtEditor(court) }
                         } else if spots.isEmpty {
                             Text("No rounds yet.")
@@ -112,11 +128,11 @@ struct RoundsSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(editable ? "Cancel" : "Done") { dismiss() }
+                    Button(canEdit ? "Cancel" : "Done") { dismiss() }
                         .tint(Brand.textOnNavy)
                 }
                 .onNavy()
-                if editable {
+                if canEdit {
                     ToolbarItem(placement: .confirmationAction) {
                         Button(saving ? "Saving…" : "Save") { save() }
                             .disabled(saving || loading)
@@ -147,7 +163,7 @@ struct RoundsSheet: View {
                     let index = (side - 1) * Rounds.perSide + slot
                     Picker("Court \(court), side \(side), spot \(slot + 1)", selection: binding(court: court, index: index)) {
                         Text("Open").tag(UUID?.none)
-                        ForEach(people) { person in
+                        ForEach(pickable) { person in
                             Text(person.isGuest ? "\(person.name) (guest)" : person.name).tag(UUID?.some(person.id))
                         }
                     }
@@ -215,6 +231,16 @@ struct RoundsSheet: View {
         } catch {
             self.error = "Couldn't load the rounds."
         }
+        // A pro's list to pick from. A failed read leaves the rounds to read
+        // only, and says so unless the rounds' own failure already does.
+        if let loadPeople {
+            do {
+                loadedPeople = try await loadPeople()
+            } catch {
+                loadedPeople = nil
+                if self.error == nil { self.error = "Couldn't load the roster." }
+            }
+        }
     }
 
     /// Every court as saved, without anyone who has left (they are named
@@ -245,8 +271,11 @@ struct RoundsSheet: View {
                 await onSaved()
                 dismiss()
             } catch {
-                self.error = ClinicExtrasError.message(error)
+                // Reload first: load() clears the error line when the rounds
+                // read back, which used to wipe this one straight away.
+                let message = ClinicExtrasError.message(error)
                 await load()
+                self.error = message
             }
             saving = false
         }
