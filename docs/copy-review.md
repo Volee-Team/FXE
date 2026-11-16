@@ -36,6 +36,10 @@ read: sections A to D below, plus every "New since" block.
 > *"You're in the Player Pool. Tara picks from here."* in the walkthrough. Mine,
 > invented, one turn after the rule was written. The gate missed it because it
 > only scanned Swift and that string was in a web page. Now it scans everything.
+>
+> **Who signs off.** Since 2026-11-16 John signs off too. John: *"I will sign
+> off on new wording. Every permission alex and tara have, I should have."* A
+> section "awaiting Alex" is cleared by either of them.
 
 ---
 
