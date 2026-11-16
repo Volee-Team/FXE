@@ -236,8 +236,39 @@ test.describe("courts tab", () => {
       const [monday] = await db.get(`court_hours?weekday=eq.1&select=opens,closes`);
       expect(monday).toEqual({ opens: "08:00:00", closes: "21:00:00" });
     } finally {
-      for (const r of before) await db.patch(`app_settings?key=eq.${r.key}`, { value: r.value });
       await db.patch(`court_hours?weekday=eq.1`, { opens: "07:00", closes: "21:00" });
+      for (const r of before) await db.patch(`app_settings?key=eq.${r.key}`, { value: r.value });
+    }
+  });
+
+  // John, 2026-11-16: court booking only in TestFlight until he is sure.
+  // Tara picks the testers; each add or remove is saved at once.
+  test("testers: add a member, see them listed, take them off (kept as removed)", async ({ page, request }) => {
+    const db = service(request);
+    try {
+      await openCourts(page);
+      await page.getByRole("button", { name: "Court rules" }).click();
+      const dlg = page.locator("#court-rules");
+      await expect(dlg.getByText("Can book while courts are off (TestFlight)")).toBeVisible();
+      await expect(dlg.locator("#rs-testers")).toContainText("No testers yet.");
+      await dlg.getByLabel("Add a tester").fill("Whitf");
+      await dlg.getByRole("button", { name: "Add Ken Whitfield as a tester" }).click();
+      await expect(dlg.locator(`[data-tester="${KEN_A}"]`)).toContainText("Ken Whitfield");
+      let rows = await db.get(`court_testers?account_id=eq.${KEN_A}&select=removed_at,added_by`);
+      expect(rows).toEqual([{ removed_at: null, added_by: "11111111-1111-1111-1111-111111111111" }]);
+
+      // A reopened dialog reads the list again from the server.
+      await dlg.getByRole("button", { name: "Cancel" }).click();
+      await page.getByRole("button", { name: "Court rules" }).click();
+      await expect(dlg.locator(`[data-tester="${KEN_A}"]`)).toContainText("Ken Whitfield");
+
+      await dlg.getByRole("button", { name: "Remove Ken Whitfield as a tester" }).click();
+      await expect(dlg.locator("#rs-testers")).toContainText("No testers yet.");
+      rows = await db.get(`court_testers?account_id=eq.${KEN_A}&select=removed_at`);
+      expect(rows).toHaveLength(1);
+      expect(rows[0].removed_at).not.toBeNull();
+    } finally {
+      await db.del(`court_testers?account_id=eq.${KEN_A}`);
     }
   });
 });

@@ -6,9 +6,11 @@ About this clinic
 Accept
 Action Needed
 Add
+Add ${esc(name)} as a tester
 Add a card
 Add a card on your Profile to register.
 Add a player
+Add a tester
 Add guest
 Add to Calendar
 Add your first and last name.
@@ -38,6 +40,7 @@ Book a court
 Book up to (days ahead)
 Bookings a day, per person
 Call
+Can book while courts are off (TestFlight)
 Cancel
 Cancel Invite
 Cancel Registration
@@ -177,8 +180,9 @@ Member price
 Members attended
 Members can book courts
 Members can book courts.
-Members can't see or book courts yet. Only you can book until you turn on court booking for members in Court rules.
+Members can't see or book courts yet. Only you, and the testers in Court rules on the TestFlight app, can book until you turn on court booking for members.
 Members get 24-hour early access to all clinics
+Members on this list can book from the TestFlight app before court booking is on for everyone. Added and removed right away.
 Members, 60 min
 Members, 90 min
 Message
@@ -216,6 +220,7 @@ No room
 No rounds yet.
 No saved messages yet.
 No templates yet.
+No testers yet.
 No upcoming clinics.
 Nobody by that name yet. They may need to sign up in the app first.
 Nobody can book a blocked court. Bookings already made stay until you cancel them.
@@ -227,6 +232,7 @@ Non-members attended
 Non-members can take one 105 a day until 48 hours before.
 Non-members, 60 min
 Non-members, 90 min
+Not a member: can book only if an administrator.
 Not available yet.
 Not charged yet
 Not late yet.
@@ -290,6 +296,7 @@ Remind me
 Remind unpaid (\(model.unpaidCount))
 Reminder set
 Remove
+Remove ${esc(name)} as a tester
 Remove \(entry.displayName)
 Remove \(entry.displayName) from the Waitlist
 Remove block
@@ -418,7 +425,7 @@ What happened? Anything odd?
 What is 105?
 When we believe it is necessary to disclose personal information to investigate, prevent, or take action regarding illegal activities, suspected fraud, potential threats to anyone's physical safety, or as otherwise required by law.
 When's my next clinic in \(.applicationName)
-While this is off, members can't see or book courts. Only you can.
+While this is off, members can't see or book courts. Only you, and the testers below on the TestFlight app, can.
 Who is it for?
 Write a message first.
 Write it the way you'd say it

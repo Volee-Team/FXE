@@ -130,7 +130,7 @@ export function wireCourts(sb, { $, esc, friendly, note }) {
   function drawLive(live) {
     $("ct-live").innerHTML = live
       ? `<span class="chip in">On</span> <span>Members can book courts.</span>`
-      : `<span class="chip pool">Off</span> <span>Members can't see or book courts yet. Only you can book until you turn on court booking for members in Court rules.</span>`;
+      : `<span class="chip pool">Off</span> <span>Members can't see or book courts yet. Only you, and the testers in Court rules on the TestFlight app, can book until you turn on court booking for members.</span>`;
   }
 
   function drawWarnings(d) {
@@ -402,9 +402,64 @@ export function wireCourts(sb, { $, esc, friendly, note }) {
           <label class="sr-only" for="rs-close-${wd}">${name} closes</label>
           <input id="rs-close-${wd}" type="time" step="900" value="${hoursRead[wd].closes}" style="width:auto">
         </div>`).join("");
+      $("rs-tester-query").value = ""; $("rs-tester-results").innerHTML = "";
+      await loadTesters();
       $("court-rules").showModal();
     } catch (err) { note($("ct-msg"), words(err)); }
   };
+
+  // ------------------------------------------------------------ testers
+  // Each add or remove is saved at once, apart from the rules' Save.
+  async function loadTesters() {
+    const { data, error } = await sb.rpc("admin_court_testers");
+    if (error) { $("rs-testers").innerHTML = ""; return note($("rs-msg"), words(error)); }
+    $("rs-testers").innerHTML = (data || []).length ? data.map(t => {
+      const name = `${t.first_name} ${t.last_name}`;
+      return `<div class="row" data-tester="${t.account_id}">
+        <span class="grow"><span class="name">${esc(name)}</span>${t.is_member ? "" : `<br><span class="muted">Not a member: can book only if an administrator.</span>`}</span>
+        <button type="button" class="small" data-tester-off="${t.account_id}" aria-label="Remove ${esc(name)} as a tester">Remove</button>
+      </div>`;
+    }).join("") : `<p class="muted" style="margin:0">No testers yet.</p>`;
+  }
+  async function setTester(accountId, on) {
+    const { error } = await sb.rpc("admin_set_court_tester", { p_account: accountId, p_on: on });
+    if (error) return note($("rs-msg"), words(error));
+    note($("rs-msg"), "");
+    await loadTesters();
+  }
+  let testerTimer = null;
+  $("rs-tester-query").addEventListener("input", () => {
+    clearTimeout(testerTimer);
+    testerTimer = setTimeout(async () => {
+      const q = $("rs-tester-query").value.trim();
+      if (q.length < 2) { $("rs-tester-results").innerHTML = ""; return; }
+      const { data, error } = await sb.rpc("search_players", { p_query: q, p_include_inactive: false });
+      if (q !== $("rs-tester-query").value.trim()) return;
+      if (error) return note($("rs-msg"), words(error));
+      const adults = (data || []).filter(p => p.kind === "adult");
+      $("rs-tester-results").innerHTML = adults.length ? adults.map(p => {
+        const name = `${p.first_name} ${p.last_name}`;
+        return `<div class="row"><span class="grow"><span class="name">${esc(name)}</span><br>
+          <span class="muted">${p.is_member ? "Member" : "Non-member"}</span></span>
+          <button type="button" class="small" data-tester-on="${p.id}" aria-label="Add ${esc(name)} as a tester">Add</button></div>`;
+      }).join("") : `<p class="muted">Nobody by that name yet. They may need to sign up in the app first.</p>`;
+    }, 250);
+  });
+  $("rs-tester-results").addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-tester-on]");
+    if (!b) return;
+    b.disabled = true;
+    const { data: pl, error } = await sb.from("players").select("account_id").eq("id", b.dataset.testerOn).single();
+    if (error) { b.disabled = false; return note($("rs-msg"), words(error)); }
+    await setTester(pl.account_id, true);
+    $("rs-tester-query").value = ""; $("rs-tester-results").innerHTML = "";
+  });
+  $("rs-testers").addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-tester-off]");
+    if (!b) return;
+    b.disabled = true;
+    await setTester(b.dataset.testerOff, false);
+  });
   $("rs-cancel").onclick = () => $("court-rules").close();
   $("rs-save").onclick = async () => {
     const live = $("rs-live").checked;

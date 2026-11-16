@@ -404,7 +404,7 @@ table.signups th { font-weight: 600; color: #6E6552; }
   <label style="display:flex;align-items:center;gap:8px;margin-top:0;cursor:pointer;color:var(--fxe-text-primary)">
     <input type="checkbox" id="rs-live" style="width:18px;height:18px;min-height:0">
     <span><span class="name">Members can book courts</span><br>
-    <span class="muted">While this is off, members can't see or book courts. Only you can.</span></span>
+    <span class="muted">While this is off, members can't see or book courts. Only you, and the testers below on the TestFlight app, can.</span></span>
   </label>
   <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--fxe-text-primary)">
     <input type="checkbox" id="rs-members" style="width:18px;height:18px;min-height:0">
@@ -422,6 +422,16 @@ table.signups th { font-weight: 600; color: #6E6552; }
   </div>
   <p class="name" style="margin:14px 0 4px">Hours</p>
   <div id="rs-hours"></div>
+  <!-- John, 2026-11-16: court booking only in TestFlight until he is sure.
+       Each add or remove is saved at once (admin_set_court_tester); the app
+       shows Book a Court only on a TestFlight install that the server lets
+       book (courts_available_for_me). -->
+  <p class="name" style="margin:14px 0 4px" id="rs-testers-label">Can book while courts are off (TestFlight)</p>
+  <p class="muted" style="margin:0 0 6px">Members on this list can book from the TestFlight app before court booking is on for everyone. Added and removed right away.</p>
+  <div id="rs-testers" role="group" aria-labelledby="rs-testers-label"></div>
+  <label for="rs-tester-query">Add a tester</label>
+  <input id="rs-tester-query" placeholder="Search by name">
+  <div id="rs-tester-results" style="margin-top:8px"></div>
   <div id="rs-msg"></div>
   <div class="row" style="margin-top:14px">
     <span class="grow"></span>

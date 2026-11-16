@@ -709,7 +709,7 @@ cap; `saved-messages.js`: Tara's saved messages in the Message dialog;
 `courts.js`: the Courts tab, decision 0058: a day of the five courts from
 `admin_court_day`, Book a court, Block courts listing the bookings under a
 block, a warning for every booking a clinic or block overlaps, and Court rules
-with the members switch and the hours), and `vendor/supabase-js.js`, plus the Playwright tooling (`package.json`,
+with the members switch, the hours and the TestFlight testers), and `vendor/supabase-js.js`, plus the Playwright tooling (`package.json`,
 `playwright.config.mjs`, `tests/`). **supabase-js is vendored**, never loaded
 from a CDN (MVP audit 2026-09-27, item 17; it came from esm.sh at a floating
 `@2` until then): the npm package's own browser bundle at the exact version
@@ -921,7 +921,7 @@ Supabase project was decided against on 2026-09-18 (`docs/launch-checklist.md`
 §F). They run on a Mac through `scripts/run-ui-tests.sh` on iOS 18 and 26 (17 too until 2026-10-30, when it stopped being downloadable),
 and the `ui-test-record` job fails a PR whose code has no green record.
 
-**Web admin**: 92 Playwright tests (`web/tests/*.spec.mjs`) walk Tara's
+**Web admin**: 93 Playwright tests (`web/tests/*.spec.mjs`) walk Tara's
 side against a fresh seed: sign-in and the non-admin door, prices, walk-up,
 courts, unpaid reminder, a note round-trip, cancel clinic, template archive
 and restore, Money counts, the card-payments ledger, payments off, the
@@ -938,7 +938,8 @@ a Pool row and the Players tab (`tools.spec.mjs`); the Courts tab (`courts.spec.
 the day with a seed clinic holding its courts, a booking for a member with her
 note then canceled, a block listing the booking under it and canceling nobody,
 a clinic published over a booking warned, and the court rules refusing a bad
-value then saving with the members switch; and the members' site
+value then saving with the members switch, and a TestFlight tester added,
+listed and taken off (kept as removed); and the members' site
 (`play.spec.mjs`, since 2026-10-25): a fresh browser signed out with only
 this site's scripts, its own sign-in apart from the admin's, Register with a
 note, the Player Pool when full, Accept and Decline, the 3-hour late cancel
