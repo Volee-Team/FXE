@@ -31,7 +31,15 @@
 --     whether members see that at all is question 165, and courts_live
 --     stays off until she answers (decision 0058, Open).
 --   * Nothing on a member's side answers while courts_live is off, their
---     own bookings and cancels included.
+--     own bookings and cancels included, EXCEPT for testers: John,
+--     2026-11-16, "we are going to do the court booking just in testflight
+--     until we are 100% sure tis good". Tara (or John, as an admin) puts an
+--     account on court_testers; while not live, a tester that is a member
+--     or an admin uses the member side as if it were live. The app shows
+--     Book a Court only on a TestFlight install AND when
+--     courts_available_for_me() is true; this list is the server's half.
+--     Testers are chosen on the laptop, never named in code (the repo is
+--     public).
 --   * Tara books for anyone outside the member rules (hours, length, window,
 --     limits, membership), but never over another booking, a block or a
 --     clinic, and never on a court taken out of use. Her note on a booking
@@ -128,6 +136,19 @@ create table public.court_blocks (
 );
 create index court_blocks_live on public.court_blocks (starts_at) where removed_at is null;
 
+-- Who may use the member side before courts_live (John, 2026-11-16: only
+-- TestFlight testers until he is sure). Archived, never deleted: taking
+-- someone off stamps removed_at; adding them again is a new row.
+create table public.court_testers (
+  id         uuid primary key default gen_random_uuid(),
+  account_id uuid not null references public.accounts (id),
+  added_at   timestamptz not null default now(),
+  added_by   uuid references public.accounts (id),
+  removed_at timestamptz,
+  removed_by uuid references public.accounts (id)
+);
+create unique index court_testers_one_live on public.court_testers (account_id) where removed_at is null;
+
 -- Reached only through the functions below (hard rules 1 and 11): no client
 -- grant at all, RLS on with no policy, and service_role's DML as on every
 -- table (20260912000002).
@@ -135,10 +156,13 @@ alter table public.courts         enable row level security;
 alter table public.court_hours    enable row level security;
 alter table public.court_bookings enable row level security;
 alter table public.court_blocks   enable row level security;
-revoke all on public.courts, public.court_hours, public.court_bookings, public.court_blocks
+alter table public.court_testers  enable row level security;
+revoke all on public.courts, public.court_hours, public.court_bookings, public.court_blocks,
+              public.court_testers
   from public, anon, authenticated;
 grant select, insert, update, delete
-  on public.courts, public.court_hours, public.court_bookings, public.court_blocks
+  on public.courts, public.court_hours, public.court_bookings, public.court_blocks,
+     public.court_testers
   to service_role;
 
 -- ------------------------------------------------------ internal helpers
@@ -198,24 +222,33 @@ $$;
 revoke all on function public.court_taken_ranges(timestamptz, timestamptz) from public, anon, authenticated;
 
 -- The caller may use a member's side: signed in, not deleted, switched on,
--- and a member while court_members_only is on. Raises otherwise.
+-- and a member while court_members_only is on. Before the switch, only a
+-- tester who is a member or an admin. Raises otherwise.
 create or replace function public.court_require_member()
 returns uuid
 language plpgsql stable
 set search_path = public, pg_temp as $$
-declare v_uid uuid := auth.uid();
+declare
+  v_uid    uuid := auth.uid();
+  v_member boolean;
 begin
   if v_uid is null or not exists (
        select 1 from public.accounts where id = v_uid and deleted_at is null) then
     raise exception 'not_authorized' using errcode = '42501';
   end if;
+  v_member := exists (
+    select 1 from public.players
+     where account_id = v_uid and kind = 'adult' and is_member and is_active);
   if coalesce(public.court_setting('courts_live'), 'false') <> 'true' then
-    raise exception 'courts_not_live' using errcode = 'P0001';
+    -- A tester who is not a member (or an admin) is told what anyone is.
+    if not exists (select 1 from public.court_testers
+                    where account_id = v_uid and removed_at is null)
+       or not (v_member or public.is_admin()) then
+      raise exception 'courts_not_live' using errcode = 'P0001';
+    end if;
+    return v_uid;
   end if;
-  if coalesce(public.court_setting('court_members_only'), 'true') = 'true'
-     and not exists (
-       select 1 from public.players
-        where account_id = v_uid and kind = 'adult' and is_member and is_active) then
+  if coalesce(public.court_setting('court_members_only'), 'true') = 'true' and not v_member then
     raise exception 'members_only' using errcode = 'P0001';
   end if;
   return v_uid;
@@ -619,6 +652,57 @@ begin
   update public.court_hours set opens = p_opens, closes = p_closes where weekday = p_weekday;
 end; $$;
 
+-- Whether the member side would answer the caller right now: live and
+-- allowed, or a tester before the switch. The app shows Book a Court only
+-- when this is true on a TestFlight install (decision 0058).
+create or replace function public.courts_available_for_me()
+returns boolean
+language plpgsql stable security definer
+set search_path = public, pg_temp as $$
+begin
+  perform public.court_require_member();
+  return true;
+exception when sqlstate 'P0001' or sqlstate '42501' then
+  return false;
+end; $$;
+
+create or replace function public.admin_set_court_tester(p_account uuid, p_on boolean)
+returns void
+language plpgsql volatile security definer
+set search_path = public, pg_temp as $$
+begin
+  perform public.require_admin();
+  if p_account is null or p_on is null or not exists (
+       select 1 from public.accounts where id = p_account and deleted_at is null) then
+    raise exception 'no_such_account' using errcode = 'P0001';
+  end if;
+  if p_on then
+    insert into public.court_testers (account_id, added_by)
+    values (p_account, auth.uid())
+    on conflict (account_id) where removed_at is null do nothing;
+  else
+    update public.court_testers set removed_at = now(), removed_by = auth.uid()
+     where account_id = p_account and removed_at is null;
+  end if;
+end; $$;
+
+create or replace function public.admin_court_testers()
+returns table (account_id uuid, first_name text, last_name text, is_member boolean, added_at timestamptz)
+language plpgsql stable security definer
+set search_path = public, pg_temp as $$
+begin
+  perform public.require_admin();
+  return query
+    select t.account_id, a.first_name, a.last_name,
+           exists (select 1 from public.players p
+                    where p.account_id = t.account_id and p.kind = 'adult' and p.is_member and p.is_active),
+           t.added_at
+      from public.court_testers t
+      join public.accounts a on a.id = t.account_id
+     where t.removed_at is null and a.deleted_at is null
+     order by a.last_name, a.first_name;
+end; $$;
+
 -- -------------------------------------------- deleting an account
 -- Every path that deletes (delete_my_account or anything else that sets
 -- accounts.deleted_at) cancels that account's upcoming bookings, by a
@@ -632,6 +716,8 @@ begin
   update public.court_bookings
      set status = 'canceled', canceled_at = now(), canceled_by = new.id
    where account_id = new.id and status = 'booked' and starts_at > now();
+  update public.court_testers set removed_at = now(), removed_by = new.id
+   where account_id = new.id and removed_at is null;
   return new;
 end; $$;
 revoke all on function public.court_bookings_forget_deleted_account() from public, anon, authenticated;
@@ -656,7 +742,10 @@ revoke all on function
   public.admin_book_court(uuid, integer, timestamptz, timestamptz, text),
   public.admin_cancel_court_booking(uuid),
   public.admin_set_court_settings(jsonb),
-  public.admin_set_court_hours(integer, time, time)
+  public.admin_set_court_hours(integer, time, time),
+  public.courts_available_for_me(),
+  public.admin_set_court_tester(uuid, boolean),
+  public.admin_court_testers()
   from public, anon, authenticated;
 grant execute on function
   public.court_day(date),
@@ -669,5 +758,8 @@ grant execute on function
   public.admin_book_court(uuid, integer, timestamptz, timestamptz, text),
   public.admin_cancel_court_booking(uuid),
   public.admin_set_court_settings(jsonb),
-  public.admin_set_court_hours(integer, time, time)
+  public.admin_set_court_hours(integer, time, time),
+  public.courts_available_for_me(),
+  public.admin_set_court_tester(uuid, boolean),
+  public.admin_court_testers()
   to authenticated;

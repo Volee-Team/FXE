@@ -12,6 +12,15 @@
 --       7:00 AM to 9:00 PM every day.
 --   l   Until Tara switches it on (courts_live), a member can neither book
 --       nor read a day; Tara can.
+--   t   Testers (John, 2026-11-16: "we are going to do the court booking
+--       just in testflight until we are 100% sure tis good"): while it is
+--       not live, an account Tara put on court_testers that is a member (or
+--       an admin) books, reads a day, lists and cancels its own; a non-tester
+--       and a non-member tester are refused courts_not_live; taking a tester
+--       off refuses them again (the row is kept, removed). Only Tara changes
+--       the list. courts_available_for_me() says whether the member side
+--       would answer the caller: false for a non-tester before the switch,
+--       true for a member after it, false for a non-member after it.
 --   m   A non-member is refused (members_only), and nothing is written.
 --   b   No double booking on a court; back to back is fine.
 --   r   The shape: length, start minute, hours, the window, the past.
@@ -118,7 +127,7 @@ declare
   b_maria2 uuid; b_maria3 uuid; b_ken2 uuid; b_ken3 uuid; b_past uuid;
   c_hold uuid; c_assigned uuid; c_draft uuid; c_canceled uuid;
   k_rain uuid; k_all uuid;
-  b_rob uuid; c_union uuid; c_105 uuid; reg_105 uuid; st text;
+  b_rob uuid; c_union uuid; c_105 uuid; reg_105 uuid; st text; b_tester uuid;
   fns text[] := array[
     'court_day(date)', 'book_court(integer,timestamp with time zone,integer,text)',
     'cancel_court_booking(uuid)', 'my_court_bookings()',
@@ -126,7 +135,8 @@ declare
     'admin_remove_court_block(uuid)',
     'admin_book_court(uuid,integer,timestamp with time zone,timestamp with time zone,text)',
     'admin_cancel_court_booking(uuid)', 'admin_set_court_settings(jsonb)',
-    'admin_set_court_hours(integer,time without time zone,time without time zone)'];
+    'admin_set_court_hours(integer,time without time zone,time without time zone)',
+    'admin_set_court_tester(uuid,boolean)', 'admin_court_testers()', 'courts_available_for_me()'];
 begin
   -- ----------------------------------------------------------- d, defaults
   got := pg_temp.q($q$
@@ -168,11 +178,82 @@ begin
   got := pg_temp.as_user(TARA, format('select (public.admin_court_day(%L) is not null)::text', d0 + 2));
   insert into _probe_result values ('l5_not_live_tara_reads_a_day', 'ok:true', got);
 
+  -- ------------------------------------------- t, testers before the switch
+  got := pg_temp.as_user(KEN, $q$select public.courts_available_for_me()::text$q$);
+  insert into _probe_result values ('t1_not_a_tester_nothing_available', 'ok:false', got);
+  got := pg_temp.as_user(TARA, format('select public.admin_set_court_tester(%L, true)', KEN));
+  insert into _probe_result values ('t2_tara_adds_a_tester', 'ok:', got);
+  got := pg_temp.as_user(TARA, format('select public.admin_set_court_tester(%L, true)', KEN));
+  insert into _probe_result values ('t2_adding_twice_is_harmless', 'ok:', got);
+  got := pg_temp.q(format('select count(*)::text from public.court_testers where account_id = %L and removed_at is null', KEN));
+  insert into _probe_result values ('t2_one_live_row', '1', got);
+  got := pg_temp.as_user(KEN, $q$select public.courts_available_for_me()::text$q$);
+  insert into _probe_result values ('t3_tester_available', 'ok:true', got);
+  got := pg_temp.as_user(MARIA, $q$select public.courts_available_for_me()::text$q$);
+  insert into _probe_result values ('t3_non_tester_not_available', 'ok:false', got);
+  got := pg_temp.as_user(KEN, format(
+    'select public.book_court(1, %L, 60)', ((d0 + 4) + time '08:00') at time zone NY));
+  insert into _probe_result values ('t4_tester_books_while_not_live', 'ok:', left(got, 3));
+  b_tester := pg_temp.idof(got);
+  got := pg_temp.q(format('select status || '' '' || court::text from public.court_bookings where id = %L', b_tester));
+  insert into _probe_result values ('t4_tester_booking_row', 'booked 1', got);
+  got := pg_temp.as_user(KEN, format('select (public.court_day(%L) is not null)::text', d0 + 4));
+  insert into _probe_result values ('t5_tester_reads_a_day', 'ok:true', got);
+  got := pg_temp.as_user(KEN, $q$select count(*)::text from public.my_court_bookings()$q$);
+  insert into _probe_result values ('t5_tester_lists_own', 'ok:1', got);
+  got := pg_temp.as_user(KEN, format('select public.cancel_court_booking(%L)', b_tester));
+  insert into _probe_result values ('t6_tester_cancels', 'ok:', got);
+  got := pg_temp.q(format('select status from public.court_bookings where id = %L', b_tester));
+  insert into _probe_result values ('t6_tester_cancel_row', 'canceled', got);
+  got := pg_temp.as_user(MARIA, format(
+    'select public.book_court(2, %L, 60)', ((d0 + 4) + time '08:00') at time zone NY));
+  insert into _probe_result values ('t7_non_tester_still_refused', 'err:courts_not_live', got);
+  -- A tester who is not a member (Rob) gets nothing either.
+  got := pg_temp.as_user(TARA, format('select public.admin_set_court_tester(%L, true)', ROB));
+  got := pg_temp.as_user(ROB, format(
+    'select public.book_court(2, %L, 60)', ((d0 + 4) + time '09:00') at time zone NY));
+  insert into _probe_result values ('t8_non_member_tester_refused', 'err:courts_not_live', got);
+  got := pg_temp.as_user(ROB, $q$select public.courts_available_for_me()::text$q$);
+  insert into _probe_result values ('t8_non_member_tester_not_available', 'ok:false', got);
+  -- An admin tester (Tara has no member row) may use the member side.
+  got := pg_temp.as_user(TARA, format('select public.admin_set_court_tester(%L, true)', TARA));
+  got := pg_temp.as_user(TARA, format('select (public.court_day(%L) is not null)::text', d0 + 4));
+  insert into _probe_result values ('t9_admin_tester_reads_a_day', 'ok:true', got);
+  got := pg_temp.as_user(TARA, $q$select string_agg(first_name, ',' order by first_name) from public.admin_court_testers()$q$);
+  insert into _probe_result values ('t10_tara_lists_testers', 'ok:Ken,Rob,Tara', got);
+  got := pg_temp.as_user(KEN, $q$select count(*)::text from public.admin_court_testers()$q$);
+  insert into _probe_result values ('t10_member_cannot_list_testers', 'err:not_authorized', got);
+  got := pg_temp.as_user(KEN, format('select public.admin_set_court_tester(%L, true)', MARIA));
+  insert into _probe_result values ('t11_member_cannot_add_a_tester', 'err:not_authorized', got);
+  got := pg_temp.q(format('select count(*)::text from public.court_testers where account_id = %L', MARIA));
+  insert into _probe_result values ('t11_nothing_written', '0', got);
+  got := pg_temp.as_user(TARA, format('select public.admin_set_court_tester(%L, true)', gen_random_uuid()));
+  insert into _probe_result values ('t12_no_such_account', 'err:no_such_account', got);
+  -- Off again: refused again, the row kept as history.
+  got := pg_temp.as_user(TARA, format('select public.admin_set_court_tester(%L, false)', KEN));
+  insert into _probe_result values ('t13_tara_removes_a_tester', 'ok:', got);
+  got := pg_temp.as_user(KEN, format(
+    'select public.book_court(1, %L, 60)', ((d0 + 4) + time '10:00') at time zone NY));
+  insert into _probe_result values ('t13_removed_tester_refused', 'err:courts_not_live', got);
+  got := pg_temp.as_user(KEN, $q$select public.courts_available_for_me()::text$q$);
+  insert into _probe_result values ('t13_removed_tester_not_available', 'ok:false', got);
+  got := pg_temp.q(format('select count(*)::text from public.court_testers where account_id = %L and removed_at is not null and removed_by = %L', KEN, TARA));
+  insert into _probe_result values ('t13_row_kept_as_removed', '1', got);
+  got := pg_temp.as_user(TARA, format('select public.admin_set_court_tester(%L, false)', KEN));
+  insert into _probe_result values ('t13_removing_twice_is_harmless', 'ok:', got);
+  perform pg_temp.as_user(TARA, format('select public.admin_set_court_tester(%L, false)', ROB));
+  perform pg_temp.as_user(TARA, format('select public.admin_set_court_tester(%L, false)', TARA));
+
   -- Switch on, through Tara's own setting (a6 checks it refuses members).
   got := pg_temp.as_user(TARA, $q$select public.admin_set_court_settings('{"courts_live":"true"}')$q$);
   insert into _probe_result values ('l6_tara_switches_it_on', 'ok:', left(got, 3));
   -- Two more members for the checks below (inside this transaction only).
   update public.players set is_member = true where account_id in (PRIYA, THEO);
+
+  got := pg_temp.as_user(MARIA, $q$select public.courts_available_for_me()::text$q$);
+  insert into _probe_result values ('t14_live_member_available', 'ok:true', got);
+  got := pg_temp.as_user(ROB, $q$select public.courts_available_for_me()::text$q$);
+  insert into _probe_result values ('t14_live_non_member_not_available', 'ok:false', got);
 
   -- --------------------------------------------------------- m, members only
   got := pg_temp.as_user(ROB, format(
@@ -193,7 +274,8 @@ begin
   got := pg_temp.as_user(KEN, format(
     'select public.book_court(1, %L, 60)', ((d0 + 2) + time '10:30') at time zone NY));
   insert into _probe_result values ('b2_overlap_refused', 'err:court_taken', got);
-  got := pg_temp.q(format('select count(*)::text from public.court_bookings where account_id = %L', KEN));
+  -- Booked rows only: Ken's tester booking above was canceled (t6).
+  got := pg_temp.q(format('select count(*)::text from public.court_bookings where account_id = %L and status = ''booked''', KEN));
   insert into _probe_result values ('b2_overlap_nothing_written', '0', got);
   got := pg_temp.as_user(KEN, format(
     'select public.book_court(1, %L, 60)', ((d0 + 2) + time '11:00') at time zone NY));
@@ -588,7 +670,13 @@ begin
   insert into _probe_result values ('o3_court_day_opens_is_internal', 'false', got);
 
   -- ------------------------------------------------- x, deleting an account
+  begin
+    execute format('insert into public.court_testers (account_id, added_by) values (%L, %L)', MARIA, TARA);
+  exception when others then null;   -- before the migration: x3 reads the error
+  end;
   update public.accounts set deleted_at = now() where id = MARIA;
+  got := pg_temp.q(format('select count(*)::text from public.court_testers where account_id = %L and removed_at is null', MARIA));
+  insert into _probe_result values ('x3_deleting_takes_a_tester_off', '0', got);
   got := pg_temp.q(format($q$select coalesce(string_agg(status, ',' order by starts_at), '') from public.court_bookings
                               where account_id = %L and starts_at > now()$q$, MARIA));
   insert into _probe_result values ('x1_deleting_cancels_upcoming', 'canceled,canceled,canceled', got);
@@ -606,11 +694,12 @@ begin
   insert into _probe_result values ('g2_signed_in_clients_call_them', array_length(fns, 1)::text, got);
   got := pg_temp.q($q$select string_agg(relname || ':' || relrowsecurity::text, ',' order by relname) from pg_class
                       where oid in ('public.courts'::regclass, 'public.court_hours'::regclass,
-                                    'public.court_bookings'::regclass, 'public.court_blocks'::regclass)$q$);
+                                    'public.court_bookings'::regclass, 'public.court_blocks'::regclass,
+                                    'public.court_testers'::regclass)$q$);
   insert into _probe_result values ('g3_rls_on_every_new_table',
-    'court_blocks:true,court_bookings:true,court_hours:true,courts:true', got);
+    'court_blocks:true,court_bookings:true,court_hours:true,court_testers:true,courts:true', got);
   got := pg_temp.q($q$select count(*)::text from unnest(array['public.courts', 'public.court_hours',
-        'public.court_bookings', 'public.court_blocks']) t,
+        'public.court_bookings', 'public.court_blocks', 'public.court_testers']) t,
         unnest(array['SELECT','INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER']) p,
         unnest(array['anon','authenticated']) r
       where has_table_privilege(r, t, p)$q$);

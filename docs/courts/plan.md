@@ -33,17 +33,22 @@ Its app books one court at a time and cannot see clinics.
 holds its courts automatically. Tara no longer has to block them twice in two
 systems.
 
-## Releases: the website first, the app after
+## Releases: TestFlight testers first, then everyone
+
+John, 2026-11-16: *"we are going to do the court booking just in testflight
+until we are 100% sure tis good"*. Decision 0058 has the mechanism.
 
 | Step | What | Needs App Store? |
 |---|---|---|
-| **1. Server** | Courts, hours, bookings and blocks; the booking and cancel functions; probes written red first | No. Goes live as soon as it is green. Old apps see nothing new (new tables only) |
-| **2. Members' site** (`web/play/`) | Book a Court: pick a day, see free and taken times on each court, book, see My Courts, cancel | No. Deploys any time |
-| **3. Tara's laptop** | The day grid of all five courts; block a court or a time; book or cancel for anyone; set the hours and rules | No |
-| **4. The app** | Book a Court on Home, My Courts on Profile, a reminder notification | Yes: **1.0.5**, alongside juniors |
+| **1. Server** | Courts, hours, bookings and blocks; the booking and cancel functions; the testers list (`court_testers`, `courts_available_for_me`); probes written red first | No. Goes live as soon as it is green. Old apps see nothing new (new tables only) |
+| **2. Tara's laptop** | The day grid of all five courts; block a court or a time; book or cancel for anyone; set the hours and rules; choose the testers | No. Built 2026-11-16 |
+| **3. The app, testers only** | Book a Court on Home, My Courts on Profile, a reminder notification. Shown only on a TestFlight install that `courts_available_for_me()` allows | Yes: **1.0.5** on TestFlight, alongside juniors |
+| **4. Everyone** | Tara (with John) turns `courts_live` on after her answers to 156 to 165, 165 above all; then the members' site (`web/play/`) gets Book a Court and My Courts, and the App Store app shows it | The switch is the server's; the App Store build must carry the screen |
 
-Steps 1 to 3 can be live within about a week of Tara's answers to 156 to 159.
-The app follows in 1.0.5, due about 2026-12-20.
+The members' website does not book while courts are off: it is not a
+TestFlight install, so the testers phase is the app only. The server and
+the laptop can be live within about a week; the app's tester build follows
+in 1.0.5, due about 2026-12-20.
 
 **Juniors timing:** juniors phase 2 waits on her answer to 146 anyway, so
 courts fill that gap. The January 1 juniors target stays first if the two
@@ -64,7 +69,7 @@ collide.
 | Cancel | Any time before the start, from the app or the site | 162 |
 | What others see | Taken or free, never who booked it | 163 |
 | Clinics | A published clinic holds courts from its start to its end. How many and which courts: question 165. Until then, the courts she assigns, else ceil(capacity / 4) courts counted from court 5 down | 165 |
-| Switch date | Not live for members until she picks a date | 164 |
+| Switch date | Not live for members until she picks a date; TestFlight testers only until then (John, 2026-11-16) | 164 |
 
 ## Data model
 
@@ -89,6 +94,8 @@ collide.
 
 - `court_day(date)`: every court's free and taken times for a member, with no
   names.
+- `courts_available_for_me()`: whether the member side would answer the
+  caller (live, or a tester before the switch).
 - `book_court`, `cancel_court_booking` and `my_court_bookings`.
 - `admin_court_day`, `admin_block_courts`, `admin_book_court` and
   `admin_cancel_court_booking`. These show names and are Tara's only.

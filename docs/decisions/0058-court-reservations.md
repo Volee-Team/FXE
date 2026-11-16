@@ -22,6 +22,32 @@ the functions the members' site, Tara's laptop and the app will call.
 cancels included, and only her side works. Nothing an app already on a
 phone reads changes: new tables, new functions and new settings keys only.
 
+**TestFlight testers first** (John, 2026-11-16: *"we are going to do the
+court booking just in testflight until we are 100% sure tis good"*). Court
+booking is used only by TestFlight testers until John is sure. Two halves,
+both needed:
+
+- **The app** shows Book a Court only on a TestFlight install (the
+  `AppTransaction` environment is sandbox, or the receipt is the sandbox
+  one) **and** when `courts_available_for_me()` is true. An App Store
+  install never shows it, whatever the server says.
+- **The server** keeps a testers list, `court_testers`. While `courts_live`
+  is false, an account on it that is a member (or an admin) uses the member
+  side as if it were live: books, reads a day, lists and cancels its own.
+  Everyone else, a non-member tester included, still gets
+  `courts_not_live`. Taking a tester off stamps `removed_at` (the row is
+  kept) and refuses them again; deleting an account takes it off.
+  `courts_available_for_me()` answers whether the member side would answer
+  the caller right now (a live member, or a tester before the switch), so
+  the app never shows a button the server refuses.
+- **Who is a tester** is Tara's or John's choice on the laptop (Court
+  rules, "Can book while courts are off (TestFlight)"), through
+  `admin_set_court_tester` and `admin_court_testers`. Never named in code:
+  the repo is public.
+
+The members' website stays off for booking until `courts_live`: it is not
+a TestFlight install, so the testers phase is the app only.
+
 **The rules are settings, each checked when Tara changes it:**
 
 | Rule | Default | Her question |
@@ -101,6 +127,8 @@ and is not the caller's. Whether it is shown at all is left unpinned until
 - **Publishing a clinic, or assigning a court on it.** A booking can already
   sit on those courts. Tara's day shows both. Step 3 (her laptop) should warn
   when she publishes.
+- **Taking a tester off.** Their upcoming bookings stay, and they can no
+  longer read or cancel them; Tara cancels them on her day if needed.
 - **Turning a member's switch off.** Their upcoming bookings stay. While
   `court_members_only` is on they can no longer read or cancel them (the
   member functions refuse), so Tara cancels them on her day if needed. The
@@ -121,7 +149,14 @@ and is not the caller's. Whether it is shown at all is left unpinned until
 
 ## Pinned by
 
-- `tests/sql/court_reservations.sql`: 112 checks. The first 88 were written
+- `tests/sql/court_reservations.sql`: 141 checks. The 29 tester rows (t1 to
+  t14, x3, and the three new functions and the table in g1 to g4) were red
+  before the testers change (2026-11-16); the ones that pass either way
+  ("a non-tester is still refused") go red under a named mutation: a
+  non-member tester let through (t8), a removed tester still counted (t13),
+  `admin_set_court_tester` or `admin_court_testers` without the admin check
+  (t11, t10), deletion keeping the tester (x3), `courts_available_for_me`
+  reading only the switch (t3, t14). Before that, 112 checks. The first 88 were written
   before the migration (86 red, the 2 green ones "still true" rows). The 24
   added after the sql-auditor (2026-11-16) were red against the first
   version, or under a named mutation:
