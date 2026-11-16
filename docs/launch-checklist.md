@@ -53,7 +53,7 @@ How this file works, so it can be trusted:
   since the App Transfer of 2026-11-11 (C12). The App Store has 1.0.2,
   released 2026-11-07, seller Volee LLC
   (`curl "https://itunes.apple.com/lookup?bundleId=com.fxetennis.app"`,
-  2026-11-12). 1.0.3 build 17 went up under John's team minutes before the
+  2026-11-12). 1.0.3 build 17 was uploaded under John's team minutes before the
   transfer and did not carry over; build 18, the same code signed by the LLC
   (tag `v1.0.3-18`), was uploaded and submitted for review by John on
   2026-11-12.

@@ -1003,7 +1003,7 @@ Once a clinic has ended, Action Needed drops its Waitlist, waiting-on-a-reply an
 
 ## Rounds, one player's price, and guests and prices on the phone (2026-11-09) — awaiting John
 
-Decision 0054 (her updated list, items 8 and 10, and "Warn me!"), and decisions 0052 and 0053 brought to Tara's phone in 1.0.3 (build 17). Every line is Tara's own screens; no player sees any of it.
+Decision 0054 (her updated list, items 8 and 10, and "Warn me!"), and decisions 0052 and 0053 brought to Tara's phone in 1.0.3 (it shipped as build 18). Every line is Tara's own screens; no player sees any of it.
 
 | ☐ | Words | Where |
 |---|---|---|
@@ -1031,7 +1031,7 @@ Decision 0054 (her updated list, items 8 and 10, and "Warn me!"), and decisions 
 
 ## Reply to Tara, and the phone on the laptop's Players tab (2026-11-10) — approved by John
 
-John: "do the quick reply button in build 17".
+John: "do the quick reply button in build 17" (it shipped in 1.0.3, build 18).
 
 - `Reply to Tara`: under each of Tara's messages, on the clinic page and in the bell. It opens an email to her address.
 - The email's subject: `Re: your message`, or `Re: {clinic name}` on a clinic page. Its body: two empty lines, then `You wrote:` and her message.
