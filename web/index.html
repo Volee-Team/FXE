@@ -401,11 +401,11 @@ table.signups th { font-weight: 600; color: #6E6552; }
 
 <dialog id="court-rules">
   <h3 style="margin-top:0">Court rules</h3>
-  <label style="display:flex;align-items:center;gap:8px;margin-top:0;cursor:pointer;color:var(--fxe-text-primary)">
-    <input type="checkbox" id="rs-live" style="width:18px;height:18px;min-height:0">
-    <span><span class="name">Members can book courts</span><br>
-    <span class="muted">While this is off, members can't see or book courts. Only you, and the testers below on the TestFlight app, can.</span></span>
-  </label>
+  <!-- Locked (John, 2026-11-16: "just in testflight until we are 100% sure
+       tis good"): admin_set_court_settings refuses courts_live, so this is
+       words, not a control. A later migration John approves turns it on. -->
+  <p id="rs-live" style="margin-top:0"><span class="name">Members</span><br>
+    <span class="muted" id="rs-live-text">Off for members. Court booking is in testing with the testers below.</span></p>
   <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--fxe-text-primary)">
     <input type="checkbox" id="rs-members" style="width:18px;height:18px;min-height:0">
     Members only (non-members can't book)

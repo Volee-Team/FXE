@@ -86,6 +86,7 @@ const COURT_ERRORS = [
   ["unknown_setting", "One of the rules isn't one the server knows."],
   ["bad_setting", "One of the rules isn't valid. Check the numbers."],
   ["bad_day", "Pick a day."],
+  ["courts_live_locked", "Court booking for members can't be turned on from here yet."],
 ];
 
 export function wireCourts(sb, { $, esc, friendly, note }) {
@@ -130,7 +131,7 @@ export function wireCourts(sb, { $, esc, friendly, note }) {
   function drawLive(live) {
     $("ct-live").innerHTML = live
       ? `<span class="chip in">On</span> <span>Members can book courts.</span>`
-      : `<span class="chip pool">Off</span> <span>Members can't see or book courts yet. Only you, and the testers in Court rules on the TestFlight app, can book until you turn on court booking for members.</span>`;
+      : `<span class="chip pool">Off</span> <span>Off for members. Court booking is in testing: only you, and the testers in Court rules on the TestFlight app, can book.</span>`;
   }
 
   function drawWarnings(d) {
@@ -383,7 +384,8 @@ export function wireCourts(sb, { $, esc, friendly, note }) {
     note($("rs-msg"), "");
     try {
       await readSettings();
-      $("rs-live").checked = settings.courts_live === "true";
+      $("rs-live-text").textContent = settings.courts_live === "true"
+        ? "On for members." : "Off for members. Court booking is in testing with the testers below.";
       $("rs-members").checked = settings.court_members_only !== "false";
       for (const [k, id] of RULES) $(id).value = settings[k] ?? "";
       // The hours of each weekday: the next seven days cover all of them.
@@ -462,15 +464,10 @@ export function wireCourts(sb, { $, esc, friendly, note }) {
   });
   $("rs-cancel").onclick = () => $("court-rules").close();
   $("rs-save").onclick = async () => {
-    const live = $("rs-live").checked;
-    const wasLive = settings.courts_live === "true";
-    if (live && !wasLive && !confirm("Turn on court booking for members? Every member will be able to see the courts and book from the app and the website."))
-      return;
-    if (!live && wasLive && !confirm("Turn off court booking for members? They won't be able to book or cancel. Bookings already made stay."))
-      return;
+    // courts_live is never sent: the server refuses it (courts_live_locked).
     const btn = $("rs-save"); btn.disabled = true;
     try {
-      const payload = { courts_live: String(live), court_members_only: String($("rs-members").checked) };
+      const payload = { court_members_only: String($("rs-members").checked) };
       for (const [k, id] of RULES) payload[k] = $(id).value.trim().replace(/\s+/g, "");
       const { error } = await sb.rpc("admin_set_court_settings", { p_settings: payload });
       if (error) throw error;

@@ -178,9 +178,7 @@ Mark all read
 Max players must be at least 1.
 Member price
 Members attended
-Members can book courts
 Members can book courts.
-Members can't see or book courts yet. Only you, and the testers in Court rules on the TestFlight app, can book until you turn on court booking for members.
 Members get 24-hour early access to all clinics
 Members on this list can book from the TestFlight app before court booking is on for everyone. Added and removed right away.
 Members, 60 min
@@ -241,6 +239,8 @@ Note (optional)
 Note for Tara (optional)
 Nothing on the courts this day.
 Notifications
+Off for members. Court booking is in testing with the testers below.
+Off for members. Court booking is in testing: only you, and the testers in Court rules on the TestFlight app, can book.
 On your laptop, with your real account. Whatever you set up here is real: it is your schedule.
 One player
 Only Tara sees this
@@ -394,8 +394,6 @@ To provide and maintain our Services, including to monitor the usage of our Serv
 Too many attempts. Try again in a minute.
 Too many reset emails. Try again later.
 Try again
-Turn off court booking for members? They won't be able to book or cancel. Bookings already made stay.
-Turn on court booking for members? Every member will be able to see the courts and book from the app and the website.
 Turn on notifications
 Type at least two letters of a name.
 Type it again
@@ -425,7 +423,6 @@ What happened? Anything odd?
 What is 105?
 When we believe it is necessary to disclose personal information to investigate, prevent, or take action regarding illegal activities, suspected fraud, potential threats to anyone's physical safety, or as otherwise required by law.
 When's my next clinic in \(.applicationName)
-While this is off, members can't see or book courts. Only you, and the testers below on the TestFlight app, can.
 Who is it for?
 Write a message first.
 Write it the way you'd say it

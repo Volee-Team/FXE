@@ -48,6 +48,14 @@ both needed:
 The members' website stays off for booking until `courts_live`: it is not
 a TestFlight install, so the testers phase is the app only.
 
+**The members switch is locked** (same day, same words). Tara cannot turn
+`courts_live` on or off: `admin_set_court_settings` refuses the key with
+`courts_live_locked`, alone or beside other rules, and changes nothing. Her
+Court rules show it as words ("Off for members. Court booking is in testing
+with the testers below."), not a control. **Only a later migration that John
+approves turns it on**, after Tara's answers to 156 to 165 (165 above all)
+and John being sure from TestFlight.
+
 **The rules are settings, each checked when Tara changes it:**
 
 | Rule | Default | Her question |
@@ -149,7 +157,10 @@ and is not the caller's. Whether it is shown at all is left unpinned until
 
 ## Pinned by
 
-- `tests/sql/court_reservations.sql`: 141 checks. The 29 tester rows (t1 to
+- `tests/sql/court_reservations.sql`: 144 checks. The lock's four l6 rows
+  (refused on, refused beside a valid rule, refused off, nothing changed)
+  were red against the unlocked function; the checks after it switch on as
+  the owner, a migration's place. Before that, 141 checks. The 29 tester rows (t1 to
   t14, x3, and the three new functions and the table in g1 to g4) were red
   before the testers change (2026-11-16); the ones that pass either way
   ("a non-tester is still refused") go red under a named mutation: a

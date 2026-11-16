@@ -10,8 +10,9 @@
 --       a day opening at 7:00 AM New York; 1 a day and 2 upcoming per
 --       account; members only; 4 players to a court. Courts 1 to 5, open
 --       7:00 AM to 9:00 PM every day.
---   l   Until Tara switches it on (courts_live), a member can neither book
---       nor read a day; Tara can.
+--   l   Until courts_live is on, a member can neither book nor read a day;
+--       Tara can. Tara cannot turn it on or off (courts_live_locked): only
+--       a later migration John approves does.
 --   t   Testers (John, 2026-11-16: "we are going to do the court booking
 --       just in testflight until we are 100% sure tis good"): while it is
 --       not live, an account Tara put on court_testers that is a member (or
@@ -244,9 +245,21 @@ begin
   perform pg_temp.as_user(TARA, format('select public.admin_set_court_tester(%L, false)', ROB));
   perform pg_temp.as_user(TARA, format('select public.admin_set_court_tester(%L, false)', TARA));
 
-  -- Switch on, through Tara's own setting (a6 checks it refuses members).
+  -- The switch is locked (John, 2026-11-16, TestFlight only until he is
+  -- sure): Tara's settings refuse it, alone or beside a valid rule, and
+  -- nothing changes. Only a later migration John approves turns it on.
   got := pg_temp.as_user(TARA, $q$select public.admin_set_court_settings('{"courts_live":"true"}')$q$);
-  insert into _probe_result values ('l6_tara_switches_it_on', 'ok:', left(got, 3));
+  insert into _probe_result values ('l6_tara_cannot_switch_it_on', 'err:courts_live_locked', got);
+  got := pg_temp.as_user(TARA, $q$select public.admin_set_court_settings('{"court_max_upcoming":"3","courts_live":"true"}')$q$);
+  insert into _probe_result values ('l6_not_beside_a_valid_rule', 'err:courts_live_locked', got);
+  got := pg_temp.as_user(TARA, $q$select public.admin_set_court_settings('{"courts_live":"false"}')$q$);
+  insert into _probe_result values ('l6_nor_off_again', 'err:courts_live_locked', got);
+  got := pg_temp.q($q$select string_agg(key || '=' || value, ';' order by key) from public.app_settings
+                      where key in ('courts_live', 'court_max_upcoming')$q$);
+  insert into _probe_result values ('l6_nothing_changed', 'court_max_upcoming=2;courts_live=false', got);
+  -- On for the checks below, as the owner (a migration's place), inside
+  -- this transaction only.
+  update public.app_settings set value = 'true' where key = 'courts_live';
   -- Two more members for the checks below (inside this transaction only).
   update public.players set is_member = true where account_id in (PRIYA, THEO);
 

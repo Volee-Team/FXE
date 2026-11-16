@@ -84,7 +84,7 @@ test.describe("courts tab", () => {
     const db = service(request);
     const [clinic] = await db.get(`clinics?status=eq.published&canceled_at=is.null&starts_at=gt.${encodeURIComponent(new Date().toISOString())}&order=starts_at&limit=1&select=id,name,starts_at`);
     await openCourts(page, nyDate(new Date(clinic.starts_at).getTime()));
-    await expect(page.locator("#ct-live")).toContainText("Members can't see or book courts yet");
+    await expect(page.locator("#ct-live")).toContainText("Off for members. Court booking is in testing");
     for (const n of [1, 2, 3, 4, 5]) await expect(page.locator("#ct-grid .ct-head", { hasText: `Court ${n}` })).toBeVisible();
     const row = page.locator(`[data-ct-row="clinic:${clinic.id}"]`);
     await expect(row).toContainText(clinic.name);
@@ -206,14 +206,16 @@ test.describe("courts tab", () => {
     }
   });
 
-  test("court rules: a bad value is refused, then the rules, an hour and the members switch save", async ({ page, request }) => {
+  // The members switch is locked (John, 2026-11-16: TestFlight testers
+  // only until he is sure): words, not a control, and never sent.
+  test("court rules: the members switch is locked; a bad value is refused, then the rules and an hour save", async ({ page, request }) => {
     const db = service(request);
-    const dialogs = acceptDialogs(page);
     const before = await db.get(`app_settings?key=like.court*&select=key,value`);
     try {
       await openCourts(page);
       await page.getByRole("button", { name: "Court rules" }).click();
-      await expect(page.getByLabel("Members can book courts")).not.toBeChecked();
+      await expect(page.locator("#rs-live")).toContainText("Off for members. Court booking is in testing with the testers below.");
+      await expect(page.locator("#court-rules input#rs-live, #court-rules [role=switch]")).toHaveCount(0);
       await expect(page.getByLabel("Lengths (minutes, comma between)")).toHaveValue("60,90");
       await expect(page.locator("#rs-open-1")).toHaveValue("07:00");
 
@@ -225,14 +227,12 @@ test.describe("courts tab", () => {
       await page.getByLabel("Lengths (minutes, comma between)").fill("60, 90");
       await page.getByLabel("Upcoming at once, per person").fill("3");
       await page.getByLabel("Monday opens").fill("08:00");
-      await page.getByLabel("Members can book courts").check();
       await page.getByRole("button", { name: "Save" }).click();
       await expect(page.locator("#ct-msg")).toContainText("Court rules saved.");
-      expect(dialogs.at(-1)).toContain("Turn on court booking for members?");
-      await expect(page.locator("#ct-live")).toContainText("Members can book courts.");
+      await expect(page.locator("#ct-live")).toContainText("Off for members.");
 
       const after = Object.fromEntries((await db.get(`app_settings?key=like.court*&select=key,value`)).map(r => [r.key, r.value]));
-      expect(after).toMatchObject({ courts_live: "true", court_max_upcoming: "3", court_lengths: "60,90" });
+      expect(after).toMatchObject({ courts_live: "false", court_max_upcoming: "3", court_lengths: "60,90" });
       const [monday] = await db.get(`court_hours?weekday=eq.1&select=opens,closes`);
       expect(monday).toEqual({ opens: "08:00:00", closes: "21:00:00" });
     } finally {

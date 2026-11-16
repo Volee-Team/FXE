@@ -43,7 +43,7 @@ until we are 100% sure tis good"*. Decision 0058 has the mechanism.
 | **1. Server** | Courts, hours, bookings and blocks; the booking and cancel functions; the testers list (`court_testers`, `courts_available_for_me`); probes written red first | No. Goes live as soon as it is green. Old apps see nothing new (new tables only) |
 | **2. Tara's laptop** | The day grid of all five courts; block a court or a time; book or cancel for anyone; set the hours and rules; choose the testers | No. Built 2026-11-16 |
 | **3. The app, testers only** | Book a Court on Home, My Courts on Profile, a reminder notification. Shown only on a TestFlight install that `courts_available_for_me()` allows | Yes: **1.0.5** on TestFlight, alongside juniors |
-| **4. Everyone** | Tara (with John) turns `courts_live` on after her answers to 156 to 165, 165 above all; then the members' site (`web/play/`) gets Book a Court and My Courts, and the App Store app shows it | The switch is the server's; the App Store build must carry the screen |
+| **4. Everyone** | A migration John approves turns `courts_live` on (Tara's laptop cannot: it is locked) after her answers to 156 to 165, 165 above all; then the members' site (`web/play/`) gets Book a Court and My Courts, and the App Store app shows it | The switch is the server's; the App Store build must carry the screen |
 
 The members' website does not book while courts are off: it is not a
 TestFlight install, so the testers phase is the app only. The server and

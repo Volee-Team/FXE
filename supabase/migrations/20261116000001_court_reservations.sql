@@ -8,8 +8,11 @@
 --
 -- THE RULE (every number below is a setting Tara changes later; questions 156
 -- to 165 ask her for the real ones):
---   * Nobody but Tara books or reads a day until she switches it on
---     (courts_live, default false: question 164, the switch date).
+--   * Nobody but Tara (and the testers, below) books or reads a day until
+--     courts_live is on (default false: question 164, the switch date).
+--     Tara cannot switch it: admin_set_court_settings refuses the key
+--     (courts_live_locked). Only a later migration John approves turns it
+--     on (John, 2026-11-16, TestFlight testers only until he is sure).
 --   * Members only (players.is_member on the account's adult row, which she
 --     sets).
 --   * Courts 1 to 5, open 7:00 AM to 9:00 PM New York every day.
@@ -595,8 +598,14 @@ begin
   if p_settings is null or jsonb_typeof(p_settings) <> 'object' then
     raise exception 'bad_setting' using errcode = 'P0001';
   end if;
+  -- Locked (John, 2026-11-16: "just in testflight until we are 100% sure
+  -- tis good"): neither on nor off from here, alone or beside other rules.
+  -- Only a later migration John approves turns it on.
+  if p_settings ? 'courts_live' then
+    raise exception 'courts_live_locked' using errcode = 'P0001';
+  end if;
   for k, v in select key, value #>> '{}' from jsonb_each(p_settings) loop
-    if k in ('courts_live', 'court_members_only') then
+    if k = 'court_members_only' then
       if v is null or v not in ('true', 'false') then
         raise exception 'bad_setting' using errcode = 'P0001';
       end if;
