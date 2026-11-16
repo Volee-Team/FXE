@@ -219,7 +219,7 @@ export function wireCourts(sb, { $, esc, friendly, note }) {
 
   // ------------------------------------------------------ cancel and unblock
   async function cancelBooking(btn) {
-    if (!confirm(`Cancel ${btn.dataset.name}'s booking (${btn.dataset.when})? They aren't told by the app, so let them know.`)) return;
+    if (!confirm(`Cancel ${btn.dataset.name}'s booking (${btn.dataset.when})? The app tells them it was canceled.`)) return;
     btn.disabled = true;
     const { error } = await sb.rpc("admin_cancel_court_booking", { p_booking: btn.dataset.ctCancel });
     btn.disabled = false;

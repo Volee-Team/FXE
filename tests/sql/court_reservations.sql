@@ -125,7 +125,7 @@ declare
   KEN_P   constant uuid := 'a0000000-0000-0000-0000-000000000002';
   d0 date := (now() at time zone 'America/New_York')::date;
   got text; v text;
-  b_maria2 uuid; b_maria3 uuid; b_ken2 uuid; b_ken3 uuid; b_past uuid;
+  b_maria2 uuid; b_maria3 uuid; b_ken2 uuid; b_ken3 uuid; b_past uuid; b_npast uuid;
   c_hold uuid; c_assigned uuid; c_draft uuid; c_canceled uuid;
   k_rain uuid; k_all uuid;
   b_rob uuid; c_union uuid; c_105 uuid; reg_105 uuid; st text; b_tester uuid;
@@ -602,6 +602,57 @@ begin
   insert into _probe_result values ('a5_tara_cancels_anyones', 'ok:', got);
   got := pg_temp.q(format('select status || '' '' || (canceled_by = %L)::text from public.court_bookings where id = %L', TARA, b_ken3));
   insert into _probe_result values ('a5_tara_cancels_anyones_row', 'canceled true', got);
+
+  -- ------------------------------------- n, Tara's cancel tells the member
+  -- John, 2026-11-16, yes to "Your court booking on Thu at 8:00 AM was
+  -- canceled by FXE.", with the date after the weekday (on his sign-off
+  -- list). Ken's b_ken3 is court 1, day 3, 10:00 AM New York. The expected
+  -- sentence is built here from the booking's day and hour, not read back.
+  v := 'Your court booking on '
+       || (array['Sun','Mon','Tue','Wed','Thu','Fri','Sat'])[extract(dow from d0 + 3)::int + 1] || ', '
+       || (array['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'])[extract(month from d0 + 3)::int] || ' '
+       || extract(day from d0 + 3)::int::text
+       || ' at 10:00 AM was canceled by FXE.';
+  got := pg_temp.q(format(
+    $q$select count(*)::text || ' ' || coalesce(min(account_id::text), '-') || ' ' || coalesce(min(type), '-')
+                || ' ' || coalesce(min(entity_type), '-')
+         from public.notifications where entity_id = %L$q$, b_ken3));
+  insert into _probe_result values ('n1_tara_cancel_tells_the_booker_once',
+    '1 ' || KEN || ' court_booking_canceled court_booking', got);
+  got := pg_temp.q(format('select body from public.notifications where entity_id = %L', b_ken3));
+  insert into _probe_result values ('n2_the_exact_sentence', v, got);
+  got := pg_temp.q(format('select (body ~* ''court [0-9]'')::text from public.notifications where entity_id = %L', b_ken3));
+  insert into _probe_result values ('n2_no_court_number', 'false', got);
+  -- Ken reads it as himself; nobody else can.
+  got := pg_temp.as_user(KEN, format('select count(*)::text from public.notifications where entity_id = %L', b_ken3));
+  insert into _probe_result values ('n3_the_booker_reads_it', 'ok:1', got);
+  got := pg_temp.as_user(MARIA, format('select count(*)::text from public.notifications where entity_id = %L', b_ken3));
+  insert into _probe_result values ('n3_nobody_else_reads_it', 'ok:0', got);
+  -- A member's own cancel tells nobody (c1, Maria's b_maria3; t, Ken's b_tester).
+  got := pg_temp.q(format('select count(*)::text from public.notifications where entity_id in (%L, %L)', b_maria3, b_tester));
+  insert into _probe_result values ('n4_own_cancel_tells_nobody', '0', got);
+  -- A past booking Tara cancels is a record fix: nobody is told. Its own
+  -- row (Ken's, two days ago), so x2's b_past stays booked.
+  begin
+    insert into public.court_bookings (court, account_id, starts_at, ends_at)
+    values (4, KEN, ((d0 - 2) + time '10:00') at time zone NY, ((d0 - 2) + time '11:00') at time zone NY)
+    returning id into b_npast;
+  exception when others then b_npast := null;
+  end;
+  insert into _probe_result values ('n5_the_past_row_was_made', 'true', (b_npast is not null)::text);
+  got := pg_temp.as_user(TARA, format('select public.admin_cancel_court_booking(%L)', b_npast));
+  insert into _probe_result values ('n5_tara_cancels_a_past_one', 'ok:', got);
+  got := pg_temp.q(format('select count(*)::text from public.notifications where entity_id = %L', b_npast));
+  insert into _probe_result values ('n5_a_past_one_tells_nobody', '0', got);
+  -- Her own booking, cancelled by her: nothing to tell.
+  got := pg_temp.as_user(TARA, format(
+    'select public.admin_book_court(%L, 2, %L, %L, null)', TARA,
+    ((d0 + 9) + time '15:00') at time zone NY, ((d0 + 9) + time '16:00') at time zone NY));
+  insert into _probe_result values ('n6_tara_books_for_herself', 'ok:', left(got, 3));
+  got := pg_temp.as_user(TARA, format('select public.admin_cancel_court_booking(%L)', pg_temp.idof(got)));
+  insert into _probe_result values ('n6_tara_cancels_her_own', 'ok:', got);
+  got := pg_temp.q($q$select count(*)::text from public.notifications where type = 'court_booking_canceled'$q$);
+  insert into _probe_result values ('n6_only_kens_notification_exists', '1', got);
   got := pg_temp.as_user(KEN, $q$select public.admin_set_court_settings('{"court_max_per_day":"5"}')$q$);
   insert into _probe_result values ('a6_member_cannot_change_settings', 'err:not_authorized', got);
   got := pg_temp.as_user(TARA, $q$select public.admin_set_court_settings('{"court_max_per_day":"0"}')$q$);

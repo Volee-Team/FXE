@@ -135,14 +135,23 @@ begin
             select 1 from public.players p
              where p.id = nt.entity_id
                and (p.account_id = nt.account_id
-                    or exists (select 1 from public.accounts a where a.id = nt.account_id and a.role = 'admin')))));
+                    or exists (select 1 from public.accounts a where a.id = nt.account_id and a.role = 'admin'))))
+      -- 'court_booking' (decision 0058, John 2026-11-16): Tara cancelled the
+      -- recipient's own booking. Apps 1.0.3 and 1.0.4 open nothing on a tap
+      -- (NotificationTarget is nil for an unknown kind); it must name a
+      -- booking that is the recipient's.
+      or (nt.entity_type = 'court_booking' and exists (
+            select 1 from public.court_bookings b
+             where b.id = nt.entity_id and b.account_id = nt.account_id)));
   insert into _probe_result values ('every_row_points_at_something_its_recipient_may_open', '0', n::text);
 end $$;
 
 -- ------------------------------------------------ 6. every producer, enumerated
 -- Enumerate, never list: every function that calls notify_account() must name
 -- one of the two entity types the app opens (or 'player', a note that opens
--- nothing, decision 0048), as a literal. A new producer with
+-- nothing, decision 0048, or 'court_booking', Tara's cancel of a member's
+-- court, decision 0058, which 1.0.3 and 1.0.4 show and open nothing for), as
+-- a literal. A new producer with
 -- a third kind turns this red, which is the moment to teach NotificationRouter
 -- to open it.
 --
@@ -162,7 +171,7 @@ with calls as (
 insert into _probe_result
 select 'every_producer_names_clinic_or_registration', '',
        coalesce(string_agg(distinct entity, ',' order by entity)
-                  filter (where entity not in ('clinic', 'registration', 'player')), '')
+                  filter (where entity not in ('clinic', 'registration', 'player', 'court_booking')), '')
   from calls;
 
 with every_call as (

@@ -36,7 +36,8 @@ the database layer as well. Do not add a count to a body string here.
 The catalogue below is what she wrote and what should fire. This table is what
 the database does: the newest definition, across `supabase/migrations/`, of
 every function that calls `notify_account`. There are ten (re-derived
-2026-10-12 from the migration files): `cancel_clinic`, `cancel_invitation`,
+2026-10-12 from the migration files), and an eleventh since 2026-11-16,
+`admin_cancel_court_booking` (court reservations, decision 0058): `cancel_clinic`, `cancel_invitation`,
 `cancel_registration`, `invite_from_pool`, `place_player`,
 `register_for_clinic`, `request_late_spot`, `resolve_late_request`,
 `respond_to_invitation`, `send_clinic_message`. `notification_targets.sql`
@@ -63,6 +64,7 @@ her yes before it reaches a real player.
 | `cancel_invitation` | `invitation_withdrawn` | The player whose invitation Tara takes back (they go back to the Player Pool, as Tara confirmed in question 94, decision 0040) | Hers, verbatim, 2026-09-28 (question 79, decision 0024): `The levels didn’t line up for this clinic, so we’ve released your spot. We keep each court close in level so everyone gets a great practice. We’ll catch you at the next clinic!` | 79 |
 | `request_late_spot` | `LATE_REQUEST` | Every admin | `{player} is asking to join {clinic}.` plus the quoted message if any | not in her list |
 | `resolve_late_request` | `LATE_REQUEST_APPROVED` / `LATE_REQUEST_DECLINED` | The requesting player | `You're in for {clinic}.` / `Tara couldn't fit you into {clinic} this time.` | not in her list; see finding (e) |
+| `admin_cancel_court_booking` | `court_booking_canceled` | The member whose court booking Tara cancels, only when it has not started and is not her own. A member's own cancel and a block send nothing (a block cancels nobody). Entity `court_booking`: 1.0.3 and 1.0.4 show the body and open nothing on a tap | John's, 2026-11-16 (decision 0058): `Your court booking on {Dy, Mon D} at {time} was canceled by FXE.` | 16 |
 
 `{day}` and `{time}` in #1 are built in SQL from the clinic's start in New
 York, `to_char(starts_at at time zone 'America/New_York', 'FMDay')` and
@@ -122,6 +124,18 @@ player travelling out of state must still read the court time.
 | 14 | Player Declined | Player declines an invitation. Wired in this wording since 2026-09-28 (it read `{player} declined.`). | Every admin account | `{player} declined {clinic} and is back in the Player Pool.` |
 | 15 | Player Canceled | Player cancels a registration. Also raises Action Needed. Wired in this wording since 2026-09-28 (it read `{player} canceled.`), followed by the late-fee and note suffixes (2026-09-12). | Every admin account | `{player} canceled {clinic}.` |
 
+### Court reservations (decision 0058)
+
+Not Tara's catalogue: John's words. On 2026-11-16 he said yes to `Your court
+booking on Thu at 8:00 AM was canceled by FXE.`; the date after the weekday is
+ours (Tara can cancel a booking more than a week out, where "Thu" alone names
+two days) and is on his sign-off list, `docs/courts/copy-for-john.md`. Pinned
+character for character by `tests/sql/court_reservations.sql` (n2).
+
+| # | Notification | Trigger event | Recipient | Exact copy |
+|---|---|---|---|---|
+| 16 | Court Booking Canceled | Tara cancels a member's court booking (`admin_cancel_court_booking`) before it starts | The booker's account | `Your court booking on {Dy, Mon D} at {time} was canceled by FXE.` e.g. `Your court booking on Thu, Nov 19 at 8:00 AM was canceled by FXE.` |
+
 ### Measured lengths
 
 Rendered with a realistic clinic name ("Ladies Cardio Tennis"). Budget is 140
@@ -144,6 +158,7 @@ before iOS truncates.
 | 13 | 56 | 1 |
 | 14 | 73 | 1 |
 | 15 | 42 | 1 |
+| 16 | 66 (longest, "Wed, Nov 25" at 10:30 AM) | 1 |
 
 Every one fits. #5 at 133 is the closest to the edge and is the one to re-check
 if a clinic name ever runs long.

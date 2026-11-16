@@ -98,6 +98,14 @@ not seen at all (sql-auditor, 2026-11-16). Question 165 may change how many.
   rule 2).
 - Blocks are removed, never deleted. Bookings are canceled, never deleted
   (hard rule 4).
+- **Her cancel tells the member** (John, 2026-11-16, yes to *"Your court
+  booking on Thu at 8:00 AM was canceled by FXE."*). Notification 16 in
+  `docs/notifications.md`, with the date after the weekday (on John's
+  sign-off list, `docs/courts/copy-for-john.md`). Only the booker, only for
+  a booking that has not started, never when she cancels her own. Entity
+  `court_booking`: apps 1.0.3 and 1.0.4 show it and open nothing on a tap.
+  A member's own cancel and a block send nothing. Pinned by
+  `court_reservations.sql` n1 to n6.
 
 **Deleting an account cancels its upcoming bookings,** by a trigger on
 `accounts.deleted_at`, so every path that deletes is covered. Past bookings

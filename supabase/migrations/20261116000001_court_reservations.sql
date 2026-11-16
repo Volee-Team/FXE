@@ -569,17 +569,39 @@ begin
   return v_id;
 end; $$;
 
+-- Tara's cancel tells the member (John, 2026-11-16: yes to "Your court
+-- booking on Thu at 8:00 AM was canceled by FXE."). The date is added after
+-- the weekday, because Tara can cancel a booking more than a week out, where
+-- "Thu" alone names two days; that addition is on John's sign-off list
+-- (docs/courts/copy-for-john.md). Only the booker hears, only for a booking
+-- that has not started (cancelling a past one is a record fix, not news),
+-- and never when she cancels her own. No court number in the body. The row
+-- names entity 'court_booking': apps 1.0.3 and 1.0.4 show the body and open
+-- nothing on a tap (NotificationTarget returns nil for an unknown kind).
+-- The member's own cancel and a block send nothing: a block cancels nobody.
 create or replace function public.admin_cancel_court_booking(p_booking uuid)
 returns void
 language plpgsql volatile security definer
 set search_path = public, pg_temp as $$
+declare
+  v_account uuid;
+  v_starts  timestamptz;
 begin
   perform public.require_admin();
   update public.court_bookings
      set status = 'canceled', canceled_at = now(), canceled_by = auth.uid()
-   where id = p_booking and status = 'booked';
+   where id = p_booking and status = 'booked'
+  returning account_id, starts_at into v_account, v_starts;
   if not found then
     raise exception 'not_cancelable' using errcode = 'P0001';
+  end if;
+  if v_starts > now() and v_account is distinct from auth.uid() then
+    perform public.notify_account(v_account, 'court_booking_canceled', 'court_booking', p_booking,
+      'Your court booking on '
+      || to_char(v_starts at time zone 'America/New_York', 'Dy, Mon FMDD')
+      || ' at '
+      || to_char(v_starts at time zone 'America/New_York', 'FMHH12:MI AM')
+      || ' was canceled by FXE.');
   end if;
 end; $$;
 
