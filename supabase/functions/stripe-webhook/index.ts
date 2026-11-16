@@ -264,14 +264,38 @@ function mode(event: Stripe.Event): { livemode?: boolean } {
 // else (the event beat stripe-charge to it) by the row named in the
 // PaymentIntent's metadata, storing the id on the way. Never a refund row, and
 // never a row that already carries a different PaymentIntent.
+//
+// ONE statement, never two (hosted, 2026-11-13). This used to be "update by id;
+// if nothing, update by metadata where the id is still empty". stripe-charge
+// stores the id the moment Stripe answers, which is also the moment Stripe
+// sends this event, and a store that committed between the two statements made
+// both match nothing: the event was answered 200 and a $23 charge Stripe had
+// taken sat at Processing (1 of 221). A single UPDATE reads the row once; if
+// stripe-charge's store is in flight, Postgres waits for it and re-checks the
+// whole condition against the stored row, which then matches the first half.
+// And an event that names our row but records nothing is answered 500, so
+// Stripe sends it again instead of the outcome being lost.
+// tests/stripe/run.sh section 8b holds the store open while the event lands.
 async function recordPaymentOutcome(pi: Stripe.PaymentIntent, outcome: Record<string, unknown>) {
-  const { data: byId } = ok(await admin.from("payments").update(outcome)
-    .eq("stripe_payment_intent_id", pi.id).select("id"));
-  if (byId && byId.length) return;
-  const mine = pi.metadata?.fxe_payment_id;
-  if (!mine) return;   // not a PaymentIntent this app made
-  ok(await admin.from("payments").update({ stripe_payment_intent_id: pi.id, ...outcome })
-    .eq("id", mine).neq("kind", "refund").is("stripe_payment_intent_id", null));
+  if (!STRIPE_ID.test(pi.id)) return;
+  const mine = ourRow(pi.metadata);
+  const q = admin.from("payments").update({ stripe_payment_intent_id: pi.id, ...outcome });
+  const { data } = ok(await (mine
+    ? q.or(`stripe_payment_intent_id.eq.${pi.id},and(id.eq.${mine},kind.neq.refund,stripe_payment_intent_id.is.null)`)
+    : q.eq("stripe_payment_intent_id", pi.id)).select("id"));
+  if (data && data.length) return;
+  if (mine) throw new Error(`payment_not_recorded: ${pi.id} names ${mine}`);
+  // No metadata and no row: not a PaymentIntent this app made.
+}
+
+// The values interpolated into a PostgREST or() filter are checked first, so
+// a comma or parenthesis can never change the filter. Stripe ids are letters,
+// digits and underscores; the row id is ours, a uuid.
+const STRIPE_ID = /^[A-Za-z0-9_]+$/;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function ourRow(meta: Stripe.Metadata | null | undefined): string | null {
+  const v = meta?.fxe_payment_id;
+  return typeof v === "string" && UUID.test(v) ? v : null;
 }
 
 // One Stripe refund into the ledger. Three cases, in this order:
@@ -294,18 +318,17 @@ async function recordRefund(r: Stripe.Refund, live: { livemode?: boolean }) {
     : (r.status === "failed" || r.status === "canceled") ? { status: "failed", failure_reason: r.failure_reason ?? r.status, ...live }
     : null;
 
-  const { data: known } = ok(await admin.from("payments").select("id").eq("stripe_refund_id", r.id));
-  if (known && known.length) {
-    if (outcome) ok(await admin.from("payments").update(outcome).eq("stripe_refund_id", r.id));
-    return;
-  }
-
-  const mine = r.metadata?.fxe_payment_id;
-  if (mine) {
-    ok(await admin.from("payments").update({ stripe_refund_id: r.id, ...(outcome ?? live) })
-      .eq("id", mine).eq("kind", "refund").is("stripe_refund_id", null));
-    return;
-  }
+  // Cases 1 and 2 in one statement, for the same race as recordPaymentOutcome:
+  // stripe-charge stores stripe_refund_id after refunds.create returns, and a
+  // store landing between a lookup and a guarded update matched neither.
+  if (!STRIPE_ID.test(r.id)) return;
+  const mine = ourRow(r.metadata);
+  const q = admin.from("payments").update({ stripe_refund_id: r.id, ...(outcome ?? live) });
+  const { data: hit } = ok(await (mine
+    ? q.or(`stripe_refund_id.eq.${r.id},and(id.eq.${mine},kind.eq.refund,stripe_refund_id.is.null)`)
+    : q.eq("stripe_refund_id", r.id)).select("id"));
+  if (hit && hit.length) return;
+  if (mine) throw new Error(`refund_not_recorded: ${r.id} names ${mine}`);
 
   if (r.status !== "succeeded") return;   // recorded when it clears
   const piId = typeof r.payment_intent === "string" ? r.payment_intent : r.payment_intent?.id;
