@@ -19,16 +19,23 @@
 --   * Free.
 --   * A member cancels their own booking any time before it starts.
 --   * A published, not canceled clinic holds courts from its start to its
---     end: the courts Tara assigned on its You're In! rows, or, until she
---     assigns any, one court per 4 spots counted down from court 5.
+--     end: one court per 4 spots counted down from court 5, plus every court
+--     anyone has been put on (its You're In! rows and its 105 rounds). The
+--     union, so assigning one player never frees the courts the rest will
+--     use (sql-auditor, 2026-11-16).
 --   * Tara's blocks hold one court or every court. A block over bookings
 --     lists them for her and cancels nobody.
 --   * A member sees taken or free, never who or why. A clinic, a block and a
---     booking look the same, so neither a name (hidden fact 5) nor which
---     courts a particular clinic uses is shown beyond "taken".
+--     booking look the same, so no name (hidden fact 5) is shown. Which
+--     courts a clinic holds is still readable as "taken" on those courts;
+--     whether members see that at all is question 165, and courts_live
+--     stays off until she answers (decision 0058, Open).
+--   * Nothing on a member's side answers while courts_live is off, their
+--     own bookings and cancels included.
 --   * Tara books for anyone outside the member rules (hours, length, window,
 --     limits, membership), but never over another booking, a block or a
---     clinic.
+--     clinic, and never on a court taken out of use. Her note on a booking
+--     (admin_note) is hers alone; playing_with is the member's own words.
 --   * Archive, never delete (hard rule 4): bookings are canceled and blocks
 --     removed, with a time and who did it.
 --
@@ -88,7 +95,8 @@ create table public.court_bookings (
   starts_at     timestamptz not null,
   ends_at       timestamptz not null,
   status        text not null default 'booked',
-  playing_with  text,
+  playing_with  text,               -- the booker's words; they read it back
+  admin_note    text,               -- Tara's words; only her day returns it
   made_by_admin boolean not null default false,
   booked_at     timestamptz not null default now(),
   canceled_at   timestamptz,
@@ -97,6 +105,7 @@ create table public.court_bookings (
   constraint court_booking_ends_after_start check (ends_at > starts_at),
   constraint court_booking_canceled_when check ((status = 'canceled') = (canceled_at is not null)),
   constraint court_booking_playing_with_length check (playing_with is null or length(playing_with) <= 200),
+  constraint court_booking_admin_note_length check (admin_note is null or length(admin_note) <= 200),
   constraint court_bookings_no_overlap
     exclude using gist (court with =, tstzrange(starts_at, ends_at, '[)') with &&)
     where (status = 'booked')
@@ -150,36 +159,38 @@ create or replace function public.court_taken_ranges(p_from timestamptz, p_to ti
 returns table (
   court smallint, starts_at timestamptz, ends_at timestamptz,
   kind text, ref_id uuid, account_id uuid, label text,
-  playing_with text, made_by_admin boolean
+  playing_with text, admin_note text, made_by_admin boolean
 )
 language sql stable
 set search_path = public, pg_temp as $$
   select b.court, b.starts_at, b.ends_at, 'booking', b.id, b.account_id,
-         a.first_name || ' ' || a.last_name, b.playing_with, b.made_by_admin
+         a.first_name || ' ' || a.last_name, b.playing_with, b.admin_note, b.made_by_admin
     from public.court_bookings b
     join public.accounts a on a.id = b.account_id
    where b.status = 'booked' and b.starts_at < p_to and b.ends_at > p_from
   union all
-  select c.number, k.starts_at, k.ends_at, 'block', k.id, null, k.reason, null, null
+  select c.number, k.starts_at, k.ends_at, 'block', k.id, null, k.reason, null, null, null
     from public.court_blocks k
     join public.courts c on c.number = k.court or (k.court is null and c.is_active)
    where k.removed_at is null and k.starts_at < p_to and k.ends_at > p_from
   union all
-  select h.court, cl.starts_at, cl.ends_at, 'clinic', cl.id, null, cl.name, null, null
+  -- A clinic: the union of its one-per-4-spots courts from court 5 down and
+  -- every court anyone is on (You're In! rows, 105 rounds). union (not
+  -- union all) so each court is held once.
+  select h.court, cl.starts_at, cl.ends_at, 'clinic', cl.id, null, cl.name, null, null, null
     from public.clinics cl
     cross join lateral (
-      select array_agg(distinct r.court_number) as assigned
-        from public.registrations r
-       where r.clinic_id = cl.id and r.status = 'in' and r.court_number is not null
-    ) a
-    cross join lateral (
-      select unnest(a.assigned)::smallint as court
-       where a.assigned is not null
-      union all
-      select (6 - g)::smallint
+      select (6 - g)::smallint as court
         from generate_series(1, least(5, ceil(cl.internal_capacity
                / greatest(1, coalesce(public.court_setting('court_players_per_court'), '4')::int)::numeric)::int)) g
-       where a.assigned is null
+      union
+      select r.court_number::smallint
+        from public.registrations r
+       where r.clinic_id = cl.id and r.status = 'in' and r.court_number is not null
+      union
+      select s.court_number::smallint
+        from public.clinic_round_spots s
+       where s.clinic_id = cl.id
     ) h
    where cl.status = 'published' and cl.canceled_at is null
      and cl.starts_at < p_to and cl.ends_at > p_from;
@@ -219,6 +230,21 @@ set search_path = public, pg_temp as $$
   select pg_advisory_xact_lock(20261116000001);
 $$;
 revoke all on function public.court_write_lock() from public, anon, authenticated;
+
+-- The moment a day opens for booking: court_advance_days before it, at
+-- court_day_opens_at on the New York wall clock. A local timestamp turned
+-- into a moment, so 7:00 AM stays 7:00 AM on both sides of a DST change.
+-- Its own function so it is probed with exact dates, not the hour the
+-- probe happens to run.
+create or replace function public.court_day_opens(p_day date)
+returns timestamptz
+language sql stable
+set search_path = public, pg_temp as $$
+  select ((p_day - coalesce(public.court_setting('court_advance_days'), '7')::int)
+          + coalesce(public.court_setting('court_day_opens_at'), '07:00')::time)
+         at time zone 'America/New_York';
+$$;
+revoke all on function public.court_day_opens(date) from public, anon, authenticated;
 
 -- ------------------------------------------------------- a member's side
 create or replace function public.court_day(p_day date)
@@ -309,9 +335,7 @@ begin
   if v_day > v_today + v_adv then
     raise exception 'too_far_ahead' using errcode = 'P0001';
   end if;
-  if now() < ((v_day - v_adv)
-              + coalesce(public.court_setting('court_day_opens_at'), '07:00')::time)
-             at time zone 'America/New_York' then
+  if now() < public.court_day_opens(v_day) then
     raise exception 'not_open_yet' using errcode = 'P0001';
   end if;
 
@@ -350,29 +374,35 @@ create or replace function public.cancel_court_booking(p_booking uuid)
 returns void
 language plpgsql volatile security definer
 set search_path = public, pg_temp as $$
+declare v_uid uuid := public.court_require_member();
 begin
   update public.court_bookings
-     set status = 'canceled', canceled_at = now(), canceled_by = auth.uid()
-   where id = p_booking and account_id = auth.uid()
+     set status = 'canceled', canceled_at = now(), canceled_by = v_uid
+   where id = p_booking and account_id = v_uid
      and status = 'booked' and starts_at > now();
   if not found then
     raise exception 'not_cancelable' using errcode = 'P0001';
   end if;
 end; $$;
 
+-- The caller's bookings that have not ended (one under way included), with
+-- their own playing_with and never Tara's admin_note.
 create or replace function public.my_court_bookings()
 returns table (
   id uuid, court integer, court_name text,
   starts_at timestamptz, ends_at timestamptz, playing_with text
 )
-language sql stable security definer
+language plpgsql stable security definer
 set search_path = public, pg_temp as $$
+declare v_uid uuid := public.court_require_member();
+begin
+  return query
   select b.id, b.court::integer, c.name, b.starts_at, b.ends_at, b.playing_with
     from public.court_bookings b
     join public.courts c on c.number = b.court
-   where b.account_id = auth.uid() and b.status = 'booked' and b.ends_at > now()
+   where b.account_id = v_uid and b.status = 'booked' and b.ends_at > now()
    order by b.starts_at;
-$$;
+end; $$;
 
 -- ---------------------------------------------------------- Tara's side
 create or replace function public.admin_court_day(p_day date)
@@ -412,6 +442,7 @@ begin
                           'account_id',    t.account_id,
                           'label',         t.label,
                           'playing_with',  t.playing_with,
+                          'admin_note',    t.admin_note,
                           'made_by_admin', t.made_by_admin)
                         order by t.starts_at, t.ends_at)
                    from public.court_taken_ranges(v_from, v_to) t
@@ -468,7 +499,7 @@ begin
 end; $$;
 
 create or replace function public.admin_book_court(
-  p_account uuid, p_court integer, p_starts_at timestamptz, p_ends_at timestamptz, p_note text)
+  p_account uuid, p_court integer, p_starts_at timestamptz, p_ends_at timestamptz, p_admin_note text)
 returns uuid
 language plpgsql volatile security definer
 set search_path = public, pg_temp as $$
@@ -479,7 +510,8 @@ begin
        select 1 from public.accounts where id = p_account and deleted_at is null) then
     raise exception 'no_such_account' using errcode = 'P0001';
   end if;
-  if p_court is null or not exists (select 1 from public.courts where number = p_court) then
+  if p_court is null or not exists (
+       select 1 from public.courts where number = p_court and is_active) then
     raise exception 'no_such_court' using errcode = 'P0001';
   end if;
   if p_starts_at is null or p_ends_at is null or p_ends_at <= p_starts_at then
@@ -491,9 +523,9 @@ begin
     raise exception 'court_taken' using errcode = 'P0001';
   end if;
   begin
-    insert into public.court_bookings (court, account_id, starts_at, ends_at, playing_with, made_by_admin)
+    insert into public.court_bookings (court, account_id, starts_at, ends_at, admin_note, made_by_admin)
     values (p_court, p_account, p_starts_at, p_ends_at,
-            nullif(left(btrim(coalesce(p_note, '')), 200), ''), true)
+            nullif(left(btrim(coalesce(p_admin_note, '')), 200), ''), true)
     returning id into v_id;
   exception when exclusion_violation then
     raise exception 'court_taken' using errcode = 'P0001';
@@ -545,6 +577,9 @@ begin
           raise exception 'bad_setting' using errcode = 'P0001';
         end if;
       end loop;
+      -- Stored as the numbers, so "060" is "60": book_court compares text.
+      select string_agg(x::int::text, ',' order by o) into v
+        from unnest(string_to_array(v, ',')) with ordinality as u(x, o);
     elsif k = 'court_start_step' then
       if v is null or v not in ('15', '30', '60') then
         raise exception 'bad_setting' using errcode = 'P0001';

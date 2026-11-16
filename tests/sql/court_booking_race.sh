@@ -17,7 +17,8 @@
 #
 # Local only (no fixtures in hosted, ever). The JWT secret and keys come from
 # `supabase status` into variables and are never printed. courts_live is set
-# on for the run and put back after.
+# on for the run and put back after, and the probe accounts removed, by an
+# EXIT trap, so a run that dies halfway leaves nothing behind.
 #
 # Usage: bash tests/sql/court_booking_race.sh [members]   (default 50)
 set -uo pipefail
@@ -33,6 +34,14 @@ SECRET=$(echo "$ENV" | sed -n 's/^JWT_SECRET="\{0,1\}\([^"]*\)"\{0,1\}$/\1/p')
 
 WAS_LIVE=$(psql -tAc "select value from public.app_settings where key = 'courts_live';" | tr -d '[:space:]')
 [ -n "$WAS_LIVE" ] || { echo "FAIL: no courts_live setting (is 20261116000001 applied?)"; exit 1; }
+TMP=""
+cleanup() {
+  psql -q -c "delete from public.court_bookings b using public.accounts a where a.id = b.account_id and a.email like 'courter%@probe.test';" >/dev/null 2>&1
+  psql -q -c "delete from auth.users where email like 'courter%@probe.test';" >/dev/null 2>&1
+  psql -q -c "update public.app_settings set value = '$WAS_LIVE' where key = 'courts_live';" >/dev/null 2>&1
+  [ -n "$TMP" ] && rm -rf "$TMP"
+}
+trap cleanup EXIT
 psql -q -c "update public.app_settings set value = 'true' where key = 'courts_live';" >/dev/null
 
 SLOT1=$(psql -tAc "select to_json((((now() at time zone 'America/New_York')::date + 2) + time '19:00') at time zone 'America/New_York')#>>'{}';" | tr -d '[:space:]')
@@ -109,11 +118,6 @@ echo "     refused court_taken     : $REFUSED1   (must be $((N - 1)))"
 echo "  2. one member, five courts : $OK2 answered 200, $REFUSED2 refused"
 echo "     bookings                : $ROWS2   (must be exactly 1)"
 echo ""
-
-psql -q -c "delete from public.court_bookings b using public.accounts a where a.id = b.account_id and a.email like 'courter%@probe.test';" >/dev/null
-psql -q -c "delete from auth.users where email like 'courter%@probe.test';" >/dev/null
-psql -q -c "update public.app_settings set value = '$WAS_LIVE' where key = 'courts_live';" >/dev/null
-rm -rf "$TMP"
 
 FAIL=0
 [ "$ROWS1" = "1" ]             || { echo "FAIL: $ROWS1 bookings on one slot, expected 1"; FAIL=1; }

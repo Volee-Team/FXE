@@ -8,7 +8,7 @@ admin_block_courts	{"p_court":1,"p_ends_at":"2026-01-01T00:00:00Z","p_reason":"x
 admin_board_report	{"p_from":"2026-01-01","p_to":"2026-01-01"}
 admin_board_report_clinics	{"p_from":"2026-01-01","p_to":"2026-01-01"}
 admin_board_share_percent	{}
-admin_book_court	{"p_account":"00000000-0000-0000-0000-000000000000","p_court":1,"p_ends_at":"2026-01-01T00:00:00Z","p_note":"x","p_starts_at":"2026-01-01T00:00:00Z"}
+admin_book_court	{"p_account":"00000000-0000-0000-0000-000000000000","p_admin_note":"x","p_court":1,"p_ends_at":"2026-01-01T00:00:00Z","p_starts_at":"2026-01-01T00:00:00Z"}
 admin_cancel_court_booking	{"p_booking":"00000000-0000-0000-0000-000000000000"}
 admin_charge_clinic	{"p_clinic":"00000000-0000-0000-0000-000000000000"}
 admin_charge_player	{"p_registration":"00000000-0000-0000-0000-000000000000"}
@@ -77,6 +77,7 @@ clinic_round_people	{"p_clinic":"00000000-0000-0000-0000-000000000000"}
 clinic_rounds	{"p_clinic":"00000000-0000-0000-0000-000000000000"}
 clinic_taken	{"p_clinic":"00000000-0000-0000-0000-000000000000"}
 court_day	{"p_day":"2026-01-01"}
+court_day_opens	{"p_day":"2026-01-01"}
 court_require_member	{}
 court_setting	{"p_key":"x"}
 court_taken_ranges	{"p_from":"2026-01-01T00:00:00Z","p_to":"2026-01-01T00:00:00Z"}

@@ -18,7 +18,8 @@ knows every clinic.
 **The server first, switched off.** Courts, hours, bookings and blocks, with
 the functions the members' site, Tara's laptop and the app will call.
 `courts_live` is false, so until Tara picks a date a member is refused
-(`courts_not_live`) and only her side works. Nothing an app already on a
+(`courts_not_live`) on every member function, their own bookings and
+cancels included, and only her side works. Nothing an app already on a
 phone reads changes: new tables, new functions and new settings keys only.
 
 **The rules are settings, each checked when Tara changes it:**
@@ -40,15 +41,24 @@ blocks and clinics (which no constraint can see) and the per-account limits
 are decided one at a time. A club's volume makes that free.
 
 **Clinics hold their courts automatically.** A published, not canceled
-clinic holds, from its start to its end, the courts Tara assigned on its
-You're In! rows. Until she assigns any, it holds one court per 4 spots,
-counted down from court 5 (question 165).
+clinic holds, from its start to its end, the union of:
+
+- one court per 4 spots, counted down from court 5;
+- every court on its You're In! rows;
+- every court in its 105 rounds (`clinic_round_spots`).
+
+The union because Tara and the pros assign one row at a time: when the hold
+was "the assigned courts, else the counted-down ones", her first assignment
+freed every other court of the clinic for booking, and a 105's rounds were
+not seen at all (sql-auditor, 2026-11-16). Question 165 may change how many.
 
 **Tara's side:**
 
 - She sees names, reasons and clinics.
 - She books for anyone outside the member rules, but never over another
-  hold.
+  hold, and never on a court taken out of use.
+- Her note on a booking (`admin_note`) is hers alone. `playing_with` is the
+  member's own words and is read back to them; the two never mix.
 - She blocks one court or all of them. A block over bookings lists them,
   with name and phone, and cancels nobody (nothing is decided for her, hard
   rule 2).
@@ -61,7 +71,9 @@ stay.
 
 ## Open, for John and Tara
 
-**What "taken" tells a member about a clinic.** A member's day shows a
+**BLOCKING `courts_live`: what "taken" tells a member about a clinic.**
+`courts_live` stays false until Tara answers question 165, because what
+follows is shipped as code today and the sql-auditor ranked it high. A member's day shows a
 clinic's courts as taken, the same as any booking. It shows no name and no
 reason. Still, someone who knows the clinic's time can read off:
 
@@ -76,14 +88,26 @@ Options:
   booking;
 - hide the per-court grid around clinic times.
 
-Asked as part of 165.
+Asked as part of 165. Related: a Ladies or Men clinic is hidden from the
+other gender's clinic list (decision 0044), but its courts still read as
+taken to everyone, so its time shows (no name). Settled with 165.
+
+`court_reservations.sql` row v4 pins only that a hold, if shown, names no one
+and is not the caller's. Whether it is shown at all is left unpinned until
+165.
 
 **Not checked against bookings:**
 
 - **Publishing a clinic, or assigning a court on it.** A booking can already
   sit on those courts. Tara's day shows both. Step 3 (her laptop) should warn
   when she publishes.
-- **Turning a member's switch off.** Their upcoming bookings stay.
+- **Turning a member's switch off.** Their upcoming bookings stay. While
+  `court_members_only` is on they can no longer read or cancel them (the
+  member functions refuse), so Tara cancels them on her day if needed. The
+  same goes for a booking she makes for a non-member.
+- **A retried booking.** If the app retries a booking that already went
+  through, the retry is refused (`day_limit` or `court_taken`). The client
+  should reload My Courts after any booking answer.
 
 ## Rejected
 
@@ -97,11 +121,27 @@ Asked as part of 165.
 
 ## Pinned by
 
-- `tests/sql/court_reservations.sql`: 88 checks. 86 were red before the
-  migration; the 2 green ones are "still true" rows (no names, payments
-  untouched). Each rule removed on its own turns its rows red.
+- `tests/sql/court_reservations.sql`: 112 checks. The first 88 were written
+  before the migration (86 red, the 2 green ones "still true" rows). The 24
+  added after the sql-auditor (2026-11-16) were red against the first
+  version, or under a named mutation:
+  - h2, h4, h5: the union hold (one assignment, the 105 rounds);
+  - y3: Tara's note never reaches the member;
+  - l7, l8: a member's own bookings and cancel refused while not live;
+  - e1, e2: the exclusion constraint alone, written as the owner past the
+    lock (23P01), with a canceled row allowed to overlap. Red with the
+    constraint dropped;
+  - o1, o2, o3: `court_day_opens` exact on both DST Sundays (2026-11-01,
+    2027-03-14) and at 6:59 against 7:00; r12, `book_court` refusing a day
+    not yet open, with no dependence on the hour the probe runs;
+  - a6: "060" stored as 60; a8: an inactive court refused for Tara too;
+  - c4 asserts its past row was made.
+  Each rule removed on its own turns its rows red.
 - `tests/sql/court_booking_race.sh`: 50 members on one slot, and one member
-  on five courts at once. Each phase is exactly 1 booking, and red without
-  the lock or the constraint.
-- `tests/sql/information_hiding.sql` row 17, and the four internal helpers in
+  on five courts at once. Each phase is exactly 1 booking. Phase 2 is red
+  without the advisory lock; phase 1 only without both the lock and the
+  constraint (with the lock alone the bookings are taken in turn), which is
+  why e1 pins the constraint by itself. Its cleanup is an EXIT trap: killed
+  after setup, it leaves `courts_live` as it was and no probe accounts.
+- `tests/sql/information_hiding.sql` row 17, and the five internal helpers in
   `grants_are_explicit.sql`.
