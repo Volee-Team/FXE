@@ -108,6 +108,32 @@ final class ProFlowUITests: XCTestCase {
         waitForExpectations(timeout: 15)
     }
 
+    /// Today's row at a large text size just below the accessibility sizes
+    /// (the largest of the standard seven, XXXL). With Court, Late cancel and
+    /// Came beside it, the name was left one letter wide: a pro's screenshot
+    /// of 2026-11-15 showed a hyphenated name as a column of letters. The
+    /// controls now sit on the line under the name, so the name keeps the
+    /// row's width.
+    func testTodaysRowKeepsTheNameReadableAtLargeText() {
+        app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryXXXL"]
+        app.launch()
+        signIn(as: pro)
+        XCTAssertTrue(todayTab.waitForExistence(timeout: 10), "A pro has no Manage tab")
+        openToday()
+        let name = app.staticTexts["Lena Brooks"]
+        XCTAssertTrue(name.waitForExistence(timeout: 20), "Lena is not listed")
+        let came = app.buttons.matching(identifier: "pro.noShowToggle")
+            .matching(NSPredicate(format: "label CONTAINS[c] 'Lena Brooks'")).firstMatch
+        XCTAssertTrue(came.waitForExistence(timeout: 10), "No Came / No-show control on Lena's row")
+        keepScreenshot("2b Today's row at XXXL text")
+        // The text's own width ("Lena Brooks" is about 115 points at XXXL);
+        // squeezed by the controls it was 14.
+        XCTAssertGreaterThan(name.frame.width, 60,
+                             "Lena's name was squeezed to \(name.frame.width) points by the row's controls")
+        XCTAssertGreaterThanOrEqual(came.frame.minY, name.frame.maxY - 1,
+                                    "The controls are beside the name, not under it: name \(name.frame), Came \(came.frame)")
+    }
+
     /// Players never see the tab; Tara's Manage is still hers.
     func testOnlyAProHasTheTodayTab() {
         app.launch()

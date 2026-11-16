@@ -163,9 +163,15 @@ struct ProTodayView: View {
             Text(clinic.name)
                 .brandFont(.headline)
                 .foregroundStyle(Brand.navy)
+            // Dark, not the secondary grey: it sits straight on the court
+            // photo, and pros read it courtside, in sun. With today's rows two
+            // lines tall (2026-11-15) a later clinic's time landed on one of
+            // the photo's white court lines, which Apple's audit samples
+            // (accepted by name in AccessibilityAuditUITests, measured 12.7:1).
             Text(timeLine(clinic))
                 .brandFont(.subheadline)
-                .foregroundStyle(Brand.textSecondary)
+                .foregroundStyle(Brand.textPrimary)
+                .accessibilityIdentifier("pro.timeLine")
 
             // The rounds for a 105, which a pro sets too (decision 0056). The
             // week's rows carry no category, so the name decides, as Tara
@@ -229,8 +235,16 @@ struct ProTodayView: View {
     /// up the sizes and reported "Dynamic Type partially unsupported" on every
     /// name, court and toggle (2026-09-28). A long name wraps instead of being
     /// cut off ("text clipped", the same audit).
+    ///
+    /// On today's clinics the controls go on their own line under the name,
+    /// at every size, as Tara's roster does once a clinic is over
+    /// (`controlsBelow`). Court, Late cancel and Came side by side left the
+    /// name one letter wide: a pro's screenshot of 2026-11-15, a long
+    /// hyphenated name at a large text size just below the accessibility
+    /// sizes, so the name broke into a column of letters. A week row has the
+    /// court menu alone and keeps it beside the name.
     private func row(_ player: ProTodayPlayer, in clinic: ProTodayClinic, today: Bool) -> some View {
-        let layout = typeSize.isAccessibilitySize
+        let layout = typeSize.isAccessibilitySize || today
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: Brand.Spacing.xxs))
             : AnyLayout(HStackLayout(alignment: .center, spacing: Brand.Spacing.sm))
         return layout {
@@ -244,7 +258,8 @@ struct ProTodayView: View {
         .accessibilityIdentifier("pro.row")
     }
 
-    /// The name. The court is on the menu beside it.
+    /// The name. The court is on the menu beside it, or under it on today's
+    /// clinics.
     private func identity(_ player: ProTodayPlayer) -> some View {
         Text(player.name)
             .brandFont(.bodyEmphasis)

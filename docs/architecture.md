@@ -890,7 +890,7 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `beginner_backfill.sh` | 20261106000001's rewrite of existing clinics (decision 0049), run for real: two planted clinics carrying the old value, the migration file applied over them in one rolled-back transaction; the beginner row loses its minimum, the 3.0+ row keeps it, and neither row's published date or price moves |
 
 **Swift**: 330 unit tests (`FXETennisTests`: price formatting, per-viewer
-pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016; since 2026-09-27 the request-failure classifier, a failed load keeping who you are, the waiver and card refusals reopening their steps, the 30-second reload throttle, the redraw moments, and the type scale under Larger Text; since 2026-09-28 the invitation push's Accept and Decline, the Remind me reminder, the calendar entry, and the haptics and chip motion; a clinic the player holds beyond the list's five-week edge staying on their screens, the instant-open snapshot's per-person and ended-clinic rules, Siri's next-clinic answer, and the Player Pool's history line) and 29
+pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016; since 2026-09-27 the request-failure classifier, a failed load keeping who you are, the waiver and card refusals reopening their steps, the 30-second reload throttle, the redraw moments, and the type scale under Larger Text; since 2026-09-28 the invitation push's Accept and Decline, the Remind me reminder, the calendar entry, and the haptics and chip motion; a clinic the player holds beyond the list's five-week edge staying on their screens, the instant-open snapshot's per-person and ended-clinic rules, Siri's next-clinic answer, and the Player Pool's history line) and 30
 XCUITests: 9 player flows
 (`PlayerFlowUITests`: sign in / browse / register, undo, sign-up end to end,
 the bell, profile edit, My Clinics, prices, hidden information, a declined card
@@ -900,8 +900,9 @@ directory note, cancel clinic, remove a player, remove from the Pool, Charge on
 each row and Remove after a clinic (decision 0037), a player's note reaching
 Tara (0039), Waive and Undo on a late cancel (0040)), Apple's
 accessibility audit (`AccessibilityAuditUITests`, 5: the player's, Tara's and
-the pro's screens, the status bar, the Return key) and 2 pro flows
-(`ProFlowUITests`: the Today tab and a No-show; only a pro has the tab). The UI tests run against the
+the pro's screens, the status bar, the Return key) and 3 pro flows
+(`ProFlowUITests`: the Today tab and a No-show; only a pro has the tab; today's
+row at the XXXL text size keeps the name readable, the controls under it). The UI tests run against the
 local stack and are order-dependent on a fresh seed. **They do not run in
 CI**: the macOS runner has no Docker for the stack, and a separate CI
 Supabase project was decided against on 2026-09-18 (`docs/launch-checklist.md`
@@ -981,7 +982,7 @@ that finishes it, `web/reset.html`, is the browser suite's "reset page" test.
 `project.yml` change? gates the next job so a docs PR does not wait on Xcode),
 `ios-build-and-test` (XcodeGen, Debug and Release builds, unit tests, app-icon
 gate, simulator chosen at run time), `copy-gate` (with `scripts/check-no-dots.sh` since 2026-10-01, decision 0034), `ui-test-record` ("UI tests passed on this exact code", 2026-10-01: `scripts/check-ui-test-record.sh` fails unless `docs/ui-test-runs.log` holds a green run of the whole suite for the fingerprint `scripts/app-fingerprint.sh` computes over the app, its tests, `project.yml`, the migrations and the seed; the runs are made on a Mac by `scripts/run-ui-tests.sh`, which holds a lock so two runs never overlap, resets the database, passes the service key, refuses skipped tests and writes the record), `secret-scan` (`scripts/secret-scan.sh`, which fails on a check that cannot run as well as on a match, 2026-10-13), `hosted-smoke` (read-only, printing its own count of hosted targets: every function taken from `scripts/hosted-smoke-functions.txt`, which `scripts/gen-smoke-functions.sh` writes from the schema and `check-doc-inventory.sh` keeps honest; every table, view, RPC and function must refuse a signed-out caller with 401/403, and the four functions the web admin calls from a browser must answer a preflight from the admin site with a 2xx and its origin; `scripts/hosted-smoke.sh`),
-`calendar-feed` (the calendar-feed harness against the served function), `migration-immutability`, `ios-ui-tests` (the 29 XCUITests against a
+`calendar-feed` (the calendar-feed harness against the served function), `migration-immutability`, `ios-ui-tests` (the 30 XCUITests against a
 throwaway CI Supabase project, reset to the seed first; added 2026-09-13 and
 green with a notice, because that project's secrets do not exist and §F of
 `docs/launch-checklist.md` decided not to create one), and `doc-paths` ("Docs are consistent": `scripts/check-doc-paths.sh`,
