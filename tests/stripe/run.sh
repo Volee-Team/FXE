@@ -284,6 +284,49 @@ OBJ="{\"id\":\"pi_other_$RANDOM\",\"object\":\"payment_intent\",\"status\":\"suc
 webhook "$(event payment_intent.succeeded "$OBJ")" >/dev/null
 check "a PaymentIntent event never lands on a refund row" "NULL" "$(sql "select coalesce(stripe_payment_intent_id,'NULL') from public.payments where id='$REF'")"
 
+# ---- 8b. The early webhook's own race (hosted, 2026-11-13). Section 8 is the
+#          event arriving before stripe-charge stores the id; this is the event
+#          arriving WHILE stripe-charge stores it. The webhook used to match in
+#          two statements: by the stored id, then by metadata only while the id
+#          was still empty. A store committed between the two made both match
+#          nothing, the webhook answered 200, and Tara's $23 charge for a
+#          Ladies 105 sat at Processing although Stripe had taken the money
+#          (1 charge of 221). Here a second session stores the id and holds it
+#          uncommitted, as stripe-charge's write was in flight, while the event
+#          is delivered; it commits a few seconds later. The outcome must land.
+race() { # sql-to-hold event-json -> the webhook's HTTP status, after the holder commits
+  docker exec "$DB" psql -U postgres -d postgres -qAtc "begin; $1; select pg_sleep(6); commit;" >/dev/null &
+  local holder=$!
+  sleep 1
+  local code; code=$(webhookcode "$2")
+  wait "$holder"
+  echo "$code"; }
+REG_W1=$(reg "$CLINIC3" "$DANA_P" 1800 true 60); REGS="$REGS,'$REG_W1'"
+PAY_W1=$(sql "with i as (insert into public.payments (registration_id, account_id, kind, amount_cents, status) values ('$REG_W1','$DANA','clinic_fee',1800,'processing') returning id) select id from i")
+PI_W1="pi_race_$RANDOM$RANDOM"
+OBJ="{\"id\":\"$PI_W1\",\"object\":\"payment_intent\",\"status\":\"succeeded\",\"metadata\":{\"fxe_payment_id\":\"$PAY_W1\"}}"
+code=$(race "update public.payments set stripe_payment_intent_id='$PI_W1' where id='$PAY_W1'" "$(event payment_intent.succeeded "$OBJ")")
+check "a success delivered while the id is being stored still lands" "succeeded $PI_W1" "$(sql "select status||' '||coalesce(stripe_payment_intent_id,'NULL') from public.payments where id='$PAY_W1'")"
+check "and marks that registration paid" "t" "$(sql "select paid from public.registrations where id='$REG_W1'")"
+check "the webhook answered 200 for it" "200" "$code"
+# The same race for a refund stripe-charge sent: it stores stripe_refund_id
+# after refunds.create returns, and the event can arrive in between.
+REF_W1=$(sql "with i as (insert into public.payments (registration_id, account_id, kind, amount_cents, status, refunds_payment_id) values ('$REG_W1','$DANA','refund',1800,'processing','$PAY_W1') returning id) select id from i")
+RE_W1="re_race_$RANDOM$RANDOM"
+OBJ="{\"id\":\"$RE_W1\",\"object\":\"refund\",\"status\":\"succeeded\",\"amount\":1800,\"currency\":\"usd\",\"payment_intent\":\"$PI_W1\",\"metadata\":{\"fxe_payment_id\":\"$REF_W1\"}}"
+code=$(race "update public.payments set stripe_refund_id='$RE_W1' where id='$REF_W1'" "$(event refund.updated "$OBJ")")
+check "a refund delivered while its id is being stored still lands" "succeeded $RE_W1" "$(sql "select status||' '||coalesce(stripe_refund_id,'NULL') from public.payments where id='$REF_W1'")"
+check "and is recorded once, not as a second dashboard refund" "1" "$(sql "select count(*) from public.payments where kind='refund' and refunds_payment_id='$PAY_W1'")"
+# A payment event that names one of our rows and matches nothing is not
+# answered 200: Stripe retries it, which is what would have repaired the row
+# above on its own. (The row already carries another PaymentIntent here.)
+OBJ="{\"id\":\"pi_other_$RANDOM\",\"object\":\"payment_intent\",\"status\":\"succeeded\",\"metadata\":{\"fxe_payment_id\":\"$PAY_W1\"}}"
+check "an event for our row that records nothing answers 500" "500" "$(webhookcode "$(event payment_intent.succeeded "$OBJ")")"
+OBJ="{\"id\":\"pi_foreign_$RANDOM\",\"object\":\"payment_intent\",\"status\":\"succeeded\",\"metadata\":{}}"
+check "a PaymentIntent this app did not make is still answered 200" "200" "$(webhookcode "$(event payment_intent.succeeded "$OBJ")")"
+# Dana takes clinic 3 again further down; this spot has done its job.
+sql "update public.registrations set status='canceled' where id='$REG_W1'" >/dev/null
+
 # ---- 9. A call that died between the claim and storing the id left its row
 #         in processing with no id. Inside Stripe's 24-hour idempotency window
 #         the sweep retries it as the SAME row (so the same key); past it the
