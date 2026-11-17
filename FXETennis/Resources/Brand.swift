@@ -92,11 +92,9 @@ public enum Brand {
     /// Primary brand colour. Bars, headings, primary buttons, body text.
     /// #16264C on the cream surface is ~13.6:1 — headings stay crisp in sunlight.
     public static let navy = Color(hex: 0x0A1B3D)          // style guide navy-900
-    /// navy-700: pressed/hover state, divider shadow edge.
-    public static let navyPressed = Color(hex: 0x16295C)
 
     /// Forest green. Fill and small markers only. ~4.0:1 on the surface, below the
-    /// 4.5 text floor, so it may never carry body text — use `textOnCourt` on it,
+    /// 4.5 text floor, so it may never carry body text — use white text on it,
     /// or keep it to fills and the You're In! dot.
     public static let court = Color(hex: 0x4F7A38)         // gator-green: mascot, accent stripe, active tab, "Let's Play"
     /// Gator-green for TEXT: "Let's Play." and the active tab's label. Kat,
@@ -104,10 +102,6 @@ public enum Brand {
     /// 4.42:1 on porcelain, under the 4.5 floor; this one 5.51:1). The guide's
     /// green stays for fills, the header line and the logo.
     public static let courtText = Color(hex: 0x446A30)
-    /// green-shade: mascot shading/outline only.
-    public static let courtShade = Color(hex: 0x33501F)
-    /// ace-yellow: photography accent only, never text or UI fill.
-    public static let aceYellow = Color(hex: 0xABC040)
 
     /// Brass accent. Small highlights and the Player Pool marker. Fill, never text.
     public static let accent = Color(hex: 0x4F7A38)        // no brass in the guide; the one UI accent is gator-green
@@ -128,9 +122,6 @@ public enum Brand {
     /// Cards and sheets lifted off the page.
     public static let surfaceRaised = Color(hex: 0xFFFFFF)
 
-    /// Inverted surface: navy panels, the tab bar, hero headers.
-    public static let surfaceInverted = Color(hex: 0x0A1B3D)
-
     // Text.
 
     public static let textPrimary = Color(hex: 0x0A1B3D)
@@ -139,8 +130,6 @@ public enum Brand {
     /// On navy: warm cream rather than pure white, so it belongs to this palette.
     public static let textOnNavy = Color(hex: 0xFFFFFF)     // surface-white, reversed
     public static let textOnNavyMuted = Color(hex: 0xC9CCD6)
-    public static let textOnCourt = Color(hex: 0xFFFFFF)
-    public static let textOnAccent = Color(hex: 0xFFFFFF)
 
     // Lines and states.
 
@@ -156,9 +145,6 @@ public enum Brand {
     /// Disabled controls. WCAG exempts inactive components from contrast.
     /// Always pair a disabled control with visible helper text explaining why.
     public static let disabled = Color(hex: 0xB5B2AC)
-
-    /// Focus and selection ring. Navy, for ~13.6:1 against the surface.
-    public static let focusRing = Color(hex: 0x0A1B3D)
 }
 
 // MARK: - Status
@@ -331,9 +317,6 @@ public extension Brand {
     /// anything tapped or read as an instruction. Never the serif inside a
     /// UI control.
     enum Typography {
-        public static let displayDesign: Font.Design = .serif
-        public static let bodyDesign: Font.Design = .default
-
         /// Every style in the scale: Kat's face, size and weight, and the
         /// system text style it grows with.
         enum Role: CaseIterable {
@@ -467,14 +450,11 @@ public extension Brand {
 public extension Brand {
 
     enum Radius {
-        public static let xs: CGFloat = 6
         public static let sm: CGFloat = 8     // radius-sm: icon glyph containers only
         /// Default for cards.
         public static let md: CGFloat = 16    // radius-md: compact chips, secondary controls, cards
         /// Sheets and hero panels.
         public static let lg: CGFloat = 28    // radius-lg: every tappable row or button
-        /// Fully rounded. Status chips and pills.
-        public static let pill: CGFloat = 999
     }
 
     enum Layout {
@@ -574,7 +554,7 @@ private extension Color {
 //  FILL-ONLY COLOURS  (must never carry text or act as a status marker)
 //  ----------------------------------------------------------------------------
 //  court  #3E7C55 on surface #F7F4EC   4.53:1  — as a FILL it is fine; text on
-//         it uses textOnCourt (white, 4.98:1). Never set body text in court green.
+//         it uses white text (4.98:1). Never set body text in court green.
 //  accent #B08D57 on surface #F7F4EC   2.81:1  — brass fill only. Never text.
 //
 //  Status markers use Status.ink (all >= 5:1 above), never court or accent,

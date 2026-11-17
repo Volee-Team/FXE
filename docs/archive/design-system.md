@@ -298,7 +298,7 @@ and re-run this table. Nothing else changes.
 
 Files:
 - `FXETennis/Resources/Assets.xcassets/gator-x.imageset/gator-x.png` (raster, the asset the app draws)
-- `FXETennis/Resources/Brand/gator-x.pdf` (vector source)
+- `gator-x.pdf` (vector source; removed from the app 2026-11-17, decision 0059)
 - `FXETennis/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png` (the icon, same mark on `Brand.navy`)
 
 The mark Tara chose (decision 22, 2026-08-12): **the gator with crossed

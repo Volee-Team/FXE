@@ -45,7 +45,7 @@ handwritten court sheet. Nothing more.
 | `revenue_summary()`: the four numbers and the money | built |
 | Court assignment 1 to 5, admin only | built (`assign_court`) |
 | Clinic messages with audience targeting | built (`send_clinic_message`, `clinic_messaging.sql`) |
-| News with audience and unread tracking | built on the server (`my_news`); no screen, by decision 0006 |
+| News with audience and unread tracking | never switched on (decision 0006); the unused server half was dropped 2026-11-17 (decision 0059) |
 | The SQL probe suite plus the race probes, green in CI on every push | built (`bash tests/run-probes.sh` prints its own totals) |
 
 ### iOS app

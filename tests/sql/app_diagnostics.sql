@@ -95,22 +95,6 @@ begin
     insert into _probe_result values ('member_cannot_update_table', 'permission denied for table app_diagnostics', sqlerrm);
   end;
 
-  begin
-    perform public.admin_app_diagnostics();
-    insert into _probe_result values ('member_cannot_read_reports', 'not_authorized', 'CALL SUCCEEDED');
-  exception when others then
-    insert into _probe_result values ('member_cannot_read_reports', 'not_authorized', sqlerrm);
-  end;
-
-  -- A pro (decision 0025) runs clinics, not the app: no crash reports.
-  perform set_config('request.jwt.claims', json_build_object('sub', CASEY)::text, true);
-  begin
-    perform public.admin_app_diagnostics();
-    insert into _probe_result values ('pro_cannot_read_reports', 'not_authorized', 'CALL SUCCEEDED');
-  exception when others then
-    insert into _probe_result values ('pro_cannot_read_reports', 'not_authorized', sqlerrm);
-  end;
-
   -- ------------------------------------------------ Ken, unaffected by Maria
   perform set_config('request.jwt.claims', json_build_object('sub', KEN)::text, true);
   begin
@@ -164,16 +148,6 @@ begin
     insert into _probe_result values ('signed_out_refused', 'not_authenticated', sqlerrm);
   end;
 
-  -- ------------------------------------------------ Tara reads
-  perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
-  -- Maria 2 + 19, Ken 1 + 1 ASCII at the boundary + 1 multibyte = 24.
-  select count(*) into n from public.admin_app_diagnostics(500);
-  insert into _probe_result values ('admin_sees_every_row', '24', n::text);
-  select count(*) into n from public.admin_app_diagnostics(2);
-  insert into _probe_result values ('admin_limit_is_honoured', '2', n::text);
-  -- Newest first: the 25-hour-old row is last.
-  select payload::text into v from public.admin_app_diagnostics(500) offset 23;
-  insert into _probe_result values ('admin_reads_newest_first', '{"old": true}', coalesce(v, 'none'));
   perform set_config('role', 'postgres', true);
 
   -- ------------------------------------------------ what landed, as postgres
@@ -252,15 +226,6 @@ begin
   insert into _probe_result values ('deleted_account_lands_nothing', '0', n::text);
   select count(*) into n from public.app_diagnostics where account_id = KEN;
   insert into _probe_result values ('deleted_at_unlinks_reports', '0', n::text);
-
-  -- ------------------------------------------------ the 500 cap
-  insert into public.app_diagnostics (received_at, kind, payload)
-  select now() - interval '2 days', 'launch', '{}' from generate_series(1, 600);
-  perform set_config('role', 'authenticated', true);
-  perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
-  select count(*) into n from public.admin_app_diagnostics(100000);
-  insert into _probe_result values ('admin_read_is_at_most_500', '500', n::text);
-  perform set_config('role', 'postgres', true);
 end $$;
 
 -- ------------------------------------------------ privileges, by enumeration
@@ -280,8 +245,6 @@ insert into _probe_result values ('rls_is_on', 'true',
 
 insert into _probe_result values ('anon_cannot_report', 'false',
   has_function_privilege('anon', 'public.report_app_diagnostic(text, text, text, text, text, jsonb)', 'EXECUTE')::text);
-insert into _probe_result values ('anon_cannot_read_reports', 'false',
-  has_function_privilege('anon', 'public.admin_app_diagnostics(int)', 'EXECUTE')::text);
 insert into _probe_result values ('member_can_report', 'true',
   has_function_privilege('authenticated', 'public.report_app_diagnostic(text, text, text, text, text, jsonb)', 'EXECUTE')::text);
 insert into _probe_result values ('no_client_runs_the_purge', 'false|false',
@@ -293,12 +256,16 @@ insert into _probe_result values ('no_account_parameter', 'p_kind,p_app_version,
   (select array_to_string(proargnames, ',') from pg_proc
     where oid = 'public.report_app_diagnostic(text, text, text, text, text, jsonb)'::regprocedure));
 
--- What the admin read returns: no account, no name, no email.
-insert into _probe_result values ('admin_result_has_no_account_name_or_email',
-  'app_version,build,device,id,kind,os_version,payload,received_at',
-  (select string_agg(a.name, ',' order by a.name)
-     from pg_proc p, unnest(p.proargnames, p.proargmodes) as a(name, mode)
-    where p.oid = 'public.admin_app_diagnostics(int)'::regprocedure and a.mode = 't'));
+
+-- No client read path at all: the admin read was dropped 2026-11-17
+-- (decision 0059). Reports are read on hosted with SQL, as the owner.
+insert into _probe_result values ('no_client_read_function', '<none>',
+  coalesce((select string_agg(p.oid::regprocedure::text, ',') from pg_proc p
+             join pg_namespace n on n.oid = p.pronamespace
+            where n.nspname = 'public' and p.proname like '%app_diagnostic%'
+              and p.proname <> 'report_app_diagnostic'
+              and (has_function_privilege('authenticated', p.oid, 'EXECUTE')
+                   or has_function_privilege('anon', p.oid, 'EXECUTE'))), '<none>'));
 
 -- A hard delete of an account leaves its reports, unattached.
 insert into _probe_result values ('account_fk_is_on_delete_set_null', 'n',

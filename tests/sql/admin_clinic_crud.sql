@@ -180,7 +180,7 @@ begin
   perform set_config('role', 'authenticated', true);
 
   perform set_config('role', 'postgres', true);
-  select count(*) into n from public.clinic_templates;
+  select count(*) filter (where archived_at is null) into n from public.clinic_templates;
   perform set_config('role', 'authenticated', true);
   begin
     perform public.admin_upsert_template(p_name => 'ATTACKER TEMPLATE',
@@ -189,15 +189,17 @@ begin
   end;
   begin
     -- The id has to be found as postgres; the point of the attack is the
-    -- delete, not whether a member can list templates (they cannot).
+    -- archive, not whether a member can list templates (they cannot).
+    -- admin_delete_template was dropped 2026-11-17 (decision 0059):
+    -- archiving is the only way a template leaves.
     perform set_config('role', 'postgres', true);
     select id into v_tmpl from public.clinic_templates order by name limit 1;
     perform set_config('role', 'authenticated', true);
-    perform public.admin_delete_template(v_tmpl);
+    perform public.admin_set_template_archived(v_tmpl, true);
   exception when others then null;
   end;
   perform set_config('role', 'postgres', true);
-  select count(*) into v_int from public.clinic_templates;
+  select count(*) filter (where archived_at is null) into v_int from public.clinic_templates;
   insert into _probe_result values ('member_cannot_touch_templates', n::text, v_int::text);
   perform set_config('role', 'authenticated', true);
 
@@ -229,7 +231,7 @@ begin
   select count(*) into n
   from pg_proc p join pg_namespace ns on ns.oid = p.pronamespace
   where ns.nspname = 'public' and p.proname in
-        ('admin_upsert_clinic','admin_upsert_template','admin_delete_template')
+        ('admin_upsert_clinic','admin_upsert_template','admin_set_template_archived')
     and p.prosecdef
     and exists (select 1 from unnest(coalesce(p.proconfig,'{}')) c where c like 'search_path=%');
   insert into _probe_result values ('admin_rpcs_are_definer_with_pinned_path', '3', n::text);

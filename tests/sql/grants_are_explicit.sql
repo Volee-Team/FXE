@@ -38,9 +38,9 @@ select 'app_can_read_' || t.relname,
        has_table_privilege('authenticated', ('public.' || t.relname)::regclass, 'SELECT')::text
 from (values ('accounts'), ('players'), ('app_settings'),
              ('clinics_public'), ('my_registrations'), ('my_clinic_messages'),
-             ('my_news'), ('clinics_admin'), ('registrations_admin'),
+             ('clinics_admin'), ('registrations_admin'),
              ('templates_admin'), ('late_requests'),
-             ('revenue_by_clinic'), ('revenue_by_segment'), ('payments_ledger')) as t(relname);
+             ('payments_ledger')) as t(relname);
 
 -- notifications is read by column, not by table, since 20260923000001: the
 -- push audit columns are withheld, so has_table_privilege is false by design.

@@ -282,8 +282,8 @@ where table_schema = 'public'
   and grantee in ('anon', 'authenticated')
   and privilege_type in ('INSERT', 'UPDATE', 'DELETE', 'TRUNCATE')
   and table_name in ('clinics_public', 'clinics_admin', 'my_registrations',
-                     'registrations_admin', 'my_clinic_messages', 'my_news',
-                     'revenue_by_clinic', 'revenue_by_segment', 'payments_ledger')
+                     'registrations_admin', 'my_clinic_messages',
+                     'payments_ledger')
 group by table_name, grantee;
 
 -- The aggregate above emits a row only when a write grant EXISTS, so a clean
@@ -296,8 +296,8 @@ where table_schema = 'public'
   and grantee in ('anon', 'authenticated')
   and privilege_type in ('INSERT', 'UPDATE', 'DELETE', 'TRUNCATE')
   and table_name in ('clinics_public', 'clinics_admin', 'my_registrations',
-                     'registrations_admin', 'my_clinic_messages', 'my_news',
-                     'revenue_by_clinic', 'revenue_by_segment', 'payments_ledger');
+                     'registrations_admin', 'my_clinic_messages',
+                     'payments_ledger');
 
 -- ------------------------------------------------- view column completeness --
 --

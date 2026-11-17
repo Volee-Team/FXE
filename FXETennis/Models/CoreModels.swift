@@ -148,23 +148,6 @@ struct ClinicMessage: Codable, Identifiable, Sendable {
     }
 }
 
-// MARK: - News (from my_news)
-
-struct NewsPost: Codable, Identifiable, Sendable {
-    let id: UUID
-    let title: String
-    let body: String
-    let audience: String
-    let publishedAt: Date?
-    let isRead: Bool
-
-    enum CodingKeys: String, CodingKey {
-        case id, title, body, audience
-        case publishedAt = "published_at"
-        case isRead = "is_read"
-    }
-}
-
 // MARK: - Player (from players)
 
 struct PlayerProfile: Codable, Identifiable, Sendable {
