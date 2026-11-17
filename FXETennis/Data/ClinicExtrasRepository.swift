@@ -11,7 +11,9 @@
 //  * The clinic's price and the rain half (decision 0053, 20261107000004).
 //  * One player's price, typed by Tara (decision 0054, item 10).
 //  * The 105 rounds (decision 0054, item 8): Tara writes them; a pro reads
-//    them for a clinic in their week; players never.
+//    them for a clinic in their week; players never. Since decision 0056
+//    (2026-11-11) a pro also writes them in their week, picking from
+//    clinic_round_people.
 //
 
 import Foundation
@@ -70,6 +72,27 @@ struct RoundPerson: Identifiable, Sendable, Equatable, Hashable {
     let id: UUID
     let name: String
     let isGuest: Bool
+}
+
+/// One row of clinic_round_people (decision 0056): who a pro can pick, read
+/// from the server because a pro has no roster of their own to build it
+/// from. The id is the registration's or the guest's.
+struct RoundPersonRow: Decodable, Sendable, Equatable {
+    let personId: UUID
+    let firstName: String
+    let lastName: String
+    let isGuest: Bool
+
+    var person: RoundPerson {
+        RoundPerson(id: personId, name: "\(firstName) \(lastName)", isGuest: isGuest)
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case personId = "person_id"
+        case firstName = "first_name"
+        case lastName = "last_name"
+        case isGuest = "is_guest"
+    }
 }
 
 /// The rounds' shape and the arithmetic on it, kept out of the views so it
@@ -245,6 +268,15 @@ enum RoundsRepository {
     static func rounds(clinic: UUID) async throws -> [RoundSpot] {
         try await supabase.rpc("clinic_rounds", params: ClinicIdParam(p_clinic: clinic)).execute().value
     }
+
+    /// Who a round can be picked from: You're In! then live guests, by last
+    /// name (clinic_round_people). A pro's sheet reads this; Tara's builds
+    /// the same list from her roster.
+    static func people(clinic: UUID) async throws -> [RoundPerson] {
+        let rows: [RoundPersonRow] = try await supabase
+            .rpc("clinic_round_people", params: ClinicIdParam(p_clinic: clinic)).execute().value
+        return rows.map(\.person)
+    }
 }
 
 /// The server's refusals for guests, prices and rounds, in words. Anything
@@ -259,6 +291,8 @@ enum ClinicExtrasError {
         if e.contains("already_paid") { return "Already marked paid." }
         if e.contains("charged_refund_first") { return "Already charged: refund it first." }
         if e.contains("clinic_canceled") { return "That clinic is canceled." }
+        // A pro saving rounds on a clinic that has left their week (0056).
+        if e.contains("not_this_week") { return "That clinic isn't in your week anymore." }
         if e.contains("not_in_clinic") || e.contains("nothing_owed") || e.contains("guest_not_found")
             || e.contains("already_in_round") { return "That just changed. Here's the latest." }
         return "That didn't go through. Check your connection and try again."
