@@ -91,11 +91,11 @@ begin
   select stripe_customer_id into v from public.accounts where id = MARIA;
   insert into _probe_result values ('stripe_customer_kept_for_ledger', 'cus_probe_maria', v);
 
-  -- 4. Money still adds up: the past registration's revenue is unchanged
-  --    (the view answers only an admin, so read it as Tara).
-  perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
-  select collected_cents::text into v from public.revenue_by_clinic where clinic_id = DONE_C;
-  perform set_config('request.jwt.claims', json_build_object('sub', MARIA)::text, true);
+  -- 4. Money still adds up: the past registration's revenue is unchanged.
+  --    Read the way revenue_by_clinic did (dropped 2026-11-17, decision
+  --    0059): paid spots in You're In!, at the price frozen on the row.
+  select coalesce(sum(price_cents_charged) filter (where paid), 0)::text into v
+    from public.registrations where clinic_id = DONE_C and status = 'in';
   insert into _probe_result values ('revenue_unchanged_after_delete', '1800', coalesce(v, 'no row'));
 
   -- 5. Idempotent: a second call answers the same and changes nothing more.

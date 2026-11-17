@@ -66,6 +66,7 @@ The history of what we believed is part of the record.
 | [0054](0054-tara-updated-list-1109.md) | Tara's updated list, items 7, 8, 10, 11: a same-day decline is removed, not the Waitlist; 105 rounds picked from the roster (Tara writes, pros read, players never); one player's price typed by Tara, kept through rate and rain changes; "Warn me!" at the cap while a player's Accept into a full clinic is refused unless she invited past it | 2026-11-09 | Active; the rounds' "pros read only" changed by 0056 (pros write in their week) |
 | [0055](0055-membership-follows-upcoming-clinics.md) | Tara's membership correction moves the player's registrations on clinics not yet over and not charged to the new price, both ways; an ended clinic keeps what it was (narrows 0002) | 2026-11-11 | Active |
 | [0056](0056-pros-set-the-105-rounds.md) | Pros set the 105 rounds in their week (`admin_set_round_court` lets a pro through for a published clinic today to six days out, `not_this_week` otherwise) and pick from `clinic_round_people`; Tara unchanged, players never (changes 0054's rounds clause) | 2026-11-11 | Active |
+| [0059](0059-dead-code-cleanup.md) | Remove the dead code for 1.0.5: unread app code and the database objects nothing calls; `admin_charge_clinic` stays while TestFlight builds 2 to 8 can still call it | 2026-11-17 | Active |
 
 Tara's own numbered decisions (1–23, calls of 2026-08-02 and 2026-08-12) are
 tabled in CLAUDE.md; a bare "decision 17" in a record means that list. Not yet

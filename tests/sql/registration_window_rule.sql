@@ -224,10 +224,13 @@ begin
   perform set_config('request.jwt.claims',
     json_build_object('sub', '11111111-1111-1111-1111-111111111111')::text, true);
 
-  -- Friday clinic, from a template, through the real admin RPC.
-  v := public.create_clinic_from_template(
-         'b0000000-0000-0000-0000-000000000001',
-         timestamp '2026-09-11 19:45' at time zone 'America/New_York');
+  -- Friday clinic, through the admin RPC her New clinic form calls
+  -- (create_clinic_from_template, which this used until 2026-11-17, had no
+  -- caller and was dropped: decision 0059).
+  v := public.admin_upsert_clinic(
+         p_name => 'Ladies Drill', p_audience => 'ladies',
+         p_starts_at => timestamp '2026-09-11 19:45' at time zone 'America/New_York',
+         p_duration_minutes => 90, p_internal_capacity => 8);
 
   insert into _probe_result values (
     'created_clinic_stores_member_open', '2026-09-03 Thu 08:00',

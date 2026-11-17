@@ -61,11 +61,6 @@ private struct MessageParams: Encodable {
     let p_audience: String
     let p_body: String
 }
-private struct PlacePlayerParams: Encodable {
-    let p_clinic: UUID
-    let p_player: UUID
-    let p_status: String
-}
 private struct SearchParams: Encodable {
     let p_query: String
     let p_include_inactive: Bool
@@ -332,40 +327,6 @@ enum AdminRepository {
         try await supabase.rpc("admin_set_no_show", params: P(p_registration: registration, p_no_show: noShow)).execute()
     }
 
-    /// Her one tap per clinic (decision 0012): pending ledger rows for
-    /// everyone who owes, then stripe-charge turns them into Stripe calls.
-    ///
-    /// Returns what Stripe answered for THIS clinic's fees, not how many rows
-    /// were queued: the audit (2026-09-27) found "Charged 6" printed when all
-    /// six declined. stripe-charge answers `{ processed: { payment id: status } }`
-    /// for every pending row it took, from any clinic; the ledger names them.
-    static func chargeClinic(_ clinic: UUID) async throws -> ChargeOutcome {
-        struct P: Encodable { let p_clinic: UUID }
-        let counts: [String: Int] = try await supabase.rpc("admin_charge_clinic", params: P(p_clinic: clinic)).execute().value
-        let settled: StripeChargeAnswer = try await supabase.functions.invoke("stripe-charge", options: .init(method: .post))
-        let statuses = Dictionary((settled.processed ?? [:]).compactMap { key, value in
-            UUID(uuidString: key).map { ($0, value) }
-        }, uniquingKeysWith: { first, _ in first })
-        var fees: [ChargeOutcome.Fee] = []
-        if !statuses.isEmpty {
-            let rows: [LedgerOutcomeRow] = try await supabase
-                .from("payments_ledger")
-                .select("id,kind,clinic_id,first_name,last_name,failure_code")
-                .in("id", values: Array(statuses.keys))
-                .execute()
-                .value
-            fees = rows.filter { $0.clinicId == clinic && $0.kind != "refund" }.map {
-                ChargeOutcome.Fee(id: $0.id,
-                                  name: "\($0.firstName ?? "") \($0.lastName ?? "")".trimmingCharacters(in: .whitespaces),
-                                  reason: DeclineReason.label($0.failureCode))
-            }
-        }
-        return ChargeOutcome.tally(statuses: statuses, fees: fees,
-                                   queued: counts["charged"] ?? 0,
-                                   already: counts["already"] ?? 0,
-                                   noCard: counts["no_card"] ?? 0)
-    }
-
     /// Who on this clinic owes a fee right now (20261002000001): the rows
     /// that get a Charge button. Empty while payments are off, before the
     /// clinic ends, and once everyone is charged or removed.
@@ -493,18 +454,6 @@ enum AdminRepository {
     static func assignCourt(registration: UUID, court: Int?) async throws {
         _ = try await supabase
             .rpc("assign_court", params: AssignCourtParams(p_registration: registration, p_court: court))
-            .execute()
-    }
-
-    /// Put a player straight into a clinic without them using the app.
-    ///
-    /// Tara asked for this in `for-tara.md` question 3: "Someone calls you, or
-    /// grabs you at the club." Answer was yes, and she wanted it in week one.
-    static func place(clinic: UUID, player: UUID, status: RegistrationStatus = .in_) async throws {
-        _ = try await supabase
-            .rpc("place_player", params: PlacePlayerParams(
-                p_clinic: clinic, p_player: player, p_status: status.rawValue
-            ))
             .execute()
     }
 
@@ -775,24 +724,6 @@ struct StripeChargeAnswer: Decodable, Sendable {
     let processed: [String: String]?
 }
 
-/// The ledger's name for a payment stripe-charge just processed.
-struct LedgerOutcomeRow: Decodable, Sendable {
-    let id: UUID
-    let kind: String
-    let clinicId: UUID?
-    let firstName: String?
-    let lastName: String?
-    let failureCode: String?
-
-    enum CodingKeys: String, CodingKey {
-        case id, kind
-        case clinicId = "clinic_id"
-        case firstName = "first_name"
-        case lastName = "last_name"
-        case failureCode = "failure_code"
-    }
-}
-
 /// One clinic's money, from admin_money_clinics. Admin only.
 struct MoneyClinic: Decodable, Identifiable, Sendable {
     let clinicId: UUID
@@ -983,13 +914,6 @@ extension AdminRepository {
         struct P: Encodable { let p_player: UUID; let p_level: Double; let p_approved: Bool }
         try await supabase
             .rpc("admin_set_level_approval", params: P(p_player: playerId, p_level: level, p_approved: approved))
-            .execute()
-    }
-
-    static func setPlayerRating(playerId: UUID, rating: Double) async throws {
-        struct P: Encodable { let p_player: UUID; let p_rating: Double }
-        try await supabase
-            .rpc("admin_set_player_rating", params: P(p_player: playerId, p_rating: rating))
             .execute()
     }
 }

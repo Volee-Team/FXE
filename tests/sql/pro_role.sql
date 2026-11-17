@@ -405,7 +405,7 @@ begin
      where ns.nspname = 'public' and p.prokind = 'f'
        and p.prosrc ~ '(require_admin|is_admin)\(\)'
        and p.proname not in ('require_admin', 'cancel_registration', 'register_for_clinic',
-                             'respond_to_invitation', 'my_courtesy_available', 'revenue_summary',
+                             'respond_to_invitation', 'revenue_summary',
                              -- Tara's and a pro's read of the 105 rounds
                              -- (decision 0054); tara_items_0054.sql checks both.
                              'clinic_rounds',
@@ -437,7 +437,10 @@ begin
     perform pg_temp.as_owner();
     insert into _probe_result values ('r4_pro_sees_nothing_in_' || f.relname, '0', v);
   end loop;
-  insert into _probe_result values ('r4_admin_views_enumerated', 'true', (n_views >= 6)::text);
+  -- 4 since 2026-11-17: revenue_by_clinic and revenue_by_segment were dropped
+  -- (decision 0059), leaving clinics_admin, registrations_admin,
+  -- templates_admin and payments_ledger.
+  insert into _probe_result values ('r4_admin_views_enumerated', 'true', (n_views >= 4)::text);
   -- Not vacuous: Tara sees rows in the two views a roster is built from.
   perform pg_temp.act_as(TARA);
   select ((select count(*) from public.clinics_admin) > 0 and (select count(*) from public.registrations_admin) > 0)::text
@@ -458,8 +461,6 @@ begin
     into v;
   insert into _probe_result values ('r4_pro_cannot_remove_place_or_accept_for_others', 'in|0|response_needed', v);
   perform pg_temp.act_as(CASEY);
-  insert into _probe_result values ('r4_pro_refused_another_players_courtesy', 'not_authorized',
-    pg_temp.try(format('select public.my_courtesy_available(%L)', MARIA_P)));
   perform pg_temp.as_owner();
 
   -- The other direction: a pro's power can only come from something that

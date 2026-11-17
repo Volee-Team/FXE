@@ -255,53 +255,6 @@ struct BellButton: View {
     }
 }
 
-struct NavyHeaderBar: View {
-    let title: String
-    var showsBell: Bool = true
-    /// Unread count for the badge; the bell is a button only when `onBell` is set.
-    var unread: Int = 0
-    var onBell: (() -> Void)? = nil
-    /// Identifier for the title text (Home passes "home.greeting"). It has to
-    /// sit on the Text, not the bar: once the bar held a button, SwiftUI
-    /// merged the whole bar into one button labelled by the bell, which broke
-    /// the greeting query AND made `app.buttons["Profile"]` match the Profile
-    /// screen's own header instead of the tab (found by the UI tests, 09-02).
-    var titleIdentifier: String? = nil
-
-    var body: some View {
-        HStack {
-            Text(title)
-                .brandFont(.bodyEmphasis)
-                .foregroundStyle(Brand.textOnNavy)
-                .accessibilityIdentifier(titleIdentifier ?? "")
-            Spacer()
-            if showsBell {
-                Button {
-                    onBell?()
-                } label: {
-                    ZStack(alignment: .topTrailing) {
-                        Image(systemName: unread > 0 ? "bell.badge" : "bell")
-                            .font(.system(size: 17, weight: .medium))
-                            .symbolRenderingMode(.palette)
-                            .foregroundStyle(unread > 0 ? Brand.accent : Brand.textOnNavy, Brand.textOnNavy)
-                    }
-                    .frame(minWidth: Brand.Layout.minTapTarget, minHeight: Brand.Layout.minTapTarget)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .disabled(onBell == nil)
-                .accessibilityIdentifier("home.bell")
-                .accessibilityLabel(unread > 0 ? "Notifications, \(unread) unread" : "Notifications")
-            }
-        }
-        .padding(.horizontal, Brand.Spacing.pageMargin)
-        .padding(.vertical, Brand.Spacing.md)
-        .frame(maxWidth: .infinity)
-        .background(Brand.navy)
-        .accessibilityElement(children: .contain)
-    }
-}
-
 /// A titled block: small caps navy label, then its content.
 struct SectionBlock<Content: View>: View {
     let title: String

@@ -214,15 +214,6 @@ enum RegistrationRepository {
             .execute()
     }
 
-    /// Whether this player's one courtesy late cancellation per 90 days is
-    /// still available (decision 0012). Decides which sentence the cancel
-    /// sheet shows; the server applies it regardless of what the screen said.
-    static func myCourtesyAvailable(player: UUID) async throws -> Bool {
-        struct P: Encodable { let p_player: UUID }
-        let value: Bool = try await supabase.rpc("my_courtesy_available", params: P(p_player: player)).execute().value
-        return value
-    }
-
     /// Hours before a clinic after which a cancellation needs a note.
     /// `app_settings.cancel_cutoff_hours`, 4 by Tara's word.
     static func cancelCutoffHours() async throws -> Int {
@@ -262,24 +253,6 @@ enum RegistrationRepository {
         try await supabase
             .rpc("respond_to_invitation", params: RespondParams(p_registration: registrationId, p_accept: accept))
             .execute()
-    }
-}
-
-// MARK: - News
-
-enum NewsRepository {
-    static func all() async throws -> [NewsPost] {
-        try await supabase
-            .from("my_news")
-            .select()
-            .order("published_at", ascending: false)
-            .execute()
-            .value
-    }
-
-    static func markRead(newsId: UUID) async throws {
-        struct P: Encodable { let p_news: UUID }
-        try await supabase.rpc("mark_news_read", params: P(p_news: newsId)).execute()
     }
 }
 

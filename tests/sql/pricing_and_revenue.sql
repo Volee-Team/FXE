@@ -122,15 +122,18 @@ begin
   insert into _probe_result values ('placed_player_snapshot_member', 'true', r.was_member::text);
 
   -- ── the reconciliation numbers ───────────────────────────────────────────
+  -- Read from revenue_summary(), the Money tab's own numbers: c90 is the only
+  -- clinic anyone owes for here. revenue_by_clinic, which these read until
+  -- 2026-11-17, had no reader in the app or on the laptop (decision 0059).
   -- 90-minute clinic: Maria $22 (member) + Rob $28 (non-member; $30 for two days, 11-05 to 11-07) + Ken $22
   -- placed by Tara = $72 expected, nothing marked paid yet.
-  select expected_cents::text into v from public.revenue_by_clinic where clinic_id = c90;
+  select expected_cents::text into v from public.revenue_summary();
   insert into _probe_result values ('revenue_90_expected_7200', '7200', v);
-  select outstanding_cents::text into v from public.revenue_by_clinic where clinic_id = c90;
+  select outstanding_cents::text into v from public.revenue_summary();
   insert into _probe_result values ('revenue_90_all_outstanding', '7200', v);
-  select member_players::text into v from public.revenue_by_clinic where clinic_id = c90;
+  select (member_60_players + member_90_players)::text into v from public.revenue_summary();
   insert into _probe_result values ('revenue_90_two_members', '2', v);
-  select nonmember_players::text into v from public.revenue_by_clinic where clinic_id = c90;
+  select (nonmember_60_players + nonmember_90_players)::text into v from public.revenue_summary();
   insert into _probe_result values ('revenue_90_one_nonmember', '1', v);
 
   -- Tick one payment off; expected stays put, collected moves.
@@ -139,11 +142,11 @@ begin
    where clinic_id = c90 and player_id = MARIA;
   perform set_config('role', 'authenticated', true);
 
-  select collected_cents::text into v from public.revenue_by_clinic where clinic_id = c90;
+  select collected_cents::text into v from public.revenue_summary();
   insert into _probe_result values ('revenue_90_collected_2200', '2200', v);
-  select outstanding_cents::text into v from public.revenue_by_clinic where clinic_id = c90;
+  select outstanding_cents::text into v from public.revenue_summary();
   insert into _probe_result values ('revenue_90_outstanding_5000', '5000', v);
-  select expected_cents::text into v from public.revenue_by_clinic where clinic_id = c90;
+  select expected_cents::text into v from public.revenue_summary();
   insert into _probe_result values ('expected_unchanged_by_payment', '7200', v);
 
   -- A Player Pool entry owes nothing until Tara gives them a spot.
@@ -152,7 +155,7 @@ begin
       price_cents_charged, was_member, duration_minutes)
   values (c90, 'a0000000-0000-0000-0000-000000000004', 'pool', 'self', 2200, true, 90);
   perform set_config('role', 'authenticated', true);
-  select expected_cents::text into v from public.revenue_by_clinic where clinic_id = c90;
+  select expected_cents::text into v from public.revenue_summary();
   insert into _probe_result values ('pool_entry_owes_nothing', '7200', v);
 
   -- ── the four numbers Tara reads off ──────────────────────────────────────
@@ -183,10 +186,6 @@ begin
 
   -- ── players must never see the money ─────────────────────────────────────
   perform set_config('request.jwt.claims', json_build_object('sub', MARIA_ACC)::text, true);
-  select count(*)::text into v from public.revenue_by_clinic;
-  insert into _probe_result values ('player_sees_no_revenue_rows', '0', v);
-  select count(*)::text into v from public.revenue_by_segment;
-  insert into _probe_result values ('player_sees_no_segment_rows', '0', v);
   -- revenue_summary is SECURITY DEFINER, so its is_admin() gate is the only
   -- thing standing between a player and the club's money. Attack it directly.
   select expected_cents::text into v from public.revenue_summary();

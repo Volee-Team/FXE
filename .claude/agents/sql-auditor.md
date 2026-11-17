@@ -44,7 +44,7 @@ coaching notes, and clinic location. They are hidden by revoked grants plus
 narrow views, never by the UI.
 - `authenticated` must never gain SELECT on `clinics`, `registrations`,
   `player_notes`, or `clinic_templates`. Players read only through
-  `clinics_public`, `my_registrations`, `my_past_clinics`, `my_clinic_messages`, `my_news`,
+  `clinics_public`, `my_registrations`, `my_past_clinics`, `my_clinic_messages`,
   and the waiver text through `current_waiver()`.
 - No player-callable RPC or view may return a count, a location, a court
   number, a paid flag, or another player's name. "Player-callable" means

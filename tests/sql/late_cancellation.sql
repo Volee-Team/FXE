@@ -89,7 +89,6 @@ begin
 
   -- 4. Inside 3 hours, You're In!, no note (decision 0013): the cancel goes
   --    through, it is late, and no courtesy exists. The fee applies.
-  insert into _probe_result values ('no_courtesy_before_any_cancel', 'false', public.my_courtesy_available(MARIA_P)::text);
   r := public.cancel_registration(reg_soon);
   insert into _probe_result values ('late_cancel_without_note_goes_through', 'canceled true false',
     r.status::text || ' ' || r.late_cancel::text || ' ' || r.courtesy_used::text);

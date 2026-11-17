@@ -5,8 +5,9 @@ Source of truth for copy: Tara, 2026-08-02.
 `FXETennis/Models/NotificationCopy.swift` transcribes this catalogue. The app
 uses it in two places only: `RegistrationReminder.swift` (the "Remind me"
 reminder, #10's body) and `NextClinic.swift` (Siri's answer, its day, date and
-time format). `FXEPayment` in the same file has no caller (`grep -rn
-'FXENotification\|FXEPayment' FXETennis`, 2026-10-12). Every notification
+time format), checked with `grep -rn FXENotification FXETennis` on
+2026-11-17, when its unread members (titles, type keys, triggers, the
+lock-screen measuring) were removed (decision 0059). Every notification
 that reaches a player from the server is a `notifications` row written by a
 SQL RPC with its body built in SQL. Those bodies are her words for #1, #3, #5
 and #6, the catalogue's for #13, #14 and #15, and her 2026-09-28 words for a
@@ -71,7 +72,8 @@ renders with `EEEE` and `h:mm a`: no padded weekday, no leading zero, and an
 8:30 PM Friday clinic is not read as Saturday in UTC. Every new row names the
 registration it is about.
 
-No producer exists for 4, 9 (`publish_news` notifies nobody), 10, or 11 (a
+No producer exists for 4, 9 (News was never switched on, and its tables and
+`publish_news` were dropped 2026-11-17, decision 0059), 10, or 11 (a
 player's own `cancel_registration` notifies only the admins). `leave_pool`
 notifies nobody, and neither does Tara's removal of someone from You're In!
 (question 92, decision 0040: she does not remove people from You're In!, so
@@ -109,7 +111,7 @@ player travelling out of state must still read the court time.
 | 6 | Removed from Player Pool | **Wired 2026-09-28.** `cancel_registration` when Tara (an admin who does not own the player) removes someone from the Player Pool of a published clinic. A player's own cancel sends Tara #15 instead. Remove on each Pool row (phone and laptop, 2026-09-28) reaches it. See contradiction (b). | The removed player's account | `You've been removed from the Player Pool for {clinic}. Hope to see you at another clinic soon!` |
 | 7 | Clinic Canceled | Tara cancels a clinic (`cancel_clinic`). Sent to You're In!, Player Pool, and Response Needed. Wired, but with our body, not hers: see What fires today and contradiction (d). | Every account with a live registration | `Unfortunately today's {clinic} has been canceled due to weather.` |
 | 8 | Payment Reminder | **Switched off 2026-09-21 (decision 0013).** Built 2026-09-01 as a `send_clinic_message` with audience `unpaid`; the Remind unpaid control is rendered on neither admin surface while `app_settings.zelle_allowed` is `false`, which it is. | Unpaid registrants | Her sentence was `Just a quick reminder for payment from {clinic} on {date}. Thank you!`. The code still holds `Just a reminder that {clinic} ({date}) hasn't been paid yet. {payment line} Thanks!` (`web/index.html`, `AdminRepository.swift`) behind the `zelle_allowed` gate. See (g). |
-| 9 | New Announcement | **Not wired.** `publish_news` notifies nobody, and News has no surface (decision 0006). | Accounts matching the post's audience | `News from FXE!` |
+| 9 | New Announcement | **Not wired.** News has no surface (decision 0006), and its tables and `publish_news` were dropped 2026-11-17 (decision 0059). | Accounts matching the post's audience | `News from FXE!` |
 | 10 | Registration Is Open | **Not wired as a broadcast.** Requires a scheduled job at window open. See contradiction (c). Since 2026-09-28 the app shows it on one phone on request: "Remind me" on a clinic page schedules it on that phone for the moment the clinic opens to that player, under the clinic's name (`RegistrationReminder.swift`); the server sends nothing | Undecided, see (c). The reminder: only the phone that asked | `Registration is LIVE!! Hope to see you on the court` |
 | 11 | Registration Canceled | **Not wired.** A player's own `cancel_registration` notifies only the admins. See (h), which recommends in-app only. | The cancelling player's account | `You've canceled your registration for {clinic}. Hope to see you back on the court soon!` |
 | 12 | Clinic Message | Tara sends a clinic message (`send_clinic_message`). | The audience she selected | Pass-through. Tara's typed body is the copy. |
@@ -423,10 +425,10 @@ requirements but it is an inference, not something she said.
 so the lock-screen budget did not apply, and the Zelle line rides inside it:
 `Just a reminder that {clinic} ({date}) hasn't been paid yet. {payment line}
 Thanks!`. Both clients read the line through the `payment_instructions()` RPC
-(`FXETennis/Data/Repositories.swift`, `web/index.html`), as CLAUDE.md requires;
-`FXEPayment.line` in `NotificationCopy.swift` is a second, unused copy of the
-same string (`grep -rn FXEPayment FXETennis` finds no caller outside the file,
-2026-10-12).
+(`FXETennis/Data/Repositories.swift`, `web/index.html`), as CLAUDE.md requires.
+The app's own copy of the line, `FXEPayment.line`, was removed on 2026-09-26
+with the rest of the Zelle wording; `grep -rn FXEPayment FXETennis` finds
+nothing (2026-11-17).
 
 **Moot since decision 0013.** Card only, `zelle_allowed` is `false`, and the
 reminder is drawn on neither admin surface, so no Zelle line reaches a push.
@@ -461,9 +463,10 @@ notification 3 is three sentences. Both are short, 94 and 46 characters, so
 neither is a lock-screen problem.
 
 Treating this as her rule being approximately right rather than her copy being
-wrong: the catalogue measures and reports `sentenceCount`, and gates on
-`characterCount` against a 140-character budget, which is what actually
-truncates. Nothing is enforced against her wording.
+wrong: the measure is characters against a 140-character budget, which is
+what actually truncates, and sentences are only reported (the Measured lengths
+table below; the Swift helpers that once computed both were never read and
+went on 2026-11-17, decision 0059). Nothing is enforced against her wording.
 
 ### (k) Decision 13 contradicts our own engineering design
 

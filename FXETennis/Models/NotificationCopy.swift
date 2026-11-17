@@ -30,18 +30,6 @@
 
 import Foundation
 
-// MARK: - Audience
-
-/// Who a notification is addressed to.
-///
-/// This is not the same thing as `message_audience` in Postgres, which selects
-/// a subset of a clinic's registrants for a Tara-authored clinic message. This
-/// is coarser: is the reader a player or is the reader Tara.
-enum NotificationAudience: String, Sendable {
-    case player
-    case admin
-}
-
 // MARK: - Typed parameters
 
 /// The minimum a notification body needs to identify a clinic.
@@ -81,15 +69,15 @@ struct PlayerRef: Hashable, Sendable {
 
 // MARK: - Catalogue
 
-/// Every notification the app can send, with its typed parameters.
-///
-/// `typeKey` values match the `notifications.type` text column written by the
-/// SQL RPCs (first `supabase/migrations/20260728000003_rpcs.sql`; the bodies of
-/// #1, #3, #5, #6 and the three admin cases are written in her words by
+/// Every notification in Tara's catalogue, with its typed parameters, kept as
+/// the record of her wording. The server writes and sends them (first
+/// `supabase/migrations/20260728000003_rpcs.sql`; the bodies of #1, #3, #5, #6
+/// and the three admin cases are written in her words by
 /// `20260928000001_notifications_in_her_words.sql` and pinned character for
-/// character by `tests/sql/notification_copy.sql`). The two lists are coupled
-/// by hand. If you add a case here, add the matching `notify_account` call
-/// there, and vice versa.
+/// character by `tests/sql/notification_copy.sql`). The app itself sends only
+/// `registrationIsOpen` (RegistrationReminder.swift) and uses the formatters.
+/// The type keys, titles and lock-screen measuring that used to sit here were
+/// never read and were removed on 2026-11-17 (decision 0059).
 enum FXENotification: Sendable {
 
     // ---------------------------------------------------------- player ----
@@ -195,108 +183,6 @@ enum FXENotification: Sendable {
     case playerDeclined(player: PlayerRef, clinic: ClinicRef)
     case playerCanceled(player: PlayerRef, clinic: ClinicRef)
 
-    // MARK: Audience
-
-    var audience: NotificationAudience {
-        switch self {
-        case .youreIn, .invitationReceived, .invitationAccepted, .invitationExpired,
-             .addedToPlayerPool, .removedFromPlayerPool, .clinicCanceled,
-             .paymentReminder, .newAnnouncement, .registrationIsOpen,
-             .registrationCanceled, .clinicMessage:
-            return .player
-        case .playerAccepted, .playerDeclined, .playerCanceled:
-            return .admin
-        }
-    }
-
-    // MARK: Type key
-
-    /// Persisted in `notifications.type`. Stable string, safe to key analytics
-    /// and deep links off. Changing one of these is a migration, not an edit.
-    var typeKey: String {
-        switch self {
-        case .youreIn:               return "youre_in"
-        case .invitationReceived:    return "invitation_received"
-        case .invitationAccepted:    return "invitation_accepted_player"
-        case .invitationExpired:     return "invitation_expired"
-        case .addedToPlayerPool:     return "added_to_pool"
-        case .removedFromPlayerPool: return "removed_from_pool"
-        case .clinicCanceled:        return "clinic_canceled"
-        case .paymentReminder:       return "payment_reminder"
-        case .newAnnouncement:       return "news_published"
-        case .registrationIsOpen:    return "registration_open"
-        case .registrationCanceled:  return "registration_canceled"
-        case .clinicMessage:         return "clinic_message"
-        case .playerAccepted:        return "invitation_accepted"
-        case .playerDeclined:        return "invitation_declined"
-        case .playerCanceled:        return "player_canceled"
-        }
-    }
-
-    // MARK: Trigger
-
-    /// The event that emits this notification, in one line, as documentation.
-    /// Kept next to the copy so the two cannot drift apart in review.
-    var trigger: String {
-        switch self {
-        case .youreIn:
-            return "Registration resolves to You're In!, by member priority or by Tara placing the player."
-        case .invitationReceived:
-            return "Tara invites a player from the Waitlist (invite_from_pool)."
-        case .invitationAccepted:
-            return "Player accepts an invitation (respond_to_invitation, accept)."
-        case .invitationExpired:
-            return "NOT WIRED. No expiry mechanism exists. See contradiction (a)."
-        case .addedToPlayerPool:
-            return "First registration resolves to Waitlist. Not on decline, not on invitation cancel."
-        case .removedFromPlayerPool:
-            return "Tara removes a pooled player (admin cancel_registration)."
-        case .clinicCanceled:
-            return "Tara cancels a clinic (cancel_clinic). Sent to You're In!, Waitlist, and Response Needed."
-        case .paymentReminder:
-            return "Tara taps the unpaid reminder. Sent only to registrations with paid = false."
-        case .newAnnouncement:
-            return "Tara publishes a news post (publish_news), to the matching audience."
-        case .registrationIsOpen:
-            return "NOT WIRED. Requires a scheduled job at window open. See contradiction (c)."
-        case .registrationCanceled:
-            return "Player cancels their own registration (cancel_registration by the owner)."
-        case .clinicMessage:
-            return "Tara sends a clinic message (send_clinic_message), to the chosen audience."
-        case .playerAccepted:
-            return "Player accepts an invitation. Sent to every admin."
-        case .playerDeclined:
-            return "Player declines an invitation. Sent to every admin."
-        case .playerCanceled:
-            return "Player cancels a registration. Sent to every admin, and raises Action Needed."
-        }
-    }
-
-    // MARK: Title
-
-    /// APNs requires a title. Tara did not supply these, so they are ours and
-    /// they are placeholders pending her review. Kept short: the title steals
-    /// lock-screen room from her body copy.
-    var title: String {
-        switch self {
-        case .youreIn:               return "You're In!"
-        case .invitationReceived:    return "Spot Available"
-        case .invitationAccepted:    return "You're In!"
-        case .invitationExpired:     return "Invitation Expired"
-        case .addedToPlayerPool:     return "Waitlist"
-        case .removedFromPlayerPool: return "Waitlist"
-        case .clinicCanceled:        return "Clinic Canceled"
-        case .paymentReminder:       return "Payment Reminder"
-        case .newAnnouncement:       return "FXE Tennis"
-        case .registrationIsOpen:    return "Registration Open"
-        case .registrationCanceled:  return "Registration Canceled"
-        case .clinicMessage:         return "FXE Tennis"
-        case .playerAccepted:        return "Invitation Accepted"
-        case .playerDeclined:        return "Invitation Declined"
-        case .playerCanceled:        return "Player Canceled"
-        }
-    }
-
     // MARK: Body
 
     /// The notification body. Player-facing strings are Tara's, verbatim.
@@ -386,86 +272,4 @@ extension FXENotification {
 
     /// "Aug 7"
     static func date(_ date: Date) -> String { formatter("MMM d").string(from: date) }
-}
-
-// MARK: - Lock-screen budget
-
-extension FXENotification {
-
-    /// Characters of body text that survive on a collapsed iOS lock-screen
-    /// banner before the system truncates. Two lines at typical Dynamic Type.
-    /// Approximate by nature: treat it as a review threshold, not a hard gate.
-    static let lockScreenBudget = 140
-
-    /// Sentence count, counting a run of terminators ("LIVE!!") as one.
-    ///
-    /// Tara's stated rule is 1 to 2 sentences. Two of her own drafts are three
-    /// short sentences, so this is reported, never enforced. The operative
-    /// constraint is `characterCount`, which is what actually truncates.
-    var sentenceCount: Int {
-        var count = 0
-        var inTerminatorRun = false
-        var sawText = false
-        for character in body {
-            if character == "." || character == "!" || character == "?" {
-                if !inTerminatorRun && sawText {
-                    count += 1
-                    sawText = false
-                }
-                inTerminatorRun = true
-            } else {
-                inTerminatorRun = false
-                if !character.isWhitespace { sawText = true }
-            }
-        }
-        // A trailing fragment with no terminator is still a sentence, which is
-        // how her INVITATION RECEIVED and REGISTRATION IS OPEN drafts end.
-        if sawText { count += 1 }
-        return count
-    }
-
-    var characterCount: Int { body.count }
-
-    var fitsLockScreen: Bool { characterCount <= Self.lockScreenBudget }
-}
-
-// MARK: - Test surface
-
-extension FXENotification {
-
-    /// One instance of every case, with fixed sample data, so a unit test can
-    /// assert the lock-screen budget across the whole catalogue without the
-    /// test having to know how to build each case.
-    ///
-    /// Sample clinic name is deliberately long-ish. A short name would hide a
-    /// truncation problem that a real name such as "Tuesday Night Ladies
-    /// Cardio Tennis" would expose.
-    static func catalogueSamples(
-        clinic: ClinicRef = ClinicRef(
-            name: "Ladies Cardio Tennis",
-            // 2026-08-06 09:00 America/New_York, a Thursday. Chosen inside EDT
-            // so a formatter that silently fell back to UTC would render
-            // "1:00 PM" and fail the test loudly.
-            startsAt: Date(timeIntervalSince1970: 1_786_021_200)
-        ),
-        player: PlayerRef = PlayerRef(firstName: "Jake", lastName: "Miller")
-    ) -> [FXENotification] {
-        [
-            .youreIn(clinic: clinic),
-            .invitationReceived(clinic: clinic),
-            .invitationAccepted,
-            .invitationExpired,
-            .addedToPlayerPool,
-            .removedFromPlayerPool(clinic: clinic),
-            .clinicCanceled(clinic: clinic),
-            .paymentReminder(clinic: clinic),
-            .newAnnouncement,
-            .registrationIsOpen,
-            .registrationCanceled(clinic: clinic),
-            .clinicMessage(body: "Courts are wet. We start 15 minutes late."),
-            .playerAccepted(player: player, clinic: clinic),
-            .playerDeclined(player: player, clinic: clinic),
-            .playerCanceled(player: player, clinic: clinic)
-        ]
-    }
 }
