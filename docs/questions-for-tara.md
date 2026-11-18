@@ -705,47 +705,60 @@ Elite approvals) needs only 145 and starts without the rest.
 
 **145. The waiver a parent signs for each child: what is the exact text?**
 Spec 01: "Require a parent-signed waiver for each child". The adult waiver came from the club's form (question 45); in September she sent the tennis camp (parent/guardian) form.
-*Default: that parent/guardian form, word for word, signed once per child per year like the adult one.*
+*Default: that parent/guardian form, word for word, signed once per child per year like the adult one. Status: answered 2026-11-17: "Yes" (decision 0060).*
 
 **146. School year: are weekdays bought separately (Monday and Wednesday as two purchases), or together as one package?**
 Her first open decision. It sets what "Register for Session" buys and what the cap counts.
-*Default: none. This blocks school-year sessions (phase 2).*
+*Default: none. This blocks school-year sessions (phase 2). Status: answered 2026-11-17: "They can sign up for Monday and or Wednesday". Each weekday is its own purchase at its own price, for example Orange Dot $160 for Tuesdays, $140 for Thursdays, $300 for both (decision 0060).*
 
 **147. School year: is there a sibling discount, and how much?**
 Her second open decision. Summer is $5 off each extra sibling per day.
-*Default: no school-year sibling discount until she says otherwise.*
+*Default: no school-year sibling discount until she says otherwise. Status: answered 2026-11-17: "None" (decision 0060).*
 
 **148. Summer rainouts: what is charged for a canceled day, and for a morning that ends early?**
 Her third open decision.
-*Default: a canceled day is not charged; a day that ends early is charged in full unless she lowers it on her day screen (she can always charge less).*
+*Default: a canceled day is not charged; a day that ends early is charged in full unless she lowers it on her day screen (she can always charge less). Status: answered 2026-11-17: "We don't cancel for rain". She sets the price herself when a child is picked up early (decision 0060).*
 
 **149. A full camp day, then a spot opens: how does a waiting request become a booking?**
 Her fourth open decision: "avoid silently confirming a last-minute billable place".
-*Default: she offers the spot, the parent gets a notification and must tap Accept before it counts or can be charged, as invitations work for adults today.*
+*Default: she offers the spot, the parent gets a notification and must tap Accept before it counts or can be charged, as invitations work for adults today. Status: answered 2026-11-17: "Yes" (decision 0060).*
 
 **150. Siblings: which child is "first" when programs cost different amounts, and how does a price she typed combine with the $5?**
 Her fifth open decision.
-*Default: the most expensive child pays full and each other child gets $5 off; a price she typed is final and gets no automatic discount.*
+*Default: the most expensive child pays full and each other child gets $5 off; a price she typed is final and gets no automatic discount. Status: answered 2026-11-17: only for regular campers; the most expensive child pays full, the second gets $5 off. Elite: question 168 (decision 0060).*
 
 **151. Two parents on one child: who can book, change and cancel, and whose card pays?**
 Her sixth open decision.
-*Default: either parent can book and cancel; each booking is paid by the card of the parent who made it, shown on the booking.*
+*Default: either parent can book and cancel; each booking is paid by the card of the parent who made it, shown on the booking. Status: answered 2026-11-17: "Yes either" (decision 0060).*
 
 **152. When does the spring school-year session start, and when should registration open?**
 Sets the real deadline for phases 1 to 3 (John's January 1 is the target).
-*Default: none. We need the dates.*
+*Default: none. We need the dates. Status: answered 2026-11-17: the winter session comes first. It starts 2027-01-04, sign-ups open 2026-12-15, end date not set: question 166 (decision 0060).*
 
 **153. The five programs: names, descriptions, age guidance, days, times, prices (member and non-member, session and drop-in), and caps for spring.**
 Her seventh open decision, the data itself. She enters it on the laptop once phase 1 is built; we need the first season's numbers to test with.
-*Default: she types them in herself when the screen is ready.*
+*Default: she types them in herself when the screen is ready. Status: she sends them on 2026-11-18 (2026-11-17 text).*
 
 **154. When does summer camp registration open?**
 Sets the target for phase 4.
-*Default: none. We need the date.*
+*Default: none. We need the date. Status: answered 2026-11-17: "Let's say march 1 for summer for now" (decision 0060).*
 
 **155. Treats: the price of one treat, and is it the same for every program?**
 Spec 04 shows the treat price when a parent gives permission.
-*Default: one price for every program, set by her on the laptop.*
+*Default: one price for every program, set by her on the laptop. Status: answered 2026-11-17: "$3/treat" (decision 0060).*
+
+## AI. Winter juniors (added 2026-11-17, decision 0060)
+
+From her answers to 145 to 155.
+
+**166. Winter session: when is the last class, and which days are off (for example Martin Luther King Day or February break)?**
+*Default: none. We need the end date before December 15.*
+
+**167. Does each weekday have its own cap? For example, can Tuesdays be full while Thursdays still have room?**
+*Default: yes. Each weekday has its own cap, and a child on both days counts once on each.*
+
+**168. Siblings in summer: if one child is a regular camper and the other is in Elite on the same day, does anyone get $5 off?**
+*Default: no. The $5 applies only between two or more regular campers on the same day; Elite days are full price.*
 
 ### How 52 to 57 are being sent
 

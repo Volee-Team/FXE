@@ -4,14 +4,16 @@ What we build for `docs/juniors/spec-2026-11-07.md` (Tara's document), in what
 order, and what waits on her. John, 2026-11-14: *"we should get going on doing
 the new stuff for tara"*.
 
-- **Target:** before 2027-01-01. John told Tara yes on 2026-11-05: *"Just
-  wondering if it's possible to have this done by January 1?"*
+- **Target:** parents buy the **winter session** from **2026-12-15**, and
+  the first class is 2027-01-04 (Tara, 2026-11-17, decision 0060). It was
+  2027-01-01 for spring. John told Tara yes on 2026-11-05: *"Just wondering if
+  it's possible to have this done by January 1?"*
 - **Scope:** her document puts pool, court reservations and Volee outside this
   update. They stay in `docs/roadmap.md` (v2).
 
 This file is a plan, not a status. Rows that get built move to
 `docs/architecture.md`, open questions live in `docs/questions-for-tara.md`
-(145 to 155), and decisions get their own records.
+(145 to 155 answered 2026-11-17; 166 to 168 open), and decisions get their own records.
 
 ## Releases
 
@@ -21,8 +23,8 @@ John, 2026-11-15: *"get started on juniors and plan for that to be as 1.0.5"*.
 |---|---|---|
 | 1.0.4 | Pro rounds (0056) and the pros' roster at large text sizes. No juniors | submitted after its UI runs, mid-November |
 | server, ahead of 1.0.5 | Phase 0 (`20261115000001`): live as soon as it is green, since it changes nothing anyone sees today | November |
-| **1.0.5** | **Juniors**: phases 1 to 3 in the app, the members' site and Tara's laptop. Parents add children, sign a waiver per child, register for the spring session or ask for drop-ins; Tara runs programs, approvals, sessions and walk-ins; pros see the juniors' week | submitted by about 2026-12-20, so Apple's review and Tara's checks finish before 2027-01-01 |
-| 1.0.6 or later | Summer camp (phase 4) and linked parents (phase 5) | before summer registration opens (question 154) |
+| **1.0.5** | **Juniors**: phases 1 to 3 in the app, the members' site and Tara's laptop. Parents add children, sign a waiver per child, buy winter weekdays or ask for drop-ins; Tara runs programs, approvals, sessions and walk-ins; pros see the juniors' week | submitted as soon as it is ready, aiming for about 2026-12-08 so Apple's review finishes before sign-ups open on 2026-12-15. If it is late, parents use the members' site, which needs no review |
+| 1.0.6 or later | Summer camp (phase 4) and linked parents (phase 5) | on phones by mid-February: summer registration opens 2027-03-01 (question 154) |
 
 The server parts of each phase can go live before 1.0.5 is on phones, as
 long as the 1.0.3 and 1.0.4 apps see nothing new (phase 0's rule). The laptop
@@ -157,7 +159,7 @@ anywhere.
    `both` the moment it adds a child and keeps its own bookings and card
    (spec 06, scenario 1).
 2. **A waiver per child**, signed by the parent. The adult waiver flow (0013)
-   with the parent/guardian text. **Waits on question 145** for the text.
+   with the parent/guardian text. Question 145: the tennis camp parent/guardian form, word for word (answered 2026-11-17).
 3. **Programs** on the laptop: Tara writes the five descriptions and age
    guidance.
 4. **Elite approvals:** the parent taps Request Approval, and Tara approves or
@@ -167,9 +169,12 @@ anywhere.
    parent. The App Store privacy answers get the same addition (John's to
    type).
 
-### Phase 2: school-year sessions (needs 146; 147 for siblings)
+### Phase 2: school-year sessions (146 and 147 answered 2026-11-17)
 
-Seasons and their clinic rows, then:
+Seasons and their clinic rows. **Each weekday of a session is its own
+purchase** (question 146). Each weekday has its own dates, price and cap
+(question 167); a parent buys one or several, and both days cost the sum.
+There is no school-year sibling discount (147). Then:
 
 - **Register for Session:** review the dates and price, confirm, and pay up
   front. This is the first charge made at booking rather than after the
@@ -196,10 +201,11 @@ Add Walk-In builds on guests (0052): an existing child, or a name and parent
 phone. That lands in Tara's Action Needed as "Payment follow-up needed". When
 the parent signs up, the attendance links to the child once, never twice.
 
-**Phases 1 to 3 are the January 1 target.** They cover the spring school-year
-session.
+**Phases 1 and 2 are the December 15 target**, so parents can add children,
+sign and buy winter weekdays. **Phase 3 is the January 4 target**, the first
+class.
 
-### Phase 4: summer camp (needs 148, 149, 150)
+### Phase 4: summer camp (148 to 150 answered 2026-11-17; 168 open)
 
 - Full Week or Choose Days, with daily caps and Request a Spot.
 - Free cancellation until 12 hours before each day.
@@ -211,9 +217,9 @@ session.
 - A retried batch never charges twice (the idempotency rule of 2026-09-27,
   one key per row).
 
-Target: open before summer registration. Question 154 asks when that is.
+Target: summer registration opens 2027-03-01 (question 154). A treat is $3, one price for every program (155). Nothing is canceled for rain (148). The $5 sibling discount is for regular campers only (150).
 
-### Phase 5: linked parents (needs 151)
+### Phase 5: linked parents (151 answered: either parent books, the booker pays)
 
 `player_guardians`, an invite to the second parent, and the family seen as one
 for siblings and for bookings.
