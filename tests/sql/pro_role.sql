@@ -392,9 +392,9 @@ begin
   -- is a hole or a guard in the wrong place, and both are worth a red row.
   -- Keyed on is_admin() as well as require_admin(), so an admin function
   -- rewritten as "if not (is_admin() or is_pro())" stays in the list and
-  -- goes red, instead of quietly leaving it. The exceptions are the five a
+  -- goes red, instead of quietly leaving it. The exceptions are the functions a
   -- member may call that merely have an admin branch; each has its own
-  -- outcome check below, and a sixth added later turns this red until it is
+  -- outcome check below, and one added later turns this red until it is
   -- named here (the same forcing function as grants_are_explicit's list).
   for f in
     select p.oid, p.proname,
@@ -412,7 +412,11 @@ begin
                              -- A pro writes the 105 rounds in their week, and
                              -- reads who can be picked (decision 0056);
                              -- pro_rounds.sql checks both ways.
-                             'admin_set_round_court', 'clinic_round_people')
+                             'admin_set_round_court', 'clinic_round_people',
+                             -- A parent reads their own child's waiver status,
+                             -- Tara any child's (decision 0061);
+                             -- juniors_family.sql checks the pro, a member and Tara.
+                             'child_waiver_status')
        and has_function_privilege('authenticated', p.oid, 'EXECUTE')
      order by p.proname
   loop

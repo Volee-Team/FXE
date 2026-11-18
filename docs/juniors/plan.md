@@ -154,6 +154,11 @@ anywhere.
 
 ### Phase 1: families and programs (no blocking question)
 
+**Server built 2026-11-17** (decision 0061, `20261118000001`, not pushed to
+hosted): children, a waiver per child (waiting on her text), the five
+programs and Elite approvals. The app, the members' site and the laptop
+screens follow.
+
 1. **My Children** on Profile, in the app and on `web/play/`: add, edit and
    remove a child (first and last name, birthday). An adult account becomes
    `both` the moment it adds a child and keeps its own bookings and card

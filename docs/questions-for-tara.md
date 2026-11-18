@@ -760,6 +760,12 @@ From her answers to 145 to 155.
 **168. Siblings in summer: if one child is a regular camper and the other is in Elite on the same day, does anyone get $5 off?**
 *Default: no. The $5 applies only between two or more regular campers on the same day; Elite days are full price.*
 
+**169. Junior Elite and Elite: if you decline a child, may the parent ask again later?**
+*Default: no. The parent sees it was declined and cannot ask again; you can still approve the child yourself at any time (decision 0061).*
+
+**170. Should you get a notification when a parent asks for Junior Elite or Elite approval, and the parent one when you answer?**
+*Default: no notification for now; requests show in your Action Needed list on the laptop. The wording would come to John to sign off (decision 0061).*
+
 ### How 52 to 57 are being sent
 
 Round two of the review page (2026-09-21, later): the Words tab now shows her
