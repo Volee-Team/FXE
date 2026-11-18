@@ -1182,8 +1182,13 @@ async function renderChild(id, error = "") {
     if (s === "approved") return `<span class="chip in" data-approval="${esc(g.id)}">Approved</span>`;
     if (s === "requested") return `<span class="chip pool" data-approval="${esc(g.id)}">Approval requested</span>`;
     if (s === "declined") return `<span class="chip canc" data-approval="${esc(g.id)}">Declined</span>`;
-    return `<button class="btn secondary" style="min-height:44px;padding:0 14px" data-request="${esc(g.id)}">Request Approval</button>`;
+    return "";
   };
+  // The button goes under the program's name, full width: beside it, at
+  // phone width, it squeezed "Junior Elite" to two letters a line.
+  const requestButton = (g) => g.needs_approval && !mine[g.id]
+    ? `<button class="btn secondary" style="min-height:44px;margin-top:8px;width:100%" data-request="${esc(g.id)}">Request Approval</button>`
+    : "";
   const waiver = k.waiver_status === "signed"
     ? `<span class="chip in" id="c-waiver">Signed</span>`
     : k.waiver_status === "needed"
@@ -1201,7 +1206,8 @@ async function renderChild(id, error = "") {
     <div class="card">${programs.length ? programs.map((g) => `<div class="list-row" data-program="${esc(g.id)}">
         <div class="grow"><div class="emph">${esc(g.name)}</div>
           ${g.age_guidance ? `<div class="caption">${esc(g.age_guidance)}</div>` : ""}
-          ${g.description ? `<div class="muted" style="white-space:pre-wrap">${esc(g.description)}</div>` : ""}</div>
+          ${g.description ? `<div class="muted" style="white-space:pre-wrap">${esc(g.description)}</div>` : ""}
+          ${requestButton(g)}</div>
         ${approvalCell(g)}
       </div>`).join("") : `<p class="muted">No programs yet</p>`}</div>
     <p class="error" id="c-error" role="status">${esc(error)}</p>
