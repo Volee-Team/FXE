@@ -129,6 +129,12 @@ struct MyChildrenView: View {
 private struct ChildRow: View {
     let child: Child
 
+    /// "Age 8 · Waiver needed", or the waiver alone when there is no age.
+    private var statusLine: Text {
+        let age = child.age.map { Text("Age \($0) · ") } ?? Text("")
+        return age + Text(JuniorCopy.waiverLine(child.waiverStatus))
+    }
+
     var body: some View {
         HStack(alignment: .center, spacing: Brand.Spacing.sm) {
             VStack(alignment: .leading, spacing: 2) {
@@ -136,11 +142,10 @@ private struct ChildRow: View {
                     .brandFont(.bodyEmphasis)
                     .foregroundStyle(Brand.navy)
                     .multilineTextAlignment(.leading)
-                (child.age.map { Text("Age \($0) · ") } ?? Text(""))
-                    + Text(JuniorCopy.waiverLine(child.waiverStatus))
-                .brandFont(.subheadline)
-                .foregroundStyle(Brand.textSecondary)
-                .multilineTextAlignment(.leading)
+                statusLine
+                    .brandFont(.subheadline)
+                    .foregroundStyle(Brand.textSecondary)
+                    .multilineTextAlignment(.leading)
             }
             Spacer(minLength: Brand.Spacing.sm)
             Image(systemName: "chevron.right")
