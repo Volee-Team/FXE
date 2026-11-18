@@ -137,6 +137,8 @@ begin
   exception when others then err := sqlerrm;
   end;
   insert into _probe_result values ('c10a_another_member_cannot_remove_the_child', 'not_your_child', err);
+  select is_active::text into v from public.players where id = sam;
+  insert into _probe_result values ('c10a2_and_the_child_is_still_active', 'true', v);
   select id into kid_k from public.add_my_child('Kay', 'Probe', date '2016-01-01');
   select account_type::text into v from public.accounts where id = KEN;
   insert into _probe_result values ('c13_a_parent_account_stays_parent', 'parent', v);
@@ -236,6 +238,8 @@ begin
   exception when others then err := sqlerrm;
   end;
   insert into _probe_result values ('w4_another_member_cannot_sign_for_the_child', 'not_your_child', err);
+  select count(*) into n from public.junior_waiver_acceptances where account_id = KEN;
+  insert into _probe_result values ('w4b_and_no_signature_of_his_exists', '0', n::text);
   begin
     v := public.child_waiver_status(sam);
     err := v;
@@ -254,8 +258,9 @@ begin
 
   perform set_config('request.jwt.claims', '', true);
   begin
-    insert into public.junior_waiver_acceptances (player_id, account_id, version, legal_name, email)
-    values (lily, MARIA, '2026-09', 'Maria Lopez', 'x');
+    insert into public.junior_waiver_acceptances (player_id, account_id, version, legal_name, email,
+        child_first_name, child_last_name, child_date_of_birth)
+    values (lily, MARIA, '2026-09', 'Maria Lopez', 'x', 'Lily', 'Probe', date '2015-02-10');
     err := 'inserted';
   exception when foreign_key_violation then err := 'foreign_key_violation';
   end;
@@ -294,6 +299,8 @@ begin
   exception when others then err := sqlerrm;
   end;
   insert into _probe_result values ('p5a_a_member_cannot_edit_a_program', 'not_authorized', err);
+  select description into v from public.junior_programs where id = red;
+  insert into _probe_result values ('p5a2_and_the_description_is_unchanged', '', v);
   perform set_config('request.jwt.claims', json_build_object('sub', CASEY)::text, true);
   begin
     perform public.admin_save_junior_program(red, 'Red Dot', 'mine now', 'Ages 3-6', false, 1, true);
@@ -301,6 +308,8 @@ begin
   exception when others then err := sqlerrm;
   end;
   insert into _probe_result values ('p5b_a_pro_cannot_edit_a_program', 'not_authorized', err);
+  select description into v from public.junior_programs where id = red;
+  insert into _probe_result values ('p5b2_and_the_description_is_unchanged', '', v);
 
   perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
   perform public.admin_save_junior_program(red, 'Red Dot', 'Our youngest players.', 'Ages 3-6', false, 1, true);
@@ -373,6 +382,9 @@ begin
   exception when others then err := sqlerrm;
   end;
   insert into _probe_result values ('a4_another_member_cannot_request_for_the_child', 'not_your_child', err);
+  select count(*)::text || ' ' || min(status) || ' ' || (min(requested_by::text) = MARIA::text)::text into v
+    from public.program_approvals where player_id = sam and program_id = elite;
+  insert into _probe_result values ('a4b_and_marias_request_is_unchanged', '1 requested true', v);
   select count(*) into n from public.my_program_approvals();
   insert into _probe_result values ('a9b_another_member_sees_no_approvals', '0', n::text);
   begin
@@ -394,6 +406,9 @@ begin
   exception when others then err := sqlerrm;
   end;
   insert into _probe_result values ('a5d_a_pro_cannot_approve', 'not_authorized', err);
+  select status || ' ' || coalesce(decided_by::text, 'undecided') into v
+    from public.program_approvals where player_id = sam and program_id = elite;
+  insert into _probe_result values ('a5e_and_the_request_is_still_open', 'requested undecided', v);
 
   perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
   select string_agg(child_first_name || ' ' || child_last_name || '/' || parent_first_name || '/' || program_name || '/' || status,
@@ -412,6 +427,8 @@ begin
   exception when others then err := sqlerrm;
   end;
   insert into _probe_result values ('a6c_a_decided_request_is_not_decided_again', 'approval_already_decided', err);
+  select status into v from public.program_approvals where player_id = sam and program_id = elite;
+  insert into _probe_result values ('a6d_and_it_stays_approved', 'approved', v);
   select status into v from public.admin_decide_program_approval(lily, jr_elite, false);
   insert into _probe_result values ('a7a_tara_declines', 'declined', v);
   select status into v from public.admin_preapprove_program(lily, elite);

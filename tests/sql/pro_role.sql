@@ -120,6 +120,7 @@ declare
   r_maria_tomorrow uuid; r_ken_yesterday uuid; r_dana_draft uuid; r_rob_canceled uuid;
   r_theo_pool uuid; r_dana_soon uuid;
   f record; v text; n int; n_fns int := 0; n_views int := 0;
+  v_kid uuid; c_jr105 uuid;
 begin
   -- ------------------------------------------------------------ r0, the seed
   -- What the seed committed, read as the owner: this row can fail without
@@ -660,6 +661,37 @@ begin
     into v;
   insert into _probe_result values ('r8_tara_changes_landed',
     'true|canceled:true:11111111-1111-1111-1111-111111111111', v);
+
+  -- ------------------------------- r10, no child on a pro's screens yet
+  -- Decision 0061: pros see a child in phase 3, on a day the child is
+  -- rostered. Until then a rostered child is not in pro_today, pro_week or
+  -- clinic_round_people for a pro; the clinic still is, and Tara sees the
+  -- child. Placed with no one signed in (Tara's exemption from the kind
+  -- guard); the clinic is a juniors 105 today, so rounds apply too.
+  perform pg_temp.as_owner();
+  perform set_config('request.jwt.claims', '', true);
+  insert into public.players (account_id, kind, first_name, last_name, date_of_birth)
+  values (MARIA, 'junior', 'Probekid', 'Unseenbypros', date '2016-01-01')
+  returning id into v_kid;
+  insert into public.clinics (name, audience, category, description, starts_at, ends_at,
+      member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
+  values ('Probe Juniors 105', 'juniors', 'Clinic', 'probe', now(), now() + interval '1 hour',
+          now() - interval '3 days', now() - interval '2 days', 8, 'published', 60)
+  returning id into c_jr105;
+  insert into public.registrations (clinic_id, player_id, status, source) values (c_jr105, v_kid, 'in', 'admin');
+  perform pg_temp.act_as(CASEY);
+  select count(*) filter (where clinic_id = c_jr105)::text || '|'
+         || count(*) filter (where last_name = 'Unseenbypros')::text into v from public.pro_today();
+  insert into _probe_result values ('r10_pro_today_shows_the_clinic_not_the_child', '1|0', v);
+  select count(*) filter (where clinic_id = c_jr105)::text || '|'
+         || count(*) filter (where last_name = 'Unseenbypros')::text into v from public.pro_week();
+  insert into _probe_result values ('r10_pro_week_shows_the_clinic_not_the_child', '1|0', v);
+  select count(*) filter (where last_name = 'Unseenbypros')::text into v from public.clinic_round_people(c_jr105);
+  insert into _probe_result values ('r10_round_people_has_no_child_for_a_pro', '0', v);
+  perform pg_temp.act_as(TARA);
+  select count(*) filter (where last_name = 'Unseenbypros')::text into v from public.clinic_round_people(c_jr105);
+  insert into _probe_result values ('r10_tara_still_sees_the_child', '1', v);
+  perform pg_temp.as_owner();
 
   -- ------------------------------------------------ r6, a deleted pro, last
   update public.accounts set deleted_at = now() where id = CASEY;
