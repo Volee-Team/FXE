@@ -246,6 +246,25 @@ final class AccessibilityAuditUITests: XCTestCase {
             app.navigationBars.buttons.firstMatch.tap()
         }
 
+        // My Children and the Programs list, from Profile (decision 0061).
+        let myChildren = app.buttons["profile.myChildren"]
+        if myChildren.waitForExistence(timeout: 5) {
+            myChildren.tap()
+            XCTAssertTrue(app.buttons["children.add"].waitForExistence(timeout: 15))
+            sleep(2)
+            audit("my children")
+            let programs = app.buttons["children.programs"]
+            if programs.waitForExistence(timeout: 5) {
+                programs.tap()
+                XCTAssertTrue(app.descendants(matching: .any)["programs.card"].firstMatch.waitForExistence(timeout: 15))
+                sleep(2)
+                audit("programs")
+                app.navigationBars.buttons.firstMatch.tap()
+            }
+            app.navigationBars.buttons.firstMatch.tap()
+            XCTAssertTrue(app.buttons["profile.signOut"].waitForExistence(timeout: 15))
+        }
+
         // Edit details
         let edit = app.buttons["profile.edit"]
         if edit.waitForExistence(timeout: 5) {

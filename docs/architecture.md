@@ -188,6 +188,8 @@ FXETennis/
 │   ├── SupabaseClient.swift     the one client (URL + publishable key, implicit flow); supabaseProjectURL for the calendar link
 │   ├── Repositories.swift       player reads/writes: Clinic, Registration, News, Profile
 │   ├── PaymentsRepository.swift asks stripe-setup-intent for what PaymentSheet needs; that is all
+│   ├── JuniorsRepository.swift juniors phase 1 (decision 0061): my_children, add/update/remove_my_child, current_junior_waiver,
+│   │                            accept_child_waiver, list_junior_programs, my_program_approvals, request_program_approval
 │   ├── Snapshot.swift           instant open (decision 0028): the last good answer per signed-in person,
 │   │                            shown at launch and refreshed behind; removed at sign-out (unit-tested)
 │   ├── SavedMessagesRepository.swift Tara's saved messages (decision 0030): list, save, remove,
@@ -235,6 +237,8 @@ FXETennis/
 │   ├── LevelApproval.swift      decision 0048: what a clinic page offers a player below the level
 │   │                            in its name (Tara's sentence and button, or Register), her words
 │   │                            for the label and the profile line (pure, unit-tested)
+│   ├── Juniors.swift            decision 0061: Child, JuniorProgram, ProgramApproval, what a child's page offers per program,
+│   │                            each server refusal's one line, date-only birthdays that never move a day (JuniorsTests.swift)
 │   ├── ReplyToTara.swift        Reply to Tara under her messages (bell, clinic page): an email to her
 │   │                            address with her message quoted; Contact Tara's address (pure, unit-tested)
 │   ├── ClinicFull.swift         Tara's "Your clinic is full (25/25). Are you sure..." question
@@ -267,6 +271,13 @@ FXETennis/
     │   (NotificationPermissionView.swift also holds NotificationsOffLine: the standing line on Home while permission is denied)
     ├── MyClinicsView.swift      the clinics I hold a live registration in, grouped by week, with chips,
     │                            then Past: what I played and what it cost me (my_past_clinics)
+    ├── MyChildrenView.swift     Profile → My Children (decision 0061): the parent's children with age and waiver status,
+    │                            Add a Child, Programs; JuniorsModel shares children, programs and approvals
+    ├── ChildDetailView.swift    one child: birthday and Edit, the waiver (Sign the waiver, or "not available yet"),
+    │                            Tara's programs with Request Approval where she must approve, Remove child
+    ├── ChildFormView.swift      Add a Child / Edit Child: names and a birthday wheel; Save waits for a chosen birthday
+    ├── ChildWaiverView.swift    the parent/guardian waiver signed for one child, the adult mechanism (decision 0013 §4)
+    ├── JuniorProgramsView.swift Tara's programs, read only, before any child or card
     ├── ClinicsView.swift        the list, grouped This week / Next week / Week of …
     ├── ClinicDetailView.swift   register / cancel / leave pool / respond, confirmations,
     │                            "Message Tara" once the clinic has closed; Add to Calendar under
@@ -275,7 +286,7 @@ FXETennis/
     │                            decision 0039); a success haptic when a registration lands, a warning
     │                            when it is refused
     ├── ClinicExplainerSheet.swift the "?" sheet (Tara's descriptions + the 105 definition)
-    ├── ProfileView.swift        the player's own details, Subscribe in Calendar (decision 0029), Payment method (only while payments are on), version, sign out, Delete my account
+    ├── ProfileView.swift        the player's own details, My Children (decision 0061), Subscribe in Calendar (decision 0029), Payment method (only while payments are on), version, sign out, Delete my account
     ├── EditProfileView.swift    name, phone, rating; membership shown as Tara's to correct
     ├── CardOnFileView.swift     the permission box (their words), the card as •••• 4242 with its decline under it ("Declined: Insufficient funds (NSF)", CardDecline), or Add a card → Stripe's PaymentSheet; after it, CardSavePoll waits about 30 s for the webhook's summary (for a declined card, for the decline to clear), then Refresh
     ├── CardStepView.swift       onboarding after the waiver while cards are required: the card screen as a step, Sign out as the exit;
@@ -898,8 +909,8 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `public_open_backfill.sh` | 20261101000001's backfill (decision 0046), run for real: three planted clinics, the migration file applied over them in one rolled-back transaction. A future week on the old Friday 08:00 moves to noon with its member open unchanged; a hand-set time and a week already open stay (each guard shown red by a copy of the migration without it, 2026-11-01) |
 | `beginner_backfill.sh` | 20261106000001's rewrite of existing clinics (decision 0049), run for real: two planted clinics carrying the old value, the migration file applied over them in one rolled-back transaction; the beginner row loses its minimum, the 3.0+ row keeps it, and neither row's published date or price moves |
 
-**Swift**: 330 unit tests (`FXETennisTests`: price formatting, per-viewer
-pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016; since 2026-09-27 the request-failure classifier, a failed load keeping who you are, the waiver and card refusals reopening their steps, the 30-second reload throttle, the redraw moments, and the type scale under Larger Text; since 2026-09-28 the invitation push's Accept and Decline, the Remind me reminder, the calendar entry, and the haptics and chip motion; a clinic the player holds beyond the list's five-week edge staying on their screens, the instant-open snapshot's per-person and ended-clinic rules, Siri's next-clinic answer, and the Player Pool's history line) and 30
+**Swift**: 347 unit tests (`FXETennisTests`: price formatting, per-viewer
+pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016; since 2026-09-27 the request-failure classifier, a failed load keeping who you are, the waiver and card refusals reopening their steps, the 30-second reload throttle, the redraw moments, and the type scale under Larger Text; since 2026-09-28 the invitation push's Accept and Decline, the Remind me reminder, the calendar entry, and the haptics and chip motion; a clinic the player holds beyond the list's five-week edge staying on their screens, the instant-open snapshot's per-person and ended-clinic rules, Siri's next-clinic answer, and the Player Pool's history line; since 2026-11-18 juniors (`JuniorsTests`: the rows decoded as the migration returns them, a child's per-program approval state, every refusal's own line, birthdays that never move a day)) and 32
 XCUITests: 9 player flows
 (`PlayerFlowUITests`: sign in / browse / register, undo, sign-up end to end,
 the bell, profile edit, My Clinics, prices, hidden information, a declined card
@@ -911,7 +922,10 @@ Tara (0039), Waive and Undo on a late cancel (0040)), Apple's
 accessibility audit (`AccessibilityAuditUITests`, 5: the player's, Tara's and
 the pro's screens, the status bar, the Return key) and 3 pro flows
 (`ProFlowUITests`: the Today tab and a No-show; only a pro has the tab; today's
-row at the XXXL text size keeps the name readable, the controls under it). The UI tests run against the
+row at the XXXL text size keeps the name readable, the controls under it) and 2 juniors flows
+(`JuniorsFlowUITests`, decision 0061: Add a Child, sign the waiver for them on a local
+fixture text, Request Approval for Elite; and with no text published, the page says
+so and Remove child archives them). The UI tests run against the
 local stack and are order-dependent on a fresh seed. **They do not run in
 CI**: the macOS runner has no Docker for the stack, and a separate CI
 Supabase project was decided against on 2026-09-18 (`docs/launch-checklist.md`
@@ -991,7 +1005,7 @@ that finishes it, `web/reset.html`, is the browser suite's "reset page" test.
 `project.yml` change? gates the next job so a docs PR does not wait on Xcode),
 `ios-build-and-test` (XcodeGen, Debug and Release builds, unit tests, app-icon
 gate, simulator chosen at run time), `copy-gate` (with `scripts/check-no-dots.sh` since 2026-10-01, decision 0034), `ui-test-record` ("UI tests passed on this exact code", 2026-10-01: `scripts/check-ui-test-record.sh` fails unless `docs/ui-test-runs.log` holds a green run of the whole suite for the fingerprint `scripts/app-fingerprint.sh` computes over the app, its tests, `project.yml`, the migrations and the seed; the runs are made on a Mac by `scripts/run-ui-tests.sh`, which holds a lock so two runs never overlap, resets the database, passes the service key, refuses skipped tests and writes the record), `secret-scan` (`scripts/secret-scan.sh`, which fails on a check that cannot run as well as on a match, 2026-10-13), `hosted-smoke` (read-only, printing its own count of hosted targets: every function taken from `scripts/hosted-smoke-functions.txt`, which `scripts/gen-smoke-functions.sh` writes from the schema and `check-doc-inventory.sh` keeps honest; every table, view, RPC and function must refuse a signed-out caller with 401/403, and the four functions the web admin calls from a browser must answer a preflight from the admin site with a 2xx and its origin; `scripts/hosted-smoke.sh`),
-`calendar-feed` (the calendar-feed harness against the served function), `migration-immutability`, `ios-ui-tests` (the 30 XCUITests against a
+`calendar-feed` (the calendar-feed harness against the served function), `migration-immutability`, `ios-ui-tests` (the 32 XCUITests against a
 throwaway CI Supabase project, reset to the seed first; added 2026-09-13 and
 green with a notice, because that project's secrets do not exist and §F of
 `docs/launch-checklist.md` decided not to create one), and `doc-paths` ("Docs are consistent": `scripts/check-doc-paths.sh`,
