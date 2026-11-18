@@ -41,6 +41,13 @@ struct ProfileView: View {
                         }
                         .buttonStyle(.plain)
                         .accessibilityIdentifier("profile.myClinics")
+                        // Juniors (decision 0061), Tara's path from spec 01:
+                        // "Profile → My Children → Add a Child".
+                        NavigationLink { MyChildrenView() } label: {
+                            OutlinedButtonLabel("My Children", icon: "figure.and.child.holdinghands")
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier("profile.myChildren")
                         // Every clinic she holds, kept up to date by the phone
                         // itself (decision 0029). Not for an account with no
                         // player row: its calendar would always be empty.

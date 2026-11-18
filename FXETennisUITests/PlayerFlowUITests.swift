@@ -360,6 +360,8 @@ final class PlayerFlowUITests: XCTestCase {
 
         let edit = app.buttons["profile.edit"]
         XCTAssertTrue(edit.waitForExistence(timeout: 20), "No Edit details button on Profile")
+        // Clear of the floating tab bar (Profile is taller since My Children).
+        for _ in 0..<3 where edit.frame.maxY > app.frame.height - 120 { app.swipeUp() }
         edit.tap()
 
         let phone = app.textFields["edit.phone"]
@@ -725,6 +727,9 @@ final class PlayerFlowUITests: XCTestCase {
         openProfileTab()
         let out = app.buttons["profile.signOut"]
         XCTAssertTrue(out.waitForExistence(timeout: 10), "No sign-out control on Profile")
+        // Profile is taller than the screen since My Children (decision 0061):
+        // bring Sign Out up from under the floating tab bar before tapping it.
+        for _ in 0..<3 where out.frame.maxY > app.frame.height - 120 { app.swipeUp() }
         out.tap()
         XCTAssertTrue(app.textFields["auth.email"].waitForExistence(timeout: 15),
                       "Sign-out did not return to the auth screen")
