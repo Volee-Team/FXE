@@ -57,10 +57,10 @@ most important thing to understand here, and it is section 5.
 
 | Area | What exists |
 |---|---|
-| Postgres schema, RLS, narrow views, RPCs | 87 migrations (`ls supabase/migrations`), the newest `20261013000001_audit_fixes.sql`. 63 are on hosted: Alex's `supabase migration list --linked` on 2026-10-12 showed 63 of 63 paired; the 64th goes with the audit-fixes PR. Re-check with that command after any push; this line is not the record |
+| Postgres schema, RLS, narrow views, RPCs | 89 migrations (`ls supabase/migrations`), the newest `20261013000001_audit_fixes.sql`. 63 are on hosted: Alex's `supabase migration list --linked` on 2026-10-12 showed 63 of 63 paired; the 64th goes with the audit-fixes PR. Re-check with that command after any push; this line is not the record |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | Enumerated by probes (section 5) |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | Section 7 |
-| Probe suite: 59 SQL probes and 19 shell probes (races and the API rush); the suite prints its own total | Runs in CI on every push (section 9) |
+| Probe suite: 60 SQL probes and 20 shell probes (races and the API rush); the suite prints its own total | Runs in CI on every push (section 9) |
 | iOS: sign-in, sign-up with profile, the waiver and card steps, password reset, three tabs | In the app |
 | iOS: browse by week, per-viewer pricing, register / cancel (inside the 3-hour cutoff the full fee applies; the note is optional) / leave pool / respond, closed-clinic "Message Tara", the bell, My Clinics, profile edit, card on file | In the app |
 | iOS: a private note for Tara at Register, editable on the player's own live spot until the start (decision 0039) | In the app |
@@ -492,6 +492,10 @@ future code path can demote Tara or promote anyone to admin
 | `review_links` | One row per link to Tara's review page (`web/review.html?t=<token>`, 20260921000010). The token is the credential: 24 random bytes, URL-safe, minted by `admin_create_review_link`; `revoked_at` retires a link without deleting what it collected. No client role holds anything on it. |
 | `reset_links_issued` | One row per password-reset link Tara makes for a member (decision 0017): whose account, who made it, when. Written by the `admin-reset-link` edge function as `service_role` before the link exists; no client privilege. Audit only: a reset link signs whoever opens it in as the member |
 | `review_responses` | Her answers, one jsonb blob per (link, page version), replaced on every save; `updated_at` stamped by trigger with `clock_timestamp()`. Written only by the `review-submit` edge function as `service_role`, read back by `admin_review_responses`. |
+| `courts`, `court_hours` | Decision 0058 (20261116000001): courts 1 to 5 (the numbers `registrations.court_number` uses) and the bookable hours per New York weekday, 7:00 AM to 9:00 PM until Tara sets her own (questions 156 to 165). No client grant; read through `court_day` and `admin_court_day`. |
+| `court_testers` | Decision 0058 (20261116000001): who may use the member side of court booking while `courts_live` is off (John, 2026-11-16: TestFlight testers only until he is sure). Tara's choice, never in code; a removed tester keeps the row with `removed_at`, and deleting an account takes it off. No client grant; through `admin_set_court_tester`, `admin_court_testers` and `courts_available_for_me`. |
+| `court_bookings` | A member's (or Tara's, `made_by_admin`) booking of one court: account, start and end, `booked` or `canceled` with who and when, an optional "Playing with". **No double booking:** an exclusion constraint on (court, time range) while booked. No client grant; deleting an account cancels its upcoming bookings by trigger. |
+| `court_blocks` | Tara's holds on one court or every court (null), with a reason; removed, never deleted (`removed_at`). No client grant. |
 
 Enums: `account_type`, `account_role` (`member` / `admin` / `pro`), `player_kind`, `clinic_audience`
 (`juniors` kept, not offered), `clinic_status`, `registration_status`
@@ -578,6 +582,8 @@ and by a pro in the week; `clinic_rounds` is the read (decision 0054).
 | `stripe_cutover_to_live` | Not a client RPC: postgres and `service_role` only (20260927200001). Run once at the sandbox-to-live key swap: clears every account's Stripe customer and card summary, cancels ledger rows still pending or processing (`live_cutover`), marks rows with no recorded mode as test mode, records `app_settings.stripe_live_since`; refuses a second run (`already_live`) and refuses once a live payment exists (`live_payments_exist`). |
 | `admin_board_report`, `admin_board_report_clinics` | The board report (Tara, 2026-09-26; 20260926000010): for New York dates `p_from..p_to` inclusive, attendances and distinct players by the `was_member` snapshot (You're In!, not a no-show, clinic ended and not canceled), clinics, fees due at the snapshot prices, card income net of refunds and, since 20260928200001, of lost disputes (clinic, late-cancel and no-show fees), and 10% of each, rounded half up; the second returns the same per clinic, adding up to the first. `invalid_period` for a null or backwards range. The 10% base is question 58. |
 | `admin_create_review_link`, `admin_review_responses` | Tara's review page (section 8): mint a link token with a label; list every saved response newest first, revoked links included (archive, never delete). |
+
+**Courts** (decision 0058, 20261116000001; the rules are settings in `app_settings`, `court_*` and `courts_live`): a member reads `court_day(date)` (hours, and per court the taken times; never who or why, a clinic or a block looks like any booking, only the caller's own is marked with its id), books with `book_court` (members only, 60 or 90 minutes on :00 or :30, inside the hours, up to 7 days ahead with a day opening at 7:00 AM New York, 1 a day and 2 upcoming, never over a booking, a block or a clinic's courts), cancels their own before it starts with `cancel_court_booking`, and lists theirs with `my_court_bookings`. All refuse `courts_not_live` until `courts_live` is on, which Tara cannot do: `admin_set_court_settings` refuses the key (`courts_live_locked`), so only a migration John approves turns it on. The exception is a tester: an account on `court_testers` that is a member or an admin uses the member side before the switch (John, 2026-11-16, TestFlight testers only until he is sure). `courts_available_for_me` says whether the member side would answer the caller; the app shows Book a Court only on a TestFlight install when it is true. Tara keeps the list with `admin_set_court_tester` (taking someone off stamps `removed_at`) and reads it with `admin_court_testers`. A published clinic holds one court per 4 spots counted down from court 5 plus every court anyone is on (its You're In! rows and its 105 rounds). A day opens at `court_day_opens(day)`, an internal helper. Tara: `admin_court_day` (names, reasons, clinics, her own `admin_note`), `admin_block_courts` (lists the bookings under a block, cancels none), `admin_remove_court_block`, `admin_book_court` (for anyone, outside the member rules, never over another hold or on a court out of use; her note is `admin_note`, never read back to the member), `admin_cancel_court_booking`, `admin_set_court_settings` and `admin_set_court_hours` (each value checked, court settings only). Every court write takes one advisory lock (`court_write_lock`), so overlaps and limits are decided in turn.
 
 **Internal** (`notify_account`, `admin_account_ids`, and since 20260927100001 `registration_has_live_fee` and `player_has_live_fee`, the live-fee test, and since 20260927100003 `money_rows`, the Money tab's one definition, and since 20260927300001 `payments_enabled_at` and `payment_is_real`, and since 20261011000001 `clean_player_note`, the note's one rule (trimmed, blank is none, more than 300 characters `note_too_long`); and the trigger functions, among them since 20260928700001 `payments_card_decline` and `accounts_card_decline`) is executable by no
 client role. Helper functions used by defaults and views (`service_week_start`,
@@ -697,9 +703,13 @@ the one link the code says, forwarding to the install link in `web/app/target.js
 `web/qr.html`, Tara's printable card; `web/app-qr.svg` and `web/app-qr.png`, drawn and
 decode-checked by `scripts/make-qr.swift`; `web/gator.png`, the mark on navy, and `web/gator-tile.png`, on light pages, both written with the app icon and the in-app mark by `scripts/make-logo-assets.py` from `docs/brand/gator-2026-09-29.webp`, decision 0032), `web/sheet.html`
 (a clinic's court sheet to print, decision 0027 §3), `config.js` (which picks local vs hosted by hostname), `tokens.css`,
-three small modules the admin page imports (`week.js`: the service week and which
+four small modules the admin page imports (`week.js`: the service week and which
 clinics This week lists; `read.js`: reads that page past PostgREST's 1000-row
-cap; `saved-messages.js`: Tara's saved messages in the Message dialog), and `vendor/supabase-js.js`, plus the Playwright tooling (`package.json`,
+cap; `saved-messages.js`: Tara's saved messages in the Message dialog;
+`courts.js`: the Courts tab, decision 0058: a day of the five courts from
+`admin_court_day`, Book a court, Block courts listing the bookings under a
+block, a warning for every booking a clinic or block overlaps, and Court rules
+with the members switch shown locked, the hours and the TestFlight testers), and `vendor/supabase-js.js`, plus the Playwright tooling (`package.json`,
 `playwright.config.mjs`, `tests/`). **supabase-js is vendored**, never loaded
 from a CDN (MVP audit 2026-09-27, item 17; it came from esm.sh at a floating
 `@2` until then): the npm package's own browser bundle at the exact version
@@ -807,8 +817,8 @@ revealing the same summary text the page's Copy my answers produces.
 
 ## 9. Testing and CI
 
-**SQL probes** in `tests/sql/`, 59 SQL probes, each printing PASS/FAIL rows,
-plus 19 shell probes that race transactions or call the API. `tests/run-probes.sh` prints its
+**SQL probes** in `tests/sql/`, 60 SQL probes, each printing PASS/FAIL rows,
+plus 20 shell probes that race transactions or call the API. `tests/run-probes.sh` prints its
 own total and fails on silent SQL errors or a probe with zero assertions.
 Every migration that adds a rule adds a probe that is **red first**.
 
@@ -847,6 +857,7 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `clinic_price_and_rain` | Decision 0053, from the rule: a new rate reprices the unpaid, uncharged registrations (In, Waitlist, a no-show, a late cancel) and never the Paid or charged ones; the same rate again moves nothing; rain half halves those In who came and shows on `clinics_admin`, while a no-show and a late cancel pay in full; marked a no-show while raining goes back to full and unmarked is half again; added while raining owes half; a new rate while raining stays half ($23 to $11.50); off puts the full rate back; a zero rate is refused and moves nothing; a player and a pro are refused; the reprice is internal. |
 | `tara_items_0054` | Decision 0054, from her words: a same-day decline is removed and not counted as her cancel, a decline days ahead still waits; invited while full accepts, invited with room is refused once a guest fills it and accepts once a spot opens, every path into Response Needed is stamped, Tara still adds past the cap; one player's price survives a rate change, the rain half and the rain trigger, is put back with null, and is refused on Paid, charged, a plain cancel, $0 and over $1,000, and to a player or a pro; rounds only on a 105, from You're In! and guests, one place per round, a pro reads the week's and (since decision 0056) writes them, a player reads nothing, someone who left is marked gone |
 | `pro_rounds` | Decision 0056 (20261111000002), from Tara's words: a pro sets a court of a 105's round in the week and the rounds read it back to the pro and to Tara, a move is a move; a 105 eight days out, a draft and an id that is no clinic are each `not_this_week` with nothing written; a player is refused with nothing written; Tara still sets rounds, past the week too, and a non-105 is `not_105` for her and a pro; `clinic_round_people` lists You're In! and live guests by last name (not the Waitlist, not a removed guest) with the ids a court takes, to Tara and a pro in the week only, a player refused; names only; anon executes neither |
+| `court_reservations` | Decision 0058 (20261116000001), written red first from the plan: the defaults; nothing for a member until `courts_live`, Tara either way; non-members refused with nothing written; no double booking, back to back fine; length, start minute, hours, the 7-day window and the 7:00 AM opening, the past; 1 a day and 2 upcoming, freed by a cancel; a member cancels only their own and only before it starts; a published clinic holds its counted-down courts plus every court anyone is on (You're In! rows and 105 rounds), a draft or canceled one nothing; blocks hold one court or all, list the bookings under them and cancel none, are archived on removal; `court_day` says taken or free and never who or why; `my_court_bookings` is the caller's and never carries Tara's note; nothing on a member's side answers while not live, except for a tester who is a member or an admin (books, reads, lists, cancels; a non-member tester, a non-tester and a removed tester refused; only Tara changes the list; `courts_available_for_me` true and false; deleting an account takes a tester off); the exclusion constraint alone (23P01); when a day opens, exact across both DST changes; Tara's side refuses a member and an inactive court; settings and hours validated; deleting an account cancels its upcoming bookings; anon calls nothing, RLS on, no client grant. 86 of the first 88 red before the migration, the 24 added after the sql-auditor red against the first version or a named mutation, the 29 tester rows red before the testers change or under a named mutation; each rule removed alone turns its rows red |
 | `membership_reprice` | 20261111000001: Tara changing a membership moves the player's registrations not yet charged to the new price (You're In!, Waitlist, a late cancel, the rain half), and leaves Paid, charged, a plain cancel and a canceled clinic alone; a typed price keeps its amount; both ways; a player is refused and the helper is internal |
 | `move_in_cancel_race` | Tara's Move In racing her own cancel of the clinic: the player does not end in You're In! and no "You're all set" is written. Red with the clinic's FOR SHARE removed |
 | `accept_full_race` | Two players accepting the last spot of a clinic at once: one ends In, the other stays invited, the clinic holds its capacity. Red with the old FOR SHARE (3 in a clinic of 2) |
@@ -876,6 +887,7 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `app_diagnostics_race.sh` | Two concurrent `report_app_diagnostic` calls by Maria at 19 reports, the first held open three seconds: exactly 20 rows (the per-account advisory lock; red without it, 21, 2026-10-01) |
 | `capacity_race.sh` | Two racing registrations; invite-vs-accept; since 2026-09-28 every racer's notification matches the status they ended with (#1 in, #5 pooled; red on the old `register_for_clinic`, which wrote none) |
 | `rush_via_api.sh` | The Thursday 8:00 rush the way phones make it: 200 signed-in members call `register_for_clinic` through PostgREST at once against a clinic of 8; every answer 200, exactly 8 in, 192 pooled, one row and one notification each, and the slowest answer printed (2026-10-01: 0.52 s; red with the row lock removed, 10 in) |
+| `court_booking_race.sh` | Decision 0058 through PostgREST: 50 members book one court and time at once (exactly 1 booking, 49 `court_taken`, no 5xx), then one member books five courts at the same time (exactly 1, the rest `day_limit` or `court_taken`). Red with the advisory lock removed (5 bookings for one member in a day), and with the lock and the exclusion constraint removed (2 on one slot) |
 | `place_player_race.sh` | 20260928000001's two locks in `place_player`, raced with held transactions: a double tap on Put in clinic sends one #1 (red without the clinic `FOR UPDATE`: two), and Tara's placement while the player's Accept is in flight sends none on top of #3 (red without the registration `FOR UPDATE`: #3 and #1) |
 | `accept_cancel_race.sh` | 20260928300001's clinic lock in `respond_to_invitation`, raced: Tara's `cancel_clinic` held open, Rob's Accept a second later waits and is refused, stays Response Needed, no acceptance written (red with the lock removed and with `FOR KEY SHARE`: Rob in, two acceptances) |
 | `charge_player_race.sh` | Decision 0037's two locks in `admin_charge_player`, raced in three ways: Tara's Remove held open while a Charge tap lands (the player ends canceled, no payment), a No-show flip held open (the one payment is the no_show fee), a clinic cancel held open (no payment). Red with the registration lock removed (Casey charged, Ken charged clinic_fee) and with the clinic lock removed (Maria charged on a canceled clinic) |
@@ -909,7 +921,7 @@ Supabase project was decided against on 2026-09-18 (`docs/launch-checklist.md`
 §F). They run on a Mac through `scripts/run-ui-tests.sh` on iOS 18 and 26 (17 too until 2026-10-30, when it stopped being downloadable),
 and the `ui-test-record` job fails a PR whose code has no green record.
 
-**Web admin**: 87 Playwright tests (`web/tests/*.spec.mjs`) walk Tara's
+**Web admin**: 93 Playwright tests (`web/tests/*.spec.mjs`) walk Tara's
 side against a fresh seed: sign-in and the non-admin door, prices, walk-up,
 courts, unpaid reminder, a note round-trip, cancel clinic, template archive
 and restore, Money counts, the card-payments ledger, payments off, the
@@ -922,7 +934,12 @@ three laptop time zones, the This week split, a read past a 1000-row cap, and
 a past clinic kept off the tab until Show earlier (`week.spec.mjs`); Copy to
 next week making drafts once and then nothing, the court sheet by court with
 No court yet last and a member reading nothing there, and the history line on
-a Pool row and the Players tab (`tools.spec.mjs`); and the members' site
+a Pool row and the Players tab (`tools.spec.mjs`); the Courts tab (`courts.spec.mjs`):
+the day with a seed clinic holding its courts, a booking for a member with her
+note then canceled, a block listing the booking under it and canceling nobody,
+a clinic published over a booking warned, and the court rules with the members switch
+locked (words, not a control) refusing a bad value then saving, and a TestFlight tester added,
+listed and taken off (kept as removed); and the members' site
 (`play.spec.mjs`, since 2026-10-25): a fresh browser signed out with only
 this site's scripts, its own sign-in apart from the admin's, Register with a
 note, the Player Pool when full, Accept and Decline, the 3-hour late cancel

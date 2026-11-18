@@ -2,7 +2,8 @@
 # Fail if the app gained user-visible text nobody approved.
 #
 # Alex, 2026-08-16: "text should either come straight from tara or made by u and
-# checked by me first". This is that rule with a machine behind it.
+# checked by me first". This is that rule with a machine behind it. Since
+# 2026-11-16 John signs off too ("I will sign off on new wording").
 #
 # docs/copy-approved.txt is a snapshot of every user-visible string in the app.
 # When a change adds or edits one, this fails and prints the diff. The fix is
@@ -36,14 +37,14 @@ fi
 
 echo "::error::The app's user-visible text changed."
 echo ""
-echo "  - = removed        + = ADDED, and needs Alex or Tara to approve it"
+echo "  - = removed        + = ADDED, and needs Tara, Alex or John to approve it"
 echo ""
 diff "$SNAP" "$TMP" | grep -E '^[<>]' | sed 's/^</  - /; s/^>/  + /'
 echo ""
 echo "If the added lines are correct copy (Tara's words, or plain chrome that"
-echo "Alex has seen), record them and commit the snapshot with your change:"
+echo "Alex or John has seen), record them and commit the snapshot with your change:"
 echo "  python3 scripts/extract-copy.py > $SNAP"
 echo ""
 echo "New player-facing sentences also belong in docs/copy-review.md,
-the checklist Alex walks with Tara."
+the checklist Alex or John walks with Tara."
 exit 1

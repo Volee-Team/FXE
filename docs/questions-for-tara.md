@@ -696,6 +696,41 @@ Item 3: "Capabilities of charging 1/2 for a clinic in case it rains halfway thro
 Item 4: "Allow me capabilities of adding someone that is not in the app. I'll take care of collecting payment from them."
 *Default: a first and last name only, shown on the roster and the court sheet as a guest; they get no messages and are never charged by the app. Status: ANSWERED 2026-11-07: "I just want the capability of inputting their name first and last. And then I would just take care of the payment" (decision 0052).*
 
+## AH. Court reservations (added 2026-11-16)
+
+John, 2026-11-16: *"lets get court reservatiosn up asap."* Supersedes her "Correct." to question 42 once she picks a date (164). The plan is `docs/courts/plan.md`; every default below is a setting she can change later.
+
+**156. Who can book a court: members only, or non-members too?**
+*Default: members only (the member switch you already set on each player). Non-members see nothing.*
+
+**157. Which courts can be booked, and what hours, by day of the week? Are there lights for evenings?**
+*Default: courts 1 to 5, 7:00 AM to 9:00 PM every day.*
+
+**158. How long can a booking be, and how far ahead can people book?**
+*Default: 60 or 90 minutes, starting on the hour or half hour; up to 7 days ahead, opening at 7:00 AM.*
+
+**159. Limits per person: how many bookings a day, and how many upcoming at once?**
+*Default: 1 a day and 2 upcoming per account.*
+
+**160. Is there a charge: a court fee, a guest fee, or a fee for a no-show or late cancel?**
+*Default: free, no card involved.*
+
+**161. Does the person booking name who they are playing with?**
+*Default: no; an optional "Playing with" note only you can read.*
+
+**162. Cancelling: any time before the start, or a cutoff?**
+*Default: any time before it starts.*
+
+**163. Can members see who booked a court, or only that it is taken?**
+*Default: only that it is taken. You see names.*
+
+**164. When should the club switch from reservemycourt.com, and what about bookings already made there?**
+*Default: you pick the date; until then only you and the test accounts see it. Bookings already on reservemycourt.com are re-entered by you (or by the members) on the switch date.*
+
+**165. Clinics: how many courts does each clinic use, and which ones?**
+Clinics will hold their courts automatically so nobody can book over them.
+*Default: the courts you assign on the roster, or until you do, one court per 4 spots counted down from court 5.*
+
 ### How 52 to 57 are being sent
 
 Round two of the review page (2026-09-21, later): the Words tab now shows her

@@ -349,9 +349,9 @@ test.describe("payments switch", () => {
 test.describe("review links", () => {
   test("Tara makes a review link and gets a URL carrying a long token", async ({ page }) => {
     await signIn(page, TARA);
-    // Testing is not a tab (Alex, 2026-09-27): four tabs since Sign-ups
-    // (2026-11-08), and a small link at the foot.
-    await expect(page.getByRole("tab")).toHaveText(["This week", "Players", "Sign-ups", "Money"]);
+    // Testing is not a tab (Alex, 2026-09-27): five tabs since Courts
+    // (2026-11-16; Sign-ups, 2026-11-08), and a small link at the foot.
+    await expect(page.getByRole("tab")).toHaveText(["This week", "Courts", "Players", "Sign-ups", "Money"]);
     await page.getByRole("button", { name: "Testing" }).click();
     await page.getByLabel("Link label").fill(`Playwright ${Date.now()}`);
     await page.getByRole("button", { name: "Make link" }).click();

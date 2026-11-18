@@ -258,6 +258,20 @@ begin
     cross join lateral unnest(p.proargnames, p.proargmodes) as a(name, mode)
    where p.proname = 'calendar_feed_events' and a.mode = 't';
   insert into _probe_result values ('calendar_feed_carries_nothing_hidden', '0 of 5', v);
+
+  -- 17. Court reservations (20261116000001, decision 0058) are player-facing.
+  --     my_court_bookings returns the caller's own bookings: no column may
+  --     name a person, a capacity, a count or money. court_day returns jsonb,
+  --     so its keys are pinned in court_reservations.sql (v1 to v4: taken or
+  --     free, never who or why). Counted as "hidden of total", as 16 is.
+  select count(*) filter (where a.name ~* '(location|address|venue|capacity|count|remaining|paid|payment|account|first_name|last_name|label|reason|pool)')
+         || ' of ' || count(*)
+    into v
+    from pg_proc p
+    join pg_namespace ns on ns.oid = p.pronamespace and ns.nspname = 'public'
+    cross join lateral unnest(p.proargnames, p.proargmodes) as a(name, mode)
+   where p.proname = 'my_court_bookings' and a.mode = 't';
+  insert into _probe_result values ('my_court_bookings_carries_nothing_hidden', '0 of 6', v);
 end $$;
 
 select
