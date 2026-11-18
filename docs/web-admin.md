@@ -23,7 +23,7 @@ forwarding to the install link); the modules `config.js`, `week.js`,
 `read.js`, `saved-messages.js`, `tokens.css` and `vendor/supabase-js.js`;
 the images `gator.png`, `gator-tile.png`, `app-qr.svg`, `app-qr.png`; and the
 Playwright tooling (`package.json`, `playwright.config.mjs`, `tests/` with
-`admin`, `pages`, `saved-messages`, `tools` and `week` specs), which
+`admin`, `juniors`, `pages`, `play`, `saved-messages`, `tools` and `week` specs), which
 `web/.vercelignore` keeps off the site.
 
 What the admin page does today, on top of the plan below: per-person
@@ -36,7 +36,9 @@ red **Late cancellation** flag that keeps the name on her list
 0025; a pro who signs in here is turned away like a member); the **Court
 sheet**, **Copy to next week** and the history line (decision 0027); Payouts,
 dispute alerts and the board report on the Money tab; Reset link and Review
-links on the Players tab. `docs/architecture.md` section 8 has the detail.
+links on the Players tab; the **Juniors** tab, Program requests in Action
+Needed and children under their parent on Players (`juniors.js`, decision
+0061). `docs/architecture.md` section 8 has the detail.
 **Date:** 2026-08-02
 **Decision owner:** Alex
 **Approved by:** Tara (split admin surface, per `docs/archive/for-tara.md` question 1)

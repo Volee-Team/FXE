@@ -156,8 +156,12 @@ anywhere.
 
 **Server built 2026-11-17** (decision 0061, `20261118000001`, not pushed to
 hosted): children, a waiver per child (waiting on her text), the five
-programs and Elite approvals. The app, the members' site and the laptop
-screens follow.
+programs and Elite approvals. **The members' site and the laptop built
+2026-11-18** (branch `juniors-p1-web`): My Children, Add a Child, a child's
+page with the waiver per child and the programs with Request Approval on
+`web/play/`; the Juniors tab, Program requests in Action Needed and children
+under their parent on Players on the laptop. Their words wait for John
+(`docs/juniors/copy-for-john-phase1-web.md`). The app follows.
 
 1. **My Children** on Profile, in the app and on `web/play/`: add, edit and
    remove a child (first and last name, birthday). An adult account becomes

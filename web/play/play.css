@@ -90,7 +90,7 @@ a.card { display: block; text-decoration: none; color: inherit; }
 .link.danger { color: var(--fxe-status-canceled-ink); }
 
 label.field { display: grid; gap: 4px; color: var(--fxe-text-secondary); font-size: var(--fxe-text-subheadline); }
-input[type=text], input[type=email], input[type=password], input[type=tel], textarea {
+input[type=text], input[type=email], input[type=password], input[type=tel], input[type=date], textarea {
   width: 100%; min-height: 52px; padding: 12px 14px; border-radius: var(--fxe-radius-md);
   border: 1px solid var(--fxe-border); background: var(--fxe-surface-raised); color: var(--fxe-text-primary); font-size: 16px;
 }

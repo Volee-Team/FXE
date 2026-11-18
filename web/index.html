@@ -162,6 +162,7 @@ table.signups th { font-weight: 600; color: #6E6552; }
     <nav class="tabs" role="tablist" aria-label="Sections">
       <button role="tab" data-tab="week" aria-selected="true">This week</button>
       <button role="tab" data-tab="players" aria-selected="false">Players</button>
+      <button role="tab" data-tab="juniors" aria-selected="false">Juniors</button>
       <button role="tab" data-tab="signups" aria-selected="false">Sign-ups</button>
       <button role="tab" data-tab="money" aria-selected="false">Money</button>
     </nav>
@@ -183,6 +184,8 @@ table.signups th { font-weight: 600; color: #6E6552; }
       <div id="late" class="card hide"></div>
       <!-- Decision 0048: players asking to attend clinics above their rating. -->
       <div id="levels" class="card hide"></div>
+      <!-- Decision 0061: parents asking for Junior Elite or Elite. -->
+      <div id="program-asks" class="card hide"></div>
       <div id="money-needs" class="card hide"></div>
       <div id="notes" class="card hide"></div>
     </div>
@@ -213,6 +216,35 @@ table.signups th { font-weight: 600; color: #6E6552; }
          the app installs from, so it never needs reprinting. -->
     <p class="muted" style="margin-top:14px"><a href="qr.html" target="_blank" rel="noopener" id="open-qr">QR code for the app</a> <span class="muted" id="qr-visits"></span></p>
 
+    </div>
+
+    <!-- Juniors phase 1 (decision 0061), drawn by juniors.js. The parents'
+         requests for Junior Elite and Elite, approving a child herself, and
+         her programs. Nothing here decides who may ask: the server does. -->
+    <div id="tab-juniors" role="tabpanel" class="hide">
+    <h2>Program approvals</h2>
+    <div class="card">
+      <div id="jr-approvals"><p class="muted">Loading…</p></div>
+      <div id="jr-msg"></div>
+    </div>
+    <h2>Approve a child</h2>
+    <div class="card">
+      <div class="row">
+        <input id="jr-query" class="grow" placeholder="Search children by name" aria-label="Search children by name">
+        <select id="jr-program" aria-label="Program" style="width:auto;margin:0"></select>
+      </div>
+      <div id="jr-results" style="margin-top:10px"></div>
+      <div id="jr-pre-msg"></div>
+    </div>
+    <h2>Programs</h2>
+    <div class="card">
+      <div class="row">
+        <span class="grow muted">Parents see each program's name, ages and description.</span>
+        <label class="muted" style="white-space:nowrap;display:flex;align-items:center;gap:6px;margin:0"><input type="checkbox" id="jr-show-archived" style="width:auto;margin:0"> Include archived</label>
+        <button class="small primary" id="jr-new">New program</button>
+      </div>
+      <div id="jr-programs" style="margin-top:10px"></div>
+    </div>
     </div>
 
     <!-- Everyone who has made an account, newest first (Tara, 2026-11-08:
@@ -299,6 +331,34 @@ table.signups th { font-weight: 600; color: #6E6552; }
     <p class="devlink"><button id="open-testing" type="button">Testing</button></p>
   </section>
 </main>
+
+<!-- A junior program (admin_save_junior_program). Archive and Restore are
+     buttons on the list, so the dialog keeps whether it is archived. -->
+<dialog id="program">
+  <h3 id="pg-title" style="margin-top:0">New program</h3>
+  <label for="pg-name">Name</label>
+  <input id="pg-name" maxlength="60">
+  <label for="pg-ages">Ages</label>
+  <input id="pg-ages" maxlength="120" placeholder="Ages 6-10">
+  <label for="pg-desc">Description</label>
+  <textarea id="pg-desc" rows="5" maxlength="2000"></textarea>
+  <div class="grid">
+    <div>
+      <label for="pg-order">Order in the list</label>
+      <input id="pg-order" type="number" step="1">
+    </div>
+  </div>
+  <label style="display:flex;align-items:center;gap:8px;margin-top:10px;cursor:pointer">
+    <input type="checkbox" id="pg-approval" style="width:18px;height:18px;min-height:0">
+    Needs your approval
+  </label>
+  <div id="program-msg"></div>
+  <div class="row" style="margin-top:14px">
+    <span class="grow"></span>
+    <button type="button" id="pg-cancel">Cancel</button>
+    <button type="button" class="primary" id="pg-save">Save</button>
+  </div>
+</dialog>
 
 <dialog id="edit">
   <h3 id="edit-title" style="margin-top:0">New clinic</h3>
@@ -533,6 +593,7 @@ import { CONFIG, ENV } from "./config.js";
 import { serviceWeekStart, nyDayStart, splitThisWeek, weekLabel, nyFromInput, nyInputValue } from "./week.js";
 import { readAll, readByIds } from "./read.js";
 import { wireSavedMessages } from "./saved-messages.js";
+import { wireJuniors, requestRow, approvalWords } from "./juniors.js";
 
 // implicit flow: a reset started on one device (the phone) must finish on
 // another (this page). PKCE ties the emailed code to the device that asked.
@@ -876,6 +937,7 @@ async function showApp() {
   loadReviewResponses();
   if (!$("tab-money").classList.contains("hide")) loadPayouts();
   if (!$("tab-signups").classList.contains("hide")) loadSignups();
+  if (!$("tab-juniors").classList.contains("hide")) juniors.load();
   loadBoardRate();
   loadAppLinkVisits();
 }
@@ -933,6 +995,10 @@ async function loadActionNeeded(clinics, byPlayer, owed, stale = () => false) {
   const { data: levelRows } = await sb.rpc("admin_level_approvals");
   if (stale()) return;
   const asks = (levelRows || []).filter(r => r.status === "requested");
+  // Parents asking for Junior Elite or Elite (decision 0061), leniently too.
+  const { rows: programRows } = await juniors.readApprovals();
+  if (stale()) return;
+  const programAsks = programRows.filter(r => r.status === "requested");
   // Held charges (20260927300003): Stripe may or may not have taken them, and
   // only Tara, looking in Stripe, can say. Until 2026-10-12 they were only on
   // the Money tab's newest 50 rows, and a busy week pushed them off it (audit).
@@ -989,7 +1055,11 @@ async function loadActionNeeded(clinics, byPlayer, owed, stale = () => false) {
   lateEl.classList.toggle("hide", !(late || []).length);
   notesEl.classList.toggle("hide", !(notes || []).length);
   levelsEl.classList.toggle("hide", !asks.length);
-  $("action").classList.toggle("hide", !(late || []).length && !(notes || []).length && !moneyRows.length && !asks.length);
+  const programEl = $("program-asks");
+  programEl.classList.toggle("hide", !programAsks.length);
+  programEl.innerHTML = programAsks.length
+    ? `<div class="name">Program requests</div>` + programAsks.map(r => requestRow(r, esc)).join("") : "";
+  $("action").classList.toggle("hide", !(late || []).length && !(notes || []).length && !moneyRows.length && !asks.length && !programAsks.length);
 
   // Approve lets them sign up for every clinic at that level and below, for
   // good, and tells them; Decline drops the request and they may ask again.
@@ -1560,7 +1630,10 @@ async function loadClinics() {
 // the database disagrees with.
 // Tabs. The last one opened is remembered per browser; a reload lands where
 // she was. Everything still loads on sign-in, so switching is instant.
-const TABS = ["week", "players", "signups", "money"];
+// The Juniors tab (decision 0061). Its buttons, here and on Action Needed,
+// read the week and the Players tab again after each change.
+const juniors = wireJuniors(sb, { $, esc, friendly, note, reloadWeek: () => loadClinics(), reloadPlayers: () => searchPlayers() });
+const TABS = ["week", "players", "juniors", "signups", "money"];
 const showTab = (name) => {
   for (const b of document.querySelectorAll(".tabs [role=tab]")) b.setAttribute("aria-selected", String(b.dataset.tab === name));
   for (const n of [...TABS, "testing"]) $("tab-" + n).classList.toggle("hide", n !== name);
@@ -1571,6 +1644,7 @@ for (const b of document.querySelectorAll(".tabs [role=tab]")) b.addEventListene
   showTab(b.dataset.tab);
   if (b.dataset.tab === "money") loadPayouts();
   if (b.dataset.tab === "signups") loadSignups();
+  if (b.dataset.tab === "juniors") juniors.load();
 });
 $("open-testing").addEventListener("click", () => { showTab("testing"); window.scrollTo(0, 0); });
 try { const t = localStorage.getItem("fxe.tab"); if (TABS.includes(t)) showTab(t); } catch {}
@@ -2158,10 +2232,22 @@ const playerRow = (pl, history, who, approved = []) => `<div class="row" data-pl
   <div class="row"><code class="grow" style="word-break:break-all" data-resetvalue="${pl.id}"></code><button class="small" data-copyreset="${pl.id}">Copy</button></div>
   <span class="muted">Text this to them. It works once, within an hour.</span>
 </div>
-<div class="hide" id="note-${pl.id}" style="margin:0 0 10px 0">
+${noteBlock(pl)}`;
+// Her private note on anyone, adult or child.
+const noteBlock = (pl) => `<div class="hide" id="note-${pl.id}" style="margin:0 0 10px 0">
   <textarea rows="3" aria-label="Private note" data-notebody="${pl.id}" style="width:100%"></textarea>
   <div class="row"><span class="muted grow">Only you can see this. <span data-noteedited="${pl.id}"></span></span><button class="small primary" data-savenote="${pl.id}">Save note</button></div>
 </div>`;
+// A child (decision 0061), under the parent's row when the parent is on the
+// list too. None of the adult controls: a child has no membership, gender,
+// rating, level, Pro box, messages of its own or sign-in to reset. The
+// parent adds, edits and removes the child; Tara keeps her note.
+const juniorRow = (pl, who, waiver, programs, underParent) => `<div class="row" data-player-row="${pl.id}" data-junior="${pl.id}"${underParent ? ' style="margin-left:28px"' : ""}>
+  <span class="grow"><span class="name">${esc(pl.first_name)} ${esc(pl.last_name)}</span> <span class="muted">(junior)</span>${pl.has_notes ? ' <span class="muted" title="Has a note">✎</span>' : ""}<br>
+    <span class="muted">Age ${esc(pl.age)}${pl.is_active ? "" : ", Removed"}${waiver === "signed" ? ", Waiver signed" : waiver === "needed" ? ", Waiver not signed" : ""}</span>${phoneHtml(pl, who)}${programs.length ? `<br><span class="muted" data-junior-programs="${pl.id}">${programs.join(". ")}</span>` : ""}</span>
+  <button class="small" data-notes="${pl.id}">Note</button>
+</div>
+${noteBlock(pl)}`;
 
 let playerSeq = 0;
 async function searchPlayers() {
@@ -2184,8 +2270,29 @@ async function searchPlayers() {
   const approvedBy = {};
   for (const a of (levels.error ? [] : levels.data || []).filter(a => a.status === "approved"))
     (approvedBy[a.player_id] ||= []).push(a);
+  // Children (decision 0061): each one's waiver and programs, leniently
+  // (no answer shows nothing), and each under its parent's row when the
+  // parent is on the list.
+  const kids = (data || []).filter(pl => pl.kind === "junior");
+  const [kidWaivers, kidPrograms] = await Promise.all([
+    Promise.all(kids.map(k => sb.rpc("child_waiver_status", { p_child: k.id }).then(r => [k.id, r.error ? null : r.data]))),
+    kids.length ? juniors.readApprovals() : { rows: [] }]);
+  if (seq !== playerSeq) return;
+  const waiverOf = Object.fromEntries(kidWaivers);
+  const programsOf = {};
+  for (const r of kidPrograms.rows || []) (programsOf[r.player_id] ||= []).push(r);
+  const adultOn = new Set((data || []).filter(pl => pl.kind !== "junior").map(pl => roles.get(pl.id)?.account).filter(Boolean));
+  const kidsOf = {};
+  for (const k of kids) { const acc = roles.get(k.id)?.account; if (adultOn.has(acc)) (kidsOf[acc] ||= []).push(k); }
+  const kidRow = (k, under) => juniorRow(k, roles.get(k.id), waiverOf[k.id], approvalWords(programsOf[k.id], esc), under);
   $("p-results").innerHTML = (data || []).length
-    ? data.map(pl => playerRow(pl, history[pl.id], roles.get(pl.id), approvedBy[pl.id])).join("")
+    ? data.map(pl => {
+        if (pl.kind === "junior") return adultOn.has(roles.get(pl.id)?.account) ? "" : kidRow(pl, false);
+        const acc = roles.get(pl.id)?.account;
+        const under = kidsOf[acc] || [];
+        delete kidsOf[acc];   // two adults on one account: the children go under the first
+        return playerRow(pl, history[pl.id], roles.get(pl.id), approvedBy[pl.id]) + under.map(k => kidRow(k, true)).join("");
+      }).join("")
     : (q ? `<p class="muted">Nobody by that name yet. They may need to sign up in the app first.</p>`
          : `<p class="muted">No players yet.</p>`);
 }

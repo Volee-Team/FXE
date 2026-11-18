@@ -471,6 +471,15 @@ async function deleteAccount(errorId) {
   await signOut();
 }
 
+// A waiver's text as the app sets it: blank lines between paragraphs, and a
+// short numbered line or her two headings as a heading. Both waivers use it.
+function waiverParagraphs(body) {
+  return String(body || "").split("\n\n").map((p) => p.trim()).filter(Boolean).map((p) => {
+    const heading = p.length < 60 && (/^[0-9]+ {2}/.test(p) || p === "Participant Acknowledgment" || p.startsWith("IMPORTANT NOTICE"));
+    return heading ? `<h3>${esc(p)}</h3>` : `<p>${esc(p)}</p>`;
+  }).join("");
+}
+
 // WaiverView
 async function renderWaiver(error = "") {
   const gen = renderGen;
@@ -486,10 +495,7 @@ async function renderWaiver(error = "") {
     wireExitFooter();
     return;
   }
-  const paragraphs = w.body.split("\n\n").map((p) => p.trim()).filter(Boolean).map((p) => {
-    const heading = p.length < 60 && (/^[0-9]+ {2}/.test(p) || p === "Participant Acknowledgment" || p.startsWith("IMPORTANT NOTICE"));
-    return heading ? `<h3>${esc(p)}</h3>` : `<p>${esc(p)}</p>`;
-  }).join("");
+  const paragraphs = waiverParagraphs(w.body);
   view.innerHTML = `
     <div class="waiver">
       <h2 class="display" style="font-size:1.5rem">${esc(w.title)}</h2>
@@ -951,6 +957,7 @@ function renderProfile() {
     ${S.paymentsEnabled && p ? `<div class="card" id="card-area"></div>` : ""}
     <div class="stack" style="margin-top:12px">
       ${p ? `<a class="btn quiet" href="#/my-clinics">My Clinics</a>` : ""}
+      ${a.role !== "admin" ? `<a class="btn quiet" href="#/children" id="p-children">My Children</a>` : ""}
       <button class="btn quiet" id="p-cal">Subscribe in Calendar</button>
       <p class="error" id="p-cal-error"></p>
       ${p ? `<a class="btn primary" href="#/edit">Edit details</a>` : ""}
@@ -1032,6 +1039,249 @@ function renderEdit(error = "") {
   };
 }
 
+// ------------------------------------------------------------- juniors ----
+//
+// Juniors phase 1 (decision 0061, spec 01 "Profile → My Children → Add a
+// Child"): a parent's children, the parent/guardian waiver for each child,
+// Tara's programs and Elite approvals. Nothing here books a child (phase 2).
+// Every read and write is a juniors function (my_children, add_my_child,
+// update_my_child, remove_my_child, current_junior_waiver,
+// accept_child_waiver, list_junior_programs, my_program_approvals,
+// request_program_approval); the server decides who owns which child.
+// The words are new and wait for John's sign-off
+// (docs/juniors/copy-for-john-phase1-web.md). The app has none of them yet.
+
+// A birthday is a calendar date with no time zone: read and shown as one.
+const birthday = (ymd) => {
+  const [y, m, d] = String(ymd).split("-").map(Number);
+  return new Intl.DateTimeFormat("en-US", { timeZone: "UTC", month: "short", day: "numeric", year: "numeric" })
+    .format(new Date(Date.UTC(y, m - 1, d)));
+};
+const todayNY = () => new Date().toLocaleDateString("en-CA", { timeZone: TZ });
+
+// The juniors functions' refusals in words. One `return` each, so the copy
+// gate (scripts/extract-copy.py) reads every line.
+function juniorLine(e, fallback) {
+  const f = failureLine(e); if (f) return f;
+  const m = raw(e);
+  if (m.includes("too_many_children")) return "An account can have up to 10 children.";
+  if (m.includes("child_exists")) return "That child is already on your account.";
+  if (m.includes("child_locked")) return "Only Tara can change this child's name or birthday now.";
+  if (m.includes("child_has_upcoming")) return "This child has a clinic coming up, so they can't be removed yet.";
+  if (m.includes("name_required")) return "Add the child's first and last name.";
+  if (m.includes("invalid_birthday")) return "Enter a birthday that isn't in the future.";
+  if (m.includes("not_your_child")) return "Couldn't find that child.";
+  if (m.includes("junior_waiver_not_available")) return "The waiver isn't available yet.";
+  if (m.includes("waiver_version_stale")) return "The waiver was updated. Read it again and sign.";
+  if (m.includes("legal_name_required")) return "Type your first and last name.";
+  if (m.includes("approval_declined")) return "Tara declined this request.";
+  if (m.includes("approval_not_needed")) return "This program doesn't need approval.";
+  if (m.includes("program_not_found")) return "That program isn't offered now.";
+  if (m.includes("account_not_found") || m.includes("not_authenticated")) return "Couldn't find your account. Sign out and sign in again.";
+  return fallback;
+}
+
+// The child's waiver in a few words (my_children.waiver_status).
+function waiverStatusLine(status) {
+  if (status === "signed") return "Waiver signed";
+  if (status === "needed") return "Waiver not signed";
+  return "";
+}
+
+async function readChildren() {
+  const { data, error } = await sb.rpc("my_children");
+  if (error) throw error;
+  return data || [];
+}
+
+// MyChildrenView
+async function renderChildren() {
+  const gen = renderGen;
+  chrome({ title: "My Children", back: true, tab: "profile" });
+  view.innerHTML = `<div class="placeholder"></div>`;
+  let kids;
+  try { kids = await readChildren(); } catch (e) {
+    if (gen === renderGen) view.innerHTML = `<p class="error">${esc(juniorLine(e, "Couldn't load your children."))}</p>`;
+    return;
+  }
+  if (gen !== renderGen) return;
+  view.innerHTML = `
+    ${kids.length ? `<div class="card">${kids.map((k) => `<a class="list-row" href="#/child/${esc(k.id)}" data-child="${esc(k.id)}">
+        <div class="grow"><div class="emph">${esc(k.first_name)} ${esc(k.last_name)}</div>
+          <div class="caption">Age ${esc(k.age)}${waiverStatusLine(k.waiver_status) ? `, ${esc(waiverStatusLine(k.waiver_status))}` : ""}</div></div>
+        <span aria-hidden="true">›</span>
+      </a>`).join("")}</div>`
+      : `<p class="muted center">No children added yet</p>`}
+    <a class="btn primary" href="#/child/new" id="c-add">Add a Child</a>`;
+}
+
+// AddChildView / EditChildView: first and last name and a birthday.
+async function renderChildForm(id = null, error = "", values = null) {
+  const gen = renderGen;
+  chrome({ title: id ? "Edit details" : "Add a Child", back: true, tab: "profile" });
+  let k = values;
+  if (!k && id) {
+    view.innerHTML = `<div class="placeholder"></div>`;
+    let kids;
+    try { kids = await readChildren(); } catch (e) {
+      if (gen === renderGen) view.innerHTML = `<p class="error">${esc(juniorLine(e, "Couldn't load your children."))}</p>`;
+      return;
+    }
+    if (gen !== renderGen) return;
+    k = kids.find((x) => x.id === id);
+    if (!k) { view.innerHTML = `<p class="error">Couldn't find that child.</p><a class="btn quiet" href="#/children">My Children</a>`; return; }
+  }
+  k = k || { first_name: "", last_name: "", date_of_birth: "" };
+  view.innerHTML = `<div class="stack">
+      <label class="field">First Name<input type="text" id="c-first" value="${esc(k.first_name)}" autocomplete="off"></label>
+      <label class="field">Last Name<input type="text" id="c-last" value="${esc(k.last_name)}" autocomplete="off"></label>
+      <label class="field">Birthday<input type="date" id="c-dob" value="${esc(k.date_of_birth || "")}" max="${todayNY()}"></label>
+      <p class="error" id="c-error" role="status">${esc(error)}</p>
+      <button class="btn primary" id="c-save">Save</button>
+      <a class="btn quiet" href="${id ? `#/child/${esc(id)}` : "#/children"}">Cancel</a>
+    </div>`;
+  document.getElementById("c-save").onclick = async () => {
+    const v = (x) => document.getElementById(x).value.trim();
+    const typed = { first_name: v("c-first"), last_name: v("c-last"), date_of_birth: v("c-dob") };
+    if (!typed.first_name || !typed.last_name) { renderChildForm(id, "Add the child's first and last name.", typed); return; }
+    if (!typed.date_of_birth) { renderChildForm(id, "Add the child's birthday.", typed); return; }
+    const btn = document.getElementById("c-save"); btn.disabled = true; btn.textContent = "Saving…";
+    const args = { p_first_name: typed.first_name, p_last_name: typed.last_name, p_date_of_birth: typed.date_of_birth };
+    const { data, error: e } = id
+      ? await sb.rpc("update_my_child", { p_child: id, ...args })
+      : await sb.rpc("add_my_child", args);
+    if (e) { renderChildForm(id, juniorLine(e, "That didn't save. Check your connection and try again."), typed); return; }
+    const saved = (data || [])[0];
+    go(`#/child/${saved?.id || id}`);
+  };
+}
+
+// ChildView: the child, their waiver and the programs.
+async function renderChild(id, error = "") {
+  const gen = renderGen;
+  chrome({ title: "My Children", back: true, tab: "profile" });
+  view.innerHTML = `<div class="placeholder"></div><div class="placeholder"></div>`;
+  let kids, programs, approvals;
+  try {
+    const [k, g, a] = await Promise.all([
+      readChildren(), sb.rpc("list_junior_programs"), sb.rpc("my_program_approvals")]);
+    if (g.error) throw g.error;
+    if (a.error) throw a.error;
+    kids = k; programs = g.data || []; approvals = a.data || [];
+  } catch (e) {
+    if (gen === renderGen) view.innerHTML = `<p class="error">${esc(juniorLine(e, "Couldn't load your children."))}</p>`;
+    return;
+  }
+  if (gen !== renderGen) return;
+  const k = kids.find((x) => x.id === id);
+  if (!k) { view.innerHTML = `<p class="error">Couldn't find that child.</p><a class="btn quiet" href="#/children">My Children</a>`; return; }
+  const mine = Object.fromEntries(approvals.filter((r) => r.player_id === id).map((r) => [r.program_id, r.status]));
+  const approvalCell = (g) => {
+    if (!g.needs_approval) return "";
+    const s = mine[g.id];
+    if (s === "approved") return `<span class="chip in" data-approval="${esc(g.id)}">Approved</span>`;
+    if (s === "requested") return `<span class="chip pool" data-approval="${esc(g.id)}">Approval requested</span>`;
+    if (s === "declined") return `<span class="chip canc" data-approval="${esc(g.id)}">Declined</span>`;
+    return "";
+  };
+  // The button goes under the program's name, full width: beside it, at
+  // phone width, it squeezed "Junior Elite" to two letters a line.
+  const requestButton = (g) => g.needs_approval && !mine[g.id]
+    ? `<button class="btn secondary" style="min-height:44px;margin-top:8px;width:100%" data-request="${esc(g.id)}">Request Approval</button>`
+    : "";
+  const waiver = k.waiver_status === "signed"
+    ? `<span class="chip in" id="c-waiver">Signed</span>`
+    : k.waiver_status === "needed"
+      ? `<div class="stack"><span class="muted" id="c-waiver">Not signed yet</span><a class="btn primary" href="#/child-waiver/${esc(id)}" id="c-sign">Sign the waiver</a></div>`
+      : `<span class="muted" id="c-waiver">The waiver isn't available yet.</span>`;
+  view.innerHTML = `
+    <h2 class="display">${esc(k.first_name)} ${esc(k.last_name)}</h2>
+    <div class="card stack" style="gap:12px">
+      <div><div class="caption">Birthday</div><div>${esc(birthday(k.date_of_birth))}</div></div>
+      <div><div class="caption">Age</div><div>${esc(k.age)}</div></div>
+    </div>
+    <p class="section">Waiver</p>
+    <div class="card">${waiver}</div>
+    <p class="section">Programs</p>
+    <div class="card">${programs.length ? programs.map((g) => `<div class="list-row" data-program="${esc(g.id)}">
+        <div class="grow"><div class="emph">${esc(g.name)}</div>
+          ${g.age_guidance ? `<div class="caption">${esc(g.age_guidance)}</div>` : ""}
+          ${g.description ? `<div class="muted" style="white-space:pre-wrap">${esc(g.description)}</div>` : ""}
+          ${requestButton(g)}</div>
+        ${approvalCell(g)}
+      </div>`).join("") : `<p class="muted">No programs yet</p>`}</div>
+    <p class="error" id="c-error" role="status">${esc(error)}</p>
+    <div class="stack" style="margin-top:12px">
+      <a class="btn quiet" href="#/child-edit/${esc(id)}" id="c-edit">Edit details</a>
+    </div>
+    <div class="center" style="margin-top:20px">
+      <button class="link danger" id="c-remove">Remove ${esc(k.first_name)}</button>
+    </div>`;
+  for (const b of view.querySelectorAll("[data-request]")) b.onclick = async () => {
+    b.disabled = true;
+    const { error: e } = await sb.rpc("request_program_approval", { p_child: id, p_program: b.dataset.request });
+    if (gen !== renderGen) return;
+    renderChild(id, e ? juniorLine(e, "Couldn't send the request.") : "");
+  };
+  document.getElementById("c-remove").onclick = async () => {
+    const ok = await confirmDialog(`Remove ${k.first_name} from your account?`, "Remove", "Keep");
+    if (!ok) return;
+    const { error: e } = await sb.rpc("remove_my_child", { p_child: id });
+    if (e) { renderChild(id, juniorLine(e, "Couldn't remove this child.")); return; }
+    go("#/children");
+  };
+}
+
+// ChildWaiverView: the parent/guardian waiver, signed by the parent for one
+// child (accept_child_waiver). The adult waiver's mechanism (decision 0013):
+// a checkbox, the signer's full legal name, the time recorded by the server.
+async function renderChildWaiver(id, error = "") {
+  const gen = renderGen;
+  chrome({ title: "Waiver", back: true, tab: "profile" });
+  view.innerHTML = `<div class="placeholder"></div><div class="placeholder"></div>`;
+  let kids, w;
+  try {
+    const [k, r] = await Promise.all([readChildren(), sb.rpc("current_junior_waiver")]);
+    if (r.error) throw r.error;
+    kids = k; w = (r.data || [])[0];
+  } catch (e) {
+    if (gen === renderGen) view.innerHTML = `<p class="error">${esc(juniorLine(e, "Couldn't load the waiver."))}</p>`;
+    return;
+  }
+  if (gen !== renderGen) return;
+  const k = kids.find((x) => x.id === id);
+  if (!k) { view.innerHTML = `<p class="error">Couldn't find that child.</p><a class="btn quiet" href="#/children">My Children</a>`; return; }
+  if (!w) { view.innerHTML = `<p class="muted" id="cw-none">The waiver isn't available yet.</p><a class="btn quiet" href="#/child/${esc(id)}">Back</a>`; return; }
+  if (k.waiver_status === "signed") { go(`#/child/${id}`); return; }
+  view.innerHTML = `
+    <div class="waiver">
+      <h2 class="display" style="font-size:1.5rem">${esc(w.title)}</h2>
+      <p class="muted">${esc(w.organizer)}</p>
+      ${waiverParagraphs(w.body)}
+    </div>
+    <div class="card stack">
+      <label class="check"><input type="checkbox" id="cw-agree"><span>I have read and agree to this waiver for ${esc(k.first_name)} ${esc(k.last_name)}.</span></label>
+      <label class="field">Your full legal name<input type="text" id="cw-name" autocomplete="name" placeholder="First and last name"></label>
+      <p class="error" id="cw-error">${esc(error)}</p>
+      <button class="btn primary" id="cw-sign" disabled>Agree and sign</button>
+    </div>`;
+  const name = () => document.getElementById("cw-name").value.trim();
+  const check = () => {
+    document.getElementById("cw-sign").disabled =
+      !(document.getElementById("cw-agree").checked && name().length >= 3 && name().includes(" "));
+  };
+  document.getElementById("cw-agree").onchange = check;
+  document.getElementById("cw-name").oninput = check;
+  document.getElementById("cw-sign").onclick = async () => {
+    const btn = document.getElementById("cw-sign");
+    btn.disabled = true; btn.innerHTML = `<span class="spinner"></span>`;
+    const { error: e } = await sb.rpc("accept_child_waiver",
+      { p_child: id, p_version: w.version, p_legal_name: name(), p_app_version: "web" });
+    if (!e) { go(`#/child/${id}`); return; }
+    renderChildWaiver(id, juniorLine(e, "Couldn't save your signature."));
+  };
+}
+
 // --------------------------------------------------------------- router ----
 
 async function route() {
@@ -1048,6 +1298,10 @@ async function route() {
     case "my-clinics": return renderMyClinics();
     case "notifications": return renderNotifications();
     case "edit": return S.player ? renderEdit() : renderProfile();
+    case "children": return renderChildren();
+    case "child": return arg === "new" ? renderChildForm() : renderChild(arg);
+    case "child-edit": return renderChildForm(arg);
+    case "child-waiver": return renderChildWaiver(arg);
     case "card": return renderCardStep();
     case "card-saved": {
       chrome({ title: "Add a card", back: true });
