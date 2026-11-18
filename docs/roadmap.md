@@ -143,7 +143,7 @@ Alex, 2026-08-19: *"we're not in a big rush, I can do it as an org from the star
 | Feature | |
 |---|---|
 | **Stripe, card on file** (decision 0009): schema, ledger, edge functions, the card screen, Tara's per-person Charge (decision 0037), refunds on the laptop, the stripe-mock harness in CI | built. Turning it on and going live: checklist A2, A9, A10, A11, A13, A14 |
-| **Juniors.** Deferred by Tara to November or the spring session (decision 0007 §6). The enum value is already in the schema, so this is UI work, not a migration. Tara, group text 2026-11-05: *"can we get a rough idea as to when we can put juniors in on the app? ... Just wondering if it's possible to have this done by January 1?"*; John: yes, before January 1, once she sends the doc. Target 2027-01-01, waiting on her doc | |
+| **Juniors.** Deferred by Tara to November or the spring session (decision 0007 §6). The enum value is already in the schema, so this is UI work, not a migration. Tara, group text 2026-11-05: *"can we get a rough idea as to when we can put juniors in on the app? ... Just wondering if it's possible to have this done by January 1?"*; John: yes, before January 1, once she sends the doc. Target 2027-01-01. Her doc arrived 2026-11-07 (`docs/juniors/spec-2026-11-07.md`); the plan, in five phases, is `docs/juniors/plan.md`; her open decisions are questions 145 to 155 | |
 | Parent accounts managing children, junior age groups | |
 | Duplicate a week: Copy to next week, as drafts she checks and publishes | built (`admin_copy_week`, decision 0027) |
 | Add to Calendar (nothing about where goes into the entry) | built (decision 0023) |
