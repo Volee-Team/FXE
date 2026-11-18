@@ -3,8 +3,9 @@
 **Status:** accepted by John, 2026-11-17 (*"yes start phase 1"*). Built in
 `supabase/migrations/20261118000001_juniors_family.sql` and its review
 fixes `20261118000002_juniors_family_review.sql`, pinned by
-`tests/sql/juniors_family.sql`, `tests/sql/juniors_review.sql` and
-`pro_role.sql` r10. Not pushed to hosted. The app, the members'
+`tests/sql/juniors_family.sql`, `tests/sql/juniors_review.sql`,
+`pro_role.sql` r10 and three race scripts (`remove_child_race.sh`,
+`membership_accept_race.sh`, `child_lock_race.sh`). Not pushed to hosted. The app, the members'
 site and Tara's laptop come next, in the same phase.
 
 ## What her document asks (spec 01)
@@ -110,6 +111,30 @@ is also checked by the state it leaves (hard rule 9).
 | L8 | Only the function guarded who signs for which child | Trigger `guard_junior_waiver_acceptance`: the child is an active junior of the signing account, on any path, and a signature is never edited (`signature_is_final`) | l8a to l8e |
 | L9 | No ceiling on children per account | 10 (`too_many_children`), John's to change | l9a to l9c |
 | 10 | Seven refusals in `juniors_family` were checked by their error alone | Each also asserts the state after it | a4b, a5e, a6d, w4b, c10a2, p5a2, p5b2 |
+
+### Second pass (2026-11-18)
+
+The sql-auditor read `20261118000002` too. Its four findings are fixed in
+the same file: it is on no database yet, and the "No edits to existing
+migrations" check compares only against `main`.
+
+| # | Finding | Fix | Probe |
+|---|---|---|---|
+| S1 | `clinic_rounds` still gave a pro a seated child's name and registration id. With that id, `admin_set_round_court`, `pro_assign_court` and Came / No-show (`require_pro_today`) let a pro move or mark the child | A pro sees adults and guests in the rounds. Each move answers its existing single refusal on a child: `not_in_clinic`, `not_this_week`, `not_today` | `pro_role` r10 (six red before), each red under its own mutation |
+| S2 | The new active check refused an adult Tara had deactivated with her Active switch: an adult regression | The check is the child's alone: an adult registers, asks late and accepts as before | a2a to a2c (red before) |
+| S3 | `FOR SHARE` on the player deadlocked with Tara's membership switch, which updates the player and then locks the member's clinics through `follow_membership` | `FOR KEY SHARE`: it still waits for `remove_my_child`'s `FOR UPDATE`, but not for a plain update | `membership_accept_race.sh` (a deadlock before); `remove_child_race.sh`, six orders, red with the lock taken out |
+| S4 | Tara's decision did not lock the child, so a rename could commit beside her approval of the old name | `admin_decide_program_approval` and `admin_preapprove_program` take the child `FOR KEY SHARE` first | `child_lock_race.sh` (both of Tara's orders red before) |
+
+**Not changed, noted:** if a pro re-saves a court on which Tara seated a
+child, the save replaces the whole court and the child's seat goes with
+it. Juniors 105 rounds are not in use before phase 3, which decides what a
+pro sees of children.
+
+**For John:** a signed junior waiver keeps the child's name and birthday,
+beside the parent's typed name and email, after the account is deleted. It
+is the legal record, as the adult waiver keeps the adult's. The privacy
+policy should say so; that wording is his to write and approve (plan,
+phase 1, item 5).
 
 Before the fix, 39 of `juniors_review`'s 50 rows and `pro_role`'s three r10
 rows were red. The rest are "still works" rows and states that already held.

@@ -120,7 +120,7 @@ declare
   r_maria_tomorrow uuid; r_ken_yesterday uuid; r_dana_draft uuid; r_rob_canceled uuid;
   r_theo_pool uuid; r_dana_soon uuid;
   f record; v text; n int; n_fns int := 0; n_views int := 0;
-  v_kid uuid; c_jr105 uuid;
+  v_kid uuid; c_jr105 uuid; r_kid uuid;
 begin
   -- ------------------------------------------------------------ r0, the seed
   -- What the seed committed, read as the owner: this row can fail without
@@ -678,7 +678,11 @@ begin
   values ('Probe Juniors 105', 'juniors', 'Clinic', 'probe', now(), now() + interval '1 hour',
           now() - interval '3 days', now() - interval '2 days', 8, 'published', 60)
   returning id into c_jr105;
-  insert into public.registrations (clinic_id, player_id, status, source) values (c_jr105, v_kid, 'in', 'admin');
+  insert into public.registrations (clinic_id, player_id, status, source) values (c_jr105, v_kid, 'in', 'admin')
+  returning id into r_kid;
+  -- Tara seats the child on court 1 of round 1.
+  perform pg_temp.act_as(TARA);
+  perform public.admin_set_round_court(c_jr105, 1::smallint, 1::smallint, array[r_kid, null, null, null, null, null]::uuid[]);
   perform pg_temp.act_as(CASEY);
   select count(*) filter (where clinic_id = c_jr105)::text || '|'
          || count(*) filter (where last_name = 'Unseenbypros')::text into v from public.pro_today();
@@ -688,9 +692,25 @@ begin
   insert into _probe_result values ('r10_pro_week_shows_the_clinic_not_the_child', '1|0', v);
   select count(*) filter (where last_name = 'Unseenbypros')::text into v from public.clinic_round_people(c_jr105);
   insert into _probe_result values ('r10_round_people_has_no_child_for_a_pro', '0', v);
+  select count(*) filter (where last_name = 'Unseenbypros' or person_id = r_kid)::text into v from public.clinic_rounds(c_jr105);
+  insert into _probe_result values ('r10_rounds_show_a_pro_no_seated_child', '0', v);
+  insert into _probe_result values ('r10_a_pro_cannot_seat_the_child', 'not_in_clinic',
+    pg_temp.try(format('select public.admin_set_round_court(%L, 2::smallint, 1::smallint, array[%L::uuid, null, null, null, null, null])', c_jr105, r_kid)));
+  insert into _probe_result values ('r10_a_pro_cannot_court_the_child', 'not_this_week',
+    pg_temp.try(format('select public.pro_assign_court(%L, 2::smallint)', r_kid)));
+  insert into _probe_result values ('r10_a_pro_cannot_mark_the_child', 'not_today',
+    pg_temp.try(format('select public.pro_set_no_show(%L, true)', r_kid)));
+  perform pg_temp.as_owner();
+  select (select count(*) from public.clinic_round_spots where clinic_id = c_jr105 and round_number = 2)::text
+      || '|' || (select count(*) from public.clinic_round_spots where clinic_id = c_jr105 and round_number = 1 and registration_id = r_kid)::text
+      || '|' || (select coalesce(court_number::text, 'none') || ':' || no_show from public.registrations where id = r_kid)
+    into v;
+  insert into _probe_result values ('r10_and_the_child_is_where_tara_put_them', '0|1|none:false', v);
   perform pg_temp.act_as(TARA);
   select count(*) filter (where last_name = 'Unseenbypros')::text into v from public.clinic_round_people(c_jr105);
   insert into _probe_result values ('r10_tara_still_sees_the_child', '1', v);
+  select count(*) filter (where person_id = r_kid)::text into v from public.clinic_rounds(c_jr105);
+  insert into _probe_result values ('r10_tara_still_sees_the_child_seated', '1', v);
   perform pg_temp.as_owner();
 
   -- ------------------------------------------------ r6, a deleted pro, last

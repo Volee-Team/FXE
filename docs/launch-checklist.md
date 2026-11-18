@@ -64,7 +64,7 @@ How this file works, so it can be trusted:
   accounts, 218 with a saved card. Push: 631 of 719 delivered in 14 days, 302
   devices (`scripts/live-status.sh`, 2026-11-12). 14 clinics published
   through 2026-11-20 (read-only query).
-- **Tests:** 62 SQL probes plus 19 shell probes, 330 unit tests, 29
+- **Tests:** 62 SQL probes plus 22 shell probes, 330 unit tests, 29
   XCUITests, 87 browser tests (`scripts/check-doc-claims.sh`, 2026-11-12).
 - **Waiting on others:** Apple's review of 1.0.3 (18); Tara: the juniors
   decisions and the open questions (`docs/questions-for-tara.md`).
@@ -169,7 +169,7 @@ observer.
 
 | Layer | Runs where | Count (derived 2026-11-12 unless dated) | Gap |
 |---|---|---|---|
-| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 62 probes plus 19 shell probes (the races and the 200-request rush); the suite prints its own check total | none known |
+| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 62 probes plus 22 shell probes (the races and the 200-request rush); the suite prints its own check total | none known |
 | Stripe pipeline against stripe-mock | every PR | 94 checks as of 2026-09-28 | real Stripe behaviour: one live charge and refund, 2026-10-14 (A10) |
 | Push pipeline against a mock APNs | every PR | 57 checks as of 2026-09-28 | real APNs delivering since 2026-11-05 (C3) |
 | Web admin browser tests (Playwright, real sign-in) | every PR | 87 | a cold-start flake after a local reset (backlog) |

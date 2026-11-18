@@ -27,6 +27,9 @@
 --   l8  A child signature row is always the child's own parent's, on an
 --       active child, and is never edited, whatever path writes it.
 --   l9  At most 10 children per account (too_many_children).
+--   a2  Second pass: none of this changes an adult. An adult Tara has
+--       deactivated (her Active switch) still registers, asks late and
+--       accepts, as before 20261118000002.
 --
 -- Fixtures: Maria and Ken (seed members). Every expected value is the
 -- literal answer of the rule.
@@ -41,6 +44,8 @@ declare
   MARIA   constant uuid := '22222222-2222-2222-2222-222222222222';
   MARIA_P constant uuid := 'a0000000-0000-0000-0000-000000000001';
   KEN     constant uuid := '33333333-3333-3333-3333-333333333333';
+  KEN_P   constant uuid := 'a0000000-0000-0000-0000-000000000002';
+  c_alate uuid; c_ainv uuid; r_ken uuid;
   kid uuid; kid2 uuid; arch uuid; kenkid uuid; lock1 uuid; lock2 uuid; free1 uuid;
   c_jr uuid; c_late uuid; c_inv uuid; c_inv2 uuid; c_adult uuid;
   r_inv uuid; r_inv2 uuid; elite uuid;
@@ -379,6 +384,38 @@ begin
   insert into _probe_result values ('l9b_an_eleventh_is_refused', 'too_many_children', err);
   select count(*) into n from public.players where account_id = MARIA and kind = 'junior' and is_active;
   insert into _probe_result values ('l9c_and_still_ten', '10', n::text);
+
+  -- ---------------------------------------------------------------- a2, adults unchanged
+  perform set_config('request.jwt.claims', '', true);
+  insert into public.clinics (name, audience, category, description, starts_at, ends_at,
+      member_opens_at, public_opens_at, closes_at, internal_capacity, status, duration_minutes)
+  values
+    ('Review Adult Late',   'coed', 'Clinic', 'probe', now() + interval '2 hours', now() + interval '3 hours',
+     now() - interval '2 days', now() - interval '1 day', now() - interval '1 minute', 8, 'published', 60),
+    ('Review Adult Invite', 'coed', 'Clinic', 'probe', now() + interval '4 days', now() + interval '4 days 1 hour',
+     now() - interval '2 days', now() - interval '1 day', null, 8, 'published', 60);
+  select id into c_alate from public.clinics where name = 'Review Adult Late';
+  select id into c_ainv  from public.clinics where name = 'Review Adult Invite';
+  insert into public.registrations (clinic_id, player_id, status, source) values (c_ainv, KEN_P, 'response_needed', 'admin')
+  returning id into r_ken;
+  update public.players set is_active = false where id = KEN_P;   -- Tara's Active switch
+
+  perform set_config('request.jwt.claims', json_build_object('sub', KEN)::text, true);
+  begin
+    select status::text into v from public.register_for_clinic(c_adult, KEN_P, null);
+  exception when others then v := sqlerrm;
+  end;
+  insert into _probe_result values ('a2a_a_deactivated_adult_still_registers', 'pool', v);
+  begin
+    select 'status:' || status into v from public.request_late_spot(c_alate, KEN_P, null);
+  exception when others then v := sqlerrm;
+  end;
+  insert into _probe_result values ('a2b_and_still_asks_late', 'status:pending', v);
+  begin
+    select status::text into v from public.respond_to_invitation(r_ken, true);
+  exception when others then v := sqlerrm;
+  end;
+  insert into _probe_result values ('a2c_and_still_accepts', 'in', v);
 end $$;
 
 select check_name, expected, actual,

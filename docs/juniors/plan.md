@@ -172,7 +172,11 @@ screens follow.
    a child.
 5. **Privacy:** the policy names children's names and birthdays, given by a
    parent. The App Store privacy answers get the same addition (John's to
-   type).
+   type). **For John's sign-off (2026-11-18, decision 0061):** a signed
+   junior waiver keeps the child's name and birthday, beside the parent's
+   typed name and email, after the account is deleted. It is the legal
+   record, as the adult waiver keeps the adult's. The policy wording that
+   says so is John's to write and approve; nothing in it has been changed.
 
 ### Phase 2: school-year sessions (146 and 147 answered 2026-11-17)
 

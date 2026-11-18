@@ -14,10 +14,15 @@
 --      adult waiver, which is about an adult playing. Tara is exempt, as
 --      she is from the adult one.
 --  M2  An archived child (removed by the parent) could still be registered,
---      ask late or accept: each now reads the player FOR SHARE and only
---      while active (player_not_found). FOR SHARE waits for
---      remove_my_child's FOR UPDATE, so the two cannot interleave. And
---      remove_my_child also waits for a pending late request.
+--      ask late or accept: each now reads the player FOR KEY SHARE and, for
+--      a child, only while active (player_not_found). An adult is unchanged:
+--      one Tara has deactivated still registers, asks late and accepts, as
+--      before (second pass). FOR KEY SHARE waits for remove_my_child's FOR
+--      UPDATE, so the two cannot interleave, but not for the plain UPDATE
+--      Tara's membership switch makes before follow_membership locks the
+--      clinics: FOR SHARE deadlocked with it (second pass;
+--      membership_accept_race.sh, remove_child_race.sh). And remove_my_child
+--      also waits for a pending late request.
 --  M3  update_my_child could rename a child, or change the birthday, after
 --      Tara had decided a program for them or a waiver had been signed,
 --      and the decision or signature then belonged to someone else. Now
@@ -38,6 +43,19 @@
 --      signature is never edited (signature_is_final).
 --  L9  At most 10 children per account (too_many_children). A default
 --      John can change (decision 0061).
+--
+-- Second pass (the sql-auditor on this file, 2026-11-18):
+--  S1  clinic_rounds still gave a pro a seated child's name and registration
+--      id, and with it admin_set_round_court, pro_assign_court and
+--      require_pro_today (Came / No-show) let a pro move or mark the child.
+--      A pro now sees only adults and guests in the rounds, and each of the
+--      three answers its existing single refusal on a child.
+--  S2  The active check is the child's alone (above, M2).
+--  S3  FOR KEY SHARE, not FOR SHARE (above, M2).
+--  S4  admin_decide_program_approval and admin_preapprove_program lock the
+--      child FOR KEY SHARE first, against update_my_child's FOR UPDATE: a
+--      rename can no longer commit beside Tara's decision on the old name
+--      (child_lock_race.sh).
 
 -- M3: the record keeps the child as signed. The table is new and empty on
 -- every database this runs on (20261118000001 is pushed with it).
@@ -219,7 +237,7 @@ begin
   end if;
   select * into v_child from public.players p
    where p.id = p_child and p.account_id = auth.uid() and p.kind = 'junior' and p.is_active
-   for share;
+   for key share;
   if not found then
     raise exception 'not_your_child' using errcode = '42501';
   end if;
@@ -333,14 +351,15 @@ begin
     raise exception 'registration_closed' using errcode = 'P0001';
   end if;
 
-  -- An archived player (a child the parent removed) holds nothing
-  -- (20261118000002). FOR SHARE: remove_my_child takes the row FOR UPDATE,
-  -- so a removal and a registration are one after the other. Tara is not
-  -- refused here, as before: placing anyone is hers.
+  -- An archived child (one the parent removed) holds nothing
+  -- (20261118000002). An adult is read as before, active or not, and Tara
+  -- places anyone. FOR KEY SHARE: remove_my_child takes the row FOR UPDATE,
+  -- so a removal and a registration are one after the other, while Tara's
+  -- membership switch (a plain UPDATE) does not wait on it.
   select is_member, account_id, kind into v_member, v_account, v_kind
     from public.players
-   where id = p_player and (is_active or public.is_admin())
-   for share;
+   where id = p_player and (is_active or kind = 'adult' or public.is_admin())
+   for key share;
   if v_member is null then
     raise exception 'player_not_found' using errcode = 'P0002';
   end if;
@@ -484,10 +503,13 @@ begin
   if not public.owns_player(p_player) then
     raise exception 'not_authorized' using errcode = '42501';
   end if;
-  -- 20261118000002: an archived player asks for nothing (FOR SHARE, against
-  -- remove_my_child's FOR UPDATE), and a child only with a signature on the
-  -- current junior waiver, as register_for_clinic.
-  select kind into v_kind from public.players where id = p_player and is_active for share;
+  -- 20261118000002: an archived child asks for nothing (FOR KEY SHARE,
+  -- against remove_my_child's FOR UPDATE), and a child only with a
+  -- signature on the current junior waiver, as register_for_clinic. An
+  -- adult is unchanged.
+  select kind into v_kind from public.players
+   where id = p_player and (is_active or kind = 'adult')
+   for key share;
   if not found then
     raise exception 'player_not_found' using errcode = 'P0002';
   end if;
@@ -644,13 +666,13 @@ begin
     end if;
   end if;
 
-  -- 20261118000002: an Accept by an archived player takes nothing, and a
-  -- child accepts only with a signature on the current junior waiver.
-  -- Declining stays open to everyone: it takes nothing.
+  -- 20261118000002: an Accept for an archived child takes nothing, and a
+  -- child accepts only with a signature on the current junior waiver. An
+  -- adult is unchanged. Declining stays open to everyone: it takes nothing.
   if p_accept and not public.is_admin() then
     select kind into v_kind from public.players
-     where id = v_row.player_id and is_active
-     for share;
+     where id = v_row.player_id and (is_active or kind = 'adult')
+     for key share;
     if not found then
       raise exception 'player_not_found' using errcode = 'P0002';
     end if;
@@ -944,3 +966,272 @@ AS $function$
    where w.kind = 'adult' and w.version = public.waiver_version();
 $function$
 ;
+
+-- S1: the rounds and a pro's moves ------------------------------------------
+CREATE OR REPLACE FUNCTION public.clinic_rounds(p_clinic uuid)
+ RETURNS TABLE(round_number smallint, court_number smallint, side smallint, slot smallint, person_id uuid, first_name text, last_name text, is_guest boolean, gone boolean)
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+declare
+  c public.clinics;
+begin
+  if not public.is_admin() then
+    perform public.require_pro();
+    select * into c from public.clinics where id = p_clinic;
+    -- One answer for anything outside the week, as pro_assign_court.
+    if not found or c.status <> 'published'
+       or public.new_york_date(c.starts_at) not between public.new_york_date(now())
+                                                    and public.new_york_date(now()) + 6 then
+      raise exception 'not_this_week' using errcode = 'P0001';
+    end if;
+  end if;
+  return query
+    select s.round_number, s.court_number, s.side, s.slot,
+           coalesce(s.registration_id, s.guest_id),
+           coalesce(p.first_name, g.first_name), coalesce(p.last_name, g.last_name),
+           s.guest_id is not null,
+           case when s.registration_id is not null then r.status <> 'in'
+                else g.removed_at is not null end
+      from public.clinic_round_spots s
+      left join public.registrations r on r.id = s.registration_id
+      left join public.players p on p.id = r.player_id
+      left join public.clinic_guests g on g.id = s.guest_id
+     where s.clinic_id = p_clinic
+       -- A pro sees adults and guests; no child until phase 3
+       -- (decision 0061, 20261118000002). Tara sees everyone.
+       and (s.guest_id is not null or p.kind = 'adult' or public.is_admin())
+     order by s.round_number, s.court_number, s.side, s.slot;
+end;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION public.admin_set_round_court(p_clinic uuid, p_round integer, p_court integer, p_people uuid[])
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+declare
+  c public.clinics;
+  i integer;
+  v_id uuid;
+  v_reg uuid;
+  v_guest uuid;
+  v_admin boolean := public.is_admin();
+begin
+  -- Tara, or a pro (decision 0056); a pro's clinic is checked below.
+  if not v_admin then
+    perform public.require_pro();
+  end if;
+  if p_round is null or p_round not between 1 and 3 then
+    raise exception 'invalid_round' using errcode = 'P0001';
+  end if;
+  if p_court is null or p_court not between 1 and 5 then
+    raise exception 'invalid_court' using errcode = 'P0001';
+  end if;
+  if p_people is null or cardinality(p_people) <> 6 or array_ndims(p_people) <> 1 then
+    raise exception 'invalid_people' using errcode = 'P0001';
+  end if;
+  if (select count(*) from unnest(p_people) x where x is not null)
+     <> (select count(distinct x) from unnest(p_people) x where x is not null) then
+    raise exception 'already_in_round' using errcode = 'P0001';
+  end if;
+  -- The clinic's lock: two devices saving the same court (hers, or hers and
+  -- a pro's) are one after the other, and nobody leaves the clinic halfway
+  -- through.
+  select * into c from public.clinics where id = p_clinic for update;
+  if not found then
+    if v_admin then
+      raise exception 'clinic_not_found' using errcode = 'P0002';
+    end if;
+    raise exception 'not_this_week' using errcode = 'P0001';
+  end if;
+  -- A pro: one answer for anything outside the week, as clinic_rounds and
+  -- pro_assign_court.
+  if not v_admin
+     and (c.status <> 'published'
+          or public.new_york_date(c.starts_at) not between public.new_york_date(now())
+                                                       and public.new_york_date(now()) + 6) then
+    raise exception 'not_this_week' using errcode = 'P0001';
+  end if;
+  if not public.is_105(c.name, c.category) then
+    raise exception 'not_105' using errcode = 'P0001';
+  end if;
+  if c.status = 'canceled' then
+    raise exception 'clinic_canceled' using errcode = 'P0001';
+  end if;
+
+  delete from public.clinic_round_spots
+   where clinic_id = p_clinic and round_number = p_round and court_number = p_court;
+
+  for i in 1..6 loop
+    v_id := p_people[i];
+    continue when v_id is null;
+    v_reg := null; v_guest := null;
+    select r.id into v_reg from public.registrations r
+     where r.id = v_id and r.clinic_id = p_clinic and r.status = 'in'
+       -- A pro seats adults only until phase 3 (20261118000002): a child's
+       -- id reads as not in the clinic, the answer for any stranger id.
+       and (v_admin or exists (select 1 from public.players p
+                                where p.id = r.player_id and p.kind = 'adult'));
+    if v_reg is null then
+      select id into v_guest from public.clinic_guests
+       where id = v_id and clinic_id = p_clinic and removed_at is null;
+    end if;
+    if v_reg is null and v_guest is null then
+      raise exception 'not_in_clinic' using errcode = 'P0001';
+    end if;
+    -- On another court of this round: moved here.
+    delete from public.clinic_round_spots
+     where clinic_id = p_clinic and round_number = p_round
+       and (registration_id = v_reg or guest_id = v_guest);
+    insert into public.clinic_round_spots
+      (clinic_id, round_number, court_number, side, slot, registration_id, guest_id)
+    values (p_clinic, p_round, p_court, ((i - 1) / 3) + 1, ((i - 1) % 3) + 1, v_reg, v_guest);
+  end loop;
+end;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION public.pro_assign_court(p_registration uuid, p_court smallint)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+declare
+  v_clinic uuid;
+  c        public.clinics;
+begin
+  perform public.require_pro();
+  if p_court is not null and p_court not between 1 and 5 then
+    raise exception 'invalid_court' using errcode = 'P0001';
+  end if;
+  -- Every refusal reads the same, so a pro learns nothing about a row outside
+  -- the week's You're In! lists (not even that it exists).
+  select r.clinic_id into v_clinic from public.registrations r
+    join public.players p on p.id = r.player_id
+   where r.id = p_registration and r.status = 'in'
+     -- No child for a pro until phase 3 (20261118000002): the same answer.
+     and p.kind = 'adult';
+  if not found then
+    raise exception 'not_this_week' using errcode = 'P0001';
+  end if;
+  select * into c from public.clinics where id = v_clinic for share;
+  if c.status <> 'published'
+     or public.new_york_date(c.starts_at) not between public.new_york_date(now())
+                                                  and public.new_york_date(now()) + 6 then
+    raise exception 'not_this_week' using errcode = 'P0001';
+  end if;
+  update public.registrations set court_number = p_court
+   where id = p_registration and status = 'in';
+  if not found then
+    raise exception 'not_this_week' using errcode = 'P0001';
+  end if;
+end;
+$function$
+;
+
+CREATE OR REPLACE FUNCTION public.require_pro_today(p_registration uuid)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SET search_path TO 'public', 'pg_temp'
+AS $function$
+declare
+  v_clinic uuid;
+  c        public.clinics;
+begin
+  perform public.require_pro();
+  select r.clinic_id into v_clinic from public.registrations r
+    join public.players p on p.id = r.player_id
+   where r.id = p_registration
+     -- No child for a pro until phase 3 (20261118000002): the same answer.
+     and p.kind = 'adult';
+  if not found then
+    raise exception 'not_today' using errcode = 'P0001';
+  end if;
+  select * into c from public.clinics where id = v_clinic for share;
+  if public.new_york_date(c.starts_at) <> public.new_york_date(now()) then
+    raise exception 'not_today' using errcode = 'P0001';
+  end if;
+  if c.status = 'canceled' then
+    raise exception 'clinic_canceled' using errcode = 'P0001';
+  end if;
+  if c.status <> 'published' then
+    raise exception 'not_today' using errcode = 'P0001';
+  end if;
+  if public.pro_clinic_locked(v_clinic) then
+    raise exception 'clinic_locked' using errcode = 'P0001';
+  end if;
+  return v_clinic;
+end;
+$function$
+;
+
+-- S4: Tara's decisions lock the child first ---------------------------------
+create or replace function public.admin_decide_program_approval(p_child uuid, p_program uuid, p_approve boolean)
+returns table (player_id uuid, program_id uuid, status text)
+language plpgsql security definer set search_path = public, pg_temp
+as $$
+declare
+  v_status text;
+begin
+  perform public.require_admin();
+  -- Against update_my_child's FOR UPDATE: a rename waits for this decision
+  -- and then sees it (child_locked), or this waits for the rename and
+  -- decides on the child as renamed (20261118000002, child_lock_race.sh).
+  perform 1 from public.players p where p.id = p_child for key share;
+  if p_approve is null then
+    raise exception 'decision_required' using errcode = '22023';
+  end if;
+  update public.program_approvals a
+     set status = case when p_approve then 'approved' else 'declined' end,
+         decided_by = auth.uid(), decided_at = now()
+   where a.player_id = p_child and a.program_id = p_program and a.status = 'requested'
+  returning a.status into v_status;
+  if not found then
+    if exists (select 1 from public.program_approvals a
+                where a.player_id = p_child and a.program_id = p_program) then
+      raise exception 'approval_already_decided' using errcode = 'P0001';
+    end if;
+    raise exception 'approval_not_found' using errcode = 'P0002';
+  end if;
+  return query select p_child, p_program, v_status;
+end;
+$$;
+
+create or replace function public.admin_preapprove_program(p_child uuid, p_program uuid)
+returns table (player_id uuid, program_id uuid, status text)
+language plpgsql security definer set search_path = public, pg_temp
+as $$
+declare
+  v_needs boolean;
+begin
+  perform public.require_admin();
+  -- As admin_decide_program_approval: the child is locked against a rename.
+  perform 1 from public.players p
+   where p.id = p_child and p.kind = 'junior' and p.is_active
+   for key share;
+  if not found then
+    raise exception 'child_not_found' using errcode = 'P0002';
+  end if;
+  select g.needs_approval into v_needs from public.junior_programs g where g.id = p_program;
+  if not found then
+    raise exception 'program_not_found' using errcode = 'P0002';
+  end if;
+  if not v_needs then
+    raise exception 'approval_not_needed' using errcode = 'P0001';
+  end if;
+
+  insert into public.program_approvals as a (player_id, program_id, status, source, decided_by, decided_at)
+  values (p_child, p_program, 'approved', 'tara', auth.uid(), now())
+  on conflict on constraint program_approvals_pkey do update
+     set status = 'approved', decided_by = excluded.decided_by, decided_at = excluded.decided_at
+   where a.status <> 'approved';
+
+  return query select a.player_id, a.program_id, a.status from public.program_approvals a
+                where a.player_id = p_child and a.program_id = p_program;
+end;
+$$;
