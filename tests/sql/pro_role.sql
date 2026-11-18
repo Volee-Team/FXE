@@ -120,6 +120,7 @@ declare
   r_maria_tomorrow uuid; r_ken_yesterday uuid; r_dana_draft uuid; r_rob_canceled uuid;
   r_theo_pool uuid; r_dana_soon uuid;
   f record; v text; n int; n_fns int := 0; n_views int := 0;
+  v_kid uuid; c_jr105 uuid; r_kid uuid;
 begin
   -- ------------------------------------------------------------ r0, the seed
   -- What the seed committed, read as the owner: this row can fail without
@@ -392,9 +393,9 @@ begin
   -- is a hole or a guard in the wrong place, and both are worth a red row.
   -- Keyed on is_admin() as well as require_admin(), so an admin function
   -- rewritten as "if not (is_admin() or is_pro())" stays in the list and
-  -- goes red, instead of quietly leaving it. The exceptions are the five a
+  -- goes red, instead of quietly leaving it. The exceptions are the functions a
   -- member may call that merely have an admin branch; each has its own
-  -- outcome check below, and a sixth added later turns this red until it is
+  -- outcome check below, and one added later turns this red until it is
   -- named here (the same forcing function as grants_are_explicit's list).
   for f in
     select p.oid, p.proname,
@@ -412,7 +413,11 @@ begin
                              -- A pro writes the 105 rounds in their week, and
                              -- reads who can be picked (decision 0056);
                              -- pro_rounds.sql checks both ways.
-                             'admin_set_round_court', 'clinic_round_people')
+                             'admin_set_round_court', 'clinic_round_people',
+                             -- A parent reads their own child's waiver status,
+                             -- Tara any child's (decision 0061);
+                             -- juniors_family.sql checks the pro, a member and Tara.
+                             'child_waiver_status')
        and has_function_privilege('authenticated', p.oid, 'EXECUTE')
      order by p.proname
   loop
@@ -656,6 +661,57 @@ begin
     into v;
   insert into _probe_result values ('r8_tara_changes_landed',
     'true|canceled:true:11111111-1111-1111-1111-111111111111', v);
+
+  -- ------------------------------- r10, no child on a pro's screens yet
+  -- Decision 0061: pros see a child in phase 3, on a day the child is
+  -- rostered. Until then a rostered child is not in pro_today, pro_week or
+  -- clinic_round_people for a pro; the clinic still is, and Tara sees the
+  -- child. Placed with no one signed in (Tara's exemption from the kind
+  -- guard); the clinic is a juniors 105 today, so rounds apply too.
+  perform pg_temp.as_owner();
+  perform set_config('request.jwt.claims', '', true);
+  insert into public.players (account_id, kind, first_name, last_name, date_of_birth)
+  values (MARIA, 'junior', 'Probekid', 'Unseenbypros', date '2016-01-01')
+  returning id into v_kid;
+  insert into public.clinics (name, audience, category, description, starts_at, ends_at,
+      member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
+  values ('Probe Juniors 105', 'juniors', 'Clinic', 'probe', now(), now() + interval '1 hour',
+          now() - interval '3 days', now() - interval '2 days', 8, 'published', 60)
+  returning id into c_jr105;
+  insert into public.registrations (clinic_id, player_id, status, source) values (c_jr105, v_kid, 'in', 'admin')
+  returning id into r_kid;
+  -- Tara seats the child on court 1 of round 1.
+  perform pg_temp.act_as(TARA);
+  perform public.admin_set_round_court(c_jr105, 1::smallint, 1::smallint, array[r_kid, null, null, null, null, null]::uuid[]);
+  perform pg_temp.act_as(CASEY);
+  select count(*) filter (where clinic_id = c_jr105)::text || '|'
+         || count(*) filter (where last_name = 'Unseenbypros')::text into v from public.pro_today();
+  insert into _probe_result values ('r10_pro_today_shows_the_clinic_not_the_child', '1|0', v);
+  select count(*) filter (where clinic_id = c_jr105)::text || '|'
+         || count(*) filter (where last_name = 'Unseenbypros')::text into v from public.pro_week();
+  insert into _probe_result values ('r10_pro_week_shows_the_clinic_not_the_child', '1|0', v);
+  select count(*) filter (where last_name = 'Unseenbypros')::text into v from public.clinic_round_people(c_jr105);
+  insert into _probe_result values ('r10_round_people_has_no_child_for_a_pro', '0', v);
+  select count(*) filter (where last_name = 'Unseenbypros' or person_id = r_kid)::text into v from public.clinic_rounds(c_jr105);
+  insert into _probe_result values ('r10_rounds_show_a_pro_no_seated_child', '0', v);
+  insert into _probe_result values ('r10_a_pro_cannot_seat_the_child', 'not_in_clinic',
+    pg_temp.try(format('select public.admin_set_round_court(%L, 2::smallint, 1::smallint, array[%L::uuid, null, null, null, null, null])', c_jr105, r_kid)));
+  insert into _probe_result values ('r10_a_pro_cannot_court_the_child', 'not_this_week',
+    pg_temp.try(format('select public.pro_assign_court(%L, 2::smallint)', r_kid)));
+  insert into _probe_result values ('r10_a_pro_cannot_mark_the_child', 'not_today',
+    pg_temp.try(format('select public.pro_set_no_show(%L, true)', r_kid)));
+  perform pg_temp.as_owner();
+  select (select count(*) from public.clinic_round_spots where clinic_id = c_jr105 and round_number = 2)::text
+      || '|' || (select count(*) from public.clinic_round_spots where clinic_id = c_jr105 and round_number = 1 and registration_id = r_kid)::text
+      || '|' || (select coalesce(court_number::text, 'none') || ':' || no_show from public.registrations where id = r_kid)
+    into v;
+  insert into _probe_result values ('r10_and_the_child_is_where_tara_put_them', '0|1|none:false', v);
+  perform pg_temp.act_as(TARA);
+  select count(*) filter (where last_name = 'Unseenbypros')::text into v from public.clinic_round_people(c_jr105);
+  insert into _probe_result values ('r10_tara_still_sees_the_child', '1', v);
+  select count(*) filter (where person_id = r_kid)::text into v from public.clinic_rounds(c_jr105);
+  insert into _probe_result values ('r10_tara_still_sees_the_child_seated', '1', v);
+  perform pg_temp.as_owner();
 
   -- ------------------------------------------------ r6, a deleted pro, last
   update public.accounts set deleted_at = now() where id = CASEY;
