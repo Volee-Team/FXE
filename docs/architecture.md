@@ -700,9 +700,11 @@ the one link the code says, forwarding to the install link in `web/app/target.js
 `web/qr.html`, Tara's printable card; `web/app-qr.svg` and `web/app-qr.png`, drawn and
 decode-checked by `scripts/make-qr.swift`; `web/gator.png`, the mark on navy, and `web/gator-tile.png`, on light pages, both written with the app icon and the in-app mark by `scripts/make-logo-assets.py` from `docs/brand/gator-2026-09-29.webp`, decision 0032), `web/sheet.html`
 (a clinic's court sheet to print, decision 0027 §3), `config.js` (which picks local vs hosted by hostname), `tokens.css`,
-three small modules the admin page imports (`week.js`: the service week and which
+four small modules the admin page imports (`week.js`: the service week and which
 clinics This week lists; `read.js`: reads that page past PostgREST's 1000-row
-cap; `saved-messages.js`: Tara's saved messages in the Message dialog), and `vendor/supabase-js.js`, plus the Playwright tooling (`package.json`,
+cap; `saved-messages.js`: Tara's saved messages in the Message dialog;
+`juniors.js`: the Juniors tab, its Program requests row in Action Needed and
+the programs a child holds on the Players tab, decision 0061), and `vendor/supabase-js.js`, plus the Playwright tooling (`package.json`,
 `playwright.config.mjs`, `tests/`). **supabase-js is vendored**, never loaded
 from a CDN (MVP audit 2026-09-27, item 17; it came from esm.sh at a floating
 `@2` until then): the npm package's own browser bundle at the exact version
@@ -918,7 +920,7 @@ Supabase project was decided against on 2026-09-18 (`docs/launch-checklist.md`
 §F). They run on a Mac through `scripts/run-ui-tests.sh` on iOS 18 and 26 (17 too until 2026-10-30, when it stopped being downloadable),
 and the `ui-test-record` job fails a PR whose code has no green record.
 
-**Web admin**: 87 Playwright tests (`web/tests/*.spec.mjs`) walk Tara's
+**Web admin**: 98 Playwright tests (`web/tests/*.spec.mjs`) walk Tara's
 side against a fresh seed: sign-in and the non-admin door, prices, walk-up,
 courts, unpaid reminder, a note round-trip, cancel clinic, template archive
 and restore, Money counts, the card-payments ledger, payments off, the
@@ -937,7 +939,16 @@ this site's scripts, its own sign-in apart from the admin's, Register with a
 note, the Player Pool when full, Accept and Decline, the 3-hour late cancel
 with its note, Message Tara after the close, the member-only window, nothing
 hidden on any page, the bell, Edit details, sign-up through the waiver, and
-no sideways scroll at phone width. One
+no sideways scroll at phone width; and juniors phase 1 on both sites
+(`juniors.spec.mjs`, decision 0061): a parent adds a child and edits the
+name, a future birthday and the same child twice refused with nothing saved,
+the junior waiver signed for one child and the name then locked, Remove
+behind its confirmation archiving the row, another member finding nothing on
+a child's page, Request Approval reaching Tara's Action Needed and coming
+back Approved, a decline and her later Approve, a preapproval, a program's
+description reaching a parent, a new program's name rules with Archive and
+Restore, and a child under the parent on Players with none of an adult's
+controls. One
 worker, files in name order; the suite is not idempotent (cancel clinic is for
 keeps), so reset between runs.
 

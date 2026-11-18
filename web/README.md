@@ -64,15 +64,22 @@ courtside work; this does weekly setup.
 * **Action Needed** at the top: players asking in after the 3-hour close (Put
   them in / No room), cancellations or invitation replies she has not seen, a
   clinic that ended and is not charged yet, a declined card (with Resolved),
-  and an open dispute
+  and an open dispute, and a parent's request for Junior Elite or Elite
+  (Program requests, Approve / Decline; decision 0061)
 * **Players** tab: search, member and active switches, her private note per
   player, the Pro box (decision 0025), a one-time Reset link for a member who
   cannot sign in (decision 0017), Review links, and the QR code for the app
-  with how often it was opened
+  with how often it was opened. A child sits under the parent's row with
+  their age, waiver and programs, and her note only: none of an adult's
+  controls (decision 0061)
+* **Juniors** tab (`juniors.js`, decision 0061): the parents' approval
+  requests and the ones decided, Approve a child (preapprove, also after a
+  decline), and her programs: name, ages, description, whether it needs her
+  approval, order, Archive and Restore
 * **Money** tab: the board report (Download CSV, Print, Foxcroft's share),
   Charged / Declined / Not charged yet, Payouts from Stripe, the card-payments
-  list with Refund, and a line per clinic. Three tabs across the top: This
-  week, Players, Money; the last one opened is remembered
+  list with Refund, and a line per clinic. Five tabs across the top: This
+  week, Players, Juniors, Sign-ups, Money; the last one opened is remembered
 * Forgot password? on the sign-in card, landing on `reset.html`
 * Canceled clinics are hidden until "Show canceled" is ticked; they stay in
   the database (archive, never delete)
@@ -96,7 +103,7 @@ get committed aimed at the wrong project. Sign in as `tara@fxe.test` /
 
 ## Test it
 
-87 Playwright tests (`cat web/tests/*.spec.mjs | grep -cE '^\s*test\('`,
+98 Playwright tests (`cat web/tests/*.spec.mjs | grep -cE '^\s*test\('`,
 2026-11-07) walk this page the way Tara does, against the LOCAL stack on a
 fresh seed. They are the only automated check on the web admin,
 so they run in CI on every push (`web-browser-tests` in `probes.yml`).
