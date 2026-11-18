@@ -268,6 +268,7 @@ final class AccessibilityAuditUITests: XCTestCase {
         // Edit details
         let edit = app.buttons["profile.edit"]
         if edit.waitForExistence(timeout: 5) {
+            for _ in 0..<3 where edit.frame.maxY > app.frame.height - 120 { app.swipeUp() }
             edit.tap(); sleep(1)
             settle(app.buttons["edit.save"])
             audit("edit details")
