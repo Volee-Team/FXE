@@ -40,6 +40,8 @@
 --   Maria -> clinic_fee|1800; again -> already_charged; 1 payment, pending
 --   Ken -> no_show|1800; Rob -> late_cancel|2300; Dana -> clinic_fee|1800 (2 payments)
 --   Priya -> no_card_on_file; Lena, Theo -> not_owed
+--   R: Ken's resolved decline is on the roster (1800|resolved) and charges
+--      again (clinic_fee|1800); then only the 1500 snapshot owes
 --   Casey removed: canceled, not late; then not_owed; 0 notifications to her
 --   due after: Priya|clinic_fee|2300|not_charged, has_card false
 --   G not_over and 0 due; B before_payments; C canceled
@@ -373,11 +375,20 @@ begin
   exception when others then
     insert into _probe_result values ('sandbox_fee_after_live_still_owes', 'clinic_fee|1800', sqlerrm);
   end;
+  -- A decline Tara Resolved still owes (2026-11-20, decision 0026 amended):
+  -- Resolved clears her lists, never the fee. Tara pressed Resolved on a
+  -- player whose bank had held the card for fraud, the card was then good,
+  -- and her roster offered no Charge: "I'm not quite sure how to charge her
+  -- after it's been declined." The roster lists it again and one tap charges
+  -- it; Action Needed and the Money tab still leave it out (state 'resolved').
+  select string_agg(d.amount_cents::text || '|' || d.state, ',') into v
+    from public.admin_fees_due(cr) d where d.registration_id = r_ken;
+  insert into _probe_result values ('resolved_decline_back_on_the_roster', '1800|resolved', coalesce(v, 'NONE'));
   begin
     j := public.admin_charge_player(r_ken);
-    insert into _probe_result values ('resolved_decline_not_owed', 'not_owed', 'CALL SUCCEEDED ' || j::text);
+    insert into _probe_result values ('resolved_decline_charges_again', 'clinic_fee|1800', (j->>'kind') || '|' || (j->>'amount_cents'));
   exception when others then
-    insert into _probe_result values ('resolved_decline_not_owed', 'not_owed', sqlerrm);
+    insert into _probe_result values ('resolved_decline_charges_again', 'clinic_fee|1800', sqlerrm);
   end;
   begin
     j := public.admin_charge_player(r_rob);

@@ -57,7 +57,7 @@ How this file works, so it can be trusted:
   transfer and did not carry over; build 18, the same code signed by the LLC
   (tag `v1.0.3-18`), was uploaded and submitted for review by John on
   2026-11-12.
-- **Hosted:** 90 of 90 migrations applied, newest `20261118000002` (juniors phase 1, the server, and its review fixes, pushed 2026-11-18; no screen calls them until the phase 1 screens ship)
+- **Hosted:** 91 of 91 migrations applied, newest `20261120000001` (a resolved decline can be charged again, pushed 2026-11-20; `supabase db push`); before it `20261118000002` (juniors phase 1, the server, and its review fixes, pushed 2026-11-18; no screen calls them until the phase 1 screens ship)
   (read-only query of `supabase_migrations.schema_migrations`, 2026-11-12; 87 after the push of 2026-11-15, same query);
   the project is ACTIVE_HEALTHY (management API). **Payments live** since
   2026-10-14: 166 charges succeeded, 3 refunds, 0 failed; 338 member
