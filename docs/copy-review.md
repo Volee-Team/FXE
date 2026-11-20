@@ -1067,3 +1067,14 @@ Something went wrong. Please try again., Cards aren't set up yet., Check your
 email for a reset link., Unknown player. Until the extractor widens, this file
 is the only record of those; keep listing them by hand. Tracked in
 `docs/backlog.md`.
+
+## Switches and pickers the copy gate could not see (2026-11-20), awaiting John
+
+Found when "Show canceled" on Tara's phone clinic list went through the gate as "unchanged": `extract-copy.py` did not read `Toggle(` or `Picker(` labels. It does now, and these were in the app unreviewed. All chrome.
+
+| ☐ | Words | Where |
+|---|---|---|
+| ☐ | Show canceled | Tara's phone, Clinics list, under the sections when a canceled clinic is hidden (new, as the laptop's checkbox) |
+| ☐ | Show inactive players | Tara's phone, Players directory |
+| ☐ | Member / Active | Tara's phone, a player's page, her switches |
+| ☐ | Round / Court {n}, side {s}, spot {n} | Tara's phone, a 105's Rounds sheet (decision 0054) |

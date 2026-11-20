@@ -163,19 +163,34 @@ struct AdminClinicsView: View {
         nonmutating set { pendingHeldAnswer = newValue.map { PendingHeldAnswer(charge: $0.0, label: $0.1, outcome: $0.2) } }
     }
 
-    private var today: [ClinicAdmin] {
-        model.clinics.filter { Calendar.current.isDateInToday($0.startsAt) }
+    /// Canceled clinics wait behind Show canceled, as on the laptop
+    /// (2026-09-10). Tara, 2026-11-20, of a duplicate she canceled: "I can't
+    /// see the canceled coed 105 from my desktop, but I can see it on my
+    /// phone". Nothing is deleted (hard rule 4); the switch is remembered.
+    @AppStorage("admin.showCanceled") private var showCanceled = false
+    private var listed: [ClinicAdmin] {
+        showCanceled ? model.clinics : model.clinics.filter { !$0.isCanceled }
     }
-    private var upcoming: [ClinicAdmin] {
-        model.clinics.filter { $0.startsAt > .now && !Calendar.current.isDateInToday($0.startsAt) }
+    private var hiddenCanceled: Int {
+        (today(model.clinics) + upcoming(model.clinics) + past(model.clinics)).filter(\.isCanceled).count
     }
+
+    private func today(_ all: [ClinicAdmin]) -> [ClinicAdmin] {
+        all.filter { Calendar.current.isDateInToday($0.startsAt) }
+    }
+    private func upcoming(_ all: [ClinicAdmin]) -> [ClinicAdmin] {
+        all.filter { $0.startsAt > .now && !Calendar.current.isDateInToday($0.startsAt) }
+    }
+    private var today: [ClinicAdmin] { today(listed) }
+    private var upcoming: [ClinicAdmin] { upcoming(listed) }
     /// Only the last 7 days (Tara, 2026-10-19: "she doesn't need to see all
     /// past clinics just maybe the past week"). An older clinic that still
     /// owes a fee stays in Action Needed, which reads its own list.
-    private var past: [ClinicAdmin] {
-        model.clinics.filter { PastWeek.contains(endsAt: $0.endsAt) && !Calendar.current.isDateInToday($0.startsAt) }
+    private func past(_ all: [ClinicAdmin]) -> [ClinicAdmin] {
+        all.filter { PastWeek.contains(endsAt: $0.endsAt) && !Calendar.current.isDateInToday($0.startsAt) }
             .sorted { $0.startsAt > $1.startsAt }
     }
+    private var past: [ClinicAdmin] { past(listed) }
 
     var body: some View {
         NavigationStack {
@@ -201,6 +216,13 @@ struct AdminClinicsView: View {
                         section("Upcoming", upcoming, empty: "Nothing scheduled yet.")
                         if !past.isEmpty {
                             section("Past", past, empty: "")
+                        }
+                        if hiddenCanceled > 0 {
+                            Toggle("Show canceled", isOn: $showCanceled)
+                                .brandFont(.subheadline)
+                                .foregroundStyle(Brand.textSecondary)
+                                .tint(Brand.navy)
+                                .accessibilityIdentifier("admin.showCanceled")
                         }
                     }
                     .padding(Brand.Spacing.pageMargin)

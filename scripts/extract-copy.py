@@ -54,6 +54,10 @@ SWIFT = [
     # error line went through the gate as "unchanged".
     r'(?:TextField|SecureField)\(\s*"([^"]{2,})"',
     r'notice:\s*"([^"]{2,})"',
+    # A switch's label and a picker's title are read on screen too. Invisible
+    # until 2026-11-20, when "Show canceled" on Tara's clinic list went
+    # through the gate as "unchanged", with three older toggles behind it.
+    r'(?:Toggle|Picker)\(\s*"([^"]{2,})"',
 ]
 # Web: prose in HTML text nodes, plus strings that are clearly sentences in JS.
 WEB = [
