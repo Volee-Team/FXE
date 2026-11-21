@@ -45,9 +45,9 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          npm install -g @anthropic-ai/claude-code
+          npm install -g @anthropic-ai/claude-code@2.1.319
           claude -p "$(cat docs/audit-brief.md)" \
-            --allowedTools "Read,Grep,Glob,Bash(ls:*),Bash(grep:*),Bash(git log:*),Bash(git diff:*),Bash(wc:*),Bash(cat:*),Bash(sed:*)" \
+            --allowedTools "Read,Grep,Glob,Bash(ls:*),Bash(grep:*),Bash(git log:*),Bash(git diff:*),Bash(wc:*)" \
             --output-format text > audit-report.md
           head -c 60000 audit-report.md > audit-body.md
 
