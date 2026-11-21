@@ -1,5 +1,6 @@
 #!/bin/bash
-# secret-scan.sh: fail if a secret or a personal identifier is tracked by git.
+# secret-scan.sh: fail if a secret or a personal identifier is tracked by git,
+# or if a job holding a secret runs code that is not pinned (2026-11-21).
 #
 # Run from the root of the repository to scan (CI runs it on every push and
 # PR; run it locally the same way). Scans tracked files only.
@@ -20,7 +21,7 @@ FAIL=0
 scan() {
   local label=$1 flags=$2 pattern=$3; shift 3
   local out rc
-  out=$(git grep -n $flags -E "$pattern" -- "$@" 2>&1); rc=$?
+  out=$(git grep -n $flags -E -e "$pattern" -- "$@" 2>&1); rc=$?
   case $rc in
     # File and line only: the matched text is the secret, and a public
     # Actions log outlives any history rewrite.
@@ -35,6 +36,31 @@ envs=$(git ls-files | grep -E '(^|/)\.env' | grep -vE '(^|/)\.env\.example$')
 if [ -n "$envs" ]; then
   echo "::error::A .env file is tracked by git:"; printf '%s\n' "$envs"; FAIL=1
 fi
+
+# Key and certificate files, at any depth (2026-11-21): the backup's age key,
+# an APNs .p8, a signing .p12 or .pem, a provisioning profile.
+keys=$(git ls-files | grep -iE '\.(p8|p12|pem|key|mobileprovision)$|(^|/)fxe-backup-key\.txt$')
+if [ -n "$keys" ]; then
+  echo "::error::A key or certificate file is tracked by git:"; printf '%s\n' "$keys"; FAIL=1
+fi
+
+# Private keys pasted into any file, workflows included (2026-11-21): a PEM
+# private-key block (APNs, signing) or an age secret key (the backup key).
+scan "A private key is committed (rotate it, then remove it):" "" \
+  '-----BEGIN [A-Z ]*PRIVATE KEY-----|AGE-SECRET-KEY-1[0-9A-Z]{20,}' \
+  ':!scripts/secret-scan.sh'
+
+# Account tokens, workflows included (2026-11-21): a Supabase personal access
+# token (sbp_, the whole organization), a GitHub token, an Anthropic key.
+scan "An access token is committed (revoke it, then remove it):" "" \
+  'sbp_[0-9a-f]{40}|gh[pousr]_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{40,}|sk-ant-[A-Za-z0-9_-]{20,}' \
+  ':!scripts/secret-scan.sh'
+
+# A hosted Postgres address with its password (2026-11-21). The local stack's
+# postgres:postgres@127.0.0.1 and the [YOUR-PASSWORD] placeholder do not match.
+scan "A hosted database password is committed (reset it in Supabase, then remove it):" "" \
+  'postgres(ql)?://[^:/@ ]+:[^@ []+@[^ ]*(supabase\.(co|com)|pooler)' \
+  ':!scripts/secret-scan.sh'
 
 # Supabase secret keys and service-role JWTs. The sb_publishable_ keys in
 # SupabaseClient.swift are anon keys, designed to sit in a client binary. A
@@ -72,5 +98,19 @@ scan "Something shaped like a bank routing number is tracked:" "-i" \
 scan "Possible hard-coded password:" "" \
   "(PASSWORD|password)[\"']? *[:=] *[\"'][^\"']{6,}" \
   ':!*.md' ':!tests/*' ':!web/tests/*' ':!supabase/seed.sql' ':!.github/workflows/*' ':!scripts/secret-scan.sh'
+
+# Supply chain (2026-11-21). A job holding a secret must not run code that
+# someone else can change after review: a third-party action is pinned to a
+# full commit SHA (Dependabot proposes the bumps), and the deploy runs a fixed
+# vercel version while VERCEL_TOKEN is in its environment.
+unpinned=$(git grep -nE '^[[:space:]-]*uses:[[:space:]]*[^[:space:]]+' -- '.github/workflows/*' \
+  | grep -vE 'uses:[[:space:]]*(actions/|\./)' | grep -vE '@[0-9a-f]{40}([[:space:]]|$)')
+if [ -n "$unpinned" ]; then
+  echo "::error::A third-party action is not pinned to a commit SHA:"; printf '%s\n' "$unpinned"; FAIL=1
+fi
+floating=$(git grep -nE 'npx -y vercel( |$)|npm install -g @anthropic-ai/claude-code( |$)' -- scripts .github/workflows)
+if [ -n "$floating" ]; then
+  echo "::error::A tool run with a secret has no fixed version:"; printf '%s\n' "$floating"; FAIL=1
+fi
 
 [ "$FAIL" -eq 0 ] && echo "No secrets found." || exit 1
