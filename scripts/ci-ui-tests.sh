@@ -11,7 +11,8 @@
 # docs/ui-test-runs.log: the passing job is the record for its own PR
 # (check-ui-test-record.sh is told by the workflow). Added 2026-11-21.
 #
-# Needs: DB_URL (the project's session-pooler URI, with its password),
+# Needs: DB_URL (the project's URI with its password; POOLER_HOST turns a
+# direct one into the session pooler),
 # FXE_URL, FXE_ANON_KEY, FXE_SERVICE_KEY. Never point DB_URL at hosted FXE:
 # the reset drops every table.
 set -uo pipefail
@@ -23,6 +24,31 @@ esac
 case "$DB_URL" in
   *amnaxvznkadkgzdxzegw*) echo "::error::DB_URL is the live FXE project; refusing to reset it."; exit 1 ;;
 esac
+# GitHub's runners have no IPv6, and a project's direct address
+# (db.<ref>.supabase.co) is IPv6 only: the first run on 2026-11-21 failed
+# with "hostname resolving error". A direct address is rewritten to the same
+# project's session pooler (user postgres.<ref>, POOLER_HOST, port 5432),
+# keeping the password exactly as given. A pooler address passes unchanged.
+if [ -n "${POOLER_HOST:-}" ]; then
+  DB_URL=$(python3 -c '
+import sys, re
+from urllib.parse import urlsplit, urlunsplit
+url, pooler = sys.argv[1], sys.argv[2]
+u = urlsplit(url)
+m = re.fullmatch(r"db\.([a-z0-9]{20})\.supabase\.co", u.hostname or "")
+if not m:
+    print(url); sys.exit()
+user = u.username or "postgres"
+if user == "postgres": user = "postgres." + m.group(1)
+pw = u.password or ""
+netloc = f"{user}:{pw}@{pooler}:5432"
+print(urlunsplit((u.scheme, netloc, u.path or "/postgres", u.query, u.fragment)))' "$DB_URL" "$POOLER_HOST")
+fi
+# GitHub masks the secret as a whole string; mask the password on its own
+# too, since the rewritten address is a new string (public logs).
+pw=$(python3 -c 'import sys; from urllib.parse import urlsplit, unquote; p = urlsplit(sys.argv[1]).password or ""; print(p); print(unquote(p))' "$DB_URL")
+while IFS= read -r line; do [ -n "$line" ] && echo "::add-mask::$line"; done <<< "$pw"
+unset pw
 fp=$(bash scripts/app-fingerprint.sh)
 xcodegen generate -q
 status=0

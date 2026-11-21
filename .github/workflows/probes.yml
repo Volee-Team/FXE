@@ -517,6 +517,7 @@ jobs:
         if: steps.cfg.outputs.configured == 'true'
         env:
           DB_URL: ${{ secrets.CI_SUPABASE_DB_URL }}
+          POOLER_HOST: ${{ vars.CI_SUPABASE_POOLER_HOST }}
           FXE_URL: ${{ vars.CI_SUPABASE_URL }}
           FXE_ANON_KEY: ${{ secrets.CI_SUPABASE_ANON_KEY }}
           FXE_SERVICE_KEY: ${{ secrets.CI_SUPABASE_SERVICE_KEY }}
