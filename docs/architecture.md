@@ -57,7 +57,7 @@ most important thing to understand here, and it is section 5.
 
 | Area | What exists |
 |---|---|
-| Postgres schema, RLS, narrow views, RPCs | 90 migrations (`ls supabase/migrations`), the newest `20261013000001_audit_fixes.sql`. 63 are on hosted: Alex's `supabase migration list --linked` on 2026-10-12 showed 63 of 63 paired; the 64th goes with the audit-fixes PR. Re-check with that command after any push; this line is not the record |
+| Postgres schema, RLS, narrow views, RPCs | 92 migrations (`ls supabase/migrations`), the newest `20261120000002_canceled_clinic_only_for_who_was_on_it.sql`. Hosted holds the same 92 (`supabase migration list --linked`, 2026-11-20). Re-check with that command after any push; this line is not the record |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | Enumerated by probes (section 5) |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | Section 7 |
 | Probe suite: 62 SQL probes and 22 shell probes (races and the API rush); the suite prints its own total | Runs in CI on every push (section 9) |
@@ -410,7 +410,7 @@ JSON. The hiding is done in the database by three mechanisms:
 
    | View | What it is | Who sees what |
    |---|---|---|
-   | `clinics_public` | Published/canceled clinics that have not ended, both price rates, no capacity or counts | any authenticated user |
+   | `clinics_public` | Published clinics that have not ended, and a canceled one only to an account with a player who was on it (20261120000002); both price rates, no capacity or counts | any authenticated user |
    | `my_registrations` | The caller's own registrations (no court, no `canceled_by`), with her own note for Tara (`player_note`, decision 0039) | scoped by `owns_player()` |
    | `my_clinic_messages` | `everyone` messages for your clinics plus targeted messages sent to you | scoped to the caller |
    | `my_news` | Published news for your audience with a per-account read flag | scoped to the caller |

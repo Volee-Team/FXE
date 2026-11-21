@@ -3,6 +3,7 @@ ACTION NEEDED
 About this clinic
 Accept
 Action Needed
+Active
 Add
 Add a card
 Add a card on your Profile to register.
@@ -78,6 +79,7 @@ Couldn't save, still on this phone
 Court
 Court ${court}, side ${i < 3 ? 1 : 2}, spot ${(i % 3) + 1}
 Court \(court)
+Court \(court), side \(side), spot \(slot + 1)
 Court \(court): \(line)
 Court \(n)
 Data retention
@@ -162,6 +164,7 @@ Manage
 Manage payments in Stripe
 Mark all read
 Max players must be at least 1.
+Member
 Member price
 Members attended
 Members get 24-hour early access to all clinics
@@ -276,6 +279,7 @@ Request sent. Tara will let you know.
 Resolved
 Response Needed
 Review links
+Round
 Round \($0)
 Round \(round)
 Rounds
@@ -298,6 +302,8 @@ Send reminder
 Set \(entry.displayName)'s price
 Set price
 She will let you know as soon as possible if there is room in this clinic
+Show canceled
+Show inactive players
 Side \(side)
 Sign Out
 Sign in on the admin page first.
