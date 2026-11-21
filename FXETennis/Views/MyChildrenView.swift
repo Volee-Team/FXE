@@ -74,7 +74,16 @@ struct MyChildrenView: View {
                         PlaceholderRows()
                     } else if model.loaded {
                         if model.children.isEmpty {
+                            // On the raised card the children's list uses: on the
+                            // court backdrop this line failed the iOS 18 contrast
+                            // audit on the iPhone SE in either ink (2026-11-21), as
+                            // the clinic page's price line did.
                             EmptyLine("No children added yet.")
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.horizontal, Brand.Spacing.cardPadding)
+                                .padding(.vertical, Brand.Spacing.sm)
+                                .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.lg))
+                                .overlay(RoundedRectangle(cornerRadius: Brand.Radius.lg).stroke(Brand.hairline))
                                 .accessibilityIdentifier("children.empty")
                         } else {
                             VStack(spacing: 0) {
