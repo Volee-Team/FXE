@@ -11,6 +11,16 @@
 .env.*
 !.env.example
 
+# Key and certificate files (2026-11-21). The backup key's file name is the one
+# .github/backup-recipient.txt tells you to create; an APNs .p8 can push to
+# every member's phone. scripts/secret-scan.sh also fails if one is tracked.
+*.p8
+*.p12
+*.pem
+*.key
+*.mobileprovision
+fxe-backup-key.txt
+
 .DS_Store
 *.xcuserstate
 xcuserdata/
