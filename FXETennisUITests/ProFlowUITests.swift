@@ -209,6 +209,9 @@ final class ProFlowUITests: XCTestCase {
         }
         let out = app.buttons["profile.signOut"]
         XCTAssertTrue(out.waitForExistence(timeout: 15), "No sign-out control on Profile")
+        // Profile is taller than the screen since My Children (decision 0061):
+        // bring Sign Out up from under the floating tab bar before tapping it.
+        for _ in 0..<3 where out.frame.maxY > app.frame.height - 120 { app.swipeUp() }
         out.tap()
         XCTAssertTrue(app.textFields["auth.email"].waitForExistence(timeout: 15))
     }
