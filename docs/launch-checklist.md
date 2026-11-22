@@ -245,6 +245,8 @@ each checked by an independent reviewer or the sql-auditor, then merged on
 
 ## F. The CI Supabase project (Alex asked 2026-09-12; corrected 2026-09-13; decided 2026-09-18)
 
+**DONE 2026-11-21 (John): the `fxe-ci` project exists** in the Volee organization, on the Pro plan option 1 describes (about $10/month on top). Its three secrets and the variable are set, its auth settings match `supabase/config.toml` (pushed from a scratch copy linked to it, never from a checkout linked to production), and it holds seed data only. `ios-ui-tests` now runs the whole suite on iOS 26 and iOS 18 on every pull request that touches the app, its tests, the migrations or the seed (`scripts/ci-ui-tests.sh`), and a pass is that PR's UI test record (`scripts/check-ui-test-record.sh`). A Mac run recorded in `docs/ui-test-runs.log` still counts. The decision below is kept as history.
+
 **Decided 2026-09-18: option 3.** Alex: *"nahh unless we really need it no more money for now."* No CI project, no Pro plan. The 30 XCUITests run on a laptop before every TestFlight build and the run is pasted into the changelog entry for that build; the `ios-ui-tests` job stays green with its notice until the three settings exist, so switching later is a dashboard visit and two secrets, nothing in the repo. Revisit when the first paying member exists (D3 wants point-in-time recovery then anyway). The rest of this section is kept as the record of why.
 
 
@@ -264,6 +266,7 @@ What it needs from Alex once a project exists: its database password stays with 
 
 Rows stay in their tables with DONE; this is the short history.
 
+- 2026-11-21: F the CI Supabase project; the UI suite runs on every app PR.
 - 2026-11-11: C1, C2, C12 FXE on Volee LLC's account, push on the LLC's key.
 - 2026-11-06: G7 launched at the party.
 - 2026-10-12: I9 round five answered (decision 0040).
