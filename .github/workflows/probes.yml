@@ -478,9 +478,12 @@ jobs:
     outputs:
       passed: ${{ steps.run.outputs.passed }}
     # One project, one seed: two PRs resetting it at once would corrupt each
-    # other's run. Queue, never cancel.
+    # other's run. Queue, never cancel. A Dependabot or fork PR gets no
+    # secrets, so it never touches fxe-ci; it takes its own group, because
+    # GitHub keeps only ONE waiting job per group and three update PRs at
+    # once cancelled each other's (empty) runs on 2026-11-22.
     concurrency:
-      group: fxe-ci-supabase
+      group: ${{ (github.actor == 'dependabot[bot]' || github.event.pull_request.head.repo.fork) && format('no-ci-secrets-{0}', github.run_id) || 'fxe-ci-supabase' }}
       cancel-in-progress: false
     env:
       # Xcode 26 for the iOS 26 simulators; it runs the iOS 18.6 ones too.
