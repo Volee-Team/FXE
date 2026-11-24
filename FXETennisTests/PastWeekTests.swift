@@ -28,4 +28,15 @@ final class ClinicCompletedTests: XCTestCase {
     func testCanceledIsNeverCompleted() {
         XCTAssertFalse(ClinicCompleted.isCompleted(endsAt: hours(3), canceled: true, now: now))
     }
+
+    // Tara, 2026-11-23: an ask for a canceled clinic was still in Action
+    // Needed the next morning. A canceled clinic is closed, ended or not.
+    func testCanceledIsClosedBeforeAndAfterItsTime() {
+        XCTAssertTrue(ClinicCompleted.isClosed(endsAt: hours(-3), canceled: true, now: now))
+        XCTAssertTrue(ClinicCompleted.isClosed(endsAt: hours(15), canceled: true, now: now))
+    }
+    func testEndedIsClosedAndRunningIsNot() {
+        XCTAssertTrue(ClinicCompleted.isClosed(endsAt: now.addingTimeInterval(-60), canceled: false, now: now))
+        XCTAssertFalse(ClinicCompleted.isClosed(endsAt: hours(-0.5), canceled: false, now: now))
+    }
 }
