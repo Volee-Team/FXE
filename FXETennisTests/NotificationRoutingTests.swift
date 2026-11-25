@@ -184,6 +184,60 @@ final class NotificationRoutingTests: XCTestCase {
         XCTAssertEqual(NotificationDestination.adminClinic(clinicAdmin()).id, clinicId)
     }
 
+    // MARK: - the spot (Tara, 2026-11-23: "have it go directly to the actual notification spot")
+
+    func testEachAdminTypeLandsOnItsSection() {
+        XCTAssertEqual(AdminClinicFocus(notificationType: "LATE_REQUEST"), .lateRequests)
+        XCTAssertEqual(AdminClinicFocus(notificationType: "invitation_accepted"), .youreIn)
+        XCTAssertEqual(AdminClinicFocus(notificationType: "invitation_declined"), .waitlist)
+        XCTAssertEqual(AdminClinicFocus(notificationType: "player_canceled"), .canceled)
+        XCTAssertNil(AdminClinicFocus(notificationType: "clinic_message"))
+        XCTAssertNil(AdminClinicFocus(notificationType: nil))
+    }
+
+    func testTarasLateRequestOpensHerPageAtTheRequests() async {
+        let shown = await resolver(mine: nil, roster: nil, reads: Reads())
+            .destination(for: .clinic(clinicId), isAdmin: true, type: "LATE_REQUEST")
+        guard case .adminClinic(let clinic, let focus)? = shown else { return XCTFail("Not her clinic page: \(String(describing: shown))") }
+        XCTAssertEqual(clinic.id, clinicId)
+        XCTAssertEqual(focus, .lateRequests)
+    }
+
+    func testTarasCancellationViaRegistrationLandsOnCanceled() async {
+        let shown = await resolver(mine: nil, roster: clinicId, reads: Reads())
+            .destination(for: .registration(registrationId), isAdmin: true, type: "player_canceled")
+        guard case .adminClinic(_, let focus)? = shown else { return XCTFail("Not her clinic page") }
+        XCTAssertEqual(focus, .canceled)
+    }
+
+    private func player() -> PlayerSearchResult {
+        PlayerSearchResult(id: registrationId, firstName: "Gina", lastName: "Moreau", kind: "adult", age: nil,
+                           adultRating: 2.5, isMember: true, isActive: true, hasNotes: false,
+                           levelNote: nil, waiverAccepted: true)
+    }
+
+    /// A level request names a player: Tara lands on that player's page,
+    /// where Approve and Decline are. A player never asks for anyone.
+    func testALevelRequestOpensThePlayersPageForTaraOnly() async {
+        let p = player()
+        var asked = 0
+        let base = resolver(mine: nil, roster: nil, reads: Reads())
+        var withPlayer = base
+        withPlayer.adminPlayer = { id in asked += 1; return id == p.id ? p : nil }
+        let tara = await withPlayer.destination(for: .player(p.id), isAdmin: true, type: "level_request")
+        XCTAssertEqual(tara, .adminPlayer(p))
+        let member = await withPlayer.destination(for: .player(p.id), isAdmin: false, type: "clinic_message")
+        XCTAssertNil(member, "A player's message from Tara is a note")
+        XCTAssertEqual(asked, 1, "A player must never ask for a player page")
+        XCTAssertEqual(NotificationTarget(entityType: "player", entityId: p.id), .player(p.id))
+    }
+
+    func testATappedPushCarriesItsType() {
+        let tap = PushTap(userInfo: ["type": "LATE_REQUEST", "entity_type": "clinic",
+                                     "entity_id": clinicId.uuidString.lowercased()])
+        XCTAssertEqual(tap.type, "LATE_REQUEST")
+    }
+
     // MARK: - a push while the app is open, and a tapped push (review, 2026-09-27)
 
     /// The rule: a banner shows only while someone is signed in. On a shared

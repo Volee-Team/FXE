@@ -195,11 +195,14 @@ enum InvitationActions {
         content.sound = .default
         var info: [String: String] = [:]
         if let id = tap.notificationId { info["notification_id"] = id.uuidString.lowercased() }
+        if let type = tap.type { info["type"] = type }
         switch tap.target {
         case .registration(let id)?:
             info["entity_type"] = "registration"; info["entity_id"] = id.uuidString.lowercased()
         case .clinic(let id)?:
             info["entity_type"] = "clinic"; info["entity_id"] = id.uuidString.lowercased()
+        case .player(let id)?:
+            info["entity_type"] = "player"; info["entity_id"] = id.uuidString.lowercased()
         case nil:
             break
         }
