@@ -11,6 +11,11 @@
 -- New York, whichever of the two she took first. Nothing below was read off
 -- the function.
 --
+-- Switched off on hosted since 2026-11-25 (Tara, 2026-11-24: "let's allow them
+-- to register for both 105's. I'll control whether or not they do both or
+-- not."). app_settings.double_105_rule_enabled: everything above is the rule
+-- while it is on; the last section is the rule while it is off.
+--
 -- Expected: every row reads PASS.
 
 begin;
@@ -33,6 +38,8 @@ declare
   PRIYA_P constant uuid := 'a0000000-0000-0000-0000-000000000005';
   function_exists boolean;
 begin
+  -- The rule ON, whatever the seed left; a missing row is on as well.
+  update public.app_settings set value = 'true' where key = 'double_105_rule_enabled';
   -- ------------------------------------------ her example, as literals
   insert into _probe_result values ('taras_example_opens_friday_430',
     '2026-09-25 16:30',
@@ -236,6 +243,41 @@ begin
 
   perform set_config('role', 'postgres', true);
 
+  -- ---------------------------------------- the rule OFF (2026-11-25)
+  -- Tara, 2026-11-24. Priya is a non-member. On z's day (far_day + 2) she
+  -- takes the first 105 and waits on it, as the player in Tara's screenshot
+  -- did; the second the same New York day, well outside 48 hours, is refused
+  -- while the rule is on and taken once it is off.
+  perform set_config('request.jwt.claims', json_build_object('sub', PRIYA)::text, true);
+  perform set_config('role', 'authenticated', true);
+  r := public.register_for_clinic(z1, PRIYA_P);
+  insert into _probe_result values ('off_setup_first_105_is_a_waitlist_spot', 'pool', r.status::text);
+  begin
+    perform public.register_for_clinic(z2, PRIYA_P); v := 'registered';
+  exception when others then v := sqlerrm; end;
+  insert into _probe_result values ('on_waitlist_spot_blocks_the_second', 'back_to_back_105', v);
+
+  perform set_config('role', 'postgres', true);
+  update public.app_settings set value = 'false' where key = 'double_105_rule_enabled';
+  perform set_config('role', 'authenticated', true);
+  begin
+    r := public.register_for_clinic(z2, PRIYA_P); v := r.status::text;
+  exception when others then v := sqlerrm; end;
+  insert into _probe_result values ('off_second_105_same_day_is_a_waitlist_spot', 'pool', v);
+
+  -- A missing row is the rule on, so losing the row never drops it silently.
+  -- Rob holds z1 from step 7.
+  perform set_config('role', 'postgres', true);
+  delete from public.app_settings where key = 'double_105_rule_enabled';
+  perform set_config('request.jwt.claims', json_build_object('sub', ROB)::text, true);
+  perform set_config('role', 'authenticated', true);
+  begin
+    perform public.register_for_clinic(z2, ROB_P); v := 'registered';
+  exception when others then v := sqlerrm; end;
+  insert into _probe_result values ('missing_setting_means_on', 'back_to_back_105', v);
+
+  perform set_config('role', 'postgres', true);
+
   -- 10. Grants: the helpers are internal (only register_for_clinic calls them).
   insert into _probe_result values ('is_105_is_internal', 'false false',
     has_function_privilege('anon', 'public.is_105(text, text)', 'EXECUTE')::text || ' ' ||
@@ -243,6 +285,9 @@ begin
   insert into _probe_result values ('b2b_helper_is_internal', 'false false',
     has_function_privilege('anon', 'public.back_to_back_105_opens_at(timestamptz, timestamptz)', 'EXECUTE')::text || ' ' ||
     has_function_privilege('authenticated', 'public.back_to_back_105_opens_at(timestamptz, timestamptz)', 'EXECUTE')::text);
+  insert into _probe_result values ('switch_helper_is_internal', 'false false',
+    has_function_privilege('anon', 'public.double_105_rule_enabled()', 'EXECUTE')::text || ' ' ||
+    has_function_privilege('authenticated', 'public.double_105_rule_enabled()', 'EXECUTE')::text);
 end $$;
 
 select check_name, expected, actual,
