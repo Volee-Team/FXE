@@ -280,3 +280,5 @@ update public.app_settings set value = '' where key = 'payments_enabled_at';
 -- level_approval.sql and testAdminK keep testing the gate Tara will switch
 -- back on; level_approval.sql also tests it switched off.
 update public.app_settings set value = 'true' where key = 'level_check_enabled';
+-- The double-105 rule likewise (20261125000001): off on hosted, on here so it stays tested.
+update public.app_settings set value = 'true' where key = 'double_105_rule_enabled';

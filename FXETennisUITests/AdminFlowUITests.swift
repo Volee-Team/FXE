@@ -178,8 +178,12 @@ final class AdminFlowUITests: XCTestCase {
     func testAdminD_CancelsAClinicWithConfirmation() {
         app.launch()
         signIn(as: admin)
-        app.buttons["Manage"].tap()
         let cards = app.descendants(matching: .any).matching(identifier: "admin.clinic.card")
+        // The same retry as openAdminClinic: the iOS 26 tab bar drops a first
+        // tap now and then (this test failed exactly so on 2026-11-20).
+        let manage = app.tabBars.buttons["Manage"].exists ? app.tabBars.buttons["Manage"] : app.buttons["Manage"].firstMatch
+        manage.tap()
+        if !cards.firstMatch.waitForExistence(timeout: 5) { manage.tap() }
         XCTAssertTrue(cards.firstMatch.waitForExistence(timeout: 20), "No clinics on Manage")
         let last = cards.element(boundBy: cards.count - 1)
         XCTAssertTrue(scrollUntilHittable(last), "Could not reach the last clinic card")
@@ -198,9 +202,22 @@ final class AdminFlowUITests: XCTestCase {
         XCTAssertTrue(confirm.waitForExistence(timeout: 10), "No confirmation dialog")
         confirm.tap()
 
-        // Back on the list, which reloaded, with a Canceled chip somewhere.
-        XCTAssertTrue(app.staticTexts["Canceled"].firstMatch.waitForExistence(timeout: 20),
-                      "List did not show a Canceled chip after cancel")
+        // Back on the list, which reloaded. Since 2026-11-20 a canceled
+        // clinic waits behind Show canceled, as on the laptop (Tara: "I can't
+        // see the canceled coed 105 from my desktop, but I can see it on my
+        // phone"). The switch is remembered on the device, so put it off
+        // first whatever an earlier run left.
+        let toggle = app.switches["admin.showCanceled"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 20), "No Show canceled switch after cancel")
+        XCTAssertTrue(scrollUntilHittable(toggle), "Could not reach Show canceled")
+        func flip() { toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap() }
+        if (toggle.value as? String) == "1" { flip() }
+        XCTAssertFalse(app.staticTexts["Canceled"].firstMatch.waitForExistence(timeout: 3),
+                       "A canceled clinic showed with Show canceled off")
+        flip()
+        XCTAssertTrue(app.staticTexts["Canceled"].firstMatch.waitForExistence(timeout: 10),
+                      "Show canceled did not bring back the Canceled chip")
+        flip()  // leave it off, the default
     }
 
     // MARK: - C2. guests, the 105 rounds and the clinic's price, on the phone

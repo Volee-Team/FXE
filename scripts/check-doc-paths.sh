@@ -72,13 +72,12 @@ REFS="$TMP/refs"; STATUS="$TMP/status"; FILTERED="$TMP/filtered"
 
 # ---------------------------------------------------------------- pass 1 ----
 # Every (file, line, token) worth checking, one per line, tab separated.
-find . -name '*.md' \
-    -not -path '*/node_modules/*' \
-    -not -path './.git/*' \
-    -not -path './.build/*' \
-    -not -path './.claude/worktrees/*' \
-    -not -path './docs/prompt-log/*' \
-  | sed 's#^\./##' | grep -v '^docs/copy-approved\.txt$' | sort > "$TMP/files"
+# Docs git carries (tracked or staged), which is what a clone and CI see. It
+# was `find`, so an untracked folder in one checkout (2026-11-25: someone's
+# practices-kit/) failed a push that did not carry it.
+git ls-files -- '*.md' \
+  | grep -v -e 'node_modules/' -e '^\.build/' -e '^\.claude/worktrees/' -e '^docs/prompt-log/' \
+  | while IFS= read -r f; do [ -f "$f" ] && printf '%s\n' "$f"; done | sort > "$TMP/files"
 
 while IFS= read -r f; do
   # A doc that describes ANOTHER repo (docs/dev-practices-for-john.md is

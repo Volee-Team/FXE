@@ -5,8 +5,11 @@
 -- next week makes drafts, and canceling an unwanted copy is how Tara drops it;
 -- before 20260929000001 `clinics_public` listed every canceled clinic, so a
 -- draft nobody had seen turned up in the list wearing a Canceled chip. A
--- clinic that WAS published and is then canceled must still show Canceled:
--- a player holding a spot needs to see that.
+-- clinic that WAS published and is then canceled shows Canceled only to an
+-- account with a player who was on it (signed up, in any state): they need to
+-- see that. To everyone else it is gone (Tara, 2026-11-20, a duplicate Black
+-- Friday 105 she canceled, nobody on it, sitting beside the real one: "Is
+-- there a way to get rid of that? It's just confusing").
 --
 -- Expected: every row reads PASS.
 
@@ -19,7 +22,9 @@ do $$
 declare
   TARA  constant uuid := '11111111-1111-1111-1111-111111111111';
   MARIA constant uuid := '22222222-2222-2222-2222-222222222222';
-  draft public.clinics; shown public.clinics; n int; stamped timestamptz;
+  KEN   constant uuid := '33333333-3333-3333-3333-333333333333';
+  MARIA_P constant uuid := 'a0000000-0000-0000-0000-000000000001';
+  draft public.clinics; shown public.clinics; held public.clinics; n int; stamped timestamptz;
 begin
   perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
   perform set_config('role', 'authenticated', true);
@@ -55,8 +60,28 @@ begin
   perform set_config('role', 'authenticated', true);
   select count(*) into n from public.clinics_public where id = draft.id;
   insert into _probe_result values ('canceled_draft_invisible_to_player', '0', n::text);
-  select count(*) into n from public.clinics_public where id = shown.id and status = 'canceled';
-  insert into _probe_result values ('canceled_published_clinic_still_shown', '1', n::text);
+  -- Nobody was on it: gone for her too.
+  select count(*) into n from public.clinics_public where id = shown.id;
+  insert into _probe_result values ('canceled_clinic_nobody_was_on_is_gone', '0', n::text);
+
+  -- One Maria held a spot in, then canceled by Tara: Maria still sees it,
+  -- marked Canceled; Ken, never on it, does not.
+  perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
+  held := public.admin_upsert_clinic(null, 'Probe Held Then Canceled', 'coed',
+            now() + interval '5 days', 60, 8, null, null, null, null, null);
+  perform public.publish_clinic(held.id);
+  perform set_config('role', 'postgres', true);
+  insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
+  values (held.id, MARIA_P, 'in', 'self', 1800, true, 60);
+  perform set_config('role', 'authenticated', true);
+  perform public.cancel_clinic(held.id);
+  perform set_config('request.jwt.claims', json_build_object('sub', MARIA)::text, true);
+  select count(*) into n from public.clinics_public where id = held.id and status = 'canceled';
+  insert into _probe_result values ('canceled_clinic_still_shown_to_who_was_on_it', '1', n::text);
+  perform set_config('request.jwt.claims', json_build_object('sub', KEN)::text, true);
+  select count(*) into n from public.clinics_public where id = held.id;
+  insert into _probe_result values ('canceled_clinic_gone_for_who_was_not', '0', n::text);
+  perform set_config('request.jwt.claims', json_build_object('sub', MARIA)::text, true);
 
   -- A plain draft stays invisible, as before.
   perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
