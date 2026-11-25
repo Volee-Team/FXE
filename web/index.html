@@ -1732,7 +1732,11 @@ document.addEventListener("click", async (e) => {
     }
     const box = b.nextElementSibling && b.nextElementSibling.classList.contains("cancel-message") ? b.nextElementSibling : null;
     const message = box ? box.value.trim() : "";
-    return run(() => call("cancel_clinic", { p_clinic: b.dataset.cancelclinic, p_message: message || null }));
+    // p_message only when she wrote one: the one-argument call keeps working
+    // against a database that has not had 20261125000002 yet.
+    return run(() => call("cancel_clinic", message
+      ? { p_clinic: b.dataset.cancelclinic, p_message: message }
+      : { p_clinic: b.dataset.cancelclinic }));
   }
   if (b.dataset.remove) {
     // Out of the clinic, the same RPC the phone's Remove uses; kept as

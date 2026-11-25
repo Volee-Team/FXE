@@ -122,20 +122,24 @@ begin
       || ((select count(*) from public.notifications) - before)::text);
 
   -- ===== 4. Approve a late request for a canceled clinic: refused; nothing
-  --          placed, the request stays as the cancel left it (declined),
-  --          nobody told.
+  --          placed, the request still pending, nobody told. req_rained2 is
+  --          one left waiting on a clinic canceled before 20261125000002.
   select count(*) into before from public.notifications;
   perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
   perform set_config('role', 'authenticated', true);
   begin
-    perform public.resolve_late_request(req_rained, true); err := 'approved';
+    perform public.resolve_late_request(req_rained2, true); err := 'approved';
   exception when others then err := sqlerrm; end;
   perform set_config('role', 'postgres', true);
   insert into _probe_result values ('approve_on_canceled_is_refused', 'clinic_canceled', err);
-  insert into _probe_result values ('approve_on_canceled_moves_nothing', 'declined|0|0',
-    (select status::text from public.late_requests where id = req_rained) || '|'
-      || (select count(*) from public.registrations where clinic_id = rained and player_id = PRIYA_P)::text || '|'
+  insert into _probe_result values ('approve_on_canceled_moves_nothing', 'pending|0|0',
+    (select status::text from public.late_requests where id = req_rained2) || '|'
+      || (select count(*) from public.registrations where clinic_id = rained and player_id = DANA_P)::text || '|'
       || ((select count(*) from public.notifications) - before)::text);
+
+  -- The request that was waiting when she canceled was closed by the cancel.
+  insert into _probe_result values ('cancel_closed_the_waiting_request', 'declined',
+    (select status::text from public.late_requests where id = req_rained));
 
   -- ===== 5. Decline a late request for a canceled clinic: allowed.
   perform set_config('role', 'authenticated', true);

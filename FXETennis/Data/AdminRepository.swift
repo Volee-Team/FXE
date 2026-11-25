@@ -50,6 +50,8 @@ private struct NoteParams: Encodable { let p_player: UUID; let p_body: String }
 private struct MembershipParams: Encodable { let p_player: UUID; let p_is_member: Bool }
 private struct ActiveParams: Encodable { let p_player: UUID; let p_active: Bool }
 
+/// `p_message` is left out when nil (synthesized Encodable), so a cancel
+/// without a message is the one-argument call.
 private struct CancelClinicParams: Encodable { let p_clinic: UUID; let p_message: String? }
 
 private struct SetPaidParams: Encodable {
@@ -322,7 +324,9 @@ enum AdminRepository {
     /// and kept on the clinic's board. Blank means none (the server trims).
     static func cancelClinic(_ clinic: UUID, message: String? = nil) async throws {
         _ = try await supabase
-            .rpc("cancel_clinic", params: CancelClinicParams(p_clinic: clinic, p_message: message))
+            .rpc("cancel_clinic", params: CancelClinicParams(
+                p_clinic: clinic,
+                p_message: message.flatMap { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0 }))
             .execute()
     }
 

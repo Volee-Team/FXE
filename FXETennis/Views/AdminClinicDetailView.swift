@@ -357,7 +357,9 @@ struct AdminClinicDetailView: View {
                         await onChanged()
                         dismiss()
                     } catch {
-                        cancelError = "That didn't save. Check your connection and try again."
+                        cancelError = String(describing: error).contains("message_too_long")
+                            ? "Keep the message under 500 characters."
+                            : "That didn't save. Check your connection and try again."
                     }
                 }
             }

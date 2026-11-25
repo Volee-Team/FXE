@@ -28,7 +28,7 @@ declare
   ROB    constant uuid := '44444444-4444-4444-4444-444444444444';
   MARIA_P constant uuid := 'a0000000-0000-0000-0000-000000000001';
   ROB_P   constant uuid := 'a0000000-0000-0000-0000-000000000003';
-  withmsg public.clinics; plain public.clinics; n int; t text;
+  withmsg public.clinics; plain public.clinics; fresh public.clinics; n int; t text;
 begin
   perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
   perform set_config('role', 'authenticated', true);
@@ -90,17 +90,56 @@ begin
   select count(*) into n from public.clinics where id = plain.id and status = 'canceled';
   insert into _probe_result values ('one_argument_call_still_cancels', '1', n::text);
 
-  -- Only Tara cancels.
+  -- Over 500 characters is refused, and nothing moves. A message of line
+  -- breaks only is no message.
+  perform set_config('role', 'authenticated', true);
+  fresh := public.admin_upsert_clinic(null, 'Probe Long Message', 'coed',
+             now() + interval '2 hours', 60, 8, null, null, null, null, null);
+  perform public.publish_clinic(fresh.id);
+  begin
+    perform public.cancel_clinic(fresh.id, repeat('x', 501));
+    t := 'ALLOWED';
+  exception when others then
+    t := sqlerrm;
+  end;
+  perform set_config('role', 'postgres', true);
+  insert into _probe_result values ('over_500_characters_is_refused', 'message_too_long|published',
+    t || '|' || (select status::text from public.clinics where id = fresh.id));
+  perform set_config('role', 'authenticated', true);
+  perform public.cancel_clinic(fresh.id, E'\n\n  \t');
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from public.clinic_messages where clinic_id = fresh.id;
+  insert into _probe_result values ('line_breaks_only_post_nothing', '0', n::text);
+
+  -- Only Tara cancels: a player's call on a live clinic with a waiting
+  -- request changes nothing (the state, not just the error).
+  perform set_config('role', 'authenticated', true);
+  fresh := public.admin_upsert_clinic(null, 'Probe Player Tries', 'coed',
+             now() + interval '2 hours', 60, 8, null, null, null, null, null);
+  perform public.publish_clinic(fresh.id);
+  perform set_config('role', 'postgres', true);
+  insert into public.late_requests (clinic_id, player_id, message) values (fresh.id, ROB_P, null);
   perform set_config('request.jwt.claims', json_build_object('sub', MARIA)::text, true);
   perform set_config('role', 'authenticated', true);
   begin
-    perform public.cancel_clinic(withmsg.id, 'hi');
+    perform public.cancel_clinic(fresh.id, 'hi');
     t := 'ALLOWED';
   exception when others then
-    t := 'REFUSED';
+    t := sqlerrm;
   end;
   perform set_config('role', 'postgres', true);
-  insert into _probe_result values ('a_player_cannot_cancel', 'REFUSED', t);
+  insert into _probe_result values ('a_player_cannot_cancel', 'not_authorized|published|pending|0',
+    t || '|' || (select status::text from public.clinics where id = fresh.id)
+      || '|' || (select status from public.late_requests where clinic_id = fresh.id)
+      || '|' || (select count(*) from public.clinic_messages where clinic_id = fresh.id)::text);
+
+  -- One cancel_clinic, the two-argument one, never callable by anon.
+  insert into _probe_result values ('the_one_argument_function_is_gone', 'gone',
+    case when to_regprocedure('public.cancel_clinic(uuid)') is null then 'gone' else 'present' end);
+  select count(*) into n from pg_proc where proname = 'cancel_clinic' and pronamespace = 'public'::regnamespace;
+  insert into _probe_result values ('exactly_one_cancel_clinic', '1', n::text);
+  insert into _probe_result values ('anon_cannot_cancel', 'f',
+    has_function_privilege('anon', 'public.cancel_clinic(uuid,text)', 'execute')::text::char(1));
 end $$;
 
 select check_name,

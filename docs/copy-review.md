@@ -1056,6 +1056,7 @@ From Tara's next-update note (2026-11-23): "when canceling, allow me to send a m
 - Send, phone (Message Players and the Players tab's message): `Send this message?`, then `To {Everyone / You're In! / Waitlist / Response Needed / Unpaid / the player's name}:`, a blank line, and her message; buttons `Send` and `Keep editing`.
 - Send, laptop: the first Send shows the same recap in the dialog and becomes `Yes, send`. Changing the message or who gets it goes back to `Send`.
 - A roster name (You're In!, Waitlist, Response Needed) is now a button that opens Message Players on that player. No new words.
+- Phone, a cancel message over 500 characters: `Keep the message under 500 characters.` (in the existing `Couldn't cancel` alert; an assigned string, so not in `docs/copy-approved.txt`). The laptop's box stops at 500.
 
 ## The rule going forward
 
