@@ -1,5 +1,5 @@
 ========================================================================
-@supabase/supabase-js 2.117.2 (MIT)
+@supabase/supabase-js 2.119.2 (MIT)
 ========================================================================
 MIT License
 
@@ -24,7 +24,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ========================================================================
-@supabase/auth-js 2.117.2 (MIT)
+@supabase/auth-js 2.119.2 (MIT)
 ========================================================================
 MIT License
 
@@ -65,7 +65,7 @@ OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 
 ========================================================================
-@supabase/functions-js 2.117.2 (MIT)
+@supabase/functions-js 2.119.2 (MIT)
 ========================================================================
 MIT License
 
@@ -90,7 +90,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ========================================================================
-@supabase/postgrest-js 2.117.2 (MIT)
+@supabase/postgrest-js 2.119.2 (MIT)
 ========================================================================
 MIT License
 
@@ -115,7 +115,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ========================================================================
-@supabase/realtime-js 2.117.2 (MIT)
+@supabase/realtime-js 2.119.2 (MIT)
 ========================================================================
 MIT License
 
@@ -166,7 +166,7 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ========================================================================
-@supabase/storage-js 2.117.2 (MIT)
+@supabase/storage-js 2.119.2 (MIT)
 ========================================================================
 MIT License
 
