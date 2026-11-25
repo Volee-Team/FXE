@@ -55,9 +55,40 @@ psql -q -c "delete from public.notifications where entity_id = '$CLINIC';
             delete from public.clinics where id = '$CLINIC';" >/dev/null
 rm -rf "$TMP"
 
+# The other order: Tara's cancel held open 3 s, Rob asks 1 s in. The lock
+# makes him wait and then read "canceled", so no request is left behind
+# (without it his request landed, pending, on a canceled clinic).
+CLINIC2=$(psql -tAqc "
+  insert into public.clinics (name, audience, category, description, starts_at, ends_at,
+      member_opens_at, public_opens_at, closes_at, internal_capacity, status, duration_minutes, published_at)
+  values ('Probe Cancel Then Late Request', 'coed', 'Clinic', 'probe', now() + interval '3 hours', now() + interval '4 hours',
+          now() - interval '2 days', now() - interval '1 day', now() - interval '1 hour', 8, 'published', 60, now() - interval '2 days')
+  returning id;" | head -1 | tr -d '[:space:]')
+TMP=$(mktemp -d)
+as_user "$TARA" "select 'canceled ' || (public.cancel_clinic('$CLINIC2', 'Rain')).status;" 3 > "$TMP/b" &
+B=$!
+sleep 1
+as_user "$ROB" "select 'requested ' || (public.request_late_spot('$CLINIC2', '$ROB_P', 'probe')).status;" 0 > "$TMP/a"
+wait $B
+CLINIC2_NOW=$(psql -tAc "select status from public.clinics where id = '$CLINIC2';" | tr -d '[:space:]')
+REQUESTS2=$(psql -tAc "select coalesce(string_agg(status, ','), 'none') from public.late_requests where clinic_id = '$CLINIC2';" | tr -d '[:space:]')
+echo "  then the other order:"
+echo "  Tara's cancel : $(grep -oE 'canceled [a-z_]+|ERROR:.*' "$TMP/b" | head -1)"
+echo "  Rob's request : $(grep -oE 'requested [a-z_]+|ERROR:.*' "$TMP/a" | head -1)"
+echo "  clinic now    : $CLINIC2_NOW   (must be canceled)"
+echo "  requests      : $REQUESTS2   (must be none)"
+echo ""
+psql -q -c "delete from public.notifications where entity_id = '$CLINIC2';
+            delete from public.clinic_messages where clinic_id = '$CLINIC2';
+            delete from public.late_requests where clinic_id = '$CLINIC2';
+            delete from public.clinics where id = '$CLINIC2';" >/dev/null
+rm -rf "$TMP"
+
 FAIL=0
 [ "$CLINIC_NOW" = "canceled" ] || { echo "FAIL: the clinic is $CLINIC_NOW after the cancel"; FAIL=1; }
 [ "$REQUESTS" = "declined" ]   || { echo "FAIL: a request racing the cancel was left $REQUESTS"; FAIL=1; }
 [ "$NOTICES" = "1" ]           || { echo "FAIL: Rob got $NOTICES cancel notices, not 1"; FAIL=1; }
-[ "$FAIL" -eq 0 ] && echo "PASS: a late request that races Tara's cancel is seen by it, told and closed"
+[ "$CLINIC2_NOW" = "canceled" ] || { echo "FAIL: the second clinic is $CLINIC2_NOW after the cancel"; FAIL=1; }
+[ "$REQUESTS2" = "none" ]       || { echo "FAIL: a request made during the cancel was left $REQUESTS2"; FAIL=1; }
+[ "$FAIL" -eq 0 ] && echo "PASS: a late request racing Tara's cancel, either way round, is never left waiting"
 exit $FAIL

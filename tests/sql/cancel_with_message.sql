@@ -106,10 +106,53 @@ begin
   insert into _probe_result values ('over_500_characters_is_refused', 'message_too_long|published',
     t || '|' || (select status::text from public.clinics where id = fresh.id));
   perform set_config('role', 'authenticated', true);
+  -- Its own clinic: with the cap missing, the one above is already canceled.
+  fresh := public.admin_upsert_clinic(null, 'Probe Line Breaks', 'coed',
+             now() + interval '2 hours', 60, 8, null, null, null, null, null);
+  perform public.publish_clinic(fresh.id);
   perform public.cancel_clinic(fresh.id, E'\n\n  \t');
   perform set_config('role', 'postgres', true);
   select count(*) into n from public.clinic_messages where clinic_id = fresh.id;
   insert into _probe_result values ('line_breaks_only_post_nothing', '0', n::text);
+
+  -- A deleted account with a waiting request is not told; the request is
+  -- still closed.
+  perform set_config('role', 'authenticated', true);
+  fresh := public.admin_upsert_clinic(null, 'Probe Deleted Asker', 'coed',
+             now() + interval '2 hours', 60, 8, null, null, null, null, null);
+  perform public.publish_clinic(fresh.id);
+  perform set_config('role', 'postgres', true);
+  insert into public.late_requests (clinic_id, player_id, message) values (fresh.id, ROB_P, null);
+  update public.accounts set deleted_at = now() where id = ROB;
+  perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
+  perform set_config('role', 'authenticated', true);
+  perform public.cancel_clinic(fresh.id);
+  perform set_config('role', 'postgres', true);
+  insert into _probe_result values ('a_deleted_account_is_not_told', '0|declined',
+    (select count(*) from public.notifications where account_id = ROB and entity_id = fresh.id)::text
+      || '|' || (select status from public.late_requests where clinic_id = fresh.id));
+  update public.accounts set deleted_at = null where id = ROB;
+
+  -- One notice per account: two of Maria's children on a juniors clinic,
+  -- one with a spot and one with a waiting request.
+  perform set_config('role', 'authenticated', true);
+  fresh := public.admin_upsert_clinic(null, 'Probe One Notice', 'juniors',
+             now() + interval '2 hours', 60, 8, null, null, null, null, null);
+  perform public.publish_clinic(fresh.id);
+  perform set_config('role', 'postgres', true);
+  insert into public.players (id, account_id, kind, first_name, last_name, date_of_birth)
+  values ('a0000000-0000-0000-0000-0000000000f1', MARIA, 'junior', 'Probe', 'Kid One', '2015-03-01'),
+         ('a0000000-0000-0000-0000-0000000000f2', MARIA, 'junior', 'Probe', 'Kid Two', '2017-03-01');
+  insert into public.registrations (clinic_id, player_id, status)
+  values (fresh.id, 'a0000000-0000-0000-0000-0000000000f1', 'in');
+  insert into public.late_requests (clinic_id, player_id, message)
+  values (fresh.id, 'a0000000-0000-0000-0000-0000000000f2', null);
+  perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
+  perform set_config('role', 'authenticated', true);
+  perform public.cancel_clinic(fresh.id);
+  perform set_config('role', 'postgres', true);
+  select count(*) into n from public.notifications where account_id = MARIA and entity_id = fresh.id and type = 'clinic_canceled';
+  insert into _probe_result values ('one_notice_per_account', '1', n::text);
 
   -- Only Tara cancels: a player's call on a live clinic with a waiting
   -- request changes nothing (the state, not just the error).
