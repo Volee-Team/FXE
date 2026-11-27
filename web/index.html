@@ -1534,7 +1534,7 @@ async function loadClinics() {
       <div class="row">
         <span class="grow"><span class="name">${esc(c.name)}</span><br>
           <span class="muted">${fmtDate(c.starts_at)}<br>${c.duration_minutes} min,
-          <span data-price-line="${c.id}">${priceLine(c)}</span></span>${c.rain_half ? ` <span class="chip rain" data-rain-chip="${c.id}">Rain: half price</span>` : ""}${c.status !== "canceled" && new Date(c.ends_at) < new Date() ? ` <span class="chip done" data-completed="${c.id}">Completed</span>` : ""}</span>
+          <span data-price-line="${c.id}">${priceLine(c)}</span></span>${c.rain_half ? ` <span class="chip rain" data-rain-chip="${c.id}">Rain: half price</span>` : ""}${c.is_private ? ` <span class="chip guest" data-private-chip="${c.id}">Private</span>` : ""}${c.status !== "canceled" && new Date(c.ends_at) < new Date() ? ` <span class="chip done" data-completed="${c.id}">Completed</span>` : ""}</span>
         <span class="muted" data-taken="${c.id}">${group("in").length + guests.length}/${c.internal_capacity}</span>
         <button class="small" data-edit="${c.id}">Edit</button>
         <button class="small" data-message="${c.id}">Message</button>
@@ -1545,6 +1545,7 @@ async function loadClinics() {
         ${c.status !== "canceled" ? `<button class="small" data-price="${c.id}">Change price</button>` : ""}
         ${c.status !== "canceled" ? `<button class="small" data-rain="${c.id}" data-on="${c.rain_half ? "" : "1"}">${c.rain_half ? "Back to full price" : "Charge half (rain)"}</button>` : ""}
         ${c.status !== "canceled" ? `<a class="button small" href="sheet.html?clinic=${c.id}" target="_blank" rel="noopener">Court sheet</a>` : ""}
+        ${c.status !== "canceled" ? `<label class="muted" style="display:inline-flex;align-items:center;gap:6px;margin:0"><input type="checkbox" data-private="${c.id}"${c.is_private ? " checked" : ""} style="width:auto;margin:0"> Private: only people you invite or add see it</label>` : ""}
         ${zelleOn && unpaidIn(c).length ? `<button class="small" data-remind="${c.id}" data-n="${unpaidIn(c).length}">Remind unpaid (${unpaidIn(c).length})</button>` : ""}
         ${c.status === "draft" ? `<button class="small primary" data-publish="${c.id}">Publish</button>` : ""}
         ${c.status !== "canceled" ? `<button class="small" data-cancelclinic="${c.id}">Cancel clinic</button>` : `<span class="chip canceled">Canceled</span>`}
@@ -1605,6 +1606,19 @@ document.addEventListener("change", async (e) => {
     if (error) throw error;
     await loadClinics();
   } catch (err) { note($("msg"), friendly(err)); sel.disabled = false; }
+});
+
+// Private (decision 0062, Tara 2026-11-23: "private events/clinics and allow
+// me to privately invite people to that clinic"): listed only to who she
+// invites or adds. Switching tells nobody, so no question first.
+document.addEventListener("change", async (e) => {
+  const box = e.target.closest("input[data-private]"); if (!box) return;
+  box.disabled = true;
+  try {
+    const { error } = await sb.rpc("admin_set_clinic_private", { p_clinic: box.dataset.private, p_private: box.checked });
+    if (error) throw error;
+    await loadClinics();
+  } catch (err) { note($("msg"), friendly(err)); box.checked = !box.checked; box.disabled = false; }
 });
 
 // A guest's court, the same five courts (admin_set_guest_court).

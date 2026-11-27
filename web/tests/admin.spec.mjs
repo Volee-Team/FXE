@@ -1586,3 +1586,53 @@ test.describe("one player's price and the 105 rounds", () => {
     }
   });
 });
+
+// Decision 0062. Tara, 2026-11-23: "private events/clinics and allow me to
+// privately invite people to that clinic for payment". The switch on the
+// card, the chip beside the name, and what a member who is not on it sees
+// (the database decides that; tests/sql/private_clinics.sql pins the rest).
+test.describe("private clinics", () => {
+  test("the Private switch hides the clinic from members not on it, and the card says so", async ({ page, request }) => {
+    const db = service(request);
+    const env = stackEnv();
+    const clinic = await db.insert("clinics", {
+      name: "Browser Private Event", audience: "coed", category: "Clinic", description: "browser test",
+      starts_at: daysAgo(-2), ends_at: daysAgo(-2, 1),
+      member_opens_at: daysAgo(3), public_opens_at: daysAgo(2),
+      internal_capacity: 8, status: "published", duration_minutes: 60,
+    });
+    // What Ken, a member who is not on it, is listed.
+    const ken = await (await request.post(`${env.API_URL}/auth/v1/token?grant_type=password`,
+      { headers: { apikey: env.ANON_KEY }, data: { email: "ken@fxe.test", password: "password" } })).json();
+    const kenSees = async () => (await (await request.get(`${env.API_URL}/rest/v1/clinics_public?id=eq.${clinic.id}&select=id`,
+      { headers: { apikey: env.ANON_KEY, Authorization: `Bearer ${ken.access_token}` } })).json()).length;
+    try {
+      await signIn(page, TARA);
+      const card = page.locator("#clinics .card", { hasText: "Browser Private Event" });
+      const chip = card.locator(`[data-private-chip="${clinic.id}"]`);
+      const box = card.getByLabel("Private: only people you invite or add see it");
+      await expect(box).not.toBeChecked({ timeout: 15_000 });
+      await expect(chip).toHaveCount(0);
+      expect(await kenSees()).toBe(1);
+
+      await box.check();
+      await expect(chip).toHaveText("Private", { timeout: 15_000 });
+      await expect(box).toBeChecked();
+      expect((await db.get(`clinics?id=eq.${clinic.id}&select=is_private`))[0].is_private).toBe(true);
+      expect(await kenSees()).toBe(0);
+      // Switching tells nobody.
+      expect(await db.get(`notifications?entity_id=eq.${clinic.id}&select=id`)).toEqual([]);
+
+      // Still there after a reload: the page reads it from the server.
+      await page.reload();
+      await expect(chip).toHaveText("Private", { timeout: 15_000 });
+
+      await box.uncheck();
+      await expect(chip).toHaveCount(0, { timeout: 15_000 });
+      expect((await db.get(`clinics?id=eq.${clinic.id}&select=is_private`))[0].is_private).toBe(false);
+      expect(await kenSees()).toBe(1);
+    } finally {
+      await db.del(`clinics?id=eq.${clinic.id}`);
+    }
+  });
+});
