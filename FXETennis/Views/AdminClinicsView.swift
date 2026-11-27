@@ -280,14 +280,16 @@ struct AdminClinicsView: View {
     }
 
     private var actionNeeded: some View {
-        let waiting = model.rosterCounts.values.reduce(0) { $0 + $1.responseNeeded }
+        // The same per-clinic rows the card lists, so a count that only a
+        // closed clinic holds cannot raise an empty Action Needed card.
+        let waiting = perClinic(openOnly: true) { model.rosterCounts[$0]?.responseNeeded ?? 0 }.reduce(0) { $0 + $1.count }
         // The Paid flag cannot turn true before a clinic ends, so with the card
         // as the only way to pay this always equalled everyone booked (the
         // audit, 2026-09-27). Shown only while Zelle is allowed.
         let unpaid = model.zelleAllowed ? model.rosterCounts.values.reduce(0) { $0 + $1.unpaid } : 0
-        let pool = model.rosterCounts.values.reduce(0) { $0 + $1.pool }
+        let pool = perClinic(openOnly: true) { model.rosterCounts[$0]?.pool ?? 0 }.reduce(0) { $0 + $1.count }
 
-        let asks = model.lateRequests.count
+        let asks = perClinic(openOnly: true) { id in model.lateRequests.filter { $0.clinicId == id }.count }.reduce(0) { $0 + $1.count }
         let news = model.notices.count
         let money = !model.uncharged.isEmpty || !model.declines.isEmpty || !model.disputes.isEmpty || !model.held.isEmpty
         let levels = model.levelRequests.count
@@ -486,10 +488,12 @@ struct AdminClinicsView: View {
     /// `openOnly`: a clinic that is over drops out (Tara, 2026-11-08: "the
     /// action of that completed clinic cleared"). A Waitlist, an unanswered
     /// invitation or a late request means nothing once it has ended; money
-    /// still owed does, so the unpaid rows keep every clinic.
+    /// still owed does, so the unpaid rows keep every clinic. A canceled
+    /// clinic drops out too (Tara, 2026-11-23: an ask for a canceled clinic
+    /// was still there the day after).
     private func perClinic(openOnly: Bool = false, _ count: (UUID) -> Int) -> [(clinic: ClinicAdmin, count: Int)] {
         model.clinics.sorted { $0.startsAt < $1.startsAt }
-            .filter { !openOnly || !ClinicCompleted.isCompleted(endsAt: $0.endsAt, canceled: $0.isCanceled) }
+            .filter { !openOnly || !ClinicCompleted.isClosed(endsAt: $0.endsAt, canceled: $0.isCanceled) }
             .map { ($0, count($0.id)) }
             .filter { $0.1 > 0 }
     }
@@ -628,5 +632,10 @@ enum PastWeek {
 enum ClinicCompleted {
     static func isCompleted(endsAt: Date, canceled: Bool, now: Date = .now) -> Bool {
         !canceled && endsAt < now
+    }
+
+    /// Nothing about it is left to answer: it has ended, or it was canceled.
+    static func isClosed(endsAt: Date, canceled: Bool, now: Date = .now) -> Bool {
+        canceled || endsAt < now
     }
 }
