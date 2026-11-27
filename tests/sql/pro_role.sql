@@ -27,7 +27,10 @@
 --   r4  A pro never invites, places, removes, messages, sets a court, edits a
 --       clinic, reads the directory or sees money: every admin RPC refuses a
 --       pro, every admin view is empty to one, and a pro reads exactly what a
---       member reads from every table and view a client can read.
+--       member reads from every table and view a client can read. (Since
+--       then a pro sets courts and reads the 105 rounds in their week,
+--       decisions 0051 and 0054, and sets those rounds, decision 0056: the
+--       functions named in the exclusions below, each with its own probe.)
 --   r5  Only Tara changes a role, only between member and pro, never an
 --       admin's, a deleted account's or her own. No other path can change a
 --       role, and a pro cannot change anyone's, their own included.
@@ -117,6 +120,7 @@ declare
   r_maria_tomorrow uuid; r_ken_yesterday uuid; r_dana_draft uuid; r_rob_canceled uuid;
   r_theo_pool uuid; r_dana_soon uuid;
   f record; v text; n int; n_fns int := 0; n_views int := 0;
+  v_kid uuid; c_jr105 uuid; r_kid uuid;
 begin
   -- ------------------------------------------------------------ r0, the seed
   -- What the seed committed, read as the owner: this row can fail without
@@ -389,9 +393,9 @@ begin
   -- is a hole or a guard in the wrong place, and both are worth a red row.
   -- Keyed on is_admin() as well as require_admin(), so an admin function
   -- rewritten as "if not (is_admin() or is_pro())" stays in the list and
-  -- goes red, instead of quietly leaving it. The exceptions are the five a
+  -- goes red, instead of quietly leaving it. The exceptions are the functions a
   -- member may call that merely have an admin branch; each has its own
-  -- outcome check below, and a sixth added later turns this red until it is
+  -- outcome check below, and one added later turns this red until it is
   -- named here (the same forcing function as grants_are_explicit's list).
   for f in
     select p.oid, p.proname,
@@ -405,7 +409,15 @@ begin
                              'respond_to_invitation', 'my_courtesy_available', 'revenue_summary',
                              -- Tara's and a pro's read of the 105 rounds
                              -- (decision 0054); tara_items_0054.sql checks both.
-                             'clinic_rounds')
+                             'clinic_rounds',
+                             -- A pro writes the 105 rounds in their week, and
+                             -- reads who can be picked (decision 0056);
+                             -- pro_rounds.sql checks both ways.
+                             'admin_set_round_court', 'clinic_round_people',
+                             -- A parent reads their own child's waiver status,
+                             -- Tara any child's (decision 0061);
+                             -- juniors_family.sql checks the pro, a member and Tara.
+                             'child_waiver_status')
        and has_function_privilege('authenticated', p.oid, 'EXECUTE')
      order by p.proname
   loop
@@ -470,8 +482,9 @@ begin
                              'guard_account_privilege_columns',
                              -- The week and its courts (decision 0051, 20261107000002).
                              'pro_week', 'pro_assign_court',
-                             -- Reading a 105's rounds, read-only (decision 0054).
-                             'clinic_rounds')
+                             -- Reading a 105's rounds (decision 0054), and
+                             -- setting them in the week (decision 0056).
+                             'clinic_rounds', 'admin_set_round_court', 'clinic_round_people')
     union all
     select 'policy ' || pol.tablename || '.' || pol.policyname
       from pg_policies pol
@@ -649,6 +662,57 @@ begin
   insert into _probe_result values ('r8_tara_changes_landed',
     'true|canceled:true:11111111-1111-1111-1111-111111111111', v);
 
+  -- ------------------------------- r10, no child on a pro's screens yet
+  -- Decision 0061: pros see a child in phase 3, on a day the child is
+  -- rostered. Until then a rostered child is not in pro_today, pro_week or
+  -- clinic_round_people for a pro; the clinic still is, and Tara sees the
+  -- child. Placed with no one signed in (Tara's exemption from the kind
+  -- guard); the clinic is a juniors 105 today, so rounds apply too.
+  perform pg_temp.as_owner();
+  perform set_config('request.jwt.claims', '', true);
+  insert into public.players (account_id, kind, first_name, last_name, date_of_birth)
+  values (MARIA, 'junior', 'Probekid', 'Unseenbypros', date '2016-01-01')
+  returning id into v_kid;
+  insert into public.clinics (name, audience, category, description, starts_at, ends_at,
+      member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)
+  values ('Probe Juniors 105', 'juniors', 'Clinic', 'probe', now(), now() + interval '1 hour',
+          now() - interval '3 days', now() - interval '2 days', 8, 'published', 60)
+  returning id into c_jr105;
+  insert into public.registrations (clinic_id, player_id, status, source) values (c_jr105, v_kid, 'in', 'admin')
+  returning id into r_kid;
+  -- Tara seats the child on court 1 of round 1.
+  perform pg_temp.act_as(TARA);
+  perform public.admin_set_round_court(c_jr105, 1::smallint, 1::smallint, array[r_kid, null, null, null, null, null]::uuid[]);
+  perform pg_temp.act_as(CASEY);
+  select count(*) filter (where clinic_id = c_jr105)::text || '|'
+         || count(*) filter (where last_name = 'Unseenbypros')::text into v from public.pro_today();
+  insert into _probe_result values ('r10_pro_today_shows_the_clinic_not_the_child', '1|0', v);
+  select count(*) filter (where clinic_id = c_jr105)::text || '|'
+         || count(*) filter (where last_name = 'Unseenbypros')::text into v from public.pro_week();
+  insert into _probe_result values ('r10_pro_week_shows_the_clinic_not_the_child', '1|0', v);
+  select count(*) filter (where last_name = 'Unseenbypros')::text into v from public.clinic_round_people(c_jr105);
+  insert into _probe_result values ('r10_round_people_has_no_child_for_a_pro', '0', v);
+  select count(*) filter (where last_name = 'Unseenbypros' or person_id = r_kid)::text into v from public.clinic_rounds(c_jr105);
+  insert into _probe_result values ('r10_rounds_show_a_pro_no_seated_child', '0', v);
+  insert into _probe_result values ('r10_a_pro_cannot_seat_the_child', 'not_in_clinic',
+    pg_temp.try(format('select public.admin_set_round_court(%L, 2::smallint, 1::smallint, array[%L::uuid, null, null, null, null, null])', c_jr105, r_kid)));
+  insert into _probe_result values ('r10_a_pro_cannot_court_the_child', 'not_this_week',
+    pg_temp.try(format('select public.pro_assign_court(%L, 2::smallint)', r_kid)));
+  insert into _probe_result values ('r10_a_pro_cannot_mark_the_child', 'not_today',
+    pg_temp.try(format('select public.pro_set_no_show(%L, true)', r_kid)));
+  perform pg_temp.as_owner();
+  select (select count(*) from public.clinic_round_spots where clinic_id = c_jr105 and round_number = 2)::text
+      || '|' || (select count(*) from public.clinic_round_spots where clinic_id = c_jr105 and round_number = 1 and registration_id = r_kid)::text
+      || '|' || (select coalesce(court_number::text, 'none') || ':' || no_show from public.registrations where id = r_kid)
+    into v;
+  insert into _probe_result values ('r10_and_the_child_is_where_tara_put_them', '0|1|none:false', v);
+  perform pg_temp.act_as(TARA);
+  select count(*) filter (where last_name = 'Unseenbypros')::text into v from public.clinic_round_people(c_jr105);
+  insert into _probe_result values ('r10_tara_still_sees_the_child', '1', v);
+  select count(*) filter (where person_id = r_kid)::text into v from public.clinic_rounds(c_jr105);
+  insert into _probe_result values ('r10_tara_still_sees_the_child_seated', '1', v);
+  perform pg_temp.as_owner();
+
   -- ------------------------------------------------ r6, a deleted pro, last
   update public.accounts set deleted_at = now() where id = CASEY;
   perform pg_temp.act_as(CASEY);
@@ -668,7 +732,8 @@ begin
      and p.proname in ('new_york_date', 'is_pro', 'require_pro', 'require_pro_today', 'pro_today',
                        'pro_set_no_show', 'pro_mark_late_cancel', 'admin_set_pro',
                        'registration_set_no_show', 'registration_mark_late_cancel', 'pro_clinic_locked',
-                       'pro_week', 'pro_assign_court', 'clinic_rounds')
+                       'pro_week', 'pro_assign_court', 'clinic_rounds',
+                       'admin_set_round_court', 'clinic_round_people')
      and has_function_privilege('anon', p.oid, 'EXECUTE');
   insert into _probe_result values ('r9_anon_executes_none_of_it', '', v);
   select coalesce(string_agg(p.proname, ', ' order by p.proname), '') into v
@@ -681,7 +746,8 @@ begin
     from pg_proc p join pg_namespace ns on ns.oid = p.pronamespace
    where ns.nspname = 'public'
      and p.proname in ('is_pro', 'pro_today', 'pro_set_no_show', 'pro_mark_late_cancel', 'admin_set_pro',
-                       'pro_week', 'pro_assign_court', 'clinic_rounds')
+                       'pro_week', 'pro_assign_court', 'clinic_rounds',
+                       'admin_set_round_court', 'clinic_round_people')
      and not has_function_privilege('authenticated', p.oid, 'EXECUTE');
   insert into _probe_result values ('r9_signed_in_clients_can_call_the_rpcs', '', v);
 end $$;

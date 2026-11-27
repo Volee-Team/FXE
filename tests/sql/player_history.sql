@@ -11,8 +11,9 @@
 --                 as soon as it happens
 --   last played   the start of the latest played clinic
 --
--- Three fresh players under one throwaway account, so no seed row and no
--- browser-test leftover can move a number:
+-- Three fresh players, each under its own throwaway account (one adult per
+-- account since 20261115000001), so no seed row and no browser-test leftover
+-- can move a number:
 --
 --   HIST  A Aug 2   in                    played
 --         C Sep 6   in, no-show           no-show
@@ -48,6 +49,8 @@ declare
   TARA   constant uuid := '11111111-1111-1111-1111-111111111111';
   MARIA  constant uuid := '22222222-2222-2222-2222-222222222222';
   ACC    constant uuid := 'c0000000-0000-0000-0000-0000000000f1';
+  ACC2   constant uuid := 'c0000000-0000-0000-0000-0000000000f5';
+  ACC3   constant uuid := 'c0000000-0000-0000-0000-0000000000f6';
   HIST   constant uuid := 'c0000000-0000-0000-0000-0000000000f2';
   EDGE   constant uuid := 'c0000000-0000-0000-0000-0000000000f3';
   NEWP   constant uuid := 'c0000000-0000-0000-0000-0000000000f4';
@@ -57,12 +60,17 @@ declare
 begin
   -- ------------------------------------------------------------ fixture
   insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
-  values (ACC, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'history@probe.test', 'x', now(), now(), now());
-  insert into public.accounts (id, first_name, last_name, email, role) values (ACC, 'History', 'Probe', 'history@probe.test', 'member');
+  values (ACC,  '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'history@probe.test',  'x', now(), now(), now()),
+         (ACC2, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'history2@probe.test', 'x', now(), now(), now()),
+         (ACC3, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'history3@probe.test', 'x', now(), now(), now());
+  insert into public.accounts (id, first_name, last_name, email, role) values
+    (ACC,  'History',  'Probe', 'history@probe.test',  'member'),
+    (ACC2, 'History2', 'Probe', 'history2@probe.test', 'member'),
+    (ACC3, 'History3', 'Probe', 'history3@probe.test', 'member');
   insert into public.players (id, account_id, kind, first_name, last_name, adult_rating, is_member) values
-    (HIST, ACC, 'adult', 'Hist', 'Subject', 3.5, true),
-    (EDGE, ACC, 'adult', 'Edge', 'Cases',   3.0, false),
-    (NEWP, ACC, 'adult', 'New',  'Comer',   4.0, true);
+    (HIST, ACC,  'adult', 'Hist', 'Subject', 3.5, true),
+    (EDGE, ACC2, 'adult', 'Edge', 'Cases',   3.0, false),
+    (NEWP, ACC3, 'adult', 'New',  'Comer',   4.0, true);
 
   insert into public.clinics (name, audience, category, description, starts_at, ends_at,
       member_opens_at, public_opens_at, internal_capacity, status, duration_minutes)

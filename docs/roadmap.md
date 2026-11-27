@@ -143,7 +143,7 @@ Alex, 2026-08-19: *"we're not in a big rush, I can do it as an org from the star
 | Feature | |
 |---|---|
 | **Stripe, card on file** (decision 0009): schema, ledger, edge functions, the card screen, Tara's per-person Charge (decision 0037), refunds on the laptop, the stripe-mock harness in CI | built. Turning it on and going live: checklist A2, A9, A10, A11, A13, A14 |
-| **Juniors.** Deferred by Tara to November or the spring session (decision 0007 §6). The enum value is already in the schema, so this is UI work, not a migration. Tara, group text 2026-11-05: *"can we get a rough idea as to when we can put juniors in on the app? ... Just wondering if it's possible to have this done by January 1?"*; John: yes, before January 1, once she sends the doc. Target 2027-01-01, waiting on her doc | checklist J5 |
+| **Juniors.** Deferred by Tara to November or the spring session (decision 0007 §6). The enum value is already in the schema, so this is UI work, not a migration. Tara, group text 2026-11-05: *"can we get a rough idea as to when we can put juniors in on the app? ... Just wondering if it's possible to have this done by January 1?"*; John: yes, before January 1, once she sends the doc. Target 2027-01-01. Her doc arrived 2026-11-07 (`docs/juniors/spec-2026-11-07.md`); the plan, in five phases, is `docs/juniors/plan.md`; her open decisions are questions 145 to 155, answered 2026-11-17 (decision 0060) | checklist J5 |
 | Parent accounts managing children, junior age groups | |
 | Duplicate a week: Copy to next week, as drafts she checks and publishes | built (`admin_copy_week`, decision 0027) |
 | Add to Calendar (nothing about where goes into the entry) | built (decision 0023) |
@@ -199,7 +199,7 @@ a decision for her.
 
 | Feature | |
 |---|---|
-| **Pros** (question 71, decisions 0024 and 0025): her pros see the week ahead (0051) and who is in it, set courts, mark Came, No-show and late cancels on the day; never anything financial, never an invitation. Only she makes someone a pro. Pros skip the waiver and the card step (question 96, decision 0040) | built (`pro_role.sql`, `ProTodayView.swift`, decision 0051) |
+| **Pros** (question 71, decisions 0024 and 0025): her pros see the week ahead (0051) and who is in it, set courts, set the 105 rounds in that week (read, 0054; set, 0056), mark Came, No-show and late cancels on the day; never anything financial, never an invitation. Only she makes someone a pro. Pros skip the waiver and the card step (question 96, decision 0040) | built (`pro_role.sql`, `pro_rounds.sql`, `ProTodayView.swift`, decision 0051) |
 | **A declined card blocks sign-up until a new card is saved** (question 78), and **Resolved** on a declined card she won't chase (question 83) | built (decision 0026) |
 | **A court sheet to print**, in place of the handwritten one | built (`web/sheet.html`, decision 0027) |
 | **A player's history at a glance** on her directory and beside each name in the Player Pool; every cancel counted, "12 played, 5 canceled (2 late), 1 no-show" (question 105) | built (`admin_player_history`, decisions 0027 and 0040) |
@@ -354,7 +354,7 @@ Parked is not rejected; it means nobody has decided when.
 | UTR / USTA APIs | Kat's list | Never explored; the NTRP scale is self-reported. A Tara question before any integration |
 | Recording Tara's calls and FaceTimes so the transcript reaches the model | 2026-08-15 (Alex) | A consent and storage question before it is a feature |
 | The model texting Tara directly during the day | 2026-08-15 (Alex) | The answer is the relay through Alex (hard rule 14) until she asks for it |
-| Holiday mornings: does registration still open at 8:00 on Christmas Eve and Christmas Day? | 2026-08-10 | Short weeks are settled (question 50, decision 0013); the holiday morning is not yet a numbered question in `docs/questions-for-tara.md` |
+| Holiday mornings: does registration still open at 8:00 on Christmas Eve and Christmas Day? | 2026-08-10 | Short weeks are settled (question 50, decision 0013); the holiday morning is question 171 in `docs/questions-for-tara.md` (asked 2026-11-14) |
 | Category field | 2026-08-02 | She was unsure what it meant and said no filtering is needed. Column exists, deliberately unindexed, no UI |
 | Saturday clinics | 2026-08-02 | Settled by decision 0013 (question 49): "Yes. But no Saturday clinics." The Sunday-to-Saturday week stands; Saturday is theoretical |
 

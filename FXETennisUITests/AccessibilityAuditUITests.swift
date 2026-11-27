@@ -76,8 +76,13 @@ final class AccessibilityAuditUITests: XCTestCase {
         // both from the run's app screenshot at frame (24, 287, 70.5, 15)
         // and from the element screenshot Apple attached. Which headings
         // show depends on the date, so the finding comes and goes.
+        // The pro's clinic time line joined them on 2026-11-15 (iPhone SE,
+        // iOS 18.6), once today's rows grew to two lines and a later clinic's
+        // "8:31 PM to 9:31 PM" landed on a white court line in the photo:
+        // 12.7:1 by scripts/measure-contrast.py from the run's own app
+        // screenshot at frame (24, 472.5, 114.5, 16), in the dark text style.
         if issue.auditType == .contrast,
-           ["roster.count", "today.count", "roster.dateLine", "week.heading", "clinics.week"].contains(e.identifier) { return true }
+           ["roster.count", "today.count", "roster.dateLine", "week.heading", "clinics.week", "pro.timeLine"].contains(e.identifier) { return true }
         // iOS 17 only: a clinic card's name and status chip on My Clinics are
         // called "partially unsupported" for Dynamic Type. Seen growing on the
         // iPhone 15 (iOS 17.5) at accessibility-extra-large, 2026-10-01: the

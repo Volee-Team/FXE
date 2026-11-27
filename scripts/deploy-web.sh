@@ -61,7 +61,9 @@ for attempt in 1 2; do
   # answered at once.
   # In GitHub Actions the token comes from the VERCEL_TOKEN secret
   # (.github/workflows/deploy-web.yml); on a laptop the CLI's own login.
-  CI=1 VERCEL_TELEMETRY_DISABLED=1 npx -y vercel --prod --yes ${VERCEL_TOKEN:+--token "$VERCEL_TOKEN"} </dev/null > /tmp/vercel-deploy.log 2>&1
+  # A fixed version (2026-11-21): this runs with VERCEL_TOKEN, which can
+  # publish the admin site. 65.12.1 is the version the 11-11 deploy used.
+  CI=1 VERCEL_TELEMETRY_DISABLED=1 npx -y vercel@65.12.1 --prod --yes ${VERCEL_TOKEN:+--token "$VERCEL_TOKEN"} </dev/null > /tmp/vercel-deploy.log 2>&1
   sleep 8
   if check; then echo "live site matches the working tree byte for byte (every page incl. the privacy policy, the QR card, the court sheet and /app, every stylesheet, script and image, web/vendor; test tooling absent)"; exit 0; fi
   echo "live site does not match yet"

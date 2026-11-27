@@ -181,7 +181,7 @@ select 'authenticated_has_no_maintain_anywhere', '',
 -- defaults gave anon and authenticated EXECUTE on every new function and
 -- SELECT/USAGE/UPDATE on every new sequence; a fresh build gave them UPDATE on
 -- new sequences. A sequence a client can UPDATE is a setval() away from
--- breaking an id. Fixed by 20261114000001.
+-- breaking an id. Fixed by 20261127000001.
 insert into _probe_result
 select 'default_privileges_give_clients_nothing', '',
        coalesce((select string_agg(d.defaclobjtype::text || ':' || a.grantee::regrole::text || ':' || a.privilege_type, ', ' order by 1)
@@ -300,13 +300,14 @@ where p.prokind = 'f'
 --    purge_app_diagnostics, 20261014000002, is the nightly retention job's,
 --    like purge_expired_card_consents; clinic_taken, 20261107000003, is the
 --    capacity count with Tara's guests in it; reprice_clinic, 20261107000004,
---    the rate and rain-half reprice, with clinic_price_for.)
+--    the rate and rain-half reprice, with clinic_price_for; junior_waiver_signed,
+--    20261118000001, is phase 2's check that a child has signed.)
 insert into _probe_result
 select 'internal_helpers_not_callable_by_clients', '',
        coalesce(string_agg(p.proname, ', ' order by p.proname), '')
 from pg_proc p
 join pg_namespace n on n.oid = p.pronamespace and n.nspname = 'public'
-where p.proname in ('admin_account_ids', 'notify_account', 'courtesy_available', 'courtesy_cancel_days', 'card_required', 'waiver_accepted', 'purge_expired_card_consents', 'is_105', 'back_to_back_105_opens_at', 'registration_has_live_fee', 'player_has_live_fee', 'money_rows', 'stripe_cutover_to_live', 'stripe_record_dispute', 'payments_enabled_at', 'payment_is_real', 'require_pro_today', 'pro_clinic_locked', 'registration_set_no_show', 'registration_mark_late_cancel', 'calendar_feed_events', 'board_share_percent', 'record_app_link_visit', 'clean_player_note', 'purge_app_diagnostics', 'level_ok', 'clinic_taken', 'reprice_clinic', 'clinic_price_for', 'follow_membership')
+where p.proname in ('admin_account_ids', 'notify_account', 'courtesy_available', 'courtesy_cancel_days', 'card_required', 'waiver_accepted', 'purge_expired_card_consents', 'is_105', 'back_to_back_105_opens_at', 'registration_has_live_fee', 'player_has_live_fee', 'money_rows', 'stripe_cutover_to_live', 'stripe_record_dispute', 'payments_enabled_at', 'payment_is_real', 'require_pro_today', 'pro_clinic_locked', 'registration_set_no_show', 'registration_mark_late_cancel', 'calendar_feed_events', 'board_share_percent', 'record_app_link_visit', 'clean_player_note', 'purge_app_diagnostics', 'level_ok', 'clinic_taken', 'reprice_clinic', 'clinic_price_for', 'follow_membership', 'junior_waiver_signed')
   and has_function_privilege('authenticated', p.oid, 'EXECUTE');
 
 -- 4. TOO NARROW, the other direction: every function a signed-in client may
@@ -318,7 +319,7 @@ from pg_proc p
 join pg_namespace n on n.oid = p.pronamespace and n.nspname = 'public'
 where p.prokind = 'f'
   and p.prorettype <> 'trigger'::regtype
-  and p.proname not in ('admin_account_ids', 'notify_account', 'courtesy_available', 'courtesy_cancel_days', 'card_required', 'waiver_accepted', 'purge_expired_card_consents', 'is_105', 'back_to_back_105_opens_at', 'registration_has_live_fee', 'player_has_live_fee', 'money_rows', 'stripe_cutover_to_live', 'stripe_record_dispute', 'payments_enabled_at', 'payment_is_real', 'require_pro_today', 'pro_clinic_locked', 'registration_set_no_show', 'registration_mark_late_cancel', 'calendar_feed_events', 'board_share_percent', 'record_app_link_visit', 'clean_player_note', 'purge_app_diagnostics', 'level_ok', 'clinic_taken', 'reprice_clinic', 'clinic_price_for', 'follow_membership')
+  and p.proname not in ('admin_account_ids', 'notify_account', 'courtesy_available', 'courtesy_cancel_days', 'card_required', 'waiver_accepted', 'purge_expired_card_consents', 'is_105', 'back_to_back_105_opens_at', 'registration_has_live_fee', 'player_has_live_fee', 'money_rows', 'stripe_cutover_to_live', 'stripe_record_dispute', 'payments_enabled_at', 'payment_is_real', 'require_pro_today', 'pro_clinic_locked', 'registration_set_no_show', 'registration_mark_late_cancel', 'calendar_feed_events', 'board_share_percent', 'record_app_link_visit', 'clean_player_note', 'purge_app_diagnostics', 'level_ok', 'clinic_taken', 'reprice_clinic', 'clinic_price_for', 'follow_membership', 'junior_waiver_signed')
   and not has_function_privilege('authenticated', p.oid, 'EXECUTE');
 
 select

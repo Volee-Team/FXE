@@ -24,7 +24,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - id: cfg
         env:
@@ -35,7 +35,7 @@ jobs:
             echo "::notice::ANTHROPIC_API_KEY is not set; the monthly model audit is off. The 45-day human audit (check-doc-claims.sh) still applies."
           fi
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         if: steps.cfg.outputs.on == 'true'
         with:
           node-version: 22
@@ -45,9 +45,9 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          npm install -g @anthropic-ai/claude-code
+          npm install -g @anthropic-ai/claude-code@2.1.319
           claude -p "$(cat docs/audit-brief.md)" \
-            --allowedTools "Read,Grep,Glob,Bash(ls:*),Bash(grep:*),Bash(git log:*),Bash(git diff:*),Bash(wc:*),Bash(cat:*),Bash(sed:*)" \
+            --allowedTools "Read,Grep,Glob,Bash(ls:*),Bash(grep:*),Bash(git log:*),Bash(git diff:*),Bash(wc:*)" \
             --output-format text > audit-report.md
           head -c 60000 audit-report.md > audit-body.md
 
