@@ -2,7 +2,7 @@
 
 **Status:** accepted by John, 2026-11-07 (*"yeah build guests now"*); built in
 `supabase/migrations/20261107000003_clinic_guests.sql` and the laptop site.
-Tara's phone has them from 1.0.3 (build 17, decision 0054): Add guest in
+Tara's phone has them from 1.0.3 (build 18, on the App Store since 2026-11-13; build 17 did not survive the App Transfer; decision 0054): Add guest in
 More, the guest in You're In! with a Guest tag, counted in her total, a
 Court menu with the five courts and Remove guest.
 
@@ -32,7 +32,7 @@ Tara, by text, 2026-11-07, answering question 144:
 - **On the laptop:** Add guest on a clinic (first and last name), the guest in
   You're In! with a Guest tag and the court menu, on the court sheet marked
   "(guest)", and Remove. Removed is a timestamp, never a delete (hard rule 4).
-- **On the phone (1.0.3, build 17):** the same, on her clinic page: More >
+- **On the phone (1.0.3, build 18):** the same, on her clinic page: More >
   Add guest (with the full-clinic question, decision 0054), the Guest tag in
   You're In!, the Court menu, Remove guest. In the 105 rounds' pickers too.
 - **Not yet:** guests on the pros' tab (`pro_week` lists You're In!

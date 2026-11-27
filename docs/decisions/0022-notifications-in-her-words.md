@@ -4,6 +4,8 @@
 
 **Answered (forward note added 2026-10-12):** questions 79, 88, 90 and 91 were answered in 0024; question 92 (taking someone out of You're In!) in 0040: nothing is sent.
 
+**Forward note (2026-11-14):** #1 is also sent by Move In before clinic day (0047), and the server's Pool sentences say "Waitlist" since 20261030000002 (0041).
+
 ## What we chose
 
 Her words, character for character, from the database functions that cause

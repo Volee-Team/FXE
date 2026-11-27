@@ -2,6 +2,8 @@
 
 **Date:** 2026-09-28 · **Status:** Active · **Source:** Tara's review page, round four (link "Tara Link #2", page version 4), saved to hosted `review_responses` at 17:12 UTC on 2026-09-28; read the same day through the management API (issue #79). Her words are quoted exactly, curly apostrophes and missing full stops included.
 
+**Forward note (2026-11-14):** 73 was answered in 0040 ("Correct"); 72's flow was parked by 0040 (question 95) and replaced by 0052.
+
 ## What she said, and what we do with it
 
 ### The party

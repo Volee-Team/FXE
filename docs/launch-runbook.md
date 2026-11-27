@@ -1,5 +1,9 @@
 # Launch runbook: the pre-mortem, the dress rehearsal, and the day
 
+The day has passed (2026-11-06): members install from the App Store (C14)
+and payments have been live since 2026-10-14 (A9). Sections 1 to 3 are the
+record. The two "If …" paragraphs at the end still hold.
+
 Written 2026-10-01 for the launch party on 2026-11-06 (decision 0024). Alex
 asked for "ZERO margin for error on the first launch". No process gives zero;
 what this page does is name every way the day could go wrong, ahead of time,
@@ -25,7 +29,7 @@ rest. Re-read this page at the dress rehearsal and the day before.
 
 | # | What went wrong | Already in place | Still open, and whose |
 |---|---|---|---|
-| 1 | **Members could not install the app.** The App Store listing needs the LLC's Apple account, still in Apple's queue (C1); without it the only way in is TestFlight's public link, which needs Apple's beta review first (C11) | The QR code points at `/app`, which forwards wherever the install link is, so the printed card never changes (I6) | External TestFlight through Apple's beta review, on John's account, whatever happens with the LLC: the review account (C13), build 10 uploaded and submitted (C8, C11). **2026-10-23** is the latest date that still leaves a link two weeks out |
+| 1 | **Members could not install the app.** The App Store listing needs the LLC's Apple account, still in Apple's queue (C1); without it the only way in is TestFlight's public link, which needs Apple's beta review first (C11) | The QR code points at `/app`, which forwards wherever the install link is, so the printed card never changes (I6) | Resolved: 1.0.0 approved 2026-10-27 on John's account and released 2026-10-28 (C14); QR → App Store (I6) |
 | 2 | **Real cards could not be charged.** Tara's Stripe activation (business, EIN, bank) was not finished, or Stripe held the account for review | Payments are a switch (`payments_enabled`); with it off, nobody needs a card and nothing is charged. Tara's live Stripe account (A7) | The rehearsal with a restricted sandbox key (A13), the live keys and the cutover (A10), the three Stripe settings (A14), then the switch (A9). The fallback is the switch off at the party, decided in advance, not on the night (A11) |
 | 3 | **Thursday 8:00 rush broke registration.** Everyone taps Register at the same moment | Capacity is decided in one locked place (`register_for_clinic`, `FOR UPDATE`), tested by `capacity_race.sh`; the nightly keep-warm job stops the free project pausing | The rush is tested at 200 at once through the API by `tests/sql/rush_via_api.sh` (2026-10-01). Supabase Pro for the launch month (no pausing, daily backups, more connections, about $25) is D3 |
 | 4 | **The app crashed for some members and nobody knew** | Apple's crash reports reach John's App Store Connect for TestFlight builds only when testers share them | Crash reports to our own database (decision 0035, checklist D6) |
@@ -34,7 +38,7 @@ rest. Re-read this page at the dress rehearsal and the day before.
 | 7 | **"Forgot password" emails never arrived** | Custom Gmail sender, read back through the management API; a reset sent from the app to Alex's address was stamped by the server (2026-10-01) | Delivery to a Gmail address is D1's row. One more test with a non-Gmail address (iCloud or Outlook) would check spam handling. Tara can always hand out a one-time reset link from the Players tab, no email needed (decision 0017) |
 | 8 | **Sign-up was too long and people gave up** (account, profile, waiver, card) | Each step is one screen; the waiver and card steps say why they refuse | The dress rehearsal (section 2) times a real sign-up on a stranger's phone |
 | 9 | **Tara's real week was not in the app**, so the first thing members saw was an empty list | Copy to next week makes a week from the last one in two clicks (decision 0027). Her real clinics are on hosted (D5) | The week of the rehearsal and the party's week published in time (section 3) |
-| 10 | **A bad build reached members and could not be taken back** | TestFlight keeps earlier builds: a tester can reinstall the previous one from the TestFlight app; every upload is tagged (C10) | Never upload a build the day before the party. The last build is the one the rehearsal used |
+| 10 | **A bad build reached members and could not be taken back** | Members install from the App Store, which cannot roll back: a bad build is fixed by a new one through review, so every upload is tagged (C10) and UI-tested first | Never upload a build the day before the party. The last build is the one the rehearsal used |
 | 11 | **Someone could see what they should not** (a court, a count, another member) | Enforced in the database (hard rule 1), pinned by `information_hiding.sql` and checked on production every night by `hosted-watch.yml` (2026-10-01) | Nothing open |
 | 12 | **The database was lost or corrupted** | Nightly encrypted backup (D10), restored in a monthly drill (D4) | Repeat the restore drill the week before the party, so the backup is known good on data that matters. Learned 2026-10-12: drop the restore target's own `auth` schema first (`drop schema auth cascade`); restoring onto the Supabase image's older auth tables brings back 0 sign-ins with no error |
 | 13 | **Nobody knew who to call** | This page | Section 3 |

@@ -46,7 +46,7 @@ only); a rain-out cancel racing a Charge tap could both commit (the clinic
 is locked FOR SHARE before the registration); one person could get two
 late fees' buttons (only the newest late cancel owes); every per-clinic read
 computed the whole club (money_rows takes an optional clinic). A late
-canceller cannot be let off: that is question 106 for Tara.
+canceller can be let off since 0040 (question 106): Waive, with Undo.
 
 ## Rejected
 

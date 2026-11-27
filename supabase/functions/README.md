@@ -14,9 +14,8 @@ a member, with no email involved; `calendar-feed` (2026-09-28, decision
 `_shared/` holds what several of them import (`cors.ts`, `stripe.ts`,
 `stripe-errors.ts`, `supabase.ts`) and is not a function.
 
-The Stripe keys (sandbox) and the APNs keys with the push vault secrets are
-set on hosted: see checklist A1 and C3, which hold their status. The live
-Stripe keys are checklist A10.
+The live Stripe keys and the APNs keys with the push vault secrets are set on
+hosted: checklist A10, C2 and C3 hold their status.
 
 ## Secrets (never in the repo, the app, or a log)
 
@@ -29,13 +28,13 @@ are `docs/for-alex.md` §1:
 
 | Name | Who sets it | What it is |
 |---|---|---|
-| `STRIPE_SECRET_KEY` | Alex (test), Tara or Alex (live) | `sk_test_…` now; at the live switch a RESTRICTED key `rk_live_…` (permissions below) |
+| `STRIPE_SECRET_KEY` | Alex (test), Tara or Alex (live) | the RESTRICTED live key `rk_live_…` since 2026-10-14 (permissions below); `sk_test_…` locally and for a sandbox rehearsal |
 | `STRIPE_WEBHOOK_SECRET` | Alex | `whsec_…` from the webhook endpoint Stripe creates for `…/functions/v1/stripe-webhook` |
 | `STRIPE_PUBLISHABLE_KEY` | Alex | `pk_test_…` / `pk_live_…`; safe in a client, returned to the app by `stripe-setup-intent` |
 | `APNS_KEY_ID` | Alex | the 10-character Key ID Apple shows next to the APNs key |
-| `APNS_TEAM_ID` | Alex | the 10-character Team ID of the Apple account the key belongs to (Membership page): John's account today, the LLC's later (checklist C3, C2) |
+| `APNS_TEAM_ID` | Alex | the 10-character Team ID of the Apple account the key belongs to (Membership page): Volee LLC's account (`FBJXDTHTN4` since the App Transfer of 2026-11-11, checklist C2; the key is `42D24JXB54`) |
 | `APNS_PRIVATE_KEY` | Alex | the whole contents of `AuthKey_<KEYID>.p8`, PEM markers included. Apple lets you download it once |
-| `APNS_TOPIC` | Alex | the app's bundle id (`com.fxetennis.app` until the LLC's final id, checklist C12) |
+| `APNS_TOPIC` | Alex | the app's bundle id, `com.fxetennis.app` (kept through the transfer) |
 | `APNS_HOST` | optional | unset means `https://api.push.apple.com` (TestFlight and App Store builds). `https://api.sandbox.push.apple.com` only for a build run from Xcode |
 | `PUSH_WEBHOOK_SECRET` | Alex | any long random string (`openssl rand -hex 32`); the SAME value goes into the vault as `push_webhook_secret` |
 
@@ -68,7 +67,7 @@ different modes (`keyModesAgree`).
 | Function | Called by | Auth | Does |
 |---|---|---|---|
 | `stripe-setup-intent` | the iOS app, once per card | caller's JWT | refuses with 409 `card_consent_required` unless `card_consents` holds the caller's permission to the current words (decision 0015 §7), and 403 `account_deleted` for a deleted account; then creates or reuses the Stripe customer and returns a SetupIntent client secret + ephemeral key for PaymentSheet. A stored customer is checked first: one Stripe does not have (every sandbox customer after the live swap, or one deleted in the dashboard) is replaced, and its stale card summary cleared (2026-09-27) |
-| `stripe-webhook` | Stripe | Stripe signature (`verify_jwt = false`) | records the card summary on `setup_intent.succeeded`, and ledger outcomes on payment / refund events, each with the event's `livemode` (20260927200001). Since 2026-09-28, `charge.dispute.created` / `.updated` / `.closed` onto the fee whose PaymentIntent the dispute names (else its charge's, asked of Stripe; else, when no row has that PaymentIntent, the row its metadata names, a held charge Tara marked "Went through") through `stripe_record_dispute`, with what Stripe withdrew for it read from the dispute's balance transactions; an event older than the one recorded, a late update to a decided dispute, and a second dispute on a payment whose dispute was lost change nothing (the last is logged); a dispute on anything this app did not charge matches nothing, and a database error answers 500 so Stripe delivers the event again; on `payment_intent.payment_failed` it writes Stripe's sentence to `failure_reason` and its code to `failure_code` (`decline_code`, else `code`, 20260926000010). A payment event that arrives before `stripe-charge` has stored the PaymentIntent id is attached to the row named in the PaymentIntent's `metadata.fxe_payment_id`, never to a refund row or a row that has another PaymentIntent (2026-09-27; before, it matched nothing, answered 200, and the charge sat in processing for good) |
+| `stripe-webhook` | Stripe | Stripe signature (`verify_jwt = false`) | records the card summary on `setup_intent.succeeded`, and ledger outcomes on payment / refund events, each with the event's `livemode` (20260927200001). Since 2026-09-28, `charge.dispute.created` / `.updated` / `.closed` onto the fee whose PaymentIntent the dispute names (else its charge's, asked of Stripe; else, when no row has that PaymentIntent, the row its metadata names, a held charge Tara marked "Went through") through `stripe_record_dispute`, with what Stripe withdrew for it read from the dispute's balance transactions; an event older than the one recorded, a late update to a decided dispute, and a second dispute on a payment whose dispute was lost change nothing (the last is logged); a dispute on anything this app did not charge matches nothing, and a database error answers 500 so Stripe delivers the event again; on `payment_intent.payment_failed` it writes Stripe's sentence to `failure_reason` and its code to `failure_code` (`decline_code`, else `code`) for a `card_error` only, null for a request Stripe refused (20260928700001). A payment event that arrives before `stripe-charge` has stored the PaymentIntent id is attached to the row named in the PaymentIntent's `metadata.fxe_payment_id`, never to a refund row or a row that has another PaymentIntent (2026-09-27; before, it matched nothing, answered 200, and the charge sat in processing for good). Since 2026-11-14 (5fd1724) the match by id and the match by metadata are one UPDATE, so a store by `stripe-charge` landing between two statements can no longer make both miss. An event whose metadata names our row but records nothing answers 500 (`payment_not_recorded`, `refund_not_recorded`), and Stripe sends it again. `tests/stripe/run.sh` section 8b holds the store open while the event lands |
 | `stripe-charge` | both admin surfaces, right after a ledger row is made pending: Tara's per-person **Charge** calls `admin_charge_player` first (decision 0037; `web/index.html` and `AdminRepository.chargePlayer`), Refund on the Money tab calls `admin_refund_payment`; neither RPC talks to Stripe | admin JWT; CORS for the admin site (`_shared/cors.ts`: hosted answered its preflight with 405 until 2026-09-27, so the web could not reach it) | turns up to 25 `pending` ledger rows per call (`.limit(25)`) into one PaymentIntent (off-session, naming the saved card explicitly: the customer's default payment method, else their first card, because a PaymentIntent does not fall back to `invoice_settings`) or Refund each, with an idempotency key per row, storing Stripe's `livemode`; safe to call again for the rest. When a call throws (`_shared/stripe-errors.ts`, 2026-09-27): a decline, a request Stripe refused, or our own refusal (`no_card_on_file`, `account_deleted`) is `failed`; anything that may have reached Stripe (dropped connection, timeout, 5xx, 429, a refused key) goes back to `pending` and is repeated under the same key, which Stripe answers with the first result; an `idempotency_error`, or a retry more than 23 hours after the row was made, is held in processing with that reason for a person. Each call first sweeps rows left in processing without a Stripe id for over 5 minutes (a call that died) back to pending. A customer Stripe does not have fails the row as `no_card_on_file` and clears the stale card, so the app asks again; a deleted account is never charged |
 | `stripe-payouts` | the web admin's Money tab, the Payouts card (2026-09-28) | admin JWT, and `is_admin()` asked as the caller; CORS for the admin site (`_shared/cors.ts`) | read-only: `balance.retrieve()` and `payouts.list({ limit: 10 })` into `{ livemode, available, pending, next_payout, recent }`, each payout cut to `amount`, `currency`, `arrival_date` (the bank day as `YYYY-MM-DD`: Stripe sends midnight UTC, which a New York browser would show as the evening before) and `status`; never its bank account, description or id, and never Stripe's error text (an authentication error quotes the end of the key). 401 signed out, 403 for a member (before Stripe is asked), 503 `stripe_not_configured`, 502 `stripe_unavailable` |
 | `review-submit` | `web/review.html?t=<token>`, Tara's review page | the token in the body or query, checked against `review_links` (`verify_jwt = false`: she has no account) | `POST {token, page_version, answers}` upserts one jsonb blob per (link, page version) into `review_responses` and returns `{saved_at}`; `GET ?token=&page_version=` returns `{answers, saved_at}` so she can continue on another device; unknown or revoked token is 404, answers over 200 KB or not an object is 400. Uses `_shared/supabase.ts`, not the Stripe module. No rate limiting |
@@ -81,8 +80,10 @@ different modes (`keyModesAgree`).
 The database never talks to Stripe; the app never holds a key that can move
 money; the only writer of ledger status is the webhook (plus `stripe-charge`
 moving pending → processing, recording a synchronous decline, and returning a
-row to pending when a call may have reached Stripe; plus the one-off
-`stripe_cutover_to_live()` below).
+row to pending when a call may have reached Stripe; plus `cancel_clinic`,
+which cancels a canceled clinic's charges not yet sent (20261013000001),
+`admin_resolve_held_payment` (Tara's Went through / Did not go through) and
+the one-off `stripe_cutover_to_live()` below).
 
 ## Switching Stripe from the sandbox to live money
 
@@ -264,9 +265,9 @@ token reaches a real lock screen.
 
 ## Setting up the APNs key
 
-The procedure, kept for the LLC's own key later (checklist C2). The key in
-use now is on John's account, and its secrets and vault entries are set on
-hosted; the first push seen on a real lock screen is checklist C3.
+The procedure, kept for the next key rotation. The key in use since
+2026-11-11 is Volee LLC's (`42D24JXB54`, team `FBJXDTHTN4`, checklist C2);
+its secrets and vault entries are set on hosted.
 
 1. **Create the key.** developer.apple.com → Certificates, Identifiers &
    Profiles → Keys → +, tick Apple Push Notifications service (APNs), pick

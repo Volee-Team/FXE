@@ -2,6 +2,8 @@
 
 **Date:** 2026-09-21 · **Status:** Active until the LLC enrollment is approved · **Extends:** the 2026-08-19 call that the App Store account is FXE Tennis, LLC from the start
 
+**Superseded by 0042 (2026-10-19), ended 2026-11-11 (forward note added 2026-11-14):** the app went to the App Store on John's account and moved to Volee LLC's account (team FBJXDTHTN4) by App Transfer; the FXE Tennis, LLC enrollment was never approved and is no longer needed (checklist C1, C12).
+
 ## What was said
 
 Kat, in the group thread with Tara and Alex, 2026-09-21: *"is it possible to

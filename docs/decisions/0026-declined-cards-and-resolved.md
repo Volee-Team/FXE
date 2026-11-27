@@ -109,7 +109,7 @@ No critical finding. Four majors and four minors; the probe grew from 53 to
   trigger now locks the account row before deciding;
   `tests/sql/declined_card_race.sh` was red without the lock and is green
   with it.
-- **Open, not fixed here:** a player can remove their only saved card inside
+- **Fixed later (2026-10-04 and 2026-10-13):** the sheet no longer removes the last card, and payment_method.detached clears the summary. Was: a player can remove their only saved card inside
   Stripe's sheet, which our database never hears of, so `card_last4` stays,
   `card_required` passes, and Tara's charge later fails as "no card on file".
   This predates the branch and is not a way round a decline (nothing in the
