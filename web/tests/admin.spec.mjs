@@ -988,6 +988,8 @@ test.describe("Tara's next update (2026-11-06)", () => {
       await signIn(page, TARA);
       const card = page.locator("#clinics .card", { hasText: "Browser One Player Clinic" });
       await expect(card).toContainText("Rob Delgado", { timeout: 15_000 });
+      // Dana's canceled row says when (Tara, 2026-11-27).
+      await expect(card.locator("[data-canceled-at]")).toContainText(/^Canceled \w{3}, \w{3} \d{1,2}/);
       await card.getByRole("button", { name: "Message" }).click();
       const dialog = page.locator("dialog#message");
       await expect(dialog).toBeVisible();

@@ -133,6 +133,9 @@ struct RegistrationAdmin: Codable, Identifiable, Sendable {
     /// (decision 0054, item 10). Optional: older servers do not send them.
     var priceCentsCharged: Int? = nil
     var priceSetByAdmin: Bool? = nil
+    /// When the row was canceled, shown on the Canceled list (Tara,
+    /// 2026-11-27: "can I see when or what time someone canceled").
+    var canceledAt: Date? = nil
 
     enum CodingKeys: String, CodingKey {
         case id, status, paid
@@ -151,6 +154,7 @@ struct RegistrationAdmin: Codable, Identifiable, Sendable {
         case feeWaivedAt = "fee_waived_at"
         case priceCentsCharged = "price_cents_charged"
         case priceSetByAdmin = "price_set_by_admin"
+        case canceledAt = "canceled_at"
     }
 
     /// A charge that is pending, processing or went through. The server's rule

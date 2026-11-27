@@ -38,6 +38,7 @@ Cancel clinic
 Cancel invite
 Cancel my spot
 Cancel the invitation to \(entry.displayName)
+Canceled \(at.formatted(Self.canceledFormat))
 Canceled inside ${cutoffHours} hours
 Card payments
 Cards aren't set up yet.
