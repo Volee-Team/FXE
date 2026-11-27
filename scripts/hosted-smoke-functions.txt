@@ -42,6 +42,7 @@ admin_save_junior_program	{"p_active":false,"p_age_guidance":"x","p_description"
 admin_save_message_template	{"p_body":"x"}
 admin_set_board_share_percent	{"p_percent":1}
 admin_set_clinic_prices	{"p_clinic":"00000000-0000-0000-0000-000000000000","p_member_cents":1,"p_nonmember_cents":1}
+admin_set_clinic_private	{"p_clinic":"00000000-0000-0000-0000-000000000000","p_private":false}
 admin_set_fee_waived	{"p_registration":"00000000-0000-0000-0000-000000000000","p_waived":false}
 admin_set_guest_court	{"p_court":1,"p_guest":"00000000-0000-0000-0000-000000000000"}
 admin_set_level_approval	{"p_approved":false,"p_level":1,"p_player":"00000000-0000-0000-0000-000000000000"}
