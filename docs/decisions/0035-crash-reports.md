@@ -97,9 +97,7 @@ was decided then.
 
 ## Open
 
-- **Privacy policy.** It lists what we collect and does not yet name crash
-  diagnostics; the sentence is for Alex to approve before the policy is
-  published (the main session has the proposed wording).
+- **Privacy policy:** done 2026-10-13, the MetricKit paragraph Alex approved on 2026-10-03.
 - **Not verified end to end on a device.** MetricKit does not deliver on the
   simulator without Xcode's Debug → Simulate MetricKit Payloads; the pure
   parts are unit-tested and the RPC is probed, the hop between them is not.
