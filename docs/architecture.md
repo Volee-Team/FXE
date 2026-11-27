@@ -57,7 +57,7 @@ most important thing to understand here, and it is section 5.
 
 | Area | What exists |
 |---|---|
-| Postgres schema, RLS, narrow views, RPCs | 94 migrations (`ls supabase/migrations`), the newest `20261125000001_double_105_rule_switch.sql`. Hosted holds the same 93 (`supabase migration list --linked`, 2026-11-25). Re-check with that command after any push; this line is not the record |
+| Postgres schema, RLS, narrow views, RPCs | 95 migrations (`ls supabase/migrations`), the newest `20261125000001_double_105_rule_switch.sql`. Hosted holds the same 93 (`supabase migration list --linked`, 2026-11-25). Re-check with that command after any push; this line is not the record |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | Enumerated by probes (section 5) |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | Section 7 |
 | Probe suite: 63 SQL probes and 23 shell probes (races and the API rush); the suite prints its own total | Runs in CI on every push (section 9) |
