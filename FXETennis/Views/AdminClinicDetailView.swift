@@ -476,6 +476,12 @@ struct AdminClinicDetailView: View {
                 .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.sm))
                 .accessibilityIdentifier("admin.priceLine")
 
+            // Decision 0062, Tara 2026-11-23: "private events/clinics and
+            // allow me to privately invite people to that clinic". Listed
+            // only to who she invites or adds; switching tells nobody.
+            if model.live.isPrivate == true { PrivateChip() }
+            if clinic.status != "canceled" { privateToggle }
+
             HStack(spacing: Brand.Spacing.sm) {
                 countPill(Brand.Status.youreIn, model.taken, of: clinic.internalCapacity)
                 countPill(Brand.Status.playerPool, model.pool.count, of: nil)
@@ -1305,6 +1311,34 @@ struct AdminClinicDetailView: View {
             .accessibilityIdentifier("admin.setPrice")
             .accessibilityLabel("Set \(entry.displayName)'s price")
         }
+    }
+
+    /// Private on or off. On the raised surface, as the price line, for
+    /// contrast over the court backdrop. The list behind reloads too, so its
+    /// card shows the chip.
+    private var privateToggle: some View {
+        Toggle(isOn: Binding(
+            get: { model.live.isPrivate == true },
+            set: { on in
+                Task {
+                    await model.perform(clinic.id) {
+                        try await AdminRepository.setClinicPrivate(clinic: clinic.id, isPrivate: on)
+                    }
+                    await onChanged()
+                }
+            }
+        )) {
+            Text("Private: only people you invite or add see it")
+                .brandFont(.subheadline)
+                .foregroundStyle(Brand.textPrimary)
+        }
+        .tint(Brand.court)
+        .disabled(model.busy.contains(clinic.id))
+        .padding(.horizontal, Brand.Spacing.xs)
+        .padding(.vertical, Brand.Spacing.xxs)
+        .frame(minHeight: Brand.Layout.minTapTarget)
+        .background(Brand.surfaceRaised, in: RoundedRectangle(cornerRadius: Brand.Radius.sm))
+        .accessibilityIdentifier("admin.private")
     }
 
     /// "$18 member / $23 non-member", halved while it rains: the laptop's

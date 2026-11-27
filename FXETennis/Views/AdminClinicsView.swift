@@ -558,6 +558,7 @@ private struct AdminClinicRow: View {
                     .brandFont(.headline)
                     .foregroundStyle(Brand.navy)
                 Spacer()
+                if clinic.isPrivate == true { PrivateChip() }
                 if clinic.isCanceled {
                     StatusChip(.canceled)
                 } else if clinic.isDraft {
@@ -616,6 +617,22 @@ private struct AdminClinicRow: View {
         clinic.startsAt.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
         + " at "
         + clinic.startsAt.formatted(.dateTime.hour().minute())
+    }
+}
+
+/// "Private" on Tara's clinic card and clinic page (decision 0062): the
+/// clinic is listed only to who she invites or adds. Icon and word, never
+/// colour alone.
+struct PrivateChip: View {
+    var body: some View {
+        Label("Private", systemImage: "lock.fill")
+            .brandFont(.chip)
+            .foregroundStyle(Brand.textPrimary)
+            .padding(.horizontal, Brand.Spacing.xs)
+            .padding(.vertical, 3)
+            .background(Capsule().fill(Brand.surfaceWarm))
+            .accessibilityElement(children: .combine)
+            .accessibilityIdentifier("admin.clinic.private")
     }
 }
 

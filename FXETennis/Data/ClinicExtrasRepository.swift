@@ -188,6 +188,7 @@ private struct RegistrationPriceParams: Encodable {
 }
 private struct ClinicPricesParams: Encodable { let p_clinic: UUID; let p_member_cents: Int; let p_nonmember_cents: Int }
 private struct RainParams: Encodable { let p_clinic: UUID; let p_on: Bool }
+private struct ClinicPrivateParams: Encodable { let p_clinic: UUID; let p_private: Bool }
 /// Six ids, nil for an empty spot, each written out (a nil must reach the
 /// server as null, not be dropped from the array).
 private struct RoundCourtParams: Encodable {
@@ -212,12 +213,14 @@ private struct RoundCourtParams: Encodable {
 
 extension AdminRepository {
 
-    /// One clinic as it is now: after a price change or the rain switch, the
-    /// page shows the new numbers without going back to the list.
+    /// One clinic as it is now: after a price change, the rain switch or
+    /// Private, the page shows the new state without going back to the list.
+    /// Every column, as `allClinics`, so a server without `is_private` still
+    /// answers.
     static func clinic(_ id: UUID) async throws -> ClinicAdmin? {
         let rows: [ClinicAdmin] = try await supabase
             .from("clinics_admin")
-            .select("id,name,audience,category,starts_at,ends_at,status,internal_capacity,member_price_cents,nonmember_price_cents,rain_half")
+            .select("*")
             .eq("id", value: id)
             .execute()
             .value
@@ -248,6 +251,12 @@ extension AdminRepository {
 
     static func setRainHalf(clinic: UUID, on: Bool) async throws {
         _ = try await supabase.rpc("admin_set_rain_half", params: RainParams(p_clinic: clinic, p_on: on)).execute()
+    }
+
+    /// Private or not (decision 0062). Tells nobody.
+    static func setClinicPrivate(clinic: UUID, isPrivate: Bool) async throws {
+        _ = try await supabase.rpc("admin_set_clinic_private",
+                                   params: ClinicPrivateParams(p_clinic: clinic, p_private: isPrivate)).execute()
     }
 
     /// One person's amount; nil puts the clinic's price back.

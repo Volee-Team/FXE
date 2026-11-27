@@ -91,6 +91,9 @@ struct ClinicAdmin: Codable, Identifiable, Sendable {
     /// Charge half (rain) is on (decision 0053). Read on the clinic page only
     /// (AdminRepository.clinic); the list does not ask for it.
     var rainHalf: Bool? = nil
+    /// Private (decision 0062): listed only to who she invites or adds.
+    /// Optional, so a server from before 20261127000003 still decodes.
+    var isPrivate: Bool? = nil
 
     enum CodingKeys: String, CodingKey {
         case id, name, audience, category, status
@@ -100,6 +103,7 @@ struct ClinicAdmin: Codable, Identifiable, Sendable {
         case memberPriceCents = "member_price_cents"
         case nonmemberPriceCents = "nonmember_price_cents"
         case rainHalf = "rain_half"
+        case isPrivate = "is_private"
     }
 
     var isCanceled: Bool { status == "canceled" }
@@ -251,10 +255,13 @@ enum AdminRepository {
 
     /// Every clinic, soonest first, including drafts. Returns zero rows to a
     /// non-admin because `clinics_admin` is `where is_admin()`.
+    /// Every column (`*`), so the Private chip's `is_private` arrives when
+    /// the server has it and a server without it still answers: naming a
+    /// column it lacks would fail the whole list.
     static func allClinics() async throws -> [ClinicAdmin] {
         try await supabase
             .from("clinics_admin")
-            .select("id,name,audience,category,starts_at,ends_at,status,internal_capacity,member_price_cents,nonmember_price_cents")
+            .select("*")
             .order("starts_at", ascending: true)
             .execute()
             .value

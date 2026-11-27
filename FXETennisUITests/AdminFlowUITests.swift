@@ -656,6 +656,42 @@ final class AdminFlowUITests: XCTestCase {
                       "The profile does not say Approved to attend: Ladies 3.0+")
     }
 
+    // MARK: - L. private clinics (decision 0062)
+
+    /// Tara, 2026-11-23: "private events/clinics and allow me to privately
+    /// invite people to that clinic". She switches Tuesday's clinic to
+    /// Private on its page: the page and her Manage card say Private. She
+    /// switches it back, so nothing after depends on it.
+    func testAdminL_PrivateSwitchAndChip() {
+        app.launch()
+        signIn(as: admin)
+        openAdminClinic(containing: "Tuesday Ladies")
+
+        let toggle = app.switches["admin.private"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 15), "No Private switch on the clinic page")
+        XCTAssertEqual(toggle.value as? String, "0", "A seeded clinic started private")
+        func flip() { toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap() }
+        flip()
+        // The chip is drawn from the clinic as the server returns it after the switch.
+        XCTAssertTrue(app.descendants(matching: .any)["admin.clinic.private"].waitForExistence(timeout: 15),
+                      "No Private chip on the page after switching it on")
+        XCTAssertEqual(toggle.value as? String, "1")
+
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        let card = app.descendants(matching: .any).matching(identifier: "admin.clinic.card")
+            .matching(NSPredicate(format: "label CONTAINS[c] %@ AND label CONTAINS[c] %@", "Tuesday Ladies", "Private")).firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 15), "The Manage card does not say Private")
+
+        // Back off, and the chip goes.
+        card.tap()
+        XCTAssertTrue(toggle.waitForExistence(timeout: 15))
+        flip()
+        let gone = NSPredicate(format: "exists == false")
+        expectation(for: gone, evaluatedWith: app.descendants(matching: .any)["admin.clinic.private"])
+        waitForExpectations(timeout: 15)
+        XCTAssertEqual(toggle.value as? String, "0")
+    }
+
     private func openTuesdayLadies() {
         openClinicsTab()
         let card = app.buttons.matching(identifier: "clinic.card")
