@@ -192,8 +192,12 @@ final class AdminFlowUITests: XCTestCase {
         XCTAssertTrue(cancelItem.waitForExistence(timeout: 10))
         cancelItem.tap()
 
-        // The confirmation reuses the same words; it is the second "Cancel
-        // clinic" on screen and it sits inside the dialog.
+        // The confirmation takes an optional message (Tara, 2026-11-23), then
+        // reuses the same words for its button.
+        let message = app.textFields["admin.cancel.message"]
+        XCTAssertTrue(message.waitForExistence(timeout: 10), "No message field on the cancel alert")
+        message.tap()
+        message.typeText("Courts are wet")
         let confirm = app.buttons["Cancel clinic"].firstMatch
         XCTAssertTrue(confirm.waitForExistence(timeout: 10), "No confirmation dialog")
         confirm.tap()
@@ -295,6 +299,43 @@ final class AdminFlowUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Nobody is in yet."].waitForExistence(timeout: 20),
                       "Roster still shows someone in You're In! after Remove")
         XCTAssertFalse(court.exists, "The removed player's row is still on the roster")
+    }
+
+    /// Tara, 2026-11-23: tap a name on the roster to message that player, and
+    /// see the message back before it goes. Maria on Saturday Members, as in
+    /// E (this one runs first: "E2" sorts before "E_").
+    func testAdminE2_MessagesAPlayerFromTheirNameAfterARecap() {
+        app.launch()
+        signIn(as: member)
+        ensureRegistered(forClinicContaining: "Saturday Members")
+        signOut()
+
+        signIn(as: admin)
+        openAdminClinic(containing: "Saturday Members")
+        let name = app.buttons.matching(identifier: "admin.roster.name").firstMatch
+        XCTAssertTrue(name.waitForExistence(timeout: 20), "Maria's name is not a button on the roster")
+        name.tap()
+
+        // The sheet opens on her, not on Everyone.
+        let player = app.buttons["admin.messagePlayer"]
+        XCTAssertTrue(player.waitForExistence(timeout: 10), "Message Players did not open on One player")
+        XCTAssertTrue(player.label.contains("Maria Alvarez"), "The sheet chose '\(player.label)', not Maria")
+
+        let body = app.textViews["admin.messageBody"]
+        XCTAssertTrue(body.waitForExistence(timeout: 10))
+        body.tap()
+        body.typeText("See you Saturday")
+        app.buttons["admin.sendMessage"].tap()
+
+        // Nothing goes until she has read it back.
+        let recap = app.alerts["Send this message?"]
+        XCTAssertTrue(recap.waitForExistence(timeout: 10), "Send went without asking")
+        XCTAssertTrue(recap.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "To Maria Alvarez")).firstMatch.exists,
+                      "The recap does not name who gets it")
+        XCTAssertTrue(recap.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "See you Saturday")).firstMatch.exists,
+                      "The recap does not show the message")
+        recap.buttons["Send"].tap()
+        XCTAssertTrue(body.waitForNonExistence(timeout: 20), "The sheet stayed open after sending")
     }
 
     /// Out of the Player Pool (2026-09-28): the button, the same

@@ -97,6 +97,7 @@ Edit details
 Email
 Enter a price above $0.
 Everyone not yet charged pays the new price.
+Everyone registered, waiting or asking to get in is told.
 FROM TARA
 FXE Tennis
 FXE Tennis Admin
@@ -142,6 +143,7 @@ Invite a player
 Invite player
 Just coming back from a back injury - probably a low 3.5
 Keep
+Keep editing
 Keep my account
 Keep my spot
 Keep the clinic
@@ -174,6 +176,7 @@ Message Tara
 Message \(player.firstName)
 Message player
 Message players
+Message to players (optional)
 More
 My Clinics
 My next \(.applicationName) clinic
@@ -294,7 +297,9 @@ Search sign-ups
 Sections
 Security of data
 Selected. Press and hold to copy.
+Send
 Send reminder
+Send this message?
 Set \(entry.displayName)'s price
 Set price
 She will let you know as soon as possible if there is room in this clinic
@@ -356,6 +361,8 @@ This link isn't active, answers stay on this phone.
 Those don’t match.
 To
 To \(name)
+To \(name):\n\n\(body_.trimmingCharacters(in: .whitespacesAndNewlines))
+To \(recipients):\n\n\(body_.trimmingCharacters(in: .whitespacesAndNewlines))
 To contact you: by notification in the app, email, telephone, or other equivalent forms of electronic communication, about clinics and the Services.
 To manage your requests: to attend to and manage your requests to us. Messages sent through the Services are stored on our servers.
 To provide and maintain our Services, including to monitor the usage of our Services.

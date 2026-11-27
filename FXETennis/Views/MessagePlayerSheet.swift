@@ -22,6 +22,9 @@ struct MessagePlayerSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var body_ = ""
     @State private var sending = false
+    /// Send asks first, with the message read back (Tara, 2026-11-23), as
+    /// on the clinic's Message Players.
+    @State private var confirmSend = false
     @State private var error: String?
     @State private var saved = SavedMessagesModel()
 
@@ -63,6 +66,12 @@ struct MessagePlayerSheet: View {
             .navyTitle("Message Player")
             .navigationBarTitleDisplayMode(.inline)
             .task { await saved.load() }
+            .alert("Send this message?", isPresented: $confirmSend) {
+                Button("Send") { send() }
+                Button("Keep editing", role: .cancel) {}
+            } message: {
+                Text("To \(name):\n\n\(body_.trimmingCharacters(in: .whitespacesAndNewlines))")
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -70,7 +79,7 @@ struct MessagePlayerSheet: View {
                 }
                 .onNavy()
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(sending ? "Sending…" : "Send") { send() }
+                    Button(sending ? "Sending…" : "Send") { confirmSend = true }
                         .disabled(sending || body_.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         .accessibilityIdentifier("admin.sendMessage")
                     .tint(Brand.textOnNavy)

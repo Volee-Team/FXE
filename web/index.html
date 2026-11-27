@@ -50,6 +50,12 @@
   button.primary { background: var(--fxe-navy); color: var(--fxe-text-on-navy);
                    border-color: var(--fxe-navy); }
   button.small { min-height: 38px; padding: 6px 12px; font-size: 14px; }
+  /* A roster name that opens Message on that player (Tara, 2026-11-23). */
+  button.name-link { border: 0; background: none; padding: 0; min-height: 0; text-align: left;
+    text-decoration: underline; text-decoration-color: var(--fxe-border); text-underline-offset: 3px; }
+  .recap { margin-top: 10px; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--fxe-border);
+    background: var(--fxe-surface-raised); white-space: pre-wrap; overflow-wrap: anywhere; }
+  input.cancel-message { width: auto; min-width: 16rem; margin-left: 6px; min-height: 38px; font-size: 14px; }
   /* One person's fee (decision 0037): the green, white text at 4.98:1. */
   button.charge { background: var(--fxe-court); color: var(--fxe-text-on-court);
                   border-color: var(--fxe-court); }
@@ -376,6 +382,7 @@ table.signups th { font-weight: 600; color: #6E6552; }
   <label for="m-body">Message</label>
   <textarea id="m-body" rows="5"></textarea>
   <button type="button" class="small" id="m-save" style="margin-top:8px">Save this message</button>
+  <div id="message-recap" class="recap hide" aria-live="polite"></div>
   <div id="message-msg"></div>
   <div class="row" style="margin-top:14px">
     <span class="grow"></span>
@@ -519,6 +526,7 @@ table.signups th { font-weight: 600; color: #6E6552; }
   <label for="mp-body">Message</label>
   <textarea id="mp-body" rows="5"></textarea>
   <button type="button" class="small" id="mp-save" style="margin-top:8px">Save this message</button>
+  <div id="messageplayer-recap" class="recap hide" aria-live="polite"></div>
   <div id="messageplayer-msg"></div>
   <div class="row" style="margin-top:14px">
     <span class="grow"></span>
@@ -1505,9 +1513,15 @@ async function loadClinics() {
           const sub = p ? `${ntrp(p.adult_rating)}, ${p.is_member ? "Member" : "Non-member"}` : "";
           // The Player Pool is where she chooses, so its rows carry the
           // player's history (decision 0027 §1).
+          // The name opens Message on this player (Tara, 2026-11-23: "find
+          // myself wanting to click on name in clinic list and send them a
+          // message"), for the rows Message's One player lists.
+          const name = ["in", "pool", "response_needed"].includes(s) && p
+            ? `<button type="button" class="name name-link" data-message="${c.id}" data-messageto="${r.player_id}">${esc(who)}</button>`
+            : `<span class="name">${esc(who)}</span>`;
           return `<div class="row">
             ${s === "pool" ? `<span class="muted" style="width:18px;text-align:right">${i + 1}</span>` : ""}
-            <span class="grow"><span class="name">${esc(who)}</span><br><span class="muted">${esc(sub)}</span>${r.price_set_by_admin ? `<br><span class="muted" data-price-set="${r.id}">Price set: ${money(r.price_cents_charged)}</span>` : ""}${s === "pool" ? historyHtml(history[r.player_id]) : ""}${r.player_note ? `<br><span class="player-note" data-player-note="${r.id}">“${esc(r.player_note)}”</span>` : ""}</span>
+            <span class="grow">${name}<br><span class="muted">${esc(sub)}</span>${r.price_set_by_admin ? `<br><span class="muted" data-price-set="${r.id}">Price set: ${money(r.price_cents_charged)}</span>` : ""}${s === "pool" ? historyHtml(history[r.player_id]) : ""}${r.player_note ? `<br><span class="player-note" data-player-note="${r.id}">“${esc(r.player_note)}”</span>` : ""}</span>
             ${extra(r)}
           </div>`;
         }).join("")}
@@ -1695,14 +1709,34 @@ document.addEventListener("click", async (e) => {
   if (b.dataset.restoretpl) return run(() => call("admin_set_template_archived", { p_id: b.dataset.restoretpl, p_archived: false }));
   if (b.dataset.cancelclinic) {
     // Two clicks, five seconds apart at most. Canceling notifies everyone in
-    // You're In!, the Player Pool and Response Needed, so a stray click must
-    // not do it; a native confirm() dialog is not styleable and blocks tests.
+    // You're In!, the Player Pool and Response Needed, and anyone still
+    // asking to get in, so a stray click must not do it; a native confirm()
+    // dialog is not styleable and blocks tests. The first click also opens a
+    // box for her own message (Tara, 2026-11-23: "when canceling, allow me to
+    // send a message when I cancel"); while she is typing in it, or it holds
+    // text, the button stays armed.
     if (b.dataset.armed !== "1") {
       b.dataset.armed = "1"; b.textContent = "Really cancel? Everyone is told."; b.classList.add("danger");
-      setTimeout(() => { if (b.isConnected) { b.dataset.armed = ""; b.textContent = "Cancel clinic"; b.classList.remove("danger"); } }, 5000);
+      const box = document.createElement("input");
+      box.type = "text"; box.maxLength = 500; box.className = "cancel-message";
+      box.placeholder = "Message to players (optional)";
+      box.setAttribute("aria-label", "Message to players (optional)");
+      b.after(box);
+      const disarm = () => {
+        if (!b.isConnected) return;
+        if (box.value.trim() || document.activeElement === box) { setTimeout(disarm, 5000); return; }
+        b.dataset.armed = ""; b.textContent = "Cancel clinic"; b.classList.remove("danger"); box.remove();
+      };
+      setTimeout(disarm, 5000);
       return;
     }
-    return run(() => call("cancel_clinic", { p_clinic: b.dataset.cancelclinic }));
+    const box = b.nextElementSibling && b.nextElementSibling.classList.contains("cancel-message") ? b.nextElementSibling : null;
+    const message = box ? box.value.trim() : "";
+    // p_message only when she wrote one: the one-argument call keeps working
+    // against a database that has not had 20261125000002 yet.
+    return run(() => call("cancel_clinic", message
+      ? { p_clinic: b.dataset.cancelclinic, p_message: message }
+      : { p_clinic: b.dataset.cancelclinic }));
   }
   if (b.dataset.remove) {
     // Out of the clinic, the same RPC the phone's Remove uses; kept as
@@ -1830,13 +1864,22 @@ document.addEventListener("click", async (e) => {
     const { error } = await sb.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", b.dataset.seen);
     if (error) throw error;
   });
-  if (b.dataset.message)  { messagingClinic = b.dataset.message; $("m-body").value = ""; note($("message-msg"), ""); fillOnePlayer(); $("message").showModal(); return; }
+  if (b.dataset.message)  {
+    messagingClinic = b.dataset.message; $("m-body").value = ""; note($("message-msg"), ""); unrecap("message"); fillOnePlayer();
+    // A roster name: start on One player, with them chosen.
+    if (b.dataset.messageto && $("m-player").querySelector(`option[value="${b.dataset.messageto}"]`)) {
+      $("m-audience").value = "player"; $("m-player").value = b.dataset.messageto; showOnePlayer();
+    } else {
+      $("m-audience").value = "everyone"; showOnePlayer();
+    }
+    $("message").showModal(); return;
+  }
   if (b.dataset.walkup)   { walkupClinic = b.dataset.walkup; $("w-query").value = ""; $("w-results").innerHTML = ""; note($("walkup-msg"), ""); $("walkup").showModal(); $("w-query").focus(); return; }
   if (b.dataset.inviteany) { invitingClinic = b.dataset.inviteany; $("i-query").value = ""; $("i-results").innerHTML = ""; note($("inviteany-msg"), ""); $("inviteany").showModal(); $("i-query").focus(); return; }
   if (b.dataset.messageplayer) {
     messagingPlayer = b.dataset.messageplayer;
     $("mp-to").textContent = `To ${b.dataset.name}`;
-    $("mp-body").value = ""; note($("messageplayer-msg"), "");
+    $("mp-body").value = ""; note($("messageplayer-msg"), ""); unrecap("messageplayer");
     $("messageplayer").showModal();
     return;
   }
@@ -2437,13 +2480,40 @@ function fillOnePlayer() {
 const showOnePlayer = () => $("m-player").classList.toggle("hide", $("m-audience").value !== "player");
 $("m-audience").addEventListener("change", showOnePlayer);
 
+// Tara, 2026-11-23: "are you sure you want to send this message with a recap
+// of the message to players". Send's first click shows who gets it and the
+// message, and the button becomes "Yes, send"; the second click sends. Any
+// change to the message or to who gets it takes it back to Send. In the
+// dialog, not confirm(): a native dialog is not styleable and blocks tests.
+function recapFirst(dialog, to, body) {
+  const btn = $(`${dialog}-send`), box = $(`${dialog}-recap`);
+  if (btn.dataset.recapped === "1") return true;
+  box.innerHTML = `<strong>Send this message?</strong>\nTo ${esc(to)}:\n\n${esc(body)}`;
+  box.classList.remove("hide");
+  btn.dataset.recapped = "1"; btn.textContent = "Yes, send";
+  return false;
+}
+function unrecap(dialog) {
+  const btn = $(`${dialog}-send`), box = $(`${dialog}-recap`);
+  btn.dataset.recapped = ""; btn.textContent = "Send";
+  box.classList.add("hide"); box.innerHTML = "";
+}
+for (const id of ["m-body", "m-audience", "m-player"]) $(id).addEventListener("input", () => unrecap("message"));
+$("m-audience").addEventListener("change", () => unrecap("message"));
+$("m-player").addEventListener("change", () => unrecap("message"));
+$("mp-body").addEventListener("input", () => unrecap("messageplayer"));
+
 $("message-send").onclick = async () => {
   const btn = $("message-send");
   const toOne = $("m-audience").value === "player";
   if (toOne && !$("m-player").value) { $("m-player").focus(); return; }
+  const body = $("m-body").value.trim();
+  if (body) {
+    const pick = toOne ? $("m-player") : $("m-audience");
+    if (!recapFirst("message", pick.options[pick.selectedIndex].text, body)) return;
+  }
   btn.disabled = true;
   try {
-    const body = $("m-body").value.trim();
     if (!body) throw new Error("Write a message first.");
     // One player goes through admin_message_player and stays on this clinic
     // for them alone; send_clinic_message refuses 'player' (invalid_audience).
@@ -2451,6 +2521,7 @@ $("message-send").onclick = async () => {
       ? await sb.rpc("admin_message_player", { p_player: $("m-player").value, p_body: body, p_clinic: messagingClinic })
       : await sb.rpc("send_clinic_message", { p_clinic: messagingClinic, p_audience: $("m-audience").value, p_body: body });
     if (error) throw error;
+    unrecap("message");
     $("message").close();
   } catch (err) {
     // player_not_on_clinic: they were canceled since the dialog opened.
@@ -2463,12 +2534,15 @@ $("message-send").onclick = async () => {
 
 // The Players tab's message: a notification only, no clinic.
 $("messageplayer-send").onclick = async () => {
-  const btn = $("messageplayer-send"); btn.disabled = true;
+  const btn = $("messageplayer-send");
+  const body = $("mp-body").value.trim();
+  if (body && !recapFirst("messageplayer", $("mp-to").textContent.replace(/^To /, ""), body)) return;
+  btn.disabled = true;
   try {
-    const body = $("mp-body").value.trim();
     if (!body) throw new Error("Write a message first.");
     const { error } = await sb.rpc("admin_message_player", { p_player: messagingPlayer, p_body: body });
     if (error) throw error;
+    unrecap("messageplayer");
     $("messageplayer").close();
   } catch (err) {
     note($("messageplayer-msg"), (err?.message || "").includes("player_not_found") ? "That player's account was deleted." : friendly(err));
