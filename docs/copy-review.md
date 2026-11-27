@@ -1046,7 +1046,9 @@ Decision 0056. Tara: "I think can change the rounds. That's totally fine. Probab
 
 Neither is visible to the extractor (an assigned and a returned string), so `docs/copy-approved.txt` did not change; they are listed here instead (the known gap below).
 
-## Cancel with a message, the send recap, and a roster name (2026-11-25) — awaiting John
+## Cancel with a message, the send recap, and a roster name (2026-11-25) — approved by John
+
+John approved this wording on 2026-11-27 ("Approve all").
 
 From Tara's next-update note (2026-11-23): "when canceling, allow me to send a message when I cancel", "are you sure you want to send this message with a recap of the message to players", "find myself wanting to click on name in clinic list and send them a message".
 
