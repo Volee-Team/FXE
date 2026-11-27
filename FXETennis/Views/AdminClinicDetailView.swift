@@ -100,9 +100,13 @@ final class AdminClinicModel {
             && CancelPolicy.isInsideCutoff(startsAt: clinic.startsAt, cutoffHours: cutoffHours, now: now)
     }
 
+    /// Moves after every load, done or failed: the page scrolls to a
+    /// notification's section after the first.
+    private(set) var loadCount = 0
+
     func load() async {
         loading = true
-        defer { loading = false }
+        defer { loading = false; loadCount &+= 1 }
         do {
             roster = try await AdminRepository.roster(clinic: clinic.id)
             zelleAllowed = (try? await AdminRepository.zelleAllowed()) ?? false
@@ -216,8 +220,14 @@ struct AdminClinicDetailView: View {
     /// The 105 rounds (decision 0054, item 8).
     @State private var showRounds = false
 
-    init(clinic: ClinicAdmin, onChanged: @escaping () async -> Void = {}) {
+    /// The section a tapped notification is about; the page scrolls to it
+    /// once the roster has loaded (Tara, 2026-11-23).
+    let focus: AdminClinicFocus?
+    @State private var focused = false
+
+    init(clinic: ClinicAdmin, focus: AdminClinicFocus? = nil, onChanged: @escaping () async -> Void = {}) {
         self.clinic = clinic
+        self.focus = focus
         self.onChanged = onChanged
         _model = State(initialValue: AdminClinicModel(clinic: clinic))
     }
@@ -233,6 +243,7 @@ struct AdminClinicDetailView: View {
         ZStack {
             CourtBackdrop()
 
+            ScrollViewReader { reader in
             ScrollView {
                 VStack(alignment: .leading, spacing: Brand.Spacing.lg) {
                     header
@@ -249,6 +260,7 @@ struct AdminClinicDetailView: View {
                         controlsBelow: model.isOver(),
                         guests: model.guests
                     ) { entry in AnyView(youreInControls(entry)) }
+                    .id(AdminClinicFocus.youreIn)
 
                     rosterSection(
                         Brand.Status.playerPool, model.pool,
@@ -264,6 +276,7 @@ struct AdminClinicDetailView: View {
                             }
                         })
                     }
+                    .id(AdminClinicFocus.waitlist)
 
                     rosterSection(
                         Brand.Status.responseNeeded, model.responseNeeded,
@@ -271,6 +284,7 @@ struct AdminClinicDetailView: View {
                     ) { entry in AnyView(cancelInviteButton(entry)) }
 
                     lateRequestSection
+                        .id(AdminClinicFocus.lateRequests)
 
                     // Canceled stays visible: hard rule 4, and Screen 14 says
                     // "Keep canceled players visible to Tara." A late cancel
@@ -288,11 +302,19 @@ struct AdminClinicDetailView: View {
                                 }
                             })
                         }
+                        .id(AdminClinicFocus.canceled)
                     }
                 }
                 .padding(Brand.Spacing.pageMargin)
             }
             .refreshable { await model.load() }
+            // Once, after the first load has drawn the sections.
+            .onChange(of: model.loadCount) {
+                guard let focus, !focused else { return }
+                focused = true
+                withAnimation { reader.scrollTo(focus, anchor: .top) }
+            }
+            }
         }
         .crispTopEdge()
         .navyTitle(clinic.name)

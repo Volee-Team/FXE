@@ -205,7 +205,7 @@ struct NotificationsView: View {
             }
         }
         guard let target = NotificationTarget(entityType: item.entityType, entityId: item.entityId) else { return }
-        destination = await NotificationResolver.live.destination(for: target, isAdmin: isAdmin)
+        destination = await NotificationResolver.live.destination(for: target, isAdmin: isAdmin, type: item.type)
     }
 
     /// A push tapped while this list is open: it opens here, on this stack,
