@@ -393,6 +393,8 @@ test.describe("cancel clinic", () => {
     const btn = card.getByRole("button", { name: "Cancel clinic" });
     await btn.click();
     await expect(card.getByRole("button", { name: /Really cancel/ })).toBeVisible();
+    // Her own message goes with the notice (Tara, 2026-11-23).
+    await card.getByLabel("Message to players (optional)").fill("Courts are wet");
     await card.getByRole("button", { name: /Really cancel/ }).click();
     // Hidden by default once canceled; the toggle brings it back with its chip.
     await expect(page.getByText(/1 canceled clinic hidden/)).toBeVisible();
@@ -990,8 +992,14 @@ test.describe("Tara's next update (2026-11-06)", () => {
       await expect(card).toContainText("Rob Delgado", { timeout: 15_000 });
       // Dana's canceled row says when (Tara, 2026-11-27).
       await expect(card.locator("[data-canceled-at]")).toContainText(/^Canceled \w{3}, \w{3} \d{1,2}/);
-      await card.getByRole("button", { name: "Message" }).click();
       const dialog = page.locator("dialog#message");
+      // Her name on the roster opens Message on her (Tara, 2026-11-23).
+      await card.getByRole("button", { name: "Maria Alvarez", exact: true }).click();
+      await expect(dialog).toBeVisible();
+      await expect(dialog.getByLabel("To", { exact: true })).toHaveValue("player");
+      await expect(dialog.getByLabel("Player", { exact: true })).toHaveValue(MARIA_P);
+      await dialog.getByRole("button", { name: "Cancel" }).click();
+      await card.getByRole("button", { name: "Message", exact: true }).click();
       await expect(dialog).toBeVisible();
       await dialog.getByLabel("To", { exact: true }).selectOption({ label: "One player" });
       // You're In!, then Waitlist, then Response Needed; nobody canceled.
@@ -1000,6 +1008,10 @@ test.describe("Tara's next update (2026-11-06)", () => {
       await pick.selectOption({ label: "Maria Alvarez" });
       await dialog.getByLabel("Message", { exact: true }).fill(stamp);
       await dialog.getByRole("button", { name: "Send" }).click();
+      // Nothing goes until she has read it back (Tara, 2026-11-23).
+      await expect(dialog.locator("#message-recap")).toContainText(`To Maria Alvarez:\n\n${stamp}`);
+      expect(await db.get(`notifications?body=eq.${encodeURIComponent(stamp)}&select=id`)).toEqual([]);
+      await dialog.getByRole("button", { name: "Yes, send" }).click();
       await expect(dialog).toBeHidden({ timeout: 15_000 });
 
       const enc = encodeURIComponent(stamp);
@@ -1031,6 +1043,12 @@ test.describe("Tara's next update (2026-11-06)", () => {
       await expect(dialog.getByRole("group", { name: "Saved" })).toBeVisible();
       await dialog.getByLabel("Message", { exact: true }).fill(stamp);
       await dialog.getByRole("button", { name: "Send" }).click();
+      await expect(dialog.locator("#messageplayer-recap")).toContainText(`To Gina Moreau:\n\n${stamp}`);
+      // Editing takes it back to Send; the second Send shows it again.
+      await dialog.getByLabel("Message", { exact: true }).fill(stamp);
+      await expect(dialog.getByRole("button", { name: "Yes, send" })).toHaveCount(0);
+      await dialog.getByRole("button", { name: "Send" }).click();
+      await dialog.getByRole("button", { name: "Yes, send" }).click();
       await expect(dialog).toBeHidden({ timeout: 15_000 });
       expect(await db.get(`notifications?body=eq.${encodeURIComponent(stamp)}&select=account_id,type,entity_type,entity_id`))
         .toEqual([{ account_id: GINA_ACCT, type: "clinic_message", entity_type: "player", entity_id: GINA_P }]);

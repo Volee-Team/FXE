@@ -1046,6 +1046,20 @@ Decision 0056. Tara: "I think can change the rounds. That's totally fine. Probab
 
 Neither is visible to the extractor (an assigned and a returned string), so `docs/copy-approved.txt` did not change; they are listed here instead (the known gap below).
 
+## Cancel with a message, the send recap, and a roster name (2026-11-25) — approved by John
+
+John approved this wording on 2026-11-27 ("Approve all").
+
+From Tara's next-update note (2026-11-23): "when canceling, allow me to send a message when I cancel", "are you sure you want to send this message with a recap of the message to players", "find myself wanting to click on name in clinic list and send them a message".
+
+- Cancel clinic, phone: the alert's title is `Cancel {clinic}?` (was `Cancel {clinic}? Everyone registered or waiting is told.`), its line is `Everyone registered, waiting or asking to get in is told.`, its box reads `Message to players (optional)`, and its buttons stay `Cancel clinic` and `Keep the clinic`.
+- Cancel clinic, laptop: the first click still reads `Really cancel? Everyone is told.` and now opens a box, `Message to players (optional)`.
+- What players get: `{clinic} has been canceled.` as before, then her message after a space when she wrote one. Her message is also kept on the clinic's board (FROM TARA). Someone still asking to get in after close now gets the same notice.
+- Send, phone (Message Players and the Players tab's message): `Send this message?`, then `To {Everyone / You're In! / Waitlist / Response Needed / Unpaid / the player's name}:`, a blank line, and her message; buttons `Send` and `Keep editing`.
+- Send, laptop: the first Send shows the same recap in the dialog and becomes `Yes, send`. Changing the message or who gets it goes back to `Send`.
+- A roster name (You're In!, Waitlist, Response Needed) is now a button that opens Message Players on that player. No new words.
+- Phone, a cancel message over 500 characters: `Keep the message under 500 characters.` (in the existing `Couldn't cancel` alert; an assigned string, so not in `docs/copy-approved.txt`). The laptop's box stops at 500.
+
 ## When someone canceled (2026-11-27) — approved by John
 
 John approved this wording on 2026-11-27 ("Approve all").

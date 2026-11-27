@@ -191,12 +191,17 @@ struct AdminClinicDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var typeSize
     @State private var confirmCancelClinic = false
+    @State private var cancelMessage = ""
     @State private var removing: RosterEntry?
     @State private var lateCanceling: RosterEntry?
     @State private var lateNote = ""
     @State private var cancelError: String?
     @State private var model: AdminClinicModel
     @State private var showMessage = false
+    /// Set when she taps a name on the roster: the sheet opens on "One
+    /// player" with that player chosen (Tara, 2026-11-23: "find myself wanting
+    /// to click on name in clinic list and send them a message").
+    @State private var messageTo: UUID?
     /// A Waitlist Invite / Move In waiting on "Your clinic is full" (item 5).
     @State private var fullFor: RosterEntry?
     /// Invite anyone, not only the Waitlist (item 2).
@@ -355,24 +360,34 @@ struct AdminClinicDetailView: View {
             }
         }
         // Canceling tells everyone in You're In!, the Player Pool and Response
-        // Needed. A confirmation with the consequence spelled out, because a
-        // courtside mis-tap must not send that message.
-        .confirmationDialog(
-            "Cancel \(clinic.name)? Everyone registered or waiting is told.",
-            isPresented: $confirmCancelClinic, titleVisibility: .visible
+        // Needed, and anyone still asking to get in. A confirmation with the
+        // consequence spelled out, because a courtside mis-tap must not send
+        // that message. Tara, 2026-11-23: "when canceling, allow me to send a
+        // message when I cancel", so the alert takes her words (optional).
+        .alert(
+            "Cancel \(clinic.name)?",
+            isPresented: $confirmCancelClinic
         ) {
+            TextField("Message to players (optional)", text: $cancelMessage, axis: .vertical)
+                .accessibilityIdentifier("admin.cancel.message")
             Button("Cancel clinic", role: .destructive) {
+                let message = cancelMessage
+                cancelMessage = ""
                 Task {
                     do {
-                        try await AdminRepository.cancelClinic(clinic.id)
+                        try await AdminRepository.cancelClinic(clinic.id, message: message)
                         await onChanged()
                         dismiss()
                     } catch {
-                        cancelError = "That didn't save. Check your connection and try again."
+                        cancelError = String(describing: error).contains("message_too_long")
+                            ? "Keep the message under 500 characters."
+                            : "That didn't save. Check your connection and try again."
                     }
                 }
             }
-            Button("Keep the clinic", role: .cancel) {}
+            Button("Keep the clinic", role: .cancel) { cancelMessage = "" }
+        } message: {
+            Text("Everyone registered, waiting or asking to get in is told.")
         }
         .confirmationDialog(
             "Remove \(removing?.displayName ?? "this player") from \(clinic.name)?",
@@ -434,8 +449,9 @@ struct AdminClinicDetailView: View {
                 await model.load()
             }
         }
-        .sheet(isPresented: $showMessage) {
-            MessageClinicSheet(clinic: clinic, unpaidCount: model.unpaidCount, roster: model.messageable)
+        .sheet(isPresented: $showMessage, onDismiss: { messageTo = nil }) {
+            MessageClinicSheet(clinic: clinic, unpaidCount: model.unpaidCount, roster: model.messageable,
+                               startWith: messageTo)
         }
     }
 
@@ -469,6 +485,7 @@ struct AdminClinicDetailView: View {
             }
 
             Button {
+                messageTo = nil
                 showMessage = true
             } label: {
                 Label("Message Players", systemImage: "bubble.left.and.bubble.right")
@@ -591,8 +608,24 @@ struct AdminClinicDetailView: View {
                             ? AnyLayout(VStackLayout(alignment: .leading, spacing: Brand.Spacing.xxs))
                             : AnyLayout(HStackLayout(alignment: .center, spacing: Brand.Spacing.sm))
                         layout {
-                            rosterIdentity(entry, index: numbered ? index + 1 : nil, history: history)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                            // The name opens Message Players on this player,
+                            // for anyone the sheet can message (In, Waitlist,
+                            // invited).
+                            if model.messageable.contains(where: { $0.registration.playerId == entry.registration.playerId }) {
+                                Button {
+                                    messageTo = entry.registration.playerId
+                                    showMessage = true
+                                } label: {
+                                    rosterIdentity(entry, index: numbered ? index + 1 : nil, history: history)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .contentShape(Rectangle())
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityIdentifier("admin.roster.name")
+                            } else {
+                                rosterIdentity(entry, index: numbered ? index + 1 : nil, history: history)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
                             trailing(entry)
                         }
                         .padding(.vertical, Brand.Spacing.xs)
@@ -1312,6 +1345,8 @@ private struct MessageClinicSheet: View {
     let unpaidCount: Int
     /// Everyone on this clinic who is not canceled, for "One player".
     let roster: [RosterEntry]
+    /// A player to start on (a tapped roster name); nil starts on Everyone.
+    var startWith: UUID? = nil
 
     /// A group, or one player (20261107000002). Tara, pointing at this
     /// sheet's To menu, 2026-11-06: "For instance, here - option to message
@@ -1324,6 +1359,10 @@ private struct MessageClinicSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var to: To = .group(.everyone)
     @State private var player: UUID?
+    /// Send asks first, showing who gets it and the message (Tara,
+    /// 2026-11-23: "are you sure you want to send this message with a recap
+    /// of the message to players").
+    @State private var confirmSend = false
     private var audience: MessageAudience? {
         if case .group(let a) = to { return a }
         return nil
@@ -1401,6 +1440,19 @@ private struct MessageClinicSheet: View {
             .navyTitle("Message Players")
             .navigationBarTitleDisplayMode(.inline)
             .task { await saved.load() }
+            .onAppear {
+                if let startWith, roster.contains(where: { $0.registration.playerId == startWith }) {
+                    to = .onePlayer
+                    player = startWith
+                }
+            }
+            .alert("Send this message?", isPresented: $confirmSend) {
+                Button("Send") { send() }
+                    .accessibilityIdentifier("admin.sendMessage.confirm")
+                Button("Keep editing", role: .cancel) {}
+            } message: {
+                Text("To \(recipients):\n\n\(body_.trimmingCharacters(in: .whitespacesAndNewlines))")
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -1408,7 +1460,7 @@ private struct MessageClinicSheet: View {
                 }
                 .onNavy()
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(sending ? "Sending…" : "Send") { send() }
+                    Button(sending ? "Sending…" : "Send") { confirmSend = true }
                         .disabled(sending || body_.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                                   || (to == .onePlayer && player == nil))
                         .accessibilityIdentifier("admin.sendMessage")
@@ -1417,6 +1469,13 @@ private struct MessageClinicSheet: View {
                 .onNavy()
             }
         }
+    }
+
+    /// Who the confirmation names: the group as the To menu says it, or the
+    /// player chosen.
+    private var recipients: String {
+        if let audience { return audience.label }
+        return roster.first(where: { $0.registration.playerId == player })?.displayName ?? "One player"
     }
 
     private func send() {
