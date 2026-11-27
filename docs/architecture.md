@@ -57,7 +57,7 @@ most important thing to understand here, and it is section 5.
 
 | Area | What exists |
 |---|---|
-| Postgres schema, RLS, narrow views, RPCs | 93 migrations (`ls supabase/migrations`), the newest `20261125000001_double_105_rule_switch.sql`. Hosted holds the same 93 (`supabase migration list --linked`, 2026-11-25). Re-check with that command after any push; this line is not the record |
+| Postgres schema, RLS, narrow views, RPCs | 94 migrations (`ls supabase/migrations`), the newest `20261125000001_double_105_rule_switch.sql`. Hosted holds the same 93 (`supabase migration list --linked`, 2026-11-25). Re-check with that command after any push; this line is not the record |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | Enumerated by probes (section 5) |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | Section 7 |
 | Probe suite: 63 SQL probes and 23 shell probes (races and the API rush); the suite prints its own total | Runs in CI on every push (section 9) |
@@ -901,8 +901,8 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `public_open_backfill.sh` | 20261101000001's backfill (decision 0046), run for real: three planted clinics, the migration file applied over them in one rolled-back transaction. A future week on the old Friday 08:00 moves to noon with its member open unchanged; a hand-set time and a week already open stay (each guard shown red by a copy of the migration without it, 2026-11-01) |
 | `beginner_backfill.sh` | 20261106000001's rewrite of existing clinics (decision 0049), run for real: two planted clinics carrying the old value, the migration file applied over them in one rolled-back transaction; the beginner row loses its minimum, the 3.0+ row keeps it, and neither row's published date or price moves |
 
-**Swift**: 335 unit tests (`FXETennisTests`: price formatting, per-viewer
-pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016; since 2026-09-27 the request-failure classifier, a failed load keeping who you are, the waiver and card refusals reopening their steps, the 30-second reload throttle, the redraw moments, and the type scale under Larger Text; since 2026-09-28 the invitation push's Accept and Decline, the Remind me reminder, the calendar entry, and the haptics and chip motion; a clinic the player holds beyond the list's five-week edge staying on their screens, the instant-open snapshot's per-person and ended-clinic rules, Siri's next-clinic answer, and the Player Pool's history line) and 30
+**Swift**: 337 unit tests (`FXETennisTests`: price formatting, per-viewer
+pricing, NTRP buckets, service-week edges, the cancel-cutoff policy with the hours as a parameter, 3 since decision 0013, the charge summary since 0016; since 2026-09-27 the request-failure classifier, a failed load keeping who you are, the waiver and card refusals reopening their steps, the 30-second reload throttle, the redraw moments, and the type scale under Larger Text; since 2026-09-28 the invitation push's Accept and Decline, the Remind me reminder, the calendar entry, and the haptics and chip motion; a clinic the player holds beyond the list's five-week edge staying on their screens, the instant-open snapshot's per-person and ended-clinic rules, Siri's next-clinic answer, and the Player Pool's history line) and 31
 XCUITests: 9 player flows
 (`PlayerFlowUITests`: sign in / browse / register, undo, sign-up end to end,
 the bell, profile edit, My Clinics, prices, hidden information, a declined card

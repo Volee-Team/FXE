@@ -57,14 +57,14 @@ How this file works, so it can be trusted:
   transfer and did not carry over; build 18, the same code signed by the LLC
   (tag `v1.0.3-18`), was uploaded and submitted for review by John on
   2026-11-12.
-- **Hosted:** 93 of 93 migrations applied, newest `20261125000001` (the double-105 rule switched off, pushed 2026-11-25); before it `20261120000002` (a canceled clinic only for who was on it, and before it `20261120000001`, a resolved decline can be charged again; both pushed 2026-11-20 with `supabase db push`); before it `20261118000002` (juniors phase 1, the server, and its review fixes, pushed 2026-11-18; no screen calls them until the phase 1 screens ship)
+- **Hosted:** 93 of 94 migrations applied, newest `20261125000001` (the double-105 rule switched off, pushed 2026-11-25); before it `20261120000002` (a canceled clinic only for who was on it, and before it `20261120000001`, a resolved decline can be charged again; both pushed 2026-11-20 with `supabase db push`); before it `20261118000002` (juniors phase 1, the server, and its review fixes, pushed 2026-11-18; no screen calls them until the phase 1 screens ship)
   (read-only query of `supabase_migrations.schema_migrations`, 2026-11-12; 87 after the push of 2026-11-15, same query);
   the project is ACTIVE_HEALTHY (management API). **Payments live** since
   2026-10-14: 166 charges succeeded, 3 refunds, 0 failed; 338 member
   accounts, 218 with a saved card. Push: 631 of 719 delivered in 14 days, 302
   devices (`scripts/live-status.sh`, 2026-11-12). 14 clinics published
   through 2026-11-20 (read-only query).
-- **Tests:** 62 SQL probes plus 22 shell probes, 335 unit tests, 29
+- **Tests:** 63 SQL probes plus 23 shell probes, 337 unit tests, 29
   XCUITests, 87 browser tests (`scripts/check-doc-claims.sh`, 2026-11-12).
 - **Waiting on others:** Apple's review of 1.0.3 (18); Tara: the juniors
   decisions and the open questions (`docs/questions-for-tara.md`).
@@ -173,7 +173,7 @@ observer.
 | Stripe pipeline against stripe-mock | every PR | 94 checks as of 2026-09-28 | real Stripe behaviour: one live charge and refund, 2026-10-14 (A10) |
 | Push pipeline against a mock APNs | every PR | 57 checks as of 2026-09-28 | real APNs delivering since 2026-11-05 (C3) |
 | Web admin browser tests (Playwright, real sign-in) | every PR | 87 | a cold-start flake after a local reset (backlog) |
-| Swift unit tests (pure logic) | every PR | 335 | fine |
+| Swift unit tests (pure logic) | every PR | 337 | fine |
 | Hosted signed-out smoke (`scripts/hosted-smoke.sh`) | every PR, read-only against production | 162 targets as of 2026-10-11, including a browser preflight to each function the web admin calls | only the signed-out side |
 | XCUITests, player and admin flows, and Apple's accessibility audit | **local only** (section F) | 31 | run on a laptop before every TestFlight build, on iOS 17, 18 and 26 (`docs/ui-test-runs.log`) |
 | Copy gate, secret scan (now Stripe keys too), migration immutability, icon gate, doc checks | every PR | – | none |
