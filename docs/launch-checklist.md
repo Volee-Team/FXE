@@ -1,6 +1,6 @@
 # Launch checklist: the single source of truth for what is left
 
-**Launch target: the launch party, Friday 2026-11-06** (moved from 2026-10-16 by Tara on 2026-09-28, decision 0024; she would go earlier if the app is ready). Passed: members book and pay in the app every day (State today).
+**Launched.** The launch party was Friday 2026-11-06 (decision 0024); members book and pay in the app every day (State today). What is left is the after-launch path in section 0.
 
 How this file works, so it can be trusted:
 
@@ -24,9 +24,9 @@ How this file works, so it can be trusted:
    with one word: **DONE** (with the date and the evidence), **OPEN**,
    **BLOCKED** (on what), **DECIDE** (whose call), or **LATER** (after launch).
 4. **A status is re-derived by command, never copied forward.** Last full
-   re-derivation: **2026-11-12**, by the model, each check named in the row
-   (`scripts/live-status.sh`, read-only queries, the management API, `gh`,
-   `git`, Apple's public lookup). Before that 2026-10-21 (four read-only
+   re-derivation: **2026-11-14**, by the model, each check named in the row
+   (`scripts/live-status.sh`, `scripts/hosted-read.sh`, the management API, `gh`,
+   `git`, Apple's public lookup), with four read-only doc reviewers. Before that 2026-11-12, 2026-10-21 (four read-only
    reviewers in parallel) and 2026-09-28. Re-derived
    again on 2026-10-12 (by `git`, the code and Alex's reports, each named in
    the row): the State today block, A7, A9, A10, A13, A14, C3, C8, C10, C11,
@@ -42,60 +42,64 @@ How this file works, so it can be trusted:
 
 ---
 
-## State today (re-derived 2026-11-12)
+## State today (re-derived 2026-11-27)
 
-- **Code:** `main` is `081d1ce` (PR #141 merged 2026-11-11), version 1.0.3;
-  build 18's number is PR #143. Green on iOS 26.0 and 18.6 on 2026-11-11 for
-  fingerprint `6ada1b648d7e55d7` (`docs/ui-test-runs.log`), the code build 18
-  was archived from. The pros' rounds (decision 0056) wait in PR #142 for
-  1.0.4.
+- **Code:** `main` is `957d1e5` (2026-11-22). Open: #153 (mine: a resolved
+  decline charged again, canceled clinics only for who was on them, the
+  double-105 switch; all three migrations already on hosted), #157 to #160
+  (John: Tara's 11/12 list, J7), #151 and #152 (juniors phase 1, the app and
+  the site, J5), #148 (court reservations, step 1, J6), #149 (dead code)
+  (`gh pr list`, 2026-11-27).
 - **At Apple:** FXE Tennis is on **Volee LLC's** account (team `FBJXDTHTN4`)
-  since the App Transfer of 2026-11-11 (C12). The App Store has 1.0.2,
-  released 2026-11-07, seller Volee LLC
+  since the App Transfer of 2026-11-11 (C12). The App Store has **1.0.4**,
+  released 2026-11-18, 7 ratings
   (`curl "https://itunes.apple.com/lookup?bundleId=com.fxetennis.app"`,
-  2026-11-12). 1.0.3 build 17 was uploaded under John's team minutes before the
-  transfer and did not carry over; build 18, the same code signed by the LLC
-  (tag `v1.0.3-18`), was uploaded and submitted for review by John on
-  2026-11-12.
-- **Hosted:** 90 of 90 migrations applied, newest `20261118000002` (juniors phase 1, the server, and its review fixes, pushed 2026-11-18; no screen calls them until the phase 1 screens ship)
-  (read-only query of `supabase_migrations.schema_migrations`, 2026-11-12; 87 after the push of 2026-11-15, same query);
-  the project is ACTIVE_HEALTHY (management API). **Payments live** since
-  2026-10-14: 166 charges succeeded, 3 refunds, 0 failed; 338 member
-  accounts, 218 with a saved card. Push: 631 of 719 delivered in 14 days, 302
-  devices (`scripts/live-status.sh`, 2026-11-12). 14 clinics published
-  through 2026-11-20 (read-only query).
+  2026-11-27).
+- **Hosted:** 90 migrations applied from `main`, plus the three in PR #153
+  that were pushed before it merged, newest `20261125000001` (the double-105
+  rule switched off) (`scripts/live-status.sh`, 2026-11-27). **Payments live** since
+  2026-10-14: 522 charges succeeded, 3 refunds, 1 failed, none stuck at
+  Processing; 409 member accounts, 289 with a saved card. Push: 1150 of 1216
+  delivered in 14 days, 367 devices. 12 clinics published through
+  2026-12-04 (read-only query). The level check and the double-105 rule are
+  both off (`app_settings`, J3).
 - **Tests:** 62 SQL probes plus 22 shell probes, 330 unit tests, 29
   XCUITests, 87 browser tests (`scripts/check-doc-claims.sh`, 2026-11-12).
-- **Waiting on others:** Apple's review of 1.0.3 (18); Tara: the juniors
-  decisions and the open questions (`docs/questions-for-tara.md`).
+  The UI suite runs on GitHub against `fxe-ci` on every PR that touches the
+  app (section F).
+- **Waiting on others:** Tara: questions 136 and 142 (J3), the winter
+  juniors questions (166 to 170), 171 and 172. Alex and Tara: the terms
+  behind courts and the pool (J6).
 
 ---
 
-## 0. The critical path to 2026-11-06
+## 0. The critical path now (after launch)
 
-What had to be true on the day, in the order it had to happen. Each item is
-a row below; this list adds nothing of its own. The party has passed; kept as
-the record. Re-derived 2026-11-12.
+The party has passed and the app is in daily use, so this is the order the
+next work unblocks in. No target date is set: a date for juniors or the
+courts is Tara's and Alex's call (J6). Each item is a row; this list adds
+nothing of its own. Re-derived 2026-11-14.
 
-1. **Apple approves 1.0.0** (C14): done 2026-10-27.
-2. **Release** (C14): done 2026-10-28, tagged `v1.0.0` 2026-10-30. Testers
-   move to it from the App Store. 1.0.1 (build 13) uploaded 2026-10-30 without
-   the Waitlist wording (PR #116), which needs the build after it. 1.0.2 on
-   the App Store since 2026-11-07; 1.0.3 (18) in review since 2026-11-12.
-   [John]
-3. **Real payments**: live since 2026-10-14 (A9, A10); receipts off
-   (2026-10-21); dispute emails in Tara's own login still to check (A14).
+1. **Money stays right.** The webhook race is fixed and live (J1, done
+   2026-11-14); John's look-up for a charge Stripe never answered is the
+   backup (J2). Dispute emails in Tara's own Stripe login (A14). [John],
    [Tara]
-4. **Decision 0041's server side**: held 2026-11-05. Decision 0047 moves a
-   Waitlist player straight in unless it is the same day, and 0045 covers
-   members, so what is left of 1-hour offers waits on question 141. [Tara]
-5. **Tara's email to members** with the QR code and the App Store link (G8,
-   I6). [Tara]
-6. **Push seen on a real lock screen** (C3): done 2026-11-05.
-7. **The move to the LLC** (C1, C12): done 2026-11-11: App Transfer
-   accepted, the LLC's APNs key on hosted the same day (C2), build 18 signed
-   by the LLC. [John]
-8. **Supabase Pro** (D3): done 2026-11-13 (the Volee org). [John]
+2. **The level check back on** (J3). 1.0.3 can explain a refusal, so the
+   only wait is Tara's answers to questions 136 and 142. [Tara], then [me]
+3. **1.0.4** with the pros' rounds (J4): on the App Store since 2026-11-18.
+4. **Juniors and summer camp** (J5): phase 1's server is live, the app and
+   the site are in PRs #151 and #152; winter sign-ups open 2026-12-15
+   (decision 0060). [John], with Tara's answers to 166 to 170
+5. **Court reservations and the pool** (J6): John's server for courts is in
+   PR #148; the money and ownership terms are still to agree. [Alex]+[Tara]
+6. **Tara's next-update list of 11/12** (J7): four PRs in review. [John]
+7. **Tara's email to members** (G8). [Tara]
+
+The path to the party (2026-11-06), as it finished: 1.0.0 approved 2026-10-27
+and released 2026-10-28 (C14); payments live 2026-10-14 (A9, A10); push on a
+real lock screen 2026-11-05 (C3); the move to the LLC 2026-11-11 (C1, C12);
+decision 0041's 1-hour offers overtaken by Move In (0047); Supabase Pro
+from 2026-11-13 (D3).
 
 ---
 ## A. Payments
@@ -133,13 +137,13 @@ What Stripe takes: 2.9% + 30¢ per card charge. Apple takes nothing (decision
 | C5 | Delete my account in the app, history kept (guideline 5.1.1(v)) | [me] | **DONE 2026-09-21**; `delete-account` deployed the same day |
 | C6 | Privacy policy at a public URL | [Tara] | **DONE 2026-09-27**: Tara approved it ("looks good"), contact fersctennispro@gmail.com; published at `https://fxe-tennis-admin.vercel.app/privacy.html` (verified by `deploy-web.sh`) and linked from Profile in the app (build 4) |
 | C7 | App Store listing: name, subtitle, description in Tara's words, screenshots, age rating, support URL, review notes with a test account | [Alex]+[me] | **DONE** 2026-10-21 (Alex: "he submitted before i saw this"): John filled the listing from `docs/for-alex.md` §4c and submitted. The description went as drafted; its approval tick and the support page's are still open in `docs/copy-review.md` (G4); a change is an edit in App Store Connect |
-| C8 | TestFlight for testers: the group and the build it gets (the row was build 11, which was never uploaded) | [John] | **LATER** [John]: players install from the App Store now (1.0.2, C14), not TestFlight. The App Transfer of 2026-11-11 likely emptied the testers' list, as Volee's own transfer did; set the group up again under the LLC only if TestFlight is wanted |
+| C8 | TestFlight for testers: the group and the build it gets (the row was build 11, which was never uploaded) | [John] | **LATER** [John]: players install from the App Store now (1.0.3 since 2026-11-13, C14), not TestFlight. The App Transfer of 2026-11-11 likely emptied the testers' list, as Volee's own transfer did; set the group up again under the LLC only if TestFlight is wanted |
 | C9 | Real-device pass: the two simulator flakes checked on an iPhone | [John]/[me] | **LATER** [John]: 302 real phones run the app (`scripts/live-status.sh`, 2026-11-12) and no one has reported either flake; check on a real iPhone if one is |
 | C10 | An annotated git tag at every TestFlight build and upload | [me]/[John] | **DONE 2026-11-12**: every App Store upload since 1.0.2 has an annotated tag: `v1.0.2`, `v1.0.3` (build 16), `v1.0.3-17`, `v1.0.3-18` (`git cat-file -t` reads `tag` for each, 2026-11-12), and `v1.0.0` on `2f5888d`. 1.0.1's builds 13 and 14 have none. Earlier: `v0.1.0-rc4` to `rc12`, upload tags for builds 2, 5, 7 and 12; `v0.1.0-tf2` is lightweight |
 | C11 | External TestFlight on John's account with a public link, through Apple's beta review, with no testers invited until the soft launch (G7) | [Alex]/[John] | **LATER**: not needed: the QR link and the website send people to the App Store listing (I6; `web/app/target.js` and the live `/app/target.js`, 2026-11-12) |
 | C12 | Move the app to Volee's LLC developer account (approved 2026-10-25; was the FXE Tennis LLC, C1): App Transfer of `com.fxetennis.app` from John's account (possible once it has an App Store release, C14), then the LLC's APNs key on hosted | [John] | **DONE 2026-11-11**: John transferred FXE to Volee LLC's developer account (team `FBJXDTHTN4`); push moved to the LLC's key the same day (C2); build 18 is the first LLC-signed build. Left: TestFlight testers, if wanted (C8) |
 | C13 | How Apple's reviewer signs in: one real account called App Review, made through the app's own sign-up with an address Alex controls, left out of the board report; while keys are sandbox the review notes give Stripe's 4242 test card | [John] | **DONE 2026-11-12**: John signed in with the login in App Store Connect's App Review Information while 1.0.3 was in review ("it worked"). The first reviewer account, made 2026-10-20 through the TestFlight app, was deleted 2026-10-21 18:30 UTC (read-only query, 2026-11-12); the review notes hold a working one |
-| C14 | **App Store release, build 12, on John's account** (decision 0042): PR #97 merged green, tag `v0.1.0-rc12`, John uploads and submits version 1.0.0 with the review account (C13) and the listing (C7); Tara has the next week's clinics published so the reviewer sees some | [me]+[John]+[Alex] | **DONE** 2026-10-28: Apple approved 1.0.0 on 2026-10-27 (its email, forwarded by Kat to the group text) and it was released 2026-10-28 (`curl "https://itunes.apple.com/lookup?bundleId=com.fxetennis.app"`: version 1.0.0, releaseDate 2026-10-28, 2026-10-30); Tara found it in App Store search on 2026-10-29 (group text). Left from this row: the `v1.0.0` tag (C10) Since then: 1.0.2 released 2026-11-07 (Apple's lookup, seller Volee LLC, 2026-11-12); 1.0.3 build 18 submitted 2026-11-12 |
+| C14 | **App Store release, build 12, on John's account** (decision 0042): PR #97 merged green, tag `v0.1.0-rc12`, John uploads and submits version 1.0.0 with the review account (C13) and the listing (C7); Tara has the next week's clinics published so the reviewer sees some | [me]+[John]+[Alex] | **DONE** 2026-10-28: Apple approved 1.0.0 on 2026-10-27 (its email, forwarded by Kat to the group text) and it was released 2026-10-28 (`curl "https://itunes.apple.com/lookup?bundleId=com.fxetennis.app"`: version 1.0.0, releaseDate 2026-10-28, 2026-10-30); Tara found it in App Store search on 2026-10-29 (group text). Left from this row: the `v1.0.0` tag (C10) Since then: 1.0.2 released 2026-11-07 (Apple's lookup, seller Volee LLC, 2026-11-12); 1.0.3 build 18 submitted 2026-11-12 and released 2026-11-13 (Apple's lookup 2026-11-14: 1.0.3, seller Volee LLC) |
 ## D. Backend and operations
 
 | ID | Item | Owner | Status |
@@ -175,7 +179,7 @@ observer.
 | Web admin browser tests (Playwright, real sign-in) | every PR | 87 | a cold-start flake after a local reset (backlog) |
 | Swift unit tests (pure logic) | every PR | 330 | fine |
 | Hosted signed-out smoke (`scripts/hosted-smoke.sh`) | every PR, read-only against production | 162 targets as of 2026-10-11, including a browser preflight to each function the web admin calls | only the signed-out side |
-| XCUITests, player and admin flows, and Apple's accessibility audit | **local only** (section F) | 30 | run on a laptop before every TestFlight build, on iOS 17, 18 and 26 (`docs/ui-test-runs.log`) |
+| XCUITests, player and admin flows, and Apple's accessibility audit | **CI** (section F) | 30 | on GitHub against the `fxe-ci` project on every PR that touches the app, iOS 26 and 18 (`scripts/check-ui-test-record.sh`); iOS 17 dropped 2026-10-30 |
 | Copy gate, secret scan (now Stripe keys too), migration immutability, icon gate, doc checks | every PR | – | none |
 | Nightly backup and consent purge | nightly | – | restored by hand monthly (D4, last 2026-11-03) |
 
@@ -197,7 +201,7 @@ Missing kinds of testing, in the order they matter:
 | ID | Item | Owner | Status |
 |---|---|---|---|
 | G1 | The MVP call (`docs/archive/mvp.md`): payments in or out, push in or out | [Alex]+[Kat]+[Tara] | **DONE 2026-09-27**: Alex: payments fully live for the party (A11) and push fully working (C3), *"we want everything 100% functional + even better"* |
-| G2 | Tara's review page, **round six**: only her 14 unseen words and 5 laptop tasks, no Questions tab (page version 6, `scripts/build-tara-review.py`). Round four was answered 2026-09-28 (decision 0024) and round five's questions 2026-10-12 (decision 0040); `review-watch.yml` opens an issue whenever she saves | [John] sends, [Tara] answers | **LATER**: Tara answers by text now (decisions 0051 to 0056). Re-read 2026-11-12: no round-six link minted (hosted `review_links` newest 2026-09-28; `review_responses` page versions 2 and 4 only). Mint one from the admin site's Testing tab only if wanted (`docs/for-alex.md` §5) |
+| G2 | Tara's review page, **round six**: only her 14 unseen words and 5 laptop tasks, no Questions tab (page version 6, `scripts/build-tara-review.py`). Round four was answered 2026-09-28 (decision 0024) and round five's questions 2026-10-12 (decision 0040); `review-watch.yml` opens an issue whenever she saves | [John] sends, [Tara] answers | **LATER**: Tara answers by text now (decisions 0051 to 0055; 0056 waits in PR #142). Re-read 2026-11-12: no round-six link minted (hosted `review_links` newest 2026-09-28; `review_responses` page versions 2 and 4 only). Mint one from the admin site's Testing tab only if wanted (`docs/for-alex.md` §5) |
 | G3 | Kat's calls: the tab bar colour, the green text contrast, the green line under the header; and her earlier "tag spec" line (release tags, answered by C10, or analytics tags, not built; `docs/kat-due-diligence.md`) | [Kat] | **DONE 2026-10-01**: keep the system tab bar, the darker green for text, keep the green line (decision 0036); her "tag spec" line is answered by the release tags (C10) |
 | G4 | Alex's ticks in `docs/copy-review.md` (sections G to J and the older open rows) | [John] | **OPEN** (Alex stepped back 2026-10-30; John approves) |
 | G5 | Tara's logo file and the original court photo | [Tara] | **DONE 2026-10-01**: the logo (the gator in colour, decision 0032, 2026-09-29) and the court photo, which is the one from her 2026-09-26 mockup, in the app since then (Alex, 2026-10-01: *"its legit in the app alr"*); a full-size original would only make it sharper |
@@ -221,8 +225,8 @@ launch" items are in `docs/backlog.md`.
 | H4 | Web admin: This week bounded to this week (plus ended, uncharged clinics), no silent loss past 1000 rows, supabase-js vendored at an exact version (branch `web-admin-bounds`) | [me] | **DONE 2026-09-27** (PR #75, `997cc65`) |
 | H5 | Push, the app's half: banner while open, a tap opens the clinic, the badge clears (branch `push-client`) | [me] | **DONE 2026-09-27** (PR #75, `997cc65`) |
 | H6 | Password reset without email (D13) and the scanner-proof reset page (branch `admin-reset-link`) | [me] | **DONE 2026-09-27** (PR #73) |
-| H7 | **Payouts on the Money tab** (the balance, the next deposit and its date; Tara's "when will $ be in my account") and dispute alerts in Action Needed, so Tara never needs the Stripe dashboard day to day | [me] | **DONE 2026-09-28.** On hosted: `supabase migration list --linked` pairs `20260928200001`; `supabase functions list` shows `stripe-payouts` v1 and `stripe-webhook` v8 ACTIVE; the live `index.html` carries the Payouts card (`curl ... | **DONE 2026-09-28.** On hosted, `20260928200001` is applied (69 of 69 paired, 2026-10-21) and the functions API shows `stripe-payouts` v7 and `stripe-webhook` v18 ACTIVE; the live `index.html` carries the Payouts card (curl, 2026-10-21) |
-| H8 | Walk on a real phone what the simulator could not: a push tapped with the app in the background, the Home spinner on a slow connection, Accept and Decline on the lock screen, a haptic | [John]/[me] | **OPEN**: walk it on the newest build (1.0.3 build 18, in review 2026-11-12). Push now reaches phones: 631 of 719 delivered in 14 days (C3, `scripts/live-status.sh` 2026-11-12) |
+| H7 | **Payouts on the Money tab** (the balance, the next deposit and its date; Tara's "when will $ be in my account") and dispute alerts in Action Needed, so Tara never needs the Stripe dashboard day to day | [me] | **DONE 2026-09-28.** On hosted, `20260928200001` is applied (69 of 69 paired, 2026-10-21) and the functions API shows `stripe-payouts` v7 and `stripe-webhook` v18 ACTIVE; the live `index.html` carries the Payouts card (curl, 2026-10-21) |
+| H8 | Walk on a real phone what the simulator could not: a push tapped with the app in the background, the Home spinner on a slow connection, Accept and Decline on the lock screen, a haptic | [John]/[me] | **OPEN**: walk it on the newest build (1.0.3 build 18, on the App Store since 2026-11-13). Push now reaches phones: 631 of 719 delivered in 14 days (C3, `scripts/live-status.sh` 2026-11-12) |
 ## I. Polish for the party (2026-09-28)
 
 Alex, 2026-09-27: *"do as MUCH as you possibly can w building and testing
@@ -242,6 +246,18 @@ each checked by an independent reviewer or the sql-auditor, then merged on
 | I7 | Build 6 for players: instant open (decision 0028), Siri and Spotlight, Subscribe in Calendar (0029), every held clinic on Home, clean titles, placeholders, a declined card that says why (0026) | [me] | **DONE 2026-09-29**: PR #81 merged on 27 green checks; locally `Executed 232 tests, with 0 failures` (unit) and all 22 UI tests at the time (the declined-card one run with the local service key); tagged `v0.1.0-rc6` |
 | I8 | Build 6 for Tara: pros and their Today screen (0025), Resolved (0026), saved messages (0030), a player's history, Copy to next week and the court sheet (0027); a clinic never published never reaches a player (20260929000001/2) | [me] | **DONE 2026-09-29**: `supabase db push` 60 of 60 paired, the six functions redeployed, `deploy-web.sh` matched byte for byte, `hosted-smoke.sh` 156 targets, 0 open |
 | I9 | Tara's questions 92 to 100 and 73 on round five of her review page | [me]/[Alex] | **DONE 2026-10-12**: answered by text (decision 0040), all but 101 (Foxcroft's share, her meeting) |
+
+## J. After launch (added 2026-11-14)
+
+| ID | Item | Owner | Status |
+|---|---|---|---|
+| J1 | A charge Stripe took sat at Processing: the webhook answered 200 and recorded nothing (backlog, Fixed, 2026-11-14) | [me] | **DONE 2026-11-14**: PR #146 merged (`0c9ac1f`), `stripe-webhook` version 22 deployed; the stuck $23 recorded by resending Stripe's event (hosted row `succeeded`, registration paid); `scripts/live-status.sh`: "none stuck at Processing" |
+| J2 | Ask Stripe about a charge it never answered for (decision 0057, PR #144), the backup to J1 | [John] | **LATER**: PR #144 closed unmerged (`gh pr view 144`, 2026-11-27); J1 has held since: none stuck at Processing (`scripts/live-status.sh`, 2026-11-27) |
+| J3 | Switch the level check back on (decision 0048; `app_settings.level_check_enabled`) | [Tara] then [me] | **BLOCKED** on questions 136 (no rating) and 142 (a 3.5 in a beginner clinic). 1.0.3 on the App Store can explain a refusal (Request Approval, since 1.0.2) |
+| J4 | 1.0.4: the pros set the 105 rounds in their week (decision 0056) | [John] | **DONE 2026-11-18**: PR #142 merged 2026-11-16; 1.0.4 on the App Store from 2026-11-18 (Apple's lookup, 2026-11-27) |
+| J5 | Juniors and summer camp (Tara's six-page flow of 2026-11-07) | [John] | **OPEN**: phase 1's server on hosted 2026-11-18 (`20261118000001`, `20261118000002`); the app and the site in PRs #151 and #152; winter session from 2027-01-04, sign-ups 2026-12-15 (decision 0060); questions 166 to 170 open |
+| J6 | Court reservations and the pool | [Alex]+[Tara] | **DECIDE** (Alex and Tara): the money and ownership terms, since Tara may run it through her own LLC and the repo is public. John's server for courts, step 1, is in PR #148 (2026-11-18) |
+| J7 | Tara's note "Next update from 11/12" (her words in `docs/roadmap.md`) | [John] | **OPEN**: in review: #157 (old asks on canceled clinics), #158 (a message when canceling, a recap before sending, a name opens a message, a declined same-day ask told of a cancel), #159 (a notification opens its spot), #160 (cancel time). Not started: pictures on the message board, private clinics, pros getting every message, a message to all ladies, all men or everyone. The double-105 line is overruled (J3 switch, 2026-11-25) |
 
 ## F. The CI Supabase project (Alex asked 2026-09-12; corrected 2026-09-13; decided 2026-09-18)
 
@@ -276,4 +292,4 @@ Rows stay in their tables with DONE; this is the short history.
 - 2026-09-27: A1, A8 Stripe keys and webhook; D12 the consent purge's first run; D2 and D0 re-verified.
 - 2026-09-22: D10 encrypted backups.
 - 2026-09-21: C5 account deletion; A3 Tara's policy answers.
-- 2026-09-12: C4 privacy manifest; E9 Stripe SDK pinned; D4 restore drill; the docs audit.
+- 2026-09-12: the privacy manifest's first version (C4, open again since); Stripe SDK pinned (section E, item 8); the first restore drill (D4); the docs audit.

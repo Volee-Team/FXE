@@ -5,7 +5,7 @@ answers, and asked for everything in 1.0.3, build 17). Item 8's "pros read,
 only Tara writes" is changed by decision 0056 (2026-11-11): a pro sets the
 rounds of a 105 in their week. Built in
 `supabase/migrations/20261109000001_tara_items_0054.sql`, the laptop site and
-Tara's phone (1.0.3, build 17). Items 1 to 6 of the same list are decisions
+Tara's phone (1.0.3, build 18, on the App Store since 2026-11-13; build 17 did not survive the App Transfer). Items 1 to 6 of the same list are decisions
 0051 to 0053.
 
 ## Her words
@@ -125,7 +125,7 @@ Item 9 was already on her phone (the Court menu's "Remove from clinic", since
     - The juniors' pricing (her "I'm gonna need this for the junior") is the
       juniors' own design; this is the per-person override she asked for.
 
-Also in 1.0.3, build 17, so Tara has everything on her phone: guests
+Also in 1.0.3 (build 18), so Tara has everything on her phone: guests
 (decision 0052) and the clinic's price and rain half (decision 0053). And,
 from her the same day on her phone's Player page: *"Also from app would be
 great to have their cell number under name. Sure it's there on website"* and

@@ -8,7 +8,7 @@ metadata:
   modified: 2026-09-28T01:28:20.444Z
 ---
 
-Alex, 2026-09-27: *"YES we want everything 100% functional + even better to wow people on the first opening (PUT THIS IN MEMOERY - WE WANT EXTRA FEATURES NOT JUST MVP)"*. Payments are to be fully done for the launch party (2026-10-16), push notifications fully working, and the admin should let Tara run everything (including Stripe payouts) without opening Stripe.
+Alex, 2026-09-27: *"YES we want everything 100% functional + even better to wow people on the first opening (PUT THIS IN MEMOERY - WE WANT EXTRA FEATURES NOT JUST MVP)"*. Payments are to be fully done for the launch party (then 2026-10-16; moved to 2026-11-06, decision 0024), push notifications fully working, and the admin should let Tara run everything (including Stripe payouts) without opening Stripe.
 
 **Why:** the launch party is the first impression for a whole club; a bare MVP undersells it, and Alex has said repeatedly that time/credits are not the constraint and "u work so fast nowadays".
 

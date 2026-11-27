@@ -35,11 +35,13 @@ the database layer as well. Do not add a count to a body string here.
 
 The catalogue below is what she wrote and what should fire. This table is what
 the database does: the newest definition, across `supabase/migrations/`, of
-every function that calls `notify_account`. There are ten (re-derived
-2026-10-12 from the migration files): `cancel_clinic`, `cancel_invitation`,
+every function that calls `notify_account`. There are fourteen (re-derived
+2026-11-14 from the migration files): `cancel_clinic`, `cancel_invitation`,
 `cancel_registration`, `invite_from_pool`, `place_player`,
 `register_for_clinic`, `request_late_spot`, `resolve_late_request`,
-`respond_to_invitation`, `send_clinic_message`. `notification_targets.sql`
+`respond_to_invitation`, `send_clinic_message`, plus `admin_invite_player`
+and `admin_message_player` (20261107000002), `request_level_approval` and
+`admin_set_level_approval` (20261105000002). `notification_targets.sql`
 names nine of them in `the_nine_known_producers_are_found`;
 `cancel_invitation` (20260928500001) is the one it does not name, though its
 enumerating checks cover it.
@@ -53,16 +55,20 @@ her yes before it reaches a real player.
 |---|---|---|---|---|
 | `register_for_clinic` | `youre_in` / `added_to_pool` | The player whose spot it is, whoever tapped Register | #1 / #5, hers | 1, 5 |
 | `place_player` | `youre_in` | The player, only when Tara's placement is what put them in: not when they were already in, not for a draft, canceled or already-started clinic, and not when `resolve_late_request` is placing an approved late asker (that answer is its own row). Into the Pool: nothing | #1, hers | 1 |
-| `invite_from_pool` | `invitation_received` | The invited player | `A spot opened in {clinic}. Accept or decline.` | 2 (different words, contradiction (a)) |
-| `cancel_clinic` | `clinic_canceled` | Every live registration | `{clinic} has been canceled.` | 7 (different words, contradiction (d)) |
+| `invite_from_pool` | `youre_in` / `invitation_received` | The player. Before clinic day (New York) and outside the 3-hour cutoff it is Move In: You're In! and #1, hers (decision 0047); on clinic day or inside the cutoff, an invitation | #1, or `A spot opened in {clinic}. Accept or decline.` | 1, or 2 (different words, contradiction (a)) |
+| `admin_invite_player` | `invitation_received` | The invited player (anyone not already on the clinic, decision 0051) | `A spot opened in {clinic}. Accept or decline.` | 2 (different words, contradiction (a)) |
+| `cancel_clinic` | `clinic_canceled` | Every live registration, only if the clinic was ever published (20260929000002) | `{clinic} has been canceled.` | 7 (different words, contradiction (d)) |
 | `send_clinic_message` | `clinic_message` | The audience she picked | Her typed body, pass-through | 12 |
+| `admin_message_player` | `clinic_message` (entity `player`, or `clinic` when sent on one) | One player | Her typed body, pass-through | 12 |
 | `respond_to_invitation` | `invitation_accepted_player` | The player who accepted (never #1 as well; not when Tara has canceled the clinic, where "Your spot is confirmed" would be false; a decline sends the player nothing; an Accept refused `card_required` or `card_declined` moves nothing and sends nothing, decision 0040) | #3, hers | 3 |
-| `respond_to_invitation` | `invitation_accepted` / `invitation_declined` | Every admin | `{player} accepted their spot in {clinic}.` / `{player} declined {clinic} and is back in the Player Pool.` | 13, 14 |
+| `respond_to_invitation` | `invitation_accepted` / `invitation_declined` | Every admin | `{player} accepted their spot in {clinic}.` / `{player} declined {clinic} and is back on the Waitlist.` (`{player} declined {clinic}.` when the decline cancels the spot: on clinic day, decision 0054, or an invitation from Invite player, 0051) | 13, 14 |
 | `cancel_registration` | `player_canceled` | Every admin, only when the player canceled their own spot (since 20260927100002 an admin's removal does not reach the admins; `admin_mark_late_cancel` tells nobody) | `{player} canceled {clinic}.` plus ` Late, fee applies.` on a late cancel, plus ` Note: "{cancel_note}"` when a note was left (the ` Late, courtesy used.` branch is still in the SQL but unreachable since `courtesy_cancel_days = 0`, decision 0013) | 15 |
-| `cancel_registration` | `removed_from_pool` | The player, when Tara (an admin who does not own the player) removes them from the Player Pool of a published clinic. Her removal from You're In! sends nothing. Offered since 2026-09-28: Remove on each Pool row, phone and laptop | #6, hers | 6 |
+| `cancel_registration` | `removed_from_pool` | The player, when Tara (an admin who does not own the player) removes them from the Player Pool of a published clinic. Her removal from You're In! sends nothing. Offered since 2026-09-28: Remove on each Pool row, phone and laptop | `You've been removed from the Waitlist for {clinic}. Hope to see you at another clinic soon!` (#6, hers, with her 2026-10-30 rename, 20261030000002) | 6 |
 | `cancel_invitation` | `invitation_withdrawn` | The player whose invitation Tara takes back (they go back to the Player Pool, as Tara confirmed in question 94, decision 0040) | Hers, verbatim, 2026-09-28 (question 79, decision 0024): `The levels didn’t line up for this clinic, so we’ve released your spot. We keep each court close in level so everyone gets a great practice. We’ll catch you at the next clinic!` | 79 |
 | `request_late_spot` | `LATE_REQUEST` | Every admin | `{player} is asking to join {clinic}.` plus the quoted message if any | not in her list |
 | `resolve_late_request` | `LATE_REQUEST_APPROVED` / `LATE_REQUEST_DECLINED` | The requesting player | `You're in for {clinic}.` / `Tara couldn't fit you into {clinic} this time.` | not in her list; see finding (e) |
+| `request_level_approval` | `level_request` | Every admin | `{player} ({rating}) asked to attend {level}+ clinics.` | not in her list |
+| `admin_set_level_approval` | `level_approved` | The player | `You're approved to attend {label} clinics.` (question 123) | not in her list |
 
 `{day}` and `{time}` in #1 are built in SQL from the clinic's start in New
 York, `to_char(starts_at at time zone 'America/New_York', 'FMDay')` and
@@ -102,11 +108,11 @@ player travelling out of state must still read the court time.
 | # | Notification | Trigger event | Recipient | Exact copy |
 |---|---|---|---|---|
 | 1 | You're In | **Wired 2026-09-28.** `register_for_clinic` when the registration lands in You're In! (member priority), and `place_player` when Tara's placement puts in someone who was not already in (a published clinic that has not started; not an approved late request, which sends its own answer). **Not** on invitation accept: that is #3, finding (e). | The registering player's account | `You're all set for {clinic} on {day} at {time}. Looking forward to seeing you on court!` |
-| 2 | Invitation Received | Tara invites a player out of the Player Pool (`invite_from_pool`). Wired, but with our body, not hers: see What fires today. | The invited player's account | `Good News! A spot is available for {clinic}. Tap below to accept before it expires` |
+| 2 | Invitation Received | Tara invites from the Waitlist on clinic day or inside the cutoff (`invite_from_pool`; before then it is Move In and #1, decision 0047), or invites anyone (`admin_invite_player`, 0051). Wired, but with our body, not hers: see What fires today. | The invited player's account | `Good News! A spot is available for {clinic}. Tap below to accept before it expires` |
 | 3 | Invitation Accepted | **Wired 2026-09-28.** `respond_to_invitation` on Accept, to the player, unless Tara has canceled the clinic in the meantime; Tara gets #13 either way. | The accepting player's account | `Awesome! Your spot is confirmed. See you soon!` |
 | 4 | Invitation Expired | **Not wired.** No expiry mechanism exists, and taking an invitation back sends her "released your spot" words instead (question 79). See contradiction (a). | The invited player's account | `Your invitation has expired, but we hope to see you next time!` |
 | 5 | Added to Player Pool | **Wired 2026-09-28.** `register_for_clinic` when the registration lands in the Player Pool (full, or after the members' head start). Not on decline, not on invitation cancel, not on Tara placing someone into the Pool. See finding (i). | The registering player's account | `Thanks for registering! I personally create each clinic based on playing levels and will send confirmations once lineups are set ASAP` |
-| 6 | Removed from Player Pool | **Wired 2026-09-28.** `cancel_registration` when Tara (an admin who does not own the player) removes someone from the Player Pool of a published clinic. A player's own cancel sends Tara #15 instead. Remove on each Pool row (phone and laptop, 2026-09-28) reaches it. See contradiction (b). | The removed player's account | `You've been removed from the Player Pool for {clinic}. Hope to see you at another clinic soon!` |
+| 6 | Removed from Player Pool | **Wired 2026-09-28.** `cancel_registration` when Tara (an admin who does not own the player) removes someone from the Player Pool of a published clinic. A player's own cancel sends Tara #15 instead. Remove on each Pool row (phone and laptop, 2026-09-28) reaches it. See contradiction (b). | The removed player's account | `You've been removed from the Waitlist for {clinic}. Hope to see you at another clinic soon!` (her 2026-10-30 rename, 20261030000002) |
 | 7 | Clinic Canceled | Tara cancels a clinic (`cancel_clinic`). Sent to You're In!, Player Pool, and Response Needed. Wired, but with our body, not hers: see What fires today and contradiction (d). | Every account with a live registration | `Unfortunately today's {clinic} has been canceled due to weather.` |
 | 8 | Payment Reminder | **Switched off 2026-09-21 (decision 0013).** Built 2026-09-01 as a `send_clinic_message` with audience `unpaid`; the Remind unpaid control is rendered on neither admin surface while `app_settings.zelle_allowed` is `false`, which it is. | Unpaid registrants | Her sentence was `Just a quick reminder for payment from {clinic} on {date}. Thank you!`. The code still holds `Just a reminder that {clinic} ({date}) hasn't been paid yet. {payment line} Thanks!` (`web/index.html`, `AdminRepository.swift`) behind the `zelle_allowed` gate. See (g). |
 | 9 | New Announcement | **Not wired.** `publish_news` notifies nobody, and News has no surface (decision 0006). | Accounts matching the post's audience | `News from FXE!` |
@@ -119,7 +125,7 @@ player travelling out of state must still read the court time.
 | # | Notification | Trigger event | Recipient | Exact copy |
 |---|---|---|---|---|
 | 13 | Player Accepted | Player accepts an invitation. Wired in this wording since 2026-09-28 (it read `{player} accepted.`). | Every admin account | `{player} accepted their spot in {clinic}.` |
-| 14 | Player Declined | Player declines an invitation. Wired in this wording since 2026-09-28 (it read `{player} declined.`). | Every admin account | `{player} declined {clinic} and is back in the Player Pool.` |
+| 14 | Player Declined | Player declines an invitation. Wired in this wording since 2026-09-28 (it read `{player} declined.`). | Every admin account | `{player} declined {clinic} and is back on the Waitlist.` (`{player} declined {clinic}.` when the decline cancels the spot: on clinic day, decision 0054, or an invitation from Invite player, 0051) |
 | 15 | Player Canceled | Player cancels a registration. Also raises Action Needed. Wired in this wording since 2026-09-28 (it read `{player} canceled.`), followed by the late-fee and note suffixes (2026-09-12). | Every admin account | `{player} canceled {clinic}.` |
 
 ### Measured lengths
@@ -299,7 +305,8 @@ the app.
   If two, everyone gets two pushes per clinic per week.
 - **Which recipients.** A Ladies clinic blasted to the whole club is spam to
   half of it. Audience filtering exists on clinics (`ladies` / `men` / `coed`),
-  but the link from clinic audience to a player's eligibility is not built.
+  and since decision 0044 a player's gender decides which Ladies and Men
+  clinics they see (`audience_open_to`).
 - **How many.** Six clinics opening the same Thursday morning is six pushes at
   8:00 AM unless they are batched into one.
 

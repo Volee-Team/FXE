@@ -5,14 +5,12 @@ flow from clinic registration, to payment, confirming the payment in Tara's
 account and need to test a refund."* This is that test. It runs against
 **Stripe's real test mode** (the sandbox), so no real money moves.
 
-Since 2026-10-12 this run is the rehearsal before the live switch (checklist
-A13, which closes A2). The model runs it on a local copy of the app (the
-local database, the simulator and the local admin site) with a **restricted
-sandbox key** carrying exactly the live key's permissions. Payments are
-switched on in that local database only: never on hosted while the keys are
-sandbox, because a real card is declined in test mode (checklist A9). After
-the live switch, one real charge and refund on Alex's own card on hosted
-closes it (checklist A10).
+This run was meant as the rehearsal before the live switch (A13). Alex
+skipped it on 2026-10-14; one real charge and refund on his own card closed
+A10 instead. It stays here for the next change to the Stripe code. The model
+runs it on a local copy of the app (the local database, the simulator and the
+local admin site) with a **restricted sandbox key** carrying exactly the live
+key's permissions, and payments switched on in that local database only.
 
 What is already proven without Stripe: `tests/stripe/run.sh`, against
 Stripe's own mock server on every PR. What only this run proves: Stripe's
@@ -61,8 +59,8 @@ account pays out automatically every business day, each payment arriving
 about **two business days** after the charge. The **first** payout on a new
 account takes longer, typically 7 to 14 days, while Stripe reviews it. The
 exact schedule for her account is on stripe.com → Settings → Payouts, where
-checklist A14 sets it to Daily; the model has not seen her account, so that
-page is the answer of record.
+checklist A14 set it to Daily (verified in the dashboard 2026-10-16,
+`docs/live-facts.md`).
 
 What Stripe keeps: 2.9% + 30¢ per successful card charge (US cards). On an
 $18 clinic that is 82¢, so $17.18 reaches her. Refunds do not return Stripe's

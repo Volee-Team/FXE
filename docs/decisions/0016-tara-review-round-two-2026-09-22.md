@@ -2,6 +2,8 @@
 
 **Date:** answered 2026-09-22, read and applied 2026-09-27 · **Status:** Active · **Supersedes:** "Need Help?" (Screen 4), "Set by Tara" (2026-09-02), the charge summary line and "Still owed" (2026-09-16)
 
+**Superseded in part (forward note added 2026-11-14):** §3's "Only Tara can change this." was removed by 0024; §9 (guests billed to the member) was parked by 0040 (question 95), then replaced by 0052: a guest is a name Tara adds, never charged by the app.
+
 ## How this arrived, and why it sat for five days
 
 Tara answered round two of her review page (`web/review.html`, page version 2,

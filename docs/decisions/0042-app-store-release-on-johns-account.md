@@ -4,6 +4,8 @@
 2026-10-19: *"we're gonna submit it for a release tonight as soon as possible
 just under John's account and then we can switch it over later"*.
 
+**Carried out 2026-11-11 (forward note added 2026-11-14):** App Transfer to Volee LLC (team FBJXDTHTN4), not FXE Tennis, LLC; the LLC's APNs key is on hosted; build 18 is signed by the LLC (checklist C1, C2, C12).
+
 **Supersedes:** the 2026-08-19 call that the App Store account is the LLC
 from the start (CLAUDE.md changelog, 2026-08-19), and C12's plan of a new
 bundle id for the LLC's app.

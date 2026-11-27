@@ -45,8 +45,8 @@ hosted 2026-11-06 about 3 PM, and the hosted function's hash matched local.
 ## Already in
 
 Five member sign-ups landed in You're In! between noon and the fix, all in
-Sunday 11-08 Coed "105" clinics (Whitney Axley-Andrews in both the 4:30 and the
-6:00; Emily Blair, Sarah Cooper, Jessica Stone in the 4:30). They were left in;
+Sunday 11-08 Coed "105" clinics (one member in both the 4:30 and the 6:00,
+three more in the 4:30; names kept out of this public repo). They were left in;
 whether to move them to the Waitlist is Tara's call. **Answered 2026-11-07:**
 *"If they're on the list, leave it as is. I just wanna make sure they know
 they're on and that I know they're on ... So yes, keep their spots"*. All five

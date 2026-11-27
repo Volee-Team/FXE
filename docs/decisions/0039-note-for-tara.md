@@ -2,10 +2,10 @@
 
 **Date:** 2026-10-11 · **Status:** Active · **Source:** Tara, relayed by Alex
 2026-10-11: *"When people register for the clinics, can there be a private
-note they can put when they register? So for instance, if Quinn wants to
-register for a clinic, but she wants to be on the same core as her friend
-Tammy then she can write a note when she registers. That only I will see so
-make sure it says only Tara can see this."* Then her words for the screen:
+note they can put when they register?"* Her example: a member wants to be on
+the same court as a friend, *"then she can write a note when she registers.
+That only I will see so make sure it says only Tara can see this."*
+(names removed, 2026-11-14) Then her words for the screen:
 *"As the example put 'please put me on court with my friend Jane'. Only Tara
 sees this"*.
 
