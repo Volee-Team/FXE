@@ -3,7 +3,8 @@
 **What is left, and whose it is, lives in `docs/launch-checklist.md` and
 nowhere else.** This file is only the how-to for Alex's rows, click by click.
 Each section names its checklist row; the CI check fails if a section points
-at a row that does not exist. Updated 2026-10-12.
+at a row that does not exist. Updated 2026-11-14. Most sections are now the
+record of steps already taken; each says so in its first line.
 
 Never paste a key, password or secret into the chat with the model.
 Everything typed there is saved to `docs/prompt-log/` on this Mac (gitignored
@@ -11,10 +12,9 @@ since 2026-10-04, and the repository is public). The logging hooks scrub
 key-shaped text and the secret scan fails on it, but those are seatbelts, not
 permission.
 
-The order is the checklist's critical path (its section 0). In this file:
-the review account and John's build 11 upload (§4a, DONE), the Stripe rehearsal and
-live keys alongside them (§1a, §1b), the public link once Apple approves
-(§4b).
+Open rows with steps here: A14 (§1c, Tara's dispute emails only) and G8
+(§9). Every other section is the record of a row now DONE or LATER (launch
+checklist).
 
 ---
 
@@ -110,6 +110,9 @@ file in plain text. Use the web page.
 
 ## 1a. The rehearsal: a restricted sandbox key (checklist A13)
 
+Skipped on 2026-10-14 (checklist A13, LATER). Kept for the next change to
+the Stripe code; `tests/stripe/rehearsal.sh` is ready.
+
 Why: nothing has talked to real Stripe yet, only Stripe's mock server in CI.
 A restricted key missing one permission does not show as an error (the app
 retries it as pending, decision 0019), so saving a card would just quietly
@@ -153,6 +156,9 @@ minutes, with the model.
 9. When it passes, the live keys are next (§1b).
 
 ## 1b. Live keys (checklist A10)
+
+Done 2026-10-14 (checklist A10, A9). Kept as the record and for a key
+rotation.
 
 After the rehearsal (§1a) passes. In the **live** account: no sandbox
 banner, and keys start `pk_live_` and `rk_live_`. Keys go only into
@@ -201,8 +207,8 @@ in different modes (`keyModesAgree` in `stripe-setup-intent`).
    off no card can be saved, and only clinics that end after payments go on
    are ever charged (go-live review, 2026-10-13). The rehearsal (§1a) has
    already run every path of the app's own code against real Stripe.
-9. Payments go on (branch `golive-payments-on`) after Apple approves the
-   external build and you say go (checklist A9). The app's first real
+9. Payments go on (branch `golive-payments-on`) when you say go
+   (checklist A9). The app's first real
    charge is then the first clinic that ends after that, and the model
    watches it.
 
@@ -211,6 +217,9 @@ The nine events match the `case` lines in
 reaches the app.
 
 ## 1c. Three Stripe settings (checklist A14), about 5 minutes
+
+Steps 1 and 2 done (`docs/live-facts.md`, 2026-10-16 and 10-21). Only step
+3, Tara's dispute emails, is open.
 
 In the live account, any time.
 
@@ -228,9 +237,9 @@ In the live account, any time.
 
 Published 2026-09-27 at https://fxe-tennis-admin.vercel.app/privacy.html
 after Tara approved it, and linked from Profile in the app. Nothing left for
-you here. When the LLC's App Store record exists (checklist C7), paste the
-same URL into App Store Connect: the app, **App Information**, **Privacy
-Policy URL**. Moving the page to fersc.com later changes only the URL.
+you here. The listing carries it since 2026-10-21 (C7); the record moved to
+Volee LLC with the app (C12). Moving the page to fersc.com later changes
+only the URL.
 
 ## 2b. Stripe to Tara (checklist A7)
 
@@ -241,11 +250,15 @@ except to watch her email for Stripe's follow-ups with her.
 
 ## 3. Push notifications (checklist C3, H8)
 
-**No push has ever reached a phone (found 2026-10-21).** Every attempt since
-2026-10-03 failed with Apple's `BadEnvironmentKeyInToken`: John's key is not
+Push works (C3, DONE 2026-11-05). Since the App Transfer of 2026-11-11
+hosted uses Volee LLC's key `42D24JXB54` (C2). The steps below are for a key
+rotation. The lock-screen walk is still H8.
+
+The record: from 2026-10-03 to 2026-11-05 every attempt failed with
+Apple's `BadEnvironmentKeyInToken`: John's key is not
 valid for Apple's **production** push service, which every TestFlight and
 App Store phone uses. A key's environment is picked when it is made, and the
-steps below did not say so. Fix, about 5 minutes, no app update:
+steps below did not say so. The fix then, about 5 minutes, no app update:
 
 **A. John makes a new key** on his account, exactly as in steps 1 to 5 at
 the bottom of this section, choosing **Sandbox & Production** at the
@@ -275,8 +288,8 @@ so "delivered" is a fact, not a hope. Then the lock-screen check:
 3. Tell the model whether a banner arrived on the lock screen. Then the
    real-phone walk (checklist H8).
 
-**Making a key** (John's now, and the LLC's own after the move, checklist
-C12):
+**Making a key** (the LLC's, team FBJXDTHTN4; done 2026-11-11, C2; for a
+rotation):
 
 1. https://developer.apple.com/account → **Certificates, IDs & Profiles** →
    **Keys** → the **+** button.
@@ -307,12 +320,12 @@ Apple's production server, which is the default.
 
 ## 4. TestFlight builds so far (checklist C8, C10)
 
-Build 7 was uploaded by John on 2026-09-29 (tag `v0.1.0-tf7`). Builds 8 and
-9 were tagged (`v0.1.0-rc8`, `v0.1.0-rc9`), but no `tf8` or `tf9` tag
-exists, so neither was recorded as uploaded. Build 10 replaces them (§4a).
+Build 7 was uploaded by John on 2026-09-29 (tag `v0.1.0-tf7`); builds 8 to
+11 never were. Build 12 went to the App Store (tag `v0.1.0-tf12`, C14).
+Players install from the App Store now; TestFlight is C8 (LATER).
 The full runbook is `docs/testflight.md`.
 
-## 4a. The review account, then build 11 to External Testing (checklist C8, C11, C13; DONE)
+## 4a. The review account, then build 11 to External Testing (record; build 11 was never uploaded, C8 and C11 LATER; C13 DONE 2026-11-12)
 
 **Build 11 is the tag `v0.1.0-rc11`** on `main` (`355f546`, PR #96, merged
 2026-10-13): Tara's note box at Register (decision 0039), her 2026-10-12
@@ -346,19 +359,19 @@ John submits, or the reviewer stops at Add a card.
 **B. John (about 30 minutes, then Apple's 1 to 2 days; checklist C8, C11).**
 Text John something like this:
 
-> John, build 11 was ready (DONE). `git fetch --tags && git checkout v0.1.0-rc11`,
+> John, build 11 was ready. `git fetch --tags && git checkout v0.1.0-rc11`,
 > `xcodegen generate`, open the project, scheme FXETennis, destination Any
 > iOS Device, Product → Archive. Then Distribute App → **App Store Connect →
 > Upload** (not TestFlight Internal Only: that kind can never go to External
 > Testing). Once it has processed, tag it:
 > `git tag -a v0.1.0-tf11 -m "TestFlight build 11, uploaded by John"` and
-> `git push origin v0.1.0-tf11` (DONE). Full steps are in `docs/testflight.md`.
+> `git push origin v0.1.0-tf11` (never run: build 11 was not uploaded). Full steps are in `docs/testflight.md`.
 
 Then, in App Store Connect:
 
 1. appstoreconnect.apple.com → Apps → FXE Tennis → **TestFlight**.
 2. External Testing → **+** → a group named `FXE Members`.
-3. Add build 11 to the group (DONE). Fill in **Test Information** (below), the
+3. Add build 11 to the group (never done: build 11 was not uploaded). Fill in **Test Information** (below), the
    feedback email, the contact (name, phone, email) and the sign-in for
    Apple's reviewer from A.
 4. **Submit for Review**. Apple usually answers in 1 to 2 days.
@@ -369,7 +382,7 @@ Then, in App Store Connect:
 **Test Information** (testers read the first two; words for Alex to approve):
 
 > What to test: Sign in or create an account, then look through the Clinics
-> tab. Register for a clinic, or join the Player Pool when it is full. Check
+> tab. Register for a clinic, or join the Waitlist when it is full. Check
 > that your clinics show under Profile, My Clinics. Tell us anything that
 > looks wrong or is hard to find.
 
@@ -392,7 +405,7 @@ Then, in App Store Connect:
 > account (please use a new account from Create an account to try deletion).
 >
 > Registration for each week opens Thursday 8:00 AM Eastern for club members
-> and Friday 8:00 AM Eastern for everyone else.
+> and Friday 12:00 PM Eastern for everyone else.
 >
 > Payments: players save a card through Stripe's form and are charged only
 > after an in-person clinic they attended, or for a late cancellation or
@@ -422,7 +435,7 @@ gh secret set VERCEL_TOKEN
 
 To stop it any time: delete the token on the same Vercel page.
 
-## 4c. App Store release on John's account, tonight (checklist C14, decision 0042)
+## 4c. App Store release (record: 1.0.0 approved 2026-10-27 on John's account, C14; moved to Volee LLC 2026-11-11, C12)
 
 Supersedes §4a's External Testing path for tonight: the release goes straight
 to App Store review. The build was **build 12** (tag `v0.1.0-rc12`, made by
@@ -484,10 +497,14 @@ Then **Add for Review → Submit**. Apple usually answers in 1 to 2 days.
 > FXE Tennis is the clinic app for the FXE tennis program.
 >
 > - See each week's clinics and register
-> - Join the Player Pool when a clinic is full, and accept a spot when one is offered
+> - Join the Waitlist when a clinic is full, and accept a spot when one is offered
 > - Get clinic updates and messages from your coach
 > - Keep your clinics in My Clinics, or subscribe to them in your calendar
 > - Save a card once; you are charged after the clinics you attend
+
+The live listing still says "Join the Player Pool" (Apple's lookup,
+2026-11-14). Update it in App Store Connect when 1.0.4 is submitted (words
+already approved; only the term changes, decision 0041).
 
 **Review notes** (only Apple reads these):
 
@@ -510,21 +527,18 @@ Then **Add for Review → Submit**. Apple usually answers in 1 to 2 days.
 > reviewed without one.
 >
 > Registration for each week opens Thursday 8:00 AM Eastern for club members
-> and Friday 8:00 AM Eastern for everyone else. Notifications are optional.
+> and Friday 12:00 PM Eastern for everyone else. Notifications are optional.
 > Clinic locations are deliberately not shown because this is a members' club.
 
-**3. After Apple approves:** you and Tara press Release. The model tags
-`v1.0.0`, and the transfer to the LLC (decision 0042) waits for C1.
+**3. After Apple approves:** release, then tag. The app moved to Volee LLC
+on 2026-11-11 (C12).
 
 ## 4b. The QR code's link (checklist I6), one message
 
-The QR code Tara prints and emails points at
-https://fxe-tennis-admin.vercel.app/app, which shows "Not available yet." until
-it knows where the app installs from. When the external TestFlight beta is
-approved, App Store Connect → the app → TestFlight → the external group →
-**Public Link** → copy it (it looks like `https://testflight.apple.com/join/…`)
-and send it to the model. It sets one line (`web/app/target.js`) and deploys;
-the printed code never changes, even when the App Store link replaces it later.
+The QR code Tara prints points at
+https://fxe-tennis-admin.vercel.app/app, which forwards to the App Store
+listing (`web/app/target.js`, I6 DONE 2026-11-03). The printed code never
+changes.
 Tara's card: web admin → Players → **QR code for the app** → Print, or
 Download for email (her email to members is checklist G8, §9).
 
@@ -607,9 +621,9 @@ header. Nothing left here.
 
 ## 8. GitHub: make CI a real gate (checklist G6), about 5 minutes
 
-Today `main` requires two checks, and admins may merge past them. The model's
-GitHub access is admin, so today only its own scripts stop it merging a red
-PR. This makes GitHub itself refuse.
+Done 2026-10-12 (G6): 15 required checks, admins included
+(`gh api repos/Volee-Team/FXE/branches/main/protection`, 2026-11-14). Steps
+kept as the record.
 
 1. Open https://github.com/Volee-Team/FXE/settings/branches
 2. Next to the rule for `main`, click **Edit**.
@@ -631,12 +645,11 @@ Dependabot alerts are already on (checked 2026-09-27), so nothing to do there.
 
 ## 9. With Tara (checklist G7, G8)
 
-- **The soft launch** (checklist G7): once Apple approves the external build
-  (C11), pick the date and the first 20 to 30 testers with her. They get the
-  public link (§4b); nobody else does yet.
+- **The soft launch** (checklist G7): done 2026-11-06 with no separate soft
+  launch; members install from the App Store.
 - **Her email to members** (checklist G8): in her words, with the QR code
-  (web admin → Players → **QR code for the app** → Download) or the public
-  link. Send the model her steps before it goes out, so the steps match the
+  (web admin → Players → **QR code for the app** → Download), which opens the
+  App Store listing. Send the model her steps before it goes out, so the steps match the
   app.
 
 Her earlier asks have their own rows: the logo and court photo (G5), her
@@ -647,16 +660,13 @@ real clinics on hosted (D5), the number of courts (D15).
 | Checklist | Decision | When | The model's recommendation |
 |---|---|---|---|
 | Backlog, 2026-09-28 | **Should the app refuse to put someone in, or message, a clinic Tara has not published yet?** Today it allows both (a draft looks like any card on her laptop) | Any time; nothing waits on it | Keep allowing: it is her tool, and nothing reaches a player about a never-published clinic that gets canceled (20260929000002). Refuse if she ever sets up next week and forgets to publish |
-| A9 | Switch payments on | After Apple approves the external build (C11) and the live keys and their rehearsal are done (A10, A13) | Go then, once the one real charge and refund on your card has passed. Never while the keys are sandbox: a real card is declined in test mode |
-| C12 | The LLC app's bundle id (the current one is locked to John's account) | Before the first LLC build | Accept a new id such as `com.fxetennis.club`; testers reinstall once, and their accounts and cards carry over (they live on our server) |
-| D3 | Supabase Pro ($25 a month): the free plan pauses a project after about a week with no traffic (it happened once, 2026-09-01) and has no point-in-time recovery; we already have our own encrypted nightly backups (D10) | Before real members | Yes, from the week the first members get the link (G7) |
-| I1 (decision 0022 §5) | **A behaviour change you can veto:** nobody can accept an invitation into a clinic Tara canceled or that has already ended, and Tara's Invite and "Put them in" are gone on a canceled clinic | Built 2026-09-28 | Keep: a stale invitation tapped days later landed a player in a finished clinic and got them charged. Where the Accept cut-off sits (start or end) is Tara's question 91 |
+| A9 | Switch payments on | Done 2026-10-14 | — |
+| C12 | The LLC app's bundle id | Settled 2026-11-11: the App Transfer kept `com.fxetennis.app` | — |
+| D3 | Supabase Pro ($25 a month): the free plan pauses a project after about a week with no traffic (it happened once, 2026-09-01) and has no point-in-time recovery; we already have our own encrypted nightly backups (D10) | LATER (Alex, 2026-10-21); revisit if the project ever pauses | Yes, if a pause or a restore need appears |
+| I1 (decision 0022 §5) | **A behaviour change you can veto:** nobody can accept an invitation into a clinic Tara canceled or that has already ended, and Tara's Invite and "Put them in" are gone on a canceled clinic | Built 2026-09-28 | Keep: a stale invitation tapped days later landed a player in a finished clinic and got them charged. Tara confirmed an Accept works until the clinic ends (question 91, decision 0024) |
 
 ## 11. Business
 
-- **Apple LLC enrollment (checklist C1).** Apple asked on 2026-10-11 for a
-  letter on the LLC's letterhead giving you authority to bind the LLC; you
-  and Tara signed it and you reported it sent on 2026-10-12. Answer Apple in
-  the same email thread if they ask for more. If Apple goes quiet, Apple
-  Developer Support (https://developer.apple.com/contact, Membership and
-  Account, Program Enrollment) can say what is outstanding.
+- **Apple (checklist C1, C12):** done 2026-11-11. The FXE Tennis, LLC
+  enrollment was never approved; the app was transferred to Volee LLC's
+  account instead.

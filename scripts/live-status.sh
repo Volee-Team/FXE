@@ -65,6 +65,9 @@ try:
     print("   %d of %d paired%s" % (ok, len(m), ("; not paired: %s" % un) if un else ""))
 except Exception: print("   (could not read)")'
 
+echo "-- Grants on hosted vs a fresh build (scripts/check-hosted-grants.sh)"
+bash scripts/check-hosted-grants.sh 2>&1 | grep -v "^   hosted [0-9]* grant lines"
+
 echo "-- GitHub"
 gh pr list --state open --json number,title,isDraft -q '.[] | "   #\(.number)\(if .isDraft then " (draft)" else "" end) \(.title)"' 2>/dev/null
 echo "   newest tags: $(git tag -l 'v0.1.0-*' --sort=-creatordate | head -3 | tr '\n' ' ')"

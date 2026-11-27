@@ -17,6 +17,7 @@ Why it matters: if it is always the same, we compute it automatically from the c
 For a Saturday clinic, is registration the Thursday two days before? What about a Monday clinic: the previous Thursday, or the Thursday four days earlier?
 *Default: the most recent Thursday before the clinic date.*
 *ANSWERED 2026-08-02 (decision 0001), confirmed 2026-08-27 (0007 §2): per service week, Thursday 08:00 members and Friday 08:00 everyone, derived from the week's Sunday. The default above was wrong on Fridays and Saturdays.*
+*Superseded in part 2026-11-01 (decision 0046): everyone else opens Friday at 12:00 noon; members stay Thursday 08:00.*
 
 **3. What does "registration close" actually stop?**
 Does it stop new Player Pool entries too, or only new You're In! registrations? Can someone join the Player Pool an hour before the clinic starts?
@@ -385,6 +386,7 @@ new and changed words and these questions, nothing else.
 **72. Guests who don't have the app. You wrote the member who brings them gets charged. Proposed: you (or a pro) add the guest to the clinic from the laptop, pick which member brought them, and after the clinic that member's card is charged the guest's fee. Which price does the guest pay, member or non-member? Do they take a spot like anyone else?**
 *HALF ANSWERED 2026-09-28 (decision 0024): the guest always pays the non-member price, billed to the member who brings them, through an "Invite a friend" button that shares the app or asks her to add the friend by name. Flow in `docs/archive/guests.md`; the sentence telling the member they will be charged is question 93.*
 *ANSWERED 2026-10-12 (decision 0040, questions 93 and 95): guests are parked, "Until this becomes an issue, none of the above"; a guest gets the app like anyone. Her sentence for the member (93) is kept in `docs/copy.md` for when guests come back (roadmap, Parked).*
+*SUPERSEDED 2026-11-07 (question 144, decision 0052): a guest is a first and last name Tara adds to one clinic; the app never charges anyone for them and she collects payment herself.*
 
 **73. The board's 10% (was 58, 67, 68). The report shows 10% of what players actually paid by card that month, late-cancel and no-show fees included, before Stripe's fee, and a refund comes off the month of the clinic. Right?**
 *Default: as stated, which is what is built. Status: answered 2026-10-12: "Correct" (decision 0040).*
@@ -489,10 +491,10 @@ Tara, 2026-09-29: *"Sorry I pay Foxcroft 10% of revenue. But asking I pay them 8
 
 ## T. Half a clinic (added 2026-10-03)
 
-Tara, 2026-10-03: *"sometimes maybe three times a year we do a clinic and we only get in half of the clinic. I want to still be able to charge half. Is there a way to implement this it's not incredibly necessary but sort of."* Written down, not built (Alex, 2026-10-02: player-facing work first).
+Tara, 2026-10-03: *"sometimes maybe three times a year we do a clinic and we only get in half of the clinic. I want to still be able to charge half. Is there a way to implement this it's not incredibly necessary but sort of."* Written down, not built (Alex, 2026-10-02: player-facing work first). Built 2026-11-07 (decision 0053).
 
 **102. When a clinic is cut short, is it half for everyone in it, or do you pick a price per person?**
-*ANSWERED 2026-10-04 (Tara, via Alex: "yes"): one "Half clinic" switch on the clinic after it ends; every Charge button on it then reads half ($9 instead of $18). Not built yet (roadmap).*
+*ANSWERED 2026-10-04 (Tara, via Alex: "yes"): one "Half clinic" switch on the clinic after it ends; every Charge button on it then reads half ($9 instead of $18). Built 2026-11-07 as "Charge half (rain)" (decision 0053; a no-show and a late cancel still pay full, per 103).*
 
 **103. On a half clinic, does a no-show or a late cancel still pay the full fee, or half too?**
 *ANSWERED 2026-10-04, in the same "yes": a no-show and a late cancel still pay the full fee.*
@@ -547,7 +549,7 @@ answer we would pick, so "yes" is enough.
 *Default: yes, the same as any late cancel. Status: open, asked 2026-10-12.*
 
 **115. You change someone between member and non-member after they signed up for a clinic. Do they keep the price they signed up at?**
-*Default: yes, the price they signed up at. Status: open, asked 2026-10-12.*
+*Default: yes, the price they signed up at. Status: ANSWERED 2026-11-11 by her report ("is a member and getting charged nonmember prices"): a membership change moves every registration on a clinic not yet over and not charged to the new price, both ways; an ended clinic keeps its price (decision 0055).*
 
 **116. Stripe shows Foxcroft's club address as FXE's support address on card statements and receipts. Is that all right?**
 *Default: yes. Status: open, asked 2026-10-12.*
@@ -561,13 +563,13 @@ Her email of 2026-10-15 settles most of it; these are the gaps, each with
 what is built until she answers.
 
 **118. For clinics that are not a 105, when you pick someone from the Waitlist, do they also get the 1-hour offer to accept, or are they just in?**
-*Default: the same 1-hour offer as a 105. Status: open, asked 2026-10-16.*
+*Default: the same 1-hour offer as a 105. Status: ANSWERED 2026-11-04 (decision 0047): before clinic day, every clinic, the player is moved straight in; on clinic day it is an invitation they accept. Whether that invitation runs out is question 141.*
 
 **119. If you offer a spot less than an hour before the clinic starts, should the offer end at the clinic's start time?**
-*Default: yes, it ends at the start. Status: open, asked 2026-10-16.*
+*Default: yes, it ends at the start. Status: folded into question 141 (2026-11-05): no invitation expires today (hard rule 2).*
 
 **120. Does the 3.0+ approval apply to anyone rated under 3.0 (2.0 as well as 2.5)?**
-*Default: yes, anyone under 3.0. Status: open, asked 2026-10-16.*
+*Default: yes, anyone under 3.0. Status: open, asked 2026-10-16. Built as the default (decision 0048: any player rated below a clinic's level asks; 0049 removes the minimum on beginner clinics).*
 
 **121. Which clinics need approval: every clinic with "3.0+" in its name (Ladies 3.0+, Men's 3.0+, and a Coed 3.0+ if you ever make one)?**
 *Default: yes, any clinic named "3.0+", approved per category (Ladies, Men's, Coed separately). Status: open, asked 2026-10-16. Built 2026-11-05 (decision 0048) per LEVEL instead, any clinic with a level in its name (4.0 too, her text of 2026-11-04); question 135.*
@@ -582,7 +584,7 @@ what is built until she answers.
 *Default: yes, every place it shows. Status: answered 2026-10-30 by text: "making sure it says waitlist not pool - for me and others ... Players are still seeing player pool", built on the phone, the members' site, the laptop and the two notification sentences the server writes (decision 0041). Notifications already sent keep their old words.*
 
 **125. When an offer expires or is declined, does that person go back on the Waitlist (keeping their original sign-up time) or off it?**
-*Default: back on the Waitlist with their original time, so you can offer again. Status: open, asked 2026-10-16.*
+*Default: back on the Waitlist with their original time, so you can offer again. Status: ANSWERED in part 2026-11-09 (decision 0054 item 7): a same-day decline is removed, not put back on the Waitlist; an invitation to someone who never asked ends on decline (decision 0051). Expiry: nothing expires today (question 141).*
 
 ## Z. Clinics by gender (added 2026-10-30, decision 0044)
 
@@ -616,7 +618,7 @@ waitlist"*. Both cannot hold once a 105 is past its first 24 hours.
 *Default: what the app does today and your email said, the Waitlist after the first 24 hours. If your text meant every member at any time, say so and members go straight in while there is room. Status: ANSWERED 2026-10-31 (relayed by John): "members are never on the waitlist they're in automatically". In while there is room, at any time, every clinic (decision 0045). RE-ANSWERED 2026-11-06 by text: "members signing up after Friday noon should be on waitlist like rest of nonmembers. Automatically in between Thur 8am-Friday noon." Decision 0050.*
 
 **132. A member signs up when the clinic is already full (30 of 30). Waitlist, or in anyway over the cap?**
-*Default: Waitlist; the cap holds for everyone and only you can put someone over it. Status: open, asked 2026-10-30; still open after decision 0045, which built the default.*
+*Default: Waitlist; the cap holds for everyone and only you can put someone over it. Status: open, asked 2026-10-30; since decision 0050 it applies only inside the member window. Her 2026-11-09 item 11 (decision 0054), "prevent … accepting people if we've reached our cap", supports the default; confirm with her or close as answered.*
 
 ## AB. The "?" page on a 105 (added 2026-10-30)
 
@@ -635,7 +637,7 @@ Her ask, relayed by John on 2026-11-01: *"she wants to switch it to friday
 noon"*. Built: everyone else now opens Friday at 12:00 PM instead of 8:00 AM.
 
 **134. Members still open Thursday at 8:00 AM, so they now get 28 hours to themselves instead of 24. Right?**
-*Default: yes; you only asked about non-members. Status: open, asked 2026-11-01.*
+*Default: yes; you only asked about non-members. Status: ANSWERED 2026-11-06 by text: "Automatically in between Thur 8am-Friday noon" (decision 0050). Members open Thursday 8:00 AM.*
 
 ## AD. Asking to play above your level (added 2026-11-05, decision 0048)
 
@@ -765,6 +767,14 @@ From her answers to 145 to 155.
 
 **170. Should you get a notification when a parent asks for Junior Elite or Elite approval, and the parent one when you answer?**
 *Default: no notification for now; requests show in your Action Needed list on the laptop. The wording would come to John to sign off (decision 0061).*
+
+## AJ. Christmas week and the pros' fees (added 2026-11-14, docs audit)
+
+**171. Christmas week: registration for the week of Sunday 12-27 would open Thursday 12-24 at 8:00 AM (members) and Friday 12-25 at noon (everyone else). Keep those, or move them?**
+*Default: keep them; you can change any clinic's open times on the clinic form. Status: open.*
+
+**172. Your pros on a clinic's roster show as owing a fee after it. Do pros ever pay for a clinic?**
+*Default: no, pros never pay; we would then take them off the list of fees to charge (today the app still lists a pro on a roster as owing, backlog). Status: open, first asked 2026-10-21.*
 
 ### How 52 to 57 are being sent
 

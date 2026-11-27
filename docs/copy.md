@@ -136,10 +136,11 @@ Kept here so it is not re-invented by someone who does not know it was quoted.
 
 ## Locked terminology
 
-Never substitute a synonym. Full table in `docs/archive/design-system.md`.
+Never substitute a synonym. Full table in `CLAUDE.md`, Locked terminology.
 
-**You're In!** · **Player Pool** · **Response Needed** · **Canceled** ·
-**Action Needed** · **My Clinics**
+**You're In!**, **Waitlist** (stored status `pool`; was "Player Pool" until
+decision 0041), **Response Needed**, **Canceled**, **Action Needed**,
+**My Clinics**
 
 ---
 
@@ -195,6 +196,10 @@ punctuation and the missing periods:
 | Bell, empty | Nothing yet. | **No notifications yet** |
 | Profile, card section | (her 09-16 sentence) | **Your card will only be charged after the clinic you attended, late cancellations, or no-shows. Cancel at least 3 hours before clinic and you will not be charged.** |
 | Cancel sheet, inside the cutoff | (her 09-16 sentence, 4 hours) | same sentence with **3 hours** (*"3 hours instead of 4. Otherwise good"*) |
+
+Since 2026-10-30 (decision 0044) the helper under a disabled Continue reads
+"…Please answer the membership and gender questions to continue": ours,
+approved by John (`docs/copy-review.md`, Clinics by gender).
 
 Gone by her word: the courtesy sentence (*"NOT DOING THIS ANYMORE"*), and the
 Zelle reminder, Paid and Remind unpaid controls (*"I don't want this to be an
@@ -301,28 +306,28 @@ sentences; "Still owed" became "Not charged yet".
 | Where | Her words | Built |
 |---|---|---|
 | A late cancel on her roster, phone and laptop (question 81) | **Late cancellation** | Yes, a red flag |
-| The Player Pool's history line (question 105, her approved example) | **12 played, 5 canceled (2 late), 1 no-show** | Yes |
-| A member bringing a guest (question 93) | **Your card will be charged for your guests clinic rate** | No: the guest feature waits (question 95). Kept verbatim, "guests" without the apostrophe as she wrote it |
+| The Waitlist's history line (question 105, her approved example) | **12 played, 5 canceled (2 late), 1 no-show** | Yes |
+| A member bringing a guest (question 93) | **Your card will be charged for your guests clinic rate** | No: a member bringing a guest is not built (question 95, "none for now", decision 0040). The guests Tara adds by name (decision 0052) are not charged through the app ("I would just take care of the payment"). Kept verbatim, "guests" without the apostrophe as she wrote it |
 
-## Still open with Tara
+## Earlier points with Tara (status in `docs/questions-for-tara.md`)
 
-1. ~~The NTRP rating guide~~ **CLOSED 2026-08-27**: *"Rating guide is good
-   where it's at if it's volee material."*
+1. The NTRP rating guide: question 10. Her words, 2026-08-27: *"Rating guide
+   is good where it's at if it's volee material."*
 2. **Notification wording**, question 20 (question 14 in the August list).
    Her catalogue is in `docs/notifications.md` verbatim and tone is settled
    (2026-08-27: "First person is ok. I want it to sound personal but not
    cheesy"). Two bodies the server sends are still ours, #2 (invitation) and
    #7 (clinic canceled): `docs/notifications.md` contradictions (a) and (d),
    and `docs/copy-review.md` §E.
-3. ~~The Venmo / Zelle payment line~~ **CLOSED 2026-08-02** (decision 11 in
-   `CLAUDE.md`): her exact string, lower-case "zelle" and no terminal period,
+3. The Venmo / Zelle payment line: question 16 and decision 11 in
+   `CLAUDE.md`: her exact string, lower-case "zelle" and no terminal period,
    lives in `app_settings.payment_instructions` and is pinned character for
    character by `tests/sql/schema_decisions.sql`. Read it through
    `payment_instructions()`, never hardcode it.
-5. ~~The splash line "Smart. Simple. Built for Tennis."~~ **CLOSED 2026-09-21**:
-   "Let's Play." (question 55 confirms the capitalisation).
-4. ~~Clinic categories~~ **ANSWERED 2026-08-02** (question 11, question 8 in
-   the August list; decision 8 in `CLAUDE.md`): no list and no filter, category
-   stays free text. Her real schedule suggests the axis is format and level
-   ("105", "3.0+"), not "Drill / Cardio / Match Play"; re-asking would be a new
-   numbered question, not this line.
+4. Clinic categories: question 11 (question 8 in the August list; decision 8
+   in `CLAUDE.md`): no list and no filter, category stays free text. Her real
+   schedule suggests the axis is format and level ("105", "3.0+"), not
+   "Drill / Cardio / Match Play"; re-asking would be a new numbered question,
+   not this line.
+5. The splash line "Smart. Simple. Built for Tennis." became "Let's Play."
+   (question 55 confirms the capitalisation).

@@ -85,10 +85,10 @@ insert into _probe_result
 select 'anon_has_no_' || lower(p) || '_anywhere',
        '',
        coalesce(string_agg(c.relname, ', ' order by c.relname), '')
-from unnest(array['SELECT','INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER']) as p
+from unnest(array['SELECT','INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER','MAINTAIN']) as p
 cross join pg_class c
 join pg_namespace n on n.oid = c.relnamespace and n.nspname = 'public'
-where c.relkind in ('r','v')
+where c.relkind in ('r','v','m','p','f')
   and has_table_privilege('anon', c.oid, p)
 group by p;
 
@@ -98,11 +98,11 @@ group by p;
 -- reappearing inside a probe. Emit the passing rows explicitly.
 insert into _probe_result
 select 'anon_has_no_' || lower(p) || '_anywhere', '', ''
-from unnest(array['SELECT','INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER']) as p
+from unnest(array['SELECT','INSERT','UPDATE','DELETE','TRUNCATE','REFERENCES','TRIGGER','MAINTAIN']) as p
 where not exists (
   select 1 from pg_class c
   join pg_namespace n on n.oid = c.relnamespace and n.nspname = 'public'
-  where c.relkind in ('r','v') and has_table_privilege('anon', c.oid, p)
+  where c.relkind in ('r','v','m','p','f') and has_table_privilege('anon', c.oid, p)
 );
 
 -- ------------------------------------- which base tables a member can read
@@ -164,6 +164,47 @@ where not exists (
   where c.relkind = 'r' and c.relname not in ('accounts', 'notifications')
     and has_table_privilege('authenticated', c.oid, p)
 );
+
+-- MAINTAIN (Postgres 17: VACUUM, ANALYZE, REINDEX, CLUSTER, REFRESH, LOCK
+-- TABLE) is a privilege nobody here ever wrote, and hosted had it anyway on
+-- accounts, players and news_reads for `authenticated` (found 2026-11-14 by a
+-- docs audit reading hosted's ACLs; a fresh local database had none, so this
+-- probe could not see it). Checked on every table and view, accounts
+-- included, since the write check above leaves accounts out.
+insert into _probe_result
+select 'authenticated_has_no_maintain_anywhere', '',
+       coalesce((select string_agg(c.relname, ', ' order by c.relname)
+                 from pg_class c join pg_namespace n on n.oid = c.relnamespace and n.nspname = 'public'
+                 where c.relkind in ('r','v','m','p','f') and has_table_privilege('authenticated', c.oid, 'MAINTAIN')), '');
+
+-- What the next object is born with (sql-auditor, 2026-11-14). Hosted's
+-- defaults gave anon and authenticated EXECUTE on every new function and
+-- SELECT/USAGE/UPDATE on every new sequence; a fresh build gave them UPDATE on
+-- new sequences. A sequence a client can UPDATE is a setval() away from
+-- breaking an id. Fixed by 20261127000001.
+insert into _probe_result
+select 'default_privileges_give_clients_nothing', '',
+       coalesce((select string_agg(d.defaclobjtype::text || ':' || a.grantee::regrole::text || ':' || a.privilege_type, ', ' order by 1)
+                 from pg_default_acl d cross join lateral aclexplode(d.defaclacl) a
+                 where d.defaclrole = 'postgres'::regrole
+                   and (d.defaclnamespace = 0 or d.defaclnamespace = 'public'::regnamespace)
+                   and a.grantee in ('anon'::regrole, 'authenticated'::regrole)), '');
+
+insert into _probe_result
+select 'clients_hold_nothing_on_sequences', '',
+       coalesce((select string_agg(c.relname || ':' || r, ', ' order by 1)
+                 from pg_class c, unnest(array['anon','authenticated']) r
+                 where c.relnamespace = 'public'::regnamespace and c.relkind = 'S'
+                   and (has_sequence_privilege(r, c.oid, 'USAGE') or has_sequence_privilege(r, c.oid, 'SELECT')
+                        or has_sequence_privilege(r, c.oid, 'UPDATE'))), '');
+
+-- Every relation is postgres's, so every revoke in a migration reaches it
+-- (a revoke by postgres on another owner's object can fail or do nothing).
+insert into _probe_result
+select 'public_relations_owned_by_postgres', '',
+       coalesce((select string_agg(relname, ', ' order by relname) from pg_class
+                 where relnamespace = 'public'::regnamespace and relkind in ('r','v','m','p','f','S')
+                   and relowner <> 'postgres'::regrole), '');
 
 -- ------------------------------------------------------- views stay read-only
 -- The 2026-08-13 hole in one assertion: a view that is auto-updatable AND

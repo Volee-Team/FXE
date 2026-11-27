@@ -9,7 +9,7 @@
    `livemode = false`; a test-mode fee never marks anyone paid; the one-live-fee
    index and duplicate checks ignore test rows, so a clinic charged in the
    sandbox during the test weeks can still be charged for real after the switch
-   if Tara chooses (question 85, default: it is not charged again).
+   if Tara chooses (question 85: confirmed 2026-10-12 in 0040, it is not charged again).
    `payments_ledger` lists test rows until `stripe_live_since`, then hides them,
    so the sandbox payment test (A2) can watch them.
 2. **The key swap has one procedure**, and it writes hosted only through
