@@ -1046,7 +1046,9 @@ Decision 0056. Tara: "I think can change the rounds. That's totally fine. Probab
 
 Neither is visible to the extractor (an assigned and a returned string), so `docs/copy-approved.txt` did not change; they are listed here instead (the known gap below).
 
-## When someone canceled (2026-11-27) — awaiting John
+## When someone canceled (2026-11-27) — approved by John
+
+John approved this wording on 2026-11-27 ("Approve all").
 
 Tara, 2026-11-27: "can I see (idk how if I can) when or what time someone canceled".
 
