@@ -1100,3 +1100,14 @@ Found when "Show canceled" on Tara's phone clinic list went through the gate as 
 | ☐ | Show inactive players | Tara's phone, Players directory |
 | ☐ | Member / Active | Tara's phone, a player's page, her switches |
 | ☐ | Round / Court {n}, side {s}, spot {n} | Tara's phone, a 105's Rounds sheet (decision 0054) |
+
+## Private clinics (2026-11-27) — awaiting John
+
+Tara, 2026-11-23: "private events/clinics and allow me to privately invite people to that clinic for payment. Maybe I still can do this actually but not 'publish' it?" Decision 0062. Tara's side only; a player never sees either string. All chrome.
+
+| ☐ | Words | Where |
+|---|---|---|
+| ☐ | Private | Tara's phone, a lock icon and the word on her Manage clinic card and on the clinic page; the laptop, a chip beside the clinic's name on its card |
+| ☐ | Private: only people you invite or add see it | Tara's phone, a switch on the clinic page under the prices; the laptop, a checkbox on the clinic's card (not on a canceled clinic) |
+
+No message goes out when she switches it, either way, so there is nothing for a player to read.

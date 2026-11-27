@@ -244,7 +244,9 @@ Players
 Policy changes
 Price set: \(cents.centsAsPrice)
 Privacy Policy
+Private
 Private note
+Private: only people you invite or add see it
 Processing
 Profile
 Publish the clinic first.
