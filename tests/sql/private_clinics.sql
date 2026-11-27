@@ -242,6 +242,25 @@ begin
   end;
   insert into _probe_result values ('off_again_anyone_can_register', 'pool', coalesce(t, 'NONE'));
 
+  -- Tara herself is exempt: her own register_for_clinic on a private clinic
+  -- puts the player on it (sql-auditor, 2026-11-27: unpinned until now).
+  perform set_config('role', 'postgres', true);
+  insert into public.clinics (name, audience, category, description, starts_at, ends_at,
+      member_opens_at, public_opens_at, internal_capacity, status, duration_minutes, is_private)
+  values ('Probe Private Tara Registers', 'coed', 'Clinic', 'probe', now() + interval '3 days', now() + interval '3 days 1 hour',
+          now() - interval '2 days', now() - interval '1 day', 8, 'published', 60, true)
+  returning id into gone;
+  perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
+  perform set_config('role', 'authenticated', true);
+  begin
+    perform public.register_for_clinic(gone, KEN_P, null);
+    t := 'ok';
+  exception when others then t := sqlerrm;
+  end;
+  perform set_config('role', 'postgres', true);
+  insert into _probe_result values ('tara_can_register_someone_on_a_private_clinic', 'ok|1',
+    t || '|' || (select count(*) from public.registrations where clinic_id = gone and player_id = KEN_P and status <> 'canceled')::text);
+
   -- A private clinic Tara cancels: Maria, who held a spot, still sees
   -- Canceled; a player who was never on it does not.
   perform set_config('role', 'postgres', true);

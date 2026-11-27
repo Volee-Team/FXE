@@ -60,7 +60,7 @@ most important thing to understand here, and it is section 5.
 | Postgres schema, RLS, narrow views, RPCs | 96 migrations (`ls supabase/migrations`), the newest `20261125000001_double_105_rule_switch.sql`. Hosted holds the same 93 (`supabase migration list --linked`, 2026-11-25). Re-check with that command after any push; this line is not the record |
 | Security model (explicit grants, revoked base tables, admin gate, anon executes nothing) | Enumerated by probes (section 5) |
 | Pricing (member/non-member x 60/90 min), snapshot, revenue report | Section 7 |
-| Probe suite: 64 SQL probes and 23 shell probes (races and the API rush); the suite prints its own total | Runs in CI on every push (section 9) |
+| Probe suite: 64 SQL probes and 24 shell probes (races and the API rush); the suite prints its own total | Runs in CI on every push (section 9) |
 | iOS: sign-in, sign-up with profile, the waiver and card steps, password reset, three tabs | In the app |
 | iOS: browse by week, per-viewer pricing, register / cancel (inside the 3-hour cutoff the full fee applies; the note is optional) / leave pool / respond, closed-clinic "Message Tara", the bell, My Clinics, profile edit, card on file | In the app |
 | iOS: a private note for Tara at Register, editable on the player's own live spot until the start (decision 0039) | In the app |
@@ -813,7 +813,7 @@ revealing the same summary text the page's Copy my answers produces.
 ## 9. Testing and CI
 
 **SQL probes** in `tests/sql/`, 64 SQL probes, each printing PASS/FAIL rows,
-plus 23 shell probes that race transactions or call the API. `tests/run-probes.sh` prints its
+plus 24 shell probes that race transactions or call the API. `tests/run-probes.sh` prints its
 own total and fails on silent SQL errors or a probe with zero assertions.
 Every migration that adds a rule adds a probe that is **red first**.
 
@@ -890,6 +890,7 @@ Every migration that adds a rule adds a probe that is **red first**.
 | `capacity_race.sh` | Two racing registrations; invite-vs-accept; since 2026-09-28 every racer's notification matches the status they ended with (#1 in, #5 pooled; red on the old `register_for_clinic`, which wrote none) |
 | `rush_via_api.sh` | The Thursday 8:00 rush the way phones make it: 200 signed-in members call `register_for_clinic` through PostgREST at once against a clinic of 8; every answer 200, exactly 8 in, 192 pooled, one row and one notification each, and the slowest answer printed (2026-10-01: 0.52 s; red with the row lock removed, 10 in) |
 | `place_player_race.sh` | 20260928000001's two locks in `place_player`, raced with held transactions: a double tap on Put in clinic sends one #1 (red without the clinic `FOR UPDATE`: two), and Tara's placement while the player's Accept is in flight sends none on top of #3 (red without the registration `FOR UPDATE`: #3 and #1) |
+| `private_register_race.sh` | `20261127000003`: Tara's removal of a player from a private clinic held open while the player registers again; the player's call reads them still on it, gets `already_registered`, and no live row is left (the "on it, so let them through" guard would wait on `registrations_one_live` and then put them back) |
 | `late_request_cancel_race.sh` | `20261125000002`'s clinic lock in `request_late_spot`, raced: Rob's late request held open, Tara's `cancel_clinic` a second later waits for it, then tells him and closes it; and the other way round, his request waits for her cancel and is refused, leaving none (red without the lock: `requests=pending`, no notice) |
 | `accept_cancel_race.sh` | 20260928300001's clinic lock in `respond_to_invitation`, raced: Tara's `cancel_clinic` held open, Rob's Accept a second later waits and is refused, stays Response Needed, no acceptance written (red with the lock removed and with `FOR KEY SHARE`: Rob in, two acceptances) |
 | `charge_player_race.sh` | Decision 0037's two locks in `admin_charge_player`, raced in three ways: Tara's Remove held open while a Charge tap lands (the player ends canceled, no payment), a No-show flip held open (the one payment is the no_show fee), a clinic cancel held open (no payment). Red with the registration lock removed (Casey charged, Ken charged clinic_fee) and with the clinic lock removed (Maria charged on a canceled clinic) |
