@@ -696,6 +696,14 @@ struct AdminClinicDetailView: View {
                         .foregroundStyle(Brand.textSecondary)
                         .accessibilityIdentifier("admin.poolHistory")
                 }
+                // When they canceled (Tara, 2026-11-27: "can I see when or
+                // what time someone canceled").
+                if entry.registration.status == .canceled, let at = entry.registration.canceledAt {
+                    Text("Canceled \(at.formatted(Self.canceledFormat))")
+                        .brandFont(.caption)
+                        .foregroundStyle(Brand.textSecondary)
+                        .accessibilityIdentifier("admin.canceledAt")
+                }
                 // A price she typed for this one person (item 10).
                 if entry.registration.priceSetByAdmin == true, let cents = entry.registration.priceCentsCharged {
                     Text("Price set: \(cents.centsAsPrice)")
@@ -721,6 +729,11 @@ struct AdminClinicDetailView: View {
             }
         }
     }
+
+    /// "Fri, Nov 27, 7:45 AM", in the phone's time zone like the page's
+    /// other times.
+    private static let canceledFormat = Date.FormatStyle.dateTime
+        .weekday(.abbreviated).month(.abbreviated).day().hour().minute()
 
     /// Tara's red flag on a late cancel in the Canceled list (question 81):
     /// "Late cancellation"; nothing on any other canceled row.

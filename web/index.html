@@ -1503,11 +1503,13 @@ async function loadClinics() {
           const p = byPlayer[r.player_id];
           const who = p ? `${p.first_name} ${p.last_name}` : "Unknown player";
           const sub = p ? `${ntrp(p.adult_rating)}, ${p.is_member ? "Member" : "Non-member"}` : "";
+          // A canceled row says when (Tara, 2026-11-27: "can I see when or
+          // what time someone canceled").
           // The Player Pool is where she chooses, so its rows carry the
           // player's history (decision 0027 §1).
           return `<div class="row">
             ${s === "pool" ? `<span class="muted" style="width:18px;text-align:right">${i + 1}</span>` : ""}
-            <span class="grow"><span class="name">${esc(who)}</span><br><span class="muted">${esc(sub)}</span>${r.price_set_by_admin ? `<br><span class="muted" data-price-set="${r.id}">Price set: ${money(r.price_cents_charged)}</span>` : ""}${s === "pool" ? historyHtml(history[r.player_id]) : ""}${r.player_note ? `<br><span class="player-note" data-player-note="${r.id}">“${esc(r.player_note)}”</span>` : ""}</span>
+            <span class="grow"><span class="name">${esc(who)}</span><br><span class="muted">${esc(sub)}</span>${s === "canceled" && r.canceled_at ? `<br><span class="muted" data-canceled-at="${r.id}">Canceled ${fmtDate(r.canceled_at)}</span>` : ""}${r.price_set_by_admin ? `<br><span class="muted" data-price-set="${r.id}">Price set: ${money(r.price_cents_charged)}</span>` : ""}${s === "pool" ? historyHtml(history[r.player_id]) : ""}${r.player_note ? `<br><span class="player-note" data-player-note="${r.id}">“${esc(r.player_note)}”</span>` : ""}</span>
             ${extra(r)}
           </div>`;
         }).join("")}

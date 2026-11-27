@@ -1046,6 +1046,14 @@ Decision 0056. Tara: "I think can change the rounds. That's totally fine. Probab
 
 Neither is visible to the extractor (an assigned and a returned string), so `docs/copy-approved.txt` did not change; they are listed here instead (the known gap below).
 
+## When someone canceled (2026-11-27) — approved by John
+
+John approved this wording on 2026-11-27 ("Approve all").
+
+Tara, 2026-11-27: "can I see (idk how if I can) when or what time someone canceled".
+
+- On her phone and laptop, each row in a clinic's Canceled list gains a line under the name: `Canceled {Fri, Nov 27, 7:45 AM}`. The time is when the spot was canceled, by the player or by her.
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148

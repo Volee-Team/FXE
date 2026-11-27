@@ -515,6 +515,10 @@ final class AdminFlowUITests: XCTestCase {
         let flag = app.descendants(matching: .any).matching(identifier: "admin.lateFlag").firstMatch
         XCTAssertTrue(flag.waitForExistence(timeout: 20), "No Late cancellation flag on Rob's row")
         XCTAssertTrue(flag.label.contains("Late cancellation"), "The flag says \(flag.label)")
+        // And when (Tara, 2026-11-27: "can I see when or what time someone canceled").
+        let when = app.staticTexts.matching(identifier: "admin.canceledAt").firstMatch
+        XCTAssertTrue(when.waitForExistence(timeout: 10), "No cancel time on Rob's row")
+        XCTAssertTrue(when.label.hasPrefix("Canceled "), "The cancel time reads '\(when.label)'")
         let charge = app.buttons["Charge Rob Delgado $23"]
         XCTAssertTrue(charge.waitForExistence(timeout: 10), "No Charge on Rob's late cancel")
 
