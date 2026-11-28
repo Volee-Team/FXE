@@ -73,7 +73,6 @@ begin
   insert into public.registrations (clinic_id, player_id, status, source, price_cents_charged, was_member, duration_minutes)
   values (live_c, ROB_P, 'pool', 'self', 2300, false, 60) returning id into reg_live_pool;
   insert into public.late_requests (clinic_id, player_id, message) values (rained, PRIYA_P, 'probe') returning id into req_rained;
-  insert into public.late_requests (clinic_id, player_id, message) values (rained, DANA_P, 'probe') returning id into req_rained2;
   insert into public.late_requests (clinic_id, player_id, message) values (live_c, PRIYA_P, 'probe') returning id into req_live;
 
   -- Tara cancels the rained clinic.
@@ -81,6 +80,10 @@ begin
   perform set_config('role', 'authenticated', true);
   perform public.cancel_clinic(rained);
   perform set_config('role', 'postgres', true);
+  -- Since 20261125000002 canceling closes the clinic's waiting requests, so
+  -- req_rained is now declined. A request left waiting on a clinic canceled
+  -- before that migration is what case 5 declines: made here, after the cancel.
+  insert into public.late_requests (clinic_id, player_id, message) values (rained, DANA_P, 'probe') returning id into req_rained2;
 
   -- ===== 1. Accept after the clinic ended: refused, nothing moves, nobody told.
   select count(*) into before from public.notifications;
@@ -119,19 +122,24 @@ begin
       || ((select count(*) from public.notifications) - before)::text);
 
   -- ===== 4. Approve a late request for a canceled clinic: refused; nothing
-  --          placed, the request still pending, nobody told.
+  --          placed, the request still pending, nobody told. req_rained2 is
+  --          one left waiting on a clinic canceled before 20261125000002.
   select count(*) into before from public.notifications;
   perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
   perform set_config('role', 'authenticated', true);
   begin
-    perform public.resolve_late_request(req_rained, true); err := 'approved';
+    perform public.resolve_late_request(req_rained2, true); err := 'approved';
   exception when others then err := sqlerrm; end;
   perform set_config('role', 'postgres', true);
   insert into _probe_result values ('approve_on_canceled_is_refused', 'clinic_canceled', err);
   insert into _probe_result values ('approve_on_canceled_moves_nothing', 'pending|0|0',
-    (select status::text from public.late_requests where id = req_rained) || '|'
-      || (select count(*) from public.registrations where clinic_id = rained and player_id = PRIYA_P)::text || '|'
+    (select status::text from public.late_requests where id = req_rained2) || '|'
+      || (select count(*) from public.registrations where clinic_id = rained and player_id = DANA_P)::text || '|'
       || ((select count(*) from public.notifications) - before)::text);
+
+  -- The request that was waiting when she canceled was closed by the cancel.
+  insert into _probe_result values ('cancel_closed_the_waiting_request', 'declined',
+    (select status::text from public.late_requests where id = req_rained));
 
   -- ===== 5. Decline a late request for a canceled clinic: allowed.
   perform set_config('role', 'authenticated', true);

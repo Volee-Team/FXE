@@ -55,15 +55,15 @@ How this file works, so it can be trusted:
   released 2026-11-18, 7 ratings
   (`curl "https://itunes.apple.com/lookup?bundleId=com.fxetennis.app"`,
   2026-11-27).
-- **Hosted:** 90 migrations applied from `main`, plus the three in PR #153
+- **Hosted:** 95 migrations applied from `main`, plus the three in PR #153
   that were pushed before it merged, newest `20261125000001` (the double-105
   rule switched off) (`scripts/live-status.sh`, 2026-11-27). **Payments live** since
   2026-10-14: 522 charges succeeded, 3 refunds, 1 failed, none stuck at
   Processing; 409 member accounts, 289 with a saved card. Push: 1150 of 1216
   delivered in 14 days, 367 devices. 12 clinics published through
-  2026-12-04 (read-only query). The level check and the double-105 rule are
-  both off (`app_settings`, J3).
-- **Tests:** 62 SQL probes plus 22 shell probes, 330 unit tests, 29
+  2026-12-04 (read-only query). The double-105 rule is off and the level
+  check goes back on with `20261127000002` (`app_settings`, J3).
+- **Tests:** 63 SQL probes plus 23 shell probes, 337 unit tests, 29
   XCUITests, 87 browser tests (`scripts/check-doc-claims.sh`, 2026-11-12).
   The UI suite runs on GitHub against `fxe-ci` on every PR that touches the
   app (section F).
@@ -173,13 +173,13 @@ observer.
 
 | Layer | Runs where | Count (derived 2026-11-12 unless dated) | Gap |
 |---|---|---|---|
-| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 62 probes plus 22 shell probes (the races and the 200-request rush); the suite prints its own check total | none known |
+| SQL probes (rules, privileges, attacks, concurrency) | every PR, and locally | 63 probes plus 23 shell probes (the races and the 200-request rush); the suite prints its own check total | none known |
 | Stripe pipeline against stripe-mock | every PR | 94 checks as of 2026-09-28 | real Stripe behaviour: one live charge and refund, 2026-10-14 (A10) |
 | Push pipeline against a mock APNs | every PR | 57 checks as of 2026-09-28 | real APNs delivering since 2026-11-05 (C3) |
 | Web admin browser tests (Playwright, real sign-in) | every PR | 87 | a cold-start flake after a local reset (backlog) |
-| Swift unit tests (pure logic) | every PR | 330 | fine |
+| Swift unit tests (pure logic) | every PR | 337 | fine |
 | Hosted signed-out smoke (`scripts/hosted-smoke.sh`) | every PR, read-only against production | 162 targets as of 2026-10-11, including a browser preflight to each function the web admin calls | only the signed-out side |
-| XCUITests, player and admin flows, and Apple's accessibility audit | **CI** (section F) | 30 | on GitHub against the `fxe-ci` project on every PR that touches the app, iOS 26 and 18 (`scripts/check-ui-test-record.sh`); iOS 17 dropped 2026-10-30 |
+| XCUITests, player and admin flows, and Apple's accessibility audit | **CI** (section F) | 31 | on GitHub against the `fxe-ci` project on every PR that touches the app, iOS 26 and 18 (`scripts/check-ui-test-record.sh`); iOS 17 dropped 2026-10-30 |
 | Copy gate, secret scan (now Stripe keys too), migration immutability, icon gate, doc checks | every PR | – | none |
 | Nightly backup and consent purge | nightly | – | restored by hand monthly (D4, last 2026-11-03) |
 
@@ -263,10 +263,10 @@ each checked by an independent reviewer or the sql-auditor, then merged on
 
 **DONE 2026-11-21 (John): the `fxe-ci` project exists** in the Volee organization, on the Pro plan option 1 describes (about $10/month on top). Its three secrets and the variable are set, its auth settings match `supabase/config.toml` (pushed from a scratch copy linked to it, never from a checkout linked to production), and it holds seed data only. `ios-ui-tests` now runs the whole suite on iOS 26 and iOS 18 on every pull request that touches the app, its tests, the migrations or the seed (`scripts/ci-ui-tests.sh`), and a pass is that PR's UI test record (`scripts/check-ui-test-record.sh`). A Mac run recorded in `docs/ui-test-runs.log` still counts. The decision below is kept as history.
 
-**Decided 2026-09-18: option 3.** Alex: *"nahh unless we really need it no more money for now."* No CI project, no Pro plan. The 30 XCUITests run on a laptop before every TestFlight build and the run is pasted into the changelog entry for that build; the `ios-ui-tests` job stays green with its notice until the three settings exist, so switching later is a dashboard visit and two secrets, nothing in the repo. Revisit when the first paying member exists (D3 wants point-in-time recovery then anyway). The rest of this section is kept as the record of why.
+**Decided 2026-09-18: option 3.** Alex: *"nahh unless we really need it no more money for now."* No CI project, no Pro plan. The 31 XCUITests run on a laptop before every TestFlight build and the run is pasted into the changelog entry for that build; the `ios-ui-tests` job stays green with its notice until the three settings exist, so switching later is a dashboard visit and two secrets, nothing in the repo. Revisit when the first paying member exists (D3 wants point-in-time recovery then anyway). The rest of this section is kept as the record of why.
 
 
-Alex gave the go-ahead on 2026-09-13 ("exact steps for me or can you do it all?"); the create was attempted the same day and refused, see below. Would it help a lot? Yes: it is the only way to run the 30 XCUITests on every PR, which is the layer that walks the app like a member does. The macOS runner has no Docker, so it cannot host the local stack; a small hosted project it can reset to the seed is the practical answer. Everything on our side is built and waiting (2026-09-13): the Debug app accepts `FXE_SUPABASE_URL` / `FXE_SUPABASE_ANON_KEY`, the UI tests forward them, and the `ios-ui-tests` job resets the project with `supabase db reset --db-url` and runs the suite with one retry. The job stays green with a notice until the secrets exist.
+Alex gave the go-ahead on 2026-09-13 ("exact steps for me or can you do it all?"); the create was attempted the same day and refused, see below. Would it help a lot? Yes: it is the only way to run the 31 XCUITests on every PR, which is the layer that walks the app like a member does. The macOS runner has no Docker, so it cannot host the local stack; a small hosted project it can reset to the seed is the practical answer. Everything on our side is built and waiting (2026-09-13): the Debug app accepts `FXE_SUPABASE_URL` / `FXE_SUPABASE_ANON_KEY`, the UI tests forward them, and the `ios-ui-tests` job resets the project with `supabase db reset --db-url` and runs the suite with one retry. The job stays green with a notice until the secrets exist.
 
 **Does it use the Volee slot? Yes, and Alex was right.** The 2026-09-12 version of this section said the free plan is two projects per organization. It is two active free projects per *user* across every org they own: `supabase projects create fxe-ci` on 2026-09-13 was refused with "Alex-Epstein (2 project limit)", because Volee and `fxe-tennis` already fill it. Three ways out, cheapest first:
 

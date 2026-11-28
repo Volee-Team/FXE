@@ -50,7 +50,9 @@ private struct NoteParams: Encodable { let p_player: UUID; let p_body: String }
 private struct MembershipParams: Encodable { let p_player: UUID; let p_is_member: Bool }
 private struct ActiveParams: Encodable { let p_player: UUID; let p_active: Bool }
 
-private struct CancelClinicParams: Encodable { let p_clinic: UUID }
+/// `p_message` is left out when nil (synthesized Encodable), so a cancel
+/// without a message is the one-argument call.
+private struct CancelClinicParams: Encodable { let p_clinic: UUID; let p_message: String? }
 
 private struct SetPaidParams: Encodable {
     let p_registration: UUID
@@ -133,6 +135,9 @@ struct RegistrationAdmin: Codable, Identifiable, Sendable {
     /// (decision 0054, item 10). Optional: older servers do not send them.
     var priceCentsCharged: Int? = nil
     var priceSetByAdmin: Bool? = nil
+    /// When the row was canceled, shown on the Canceled list (Tara,
+    /// 2026-11-27: "can I see when or what time someone canceled").
+    var canceledAt: Date? = nil
 
     enum CodingKeys: String, CodingKey {
         case id, status, paid
@@ -151,6 +156,7 @@ struct RegistrationAdmin: Codable, Identifiable, Sendable {
         case feeWaivedAt = "fee_waived_at"
         case priceCentsCharged = "price_cents_charged"
         case priceSetByAdmin = "price_set_by_admin"
+        case canceledAt = "canceled_at"
     }
 
     /// A charge that is pending, processing or went through. The server's rule
@@ -318,9 +324,13 @@ enum AdminRepository {
     /// everyone in You're In!, the Player Pool and Response Needed; it raises
     /// already_canceled on a second call, so the UI never double-notifies.
     /// Archive, never delete (hard rule 4): the row and its registrations stay.
-    static func cancelClinic(_ clinic: UUID) async throws {
+    /// `message`: Tara's own words, sent after "<clinic> has been canceled."
+    /// and kept on the clinic's board. Blank means none (the server trims).
+    static func cancelClinic(_ clinic: UUID, message: String? = nil) async throws {
         _ = try await supabase
-            .rpc("cancel_clinic", params: CancelClinicParams(p_clinic: clinic))
+            .rpc("cancel_clinic", params: CancelClinicParams(
+                p_clinic: clinic,
+                p_message: message.flatMap { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0 }))
             .execute()
     }
 

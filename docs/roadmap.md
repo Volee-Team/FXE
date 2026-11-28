@@ -225,6 +225,23 @@ receipts (question 86: "No receipts"; the Stripe setting is checklist A14).
 
 ---
 
+### Tara's list "Next update from 11/12" (her shared note, read 2026-11-25)
+
+Her words, in her order. Nothing here is decided beyond them.
+
+1. *"able to add pictures to the message board for a clinic."*
+2. *"private events/clinics and allow me to privately invite people to that clinic for payment. Maybe I still can do this actually but not “publish” it?"*
+3. *"find myself wanting to click on name in clinic list and send them a message."*
+4. *"only 4.0’s or higher get in to 4.0+ clinic"*: the level check (decision 0048), switched off on hosted since 2026-11-06.
+5. *"double 105’s - don’t allow nonmembers to sign up for 2 “105”s. Allow them to do so starting Wednesday (48 hours before)..."*: overruled by her texts of 2026-11-24 and 11-25, decision 0015 §13.
+6. *"when the admin sees a notification, when they click on it have it go directly to the actual notification spot"*
+7. *"in the admin notifications, after the clinic is over, it needs to get rid of the notification that somebody is asking to get into the clinic. Basically everything after the clinic is over needs to be erased. Besides having to charge that clinic"*, and by text 2026-11-23, *"Only notification I should see is if the clinic hasn’t been charged yet"*. Seen on a canceled clinic: PR #157.
+8. *"when somebody requests to be added to a clinic, the day of and they don’t accept the invite, that person should still get notification if the clinic is canceled"*
+9. *"are you sure you want to send this message with a recap of the message to players"*
+10. *"when canceling, allow me to send a message when I cancel"*
+11. *"pros should get all messages"*
+12. *"it’s 9:30 AM on Monday. and somebody said they can’t see the 10:30 AM lesson today on the app to request a spot"* (2026-11-23; that clinic closed at 7:30 and was canceled at 9:45; the player is not known).
+
 ## v2 and beyond
 
 ### The dream, in Tara's words (2026-09-12, relayed by Alex)

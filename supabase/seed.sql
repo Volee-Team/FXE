@@ -275,8 +275,9 @@ delete from public.app_settings where key = 'stripe_live_since';
 update public.app_settings set value = 'false' where key = 'payments_enabled';
 update public.app_settings set value = '' where key = 'payments_enabled_at';
 
--- Decision 0048: the level check is OFF on hosted from 2026-11-06 until the
--- 1.0.2 app is out (20261106000002). Local and CI run with it ON, so
--- level_approval.sql and testAdminK keep testing the gate Tara will switch
--- back on; level_approval.sql also tests it switched off.
+-- Decision 0048: the level check was OFF on hosted from 2026-11-06
+-- (20261106000002) and is back ON from 20261127000002. Local and CI run with
+-- it on; level_approval.sql also tests it switched off.
 update public.app_settings set value = 'true' where key = 'level_check_enabled';
+-- The double-105 rule likewise (20261125000001): off on hosted, on here so it stays tested.
+update public.app_settings set value = 'true' where key = 'double_105_rule_enabled';

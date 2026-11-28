@@ -3,6 +3,7 @@ ACTION NEEDED
 About this clinic
 Accept
 Action Needed
+Active
 Add
 Add a card
 Add a card on your Profile to register.
@@ -38,6 +39,7 @@ Cancel clinic
 Cancel invite
 Cancel my spot
 Cancel the invitation to \(entry.displayName)
+Canceled \(at.formatted(Self.canceledFormat))
 Canceled inside ${cutoffHours} hours
 Card payments
 Cards aren't set up yet.
@@ -78,6 +80,7 @@ Couldn't save, still on this phone
 Court
 Court ${court}, side ${i < 3 ? 1 : 2}, spot ${(i % 3) + 1}
 Court \(court)
+Court \(court), side \(side), spot \(slot + 1)
 Court \(court): \(line)
 Court \(n)
 Data retention
@@ -97,6 +100,7 @@ Edit details
 Email
 Enter a price above $0.
 Everyone not yet charged pays the new price.
+Everyone registered, waiting or asking to get in is told.
 FROM TARA
 FXE Tennis
 FXE Tennis Admin
@@ -142,6 +146,7 @@ Invite a player
 Invite player
 Just coming back from a back injury - probably a low 3.5
 Keep
+Keep editing
 Keep my account
 Keep my spot
 Keep the clinic
@@ -162,6 +167,7 @@ Manage
 Manage payments in Stripe
 Mark all read
 Max players must be at least 1.
+Member
 Member price
 Members attended
 Members get 24-hour early access to all clinics
@@ -174,6 +180,7 @@ Message Tara
 Message \(player.firstName)
 Message player
 Message players
+Message to players (optional)
 More
 My Clinics
 My next \(.applicationName) clinic
@@ -276,6 +283,7 @@ Request sent. Tara will let you know.
 Resolved
 Response Needed
 Review links
+Round
 Round \($0)
 Round \(round)
 Rounds
@@ -294,10 +302,14 @@ Search sign-ups
 Sections
 Security of data
 Selected. Press and hold to copy.
+Send
 Send reminder
+Send this message?
 Set \(entry.displayName)'s price
 Set price
 She will let you know as soon as possible if there is room in this clinic
+Show canceled
+Show inactive players
 Side \(side)
 Sign Out
 Sign in on the admin page first.
@@ -356,6 +368,8 @@ This link isn't active, answers stay on this phone.
 Those don’t match.
 To
 To \(name)
+To \(name):\n\n\(body_.trimmingCharacters(in: .whitespacesAndNewlines))
+To \(recipients):\n\n\(body_.trimmingCharacters(in: .whitespacesAndNewlines))
 To contact you: by notification in the app, email, telephone, or other equivalent forms of electronic communication, about clinics and the Services.
 To manage your requests: to attend to and manage your requests to us. Messages sent through the Services are stored on our servers.
 To provide and maintain our Services, including to monitor the usage of our Services.

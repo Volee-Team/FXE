@@ -178,8 +178,12 @@ final class AdminFlowUITests: XCTestCase {
     func testAdminD_CancelsAClinicWithConfirmation() {
         app.launch()
         signIn(as: admin)
-        app.buttons["Manage"].tap()
         let cards = app.descendants(matching: .any).matching(identifier: "admin.clinic.card")
+        // The same retry as openAdminClinic: the iOS 26 tab bar drops a first
+        // tap now and then (this test failed exactly so on 2026-11-20).
+        let manage = app.tabBars.buttons["Manage"].exists ? app.tabBars.buttons["Manage"] : app.buttons["Manage"].firstMatch
+        manage.tap()
+        if !cards.firstMatch.waitForExistence(timeout: 5) { manage.tap() }
         XCTAssertTrue(cards.firstMatch.waitForExistence(timeout: 20), "No clinics on Manage")
         let last = cards.element(boundBy: cards.count - 1)
         XCTAssertTrue(scrollUntilHittable(last), "Could not reach the last clinic card")
@@ -192,15 +196,34 @@ final class AdminFlowUITests: XCTestCase {
         XCTAssertTrue(cancelItem.waitForExistence(timeout: 10))
         cancelItem.tap()
 
-        // The confirmation reuses the same words; it is the second "Cancel
-        // clinic" on screen and it sits inside the dialog.
+        // The confirmation takes an optional message (Tara, 2026-11-23), then
+        // reuses the same words for its button.
+        // An alert's text field does not carry its identifier through, so it
+        // is found as the alert's field (CI, 2026-11-27).
+        let message = app.alerts.firstMatch.textFields.firstMatch
+        XCTAssertTrue(message.waitForExistence(timeout: 10), "No message field on the cancel alert")
+        message.tap()
+        message.typeText("Courts are wet")
         let confirm = app.buttons["Cancel clinic"].firstMatch
         XCTAssertTrue(confirm.waitForExistence(timeout: 10), "No confirmation dialog")
         confirm.tap()
 
-        // Back on the list, which reloaded, with a Canceled chip somewhere.
-        XCTAssertTrue(app.staticTexts["Canceled"].firstMatch.waitForExistence(timeout: 20),
-                      "List did not show a Canceled chip after cancel")
+        // Back on the list, which reloaded. Since 2026-11-20 a canceled
+        // clinic waits behind Show canceled, as on the laptop (Tara: "I can't
+        // see the canceled coed 105 from my desktop, but I can see it on my
+        // phone"). The switch is remembered on the device, so put it off
+        // first whatever an earlier run left.
+        let toggle = app.switches["admin.showCanceled"]
+        XCTAssertTrue(toggle.waitForExistence(timeout: 20), "No Show canceled switch after cancel")
+        XCTAssertTrue(scrollUntilHittable(toggle), "Could not reach Show canceled")
+        func flip() { toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap() }
+        if (toggle.value as? String) == "1" { flip() }
+        XCTAssertFalse(app.staticTexts["Canceled"].firstMatch.waitForExistence(timeout: 3),
+                       "A canceled clinic showed with Show canceled off")
+        flip()
+        XCTAssertTrue(app.staticTexts["Canceled"].firstMatch.waitForExistence(timeout: 10),
+                      "Show canceled did not bring back the Canceled chip")
+        flip()  // leave it off, the default
     }
 
     // MARK: - C2. guests, the 105 rounds and the clinic's price, on the phone
@@ -295,6 +318,45 @@ final class AdminFlowUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Nobody is in yet."].waitForExistence(timeout: 20),
                       "Roster still shows someone in You're In! after Remove")
         XCTAssertFalse(court.exists, "The removed player's row is still on the roster")
+    }
+
+    /// Tara, 2026-11-23: tap a name on the roster to message that player, and
+    /// see the message back before it goes. Maria on Saturday Members, as in
+    /// E (this one runs first: "E2" sorts before "E_").
+    func testAdminE2_MessagesAPlayerFromTheirNameAfterARecap() {
+        app.launch()
+        signIn(as: member)
+        ensureRegistered(forClinicContaining: "Saturday Members")
+        signOut()
+
+        signIn(as: admin)
+        openAdminClinic(containing: "Saturday Members")
+        let name = app.buttons.matching(identifier: "admin.roster.name").firstMatch
+        XCTAssertTrue(name.waitForExistence(timeout: 20), "Maria's name is not a button on the roster")
+        name.tap()
+
+        // The sheet opens on her, not on Everyone.
+        let player = app.buttons["admin.messagePlayer"]
+        XCTAssertTrue(player.waitForExistence(timeout: 10), "Message Players did not open on One player")
+        XCTAssertTrue(player.label.contains("Maria Alvarez") || (player.value as? String ?? "").contains("Maria Alvarez"),
+                      "The sheet chose '\(player.label)', not Maria")
+
+        let body = app.textViews["admin.messageBody"]
+        XCTAssertTrue(body.waitForExistence(timeout: 10))
+        body.tap()
+        body.typeText("See you Saturday")
+        app.buttons["admin.sendMessage"].tap()
+
+        // Nothing goes until she has read it back.
+        let recap = app.alerts["Send this message?"]
+        XCTAssertTrue(recap.waitForExistence(timeout: 10), "Send went without asking")
+        XCTAssertTrue(recap.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "To Maria Alvarez")).firstMatch.exists,
+                      "The recap does not name who gets it")
+        XCTAssertTrue(recap.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "See you Saturday")).firstMatch.exists,
+                      "The recap does not show the message")
+        // The alert's Send, not the toolbar's (both are "Send" on iOS 26).
+        recap.buttons["Send"].firstMatch.tap()
+        XCTAssertTrue(body.waitForNonExistence(timeout: 20), "The sheet stayed open after sending")
     }
 
     /// Out of the Player Pool (2026-09-28): the button, the same
@@ -515,6 +577,10 @@ final class AdminFlowUITests: XCTestCase {
         let flag = app.descendants(matching: .any).matching(identifier: "admin.lateFlag").firstMatch
         XCTAssertTrue(flag.waitForExistence(timeout: 20), "No Late cancellation flag on Rob's row")
         XCTAssertTrue(flag.label.contains("Late cancellation"), "The flag says \(flag.label)")
+        // And when (Tara, 2026-11-27: "can I see when or what time someone canceled").
+        let when = app.staticTexts.matching(identifier: "admin.canceledAt").firstMatch
+        XCTAssertTrue(when.waitForExistence(timeout: 10), "No cancel time on Rob's row")
+        XCTAssertTrue(when.label.hasPrefix("Canceled "), "The cancel time reads '\(when.label)'")
         let charge = app.buttons["Charge Rob Delgado $23"]
         XCTAssertTrue(charge.waitForExistence(timeout: 10), "No Charge on Rob's late cancel")
 

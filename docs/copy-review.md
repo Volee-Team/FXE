@@ -1046,6 +1046,28 @@ Decision 0056. Tara: "I think can change the rounds. That's totally fine. Probab
 
 Neither is visible to the extractor (an assigned and a returned string), so `docs/copy-approved.txt` did not change; they are listed here instead (the known gap below).
 
+## Cancel with a message, the send recap, and a roster name (2026-11-25) — approved by John
+
+John approved this wording on 2026-11-27 ("Approve all").
+
+From Tara's next-update note (2026-11-23): "when canceling, allow me to send a message when I cancel", "are you sure you want to send this message with a recap of the message to players", "find myself wanting to click on name in clinic list and send them a message".
+
+- Cancel clinic, phone: the alert's title is `Cancel {clinic}?` (was `Cancel {clinic}? Everyone registered or waiting is told.`), its line is `Everyone registered, waiting or asking to get in is told.`, its box reads `Message to players (optional)`, and its buttons stay `Cancel clinic` and `Keep the clinic`.
+- Cancel clinic, laptop: the first click still reads `Really cancel? Everyone is told.` and now opens a box, `Message to players (optional)`.
+- What players get: `{clinic} has been canceled.` as before, then her message after a space when she wrote one. Her message is also kept on the clinic's board (FROM TARA). Someone still asking to get in after close now gets the same notice.
+- Send, phone (Message Players and the Players tab's message): `Send this message?`, then `To {Everyone / You're In! / Waitlist / Response Needed / Unpaid / the player's name}:`, a blank line, and her message; buttons `Send` and `Keep editing`.
+- Send, laptop: the first Send shows the same recap in the dialog and becomes `Yes, send`. Changing the message or who gets it goes back to `Send`.
+- A roster name (You're In!, Waitlist, Response Needed) is now a button that opens Message Players on that player. No new words.
+- Phone, a cancel message over 500 characters: `Keep the message under 500 characters.` (in the existing `Couldn't cancel` alert; an assigned string, so not in `docs/copy-approved.txt`). The laptop's box stops at 500.
+
+## When someone canceled (2026-11-27) — approved by John
+
+John approved this wording on 2026-11-27 ("Approve all").
+
+Tara, 2026-11-27: "can I see (idk how if I can) when or what time someone canceled".
+
+- On her phone and laptop, each row in a clinic's Canceled list gains a line under the name: `Canceled {Fri, Nov 27, 7:45 AM}`. The time is when the spot was canceled, by the player or by her.
+
 ## The rule going forward
 
 `docs/copy-approved.txt` snapshots every string the extractor can see: 148
@@ -1066,3 +1088,14 @@ fee, Refund, Reason (required), Saving…, Make member, Deactivate, Reactivate,
 Check your email for a reset link., Unknown player. Until the extractor widens, this file
 is the only record of those; keep listing them by hand. Tracked in
 `docs/backlog.md`.
+
+## Switches and pickers the copy gate could not see (2026-11-20), awaiting John
+
+Found when "Show canceled" on Tara's phone clinic list went through the gate as "unchanged": `extract-copy.py` did not read `Toggle(` or `Picker(` labels. It does now, and these were in the app unreviewed. All chrome.
+
+| ☐ | Words | Where |
+|---|---|---|
+| ☐ | Show canceled | Tara's phone, Clinics list, under the sections when a canceled clinic is hidden (new, as the laptop's checkbox) |
+| ☐ | Show inactive players | Tara's phone, Players directory |
+| ☐ | Member / Active | Tara's phone, a player's page, her switches |
+| ☐ | Round / Court {n}, side {s}, spot {n} | Tara's phone, a 105's Rounds sheet (decision 0054) |

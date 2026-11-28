@@ -35,12 +35,36 @@ import UserNotifications
 enum NotificationTarget: Equatable, Sendable {
     case clinic(UUID)
     case registration(UUID)
+    /// A player: Tara's level requests (decision 0048), and her own message
+    /// to a player from the Players tab. Only Tara's side opens anything.
+    case player(UUID)
 
     init?(entityType: String?, entityId: UUID?) {
         guard let entityId else { return nil }
         switch entityType {
         case "clinic": self = .clinic(entityId)
         case "registration": self = .registration(entityId)
+        case "player": self = .player(entityId)
+        default: return nil
+        }
+    }
+}
+
+/// Where on her clinic page a notification lands (Tara, 2026-11-23: "when
+/// the admin sees a notification, when they click on it have it go directly
+/// to the actual notification spot"). From the notification's type; any
+/// other type opens the page at the top, as before.
+enum AdminClinicFocus: Hashable, Sendable {
+    case youreIn, waitlist, lateRequests, canceled
+
+    init?(notificationType type: String?) {
+        switch type {
+        case "LATE_REQUEST": self = .lateRequests
+        // Someone took the spot she offered: they are in You're In! now.
+        case "invitation_accepted": self = .youreIn
+        // Someone said no: the next one to invite is on the Waitlist.
+        case "invitation_declined": self = .waitlist
+        case "player_canceled": self = .canceled
         default: return nil
         }
     }
@@ -54,10 +78,13 @@ struct PushTap: Equatable, Sendable {
     let token = UUID()
     let notificationId: UUID?
     let target: NotificationTarget?
+    /// The notification's type, which picks the spot on her page.
+    let type: String?
 
     init(userInfo: [AnyHashable: Any]) {
         func uuid(_ key: String) -> UUID? { (userInfo[key] as? String).flatMap(UUID.init(uuidString:)) }
         notificationId = uuid("notification_id")
+        type = userInfo["type"] as? String
         target = NotificationTarget(entityType: userInfo["entity_type"] as? String, entityId: uuid("entity_id"))
     }
 }
@@ -65,22 +92,28 @@ struct PushTap: Equatable, Sendable {
 /// The screen a tap opens.
 enum NotificationDestination: Identifiable, Hashable {
     case playerClinic(ClinicPublic)
-    case adminClinic(ClinicAdmin)
+    case adminClinic(ClinicAdmin, focus: AdminClinicFocus? = nil)
+    /// Tara's page for one player, where a level request is approved.
+    case adminPlayer(PlayerSearchResult)
 
     var id: UUID {
         switch self {
         case .playerClinic(let clinic): return clinic.id
-        case .adminClinic(let clinic): return clinic.id
+        case .adminClinic(let clinic, _): return clinic.id
+        case .adminPlayer(let player): return player.id
         }
     }
 
-    private var isAdmin: Bool {
-        if case .adminClinic = self { return true }
-        return false
+    private var side: Int {
+        switch self {
+        case .playerClinic: return 0
+        case .adminClinic: return 1
+        case .adminPlayer: return 2
+        }
     }
 
-    static func == (a: Self, b: Self) -> Bool { a.id == b.id && a.isAdmin == b.isAdmin }
-    func hash(into hasher: inout Hasher) { hasher.combine(id); hasher.combine(isAdmin) }
+    static func == (a: Self, b: Self) -> Bool { a.id == b.id && a.side == b.side }
+    func hash(into hasher: inout Hasher) { hasher.combine(id); hasher.combine(side) }
 }
 
 // MARK: - The one resolver
@@ -97,13 +130,22 @@ struct NotificationResolver: Sendable {
     var publicClinic: @Sendable (UUID) async throws -> ClinicPublic?
     /// A clinic as Tara sees it (clinics_admin).
     var adminClinic: @Sendable (UUID) async throws -> ClinicAdmin?
+    /// A player as Tara's Players tab lists them; answers only an admin.
+    var adminPlayer: @Sendable (UUID) async throws -> PlayerSearchResult? = { _ in nil }
 
-    func destination(for target: NotificationTarget, isAdmin: Bool) async -> NotificationDestination? {
+    /// `type` is the notification's type: it picks the spot on Tara's page.
+    func destination(for target: NotificationTarget, isAdmin: Bool, type: String? = nil) async -> NotificationDestination? {
         switch target {
+        case .player(let id):
+            // A level request opens the player's page, where she approves
+            // or declines it. A player's own message from Tara is a note.
+            guard isAdmin, let player = try? await adminPlayer(id) else { return nil }
+            return .adminPlayer(player)
+
         case .clinic(let id):
             if isAdmin {
                 guard let clinic = try? await adminClinic(id) else { return nil }
-                return .adminClinic(clinic)
+                return .adminClinic(clinic, focus: AdminClinicFocus(notificationType: type))
             }
             guard let clinic = try? await publicClinic(id) else { return nil }
             return .playerClinic(clinic)
@@ -119,7 +161,7 @@ struct NotificationResolver: Sendable {
             guard isAdmin,
                   let clinicId = try? await rosterRegistrationClinic(id),
                   let clinic = try? await adminClinic(clinicId) else { return nil }
-            return .adminClinic(clinic)
+            return .adminClinic(clinic, focus: AdminClinicFocus(notificationType: type))
         }
     }
 }
@@ -129,7 +171,8 @@ extension NotificationResolver {
         myRegistrationClinic: { try await RegistrationRepository.myRegistrationClinicId($0) },
         rosterRegistrationClinic: { try await AdminRepository.rosterRegistrationClinicId($0) },
         publicClinic: { try await ClinicRepository.clinic(id: $0) },
-        adminClinic: { try await AdminRepository.adminClinic(id: $0) }
+        adminClinic: { try await AdminRepository.adminClinic(id: $0) },
+        adminPlayer: { try await AdminRepository.adminPlayer(id: $0) }
     )
 }
 
@@ -164,6 +207,15 @@ extension AdminRepository {
             .execute()
             .value
         return rows.first?.clinicId
+    }
+
+    /// One player as the Players tab lists them, for a level request's tap.
+    /// search_players takes a name, not an id: the level request names the
+    /// player (admin_level_approvals), and the search by that name is
+    /// narrowed to this id. Admin only on the server (both functions).
+    static func adminPlayer(id: UUID) async throws -> PlayerSearchResult? {
+        guard let ask = try await levelApprovals().first(where: { $0.playerId == id }) else { return nil }
+        return try await searchPlayers(ask.name, includeInactive: true).first { $0.id == id }
     }
 
     /// One clinic as Tara sees it, ended ones included. Zero rows to a non-admin.
@@ -247,7 +299,7 @@ final class NotificationRouter {
     /// Marks nothing read: that waits until the screen is shown.
     func resolve(_ tap: PushTap, isAdmin: Bool) async -> NotificationDestination? {
         guard let target = tap.target else { return nil }
-        return await NotificationResolver.live.destination(for: target, isAdmin: isAdmin)
+        return await NotificationResolver.live.destination(for: target, isAdmin: isAdmin, type: tap.type)
     }
 
     /// The tap's screen is on screen, or it had none to open: it is no longer
@@ -273,9 +325,12 @@ struct NotificationDestinationView: View {
         case .playerClinic(let clinic):
             ClinicDetailView(clinic: clinic, isMember: session.activePlayer?.isMember ?? false,
                              onChanged: { @MainActor in NotificationRouter.shared.requestReload() })
-        case .adminClinic(let clinic):
-            AdminClinicDetailView(clinic: clinic,
+        case .adminClinic(let clinic, let focus):
+            AdminClinicDetailView(clinic: clinic, focus: focus,
                                   onChanged: { @MainActor in NotificationRouter.shared.requestReload() })
+        case .adminPlayer(let player):
+            PlayerAdminDetailView(player: player,
+                                  onChange: { NotificationRouter.shared.requestReload() })
         }
     }
 }

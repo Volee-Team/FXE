@@ -157,7 +157,8 @@ struct PlayersDirectoryView: View {
 /// One player, from Tara's side. Membership and active status are single
 /// switches; the note is free text saved on demand, never on every keystroke,
 /// because a half-typed note is not a note.
-private struct PlayerAdminDetailView: View {
+/// Not private: a level request's notification opens it (NotificationRouter).
+struct PlayerAdminDetailView: View {
     let player: PlayerSearchResult
     let onChange: () -> Void
 

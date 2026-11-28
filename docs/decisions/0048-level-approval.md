@@ -1,5 +1,7 @@
 # 0048. Below a clinic's level, a player asks Tara once (2026-11-05)
 
+**Back on 2026-11-27 (`20261127000002`):** switched off 2026-11-06 (`20261106000002`) while the 1.0.1 app had no Request Approval button. Tara's next-update note (2026-11-23): *"only 4.0's or higher get in to 4.0+ clinic"*; John: on, as built.
+
 **Status:** accepted by John, 2026-11-04 ("now make the changes"); built in
 `supabase/migrations/20261105000002_level_approval.sql`. Item 4 of Tara's
 email of 2026-10-15 (decision 0041), which was recorded and never built.

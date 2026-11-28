@@ -2,6 +2,8 @@
 
 **Date:** 2026-09-28 · **Status:** Active, three defaults for Alex and Tara to confirm (below) · **Source:** Tara's round-four answers 78 and 83 (decision 0024), branch `declined-card`, migration `20260928700001_declined_card.sql`
 
+**Amended 2026-11-20 (`20261120000001`): Resolved clears her lists, never the fee.** The first default below ("Resolved means I will not chase it") was wrong for her: she resolved a decline whose card her bank had held for fraud, the player saved it again, and the roster offered no way to charge (*"I'm not quite sure how to charge her after it's been declined"*). A resolved decline is now listed by `admin_fees_due` (state `resolved`), so the roster on the phone and the laptop shows Charge on it, and `admin_charge_player` charges it. `money_rows` is unchanged, so Action Needed, the Money tab's Declined figures and Charge clinic still leave it out. Pinned by `charge_each_player.sql` (`resolved_decline_back_on_the_roster`, `resolved_decline_charges_again`).
+
 **Extended by 0040 (forward note added 2026-10-12):** Accept also needs a saved card while payments are on and cards are required, as Register does (question 107); `respond_to_invitation` refuses `card_required`. The three defaults below are still for Alex and Tara to confirm.
 
 Her words, exactly:
