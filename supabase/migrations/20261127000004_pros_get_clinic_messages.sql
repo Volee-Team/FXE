@@ -5,9 +5,16 @@
 -- role 'pro', not deleted) is told of every message Tara sends to a clinic:
 --
 --   * send_clinic_message: after the players its audience names, every pro,
---     once, whatever the audience; a pro already told as a player on the
---     clinic is not told twice. One player's message (admin_message_player)
---     stays between Tara and that player.
+--     once; a pro already told as a player on the clinic is not told twice.
+--     Not an Unpaid message: decision 0025, a pro never sees money, and
+--     "hasn't been paid yet" names the clinic. Not a clinic that was never
+--     published (as cancel_clinic: nobody is told about a draft). Private
+--     clinics included: Tara's "every" (decision 0062 amended).
+--     One player's message (admin_message_player) stays between Tara and
+--     that player.
+--   * Each account is told once per message (20261127000004): a parent with
+--     two children on a clinic got two notices; the recipient rows stay one
+--     per player.
 --   * cancel_clinic: the cancel notice, with her message when she wrote one,
 --     goes to every pro as well (a clinic that was never published still
 --     tells nobody).
@@ -22,7 +29,9 @@ create or replace function public.send_clinic_message(p_clinic uuid, p_audience 
  security definer
  set search_path to 'public', 'pg_temp'
 as $function$
-declare m public.clinic_messages; r record; v_told uuid[] := '{}';
+declare m public.clinic_messages; r record;
+  v_told uuid[] := '{}';  -- 20261127000004: accounts already told
+  v_published boolean;    -- 20261127000004
 begin
   perform public.require_admin();
   if p_audience::text = 'player' then
@@ -51,22 +60,28 @@ begin
       insert into public.clinic_message_recipients (message_id, player_id)
       values (m.id, r.player_id) on conflict do nothing;
     end if;
-    perform public.notify_account(r.account_id, 'clinic_message', 'clinic', p_clinic, p_body);
-    v_told := v_told || r.account_id;
+    -- 20261127000004: one notice per account, not per player.
+    if not (r.account_id = any (v_told)) then
+      perform public.notify_account(r.account_id, 'clinic_message', 'clinic', p_clinic, p_body);
+      v_told := v_told || r.account_id;
+    end if;
   end loop;
 
   -- 20261127000004: every pro gets every clinic message (Tara, via John,
-  -- 2026-11-27: "every pro sees every clinic message"), whatever its
-  -- audience, once per account; a pro already told as a player is not told
-  -- twice. A deleted account is not told.
-  for r in
-    select a.id as account_id
-      from public.accounts a
-     where a.role::text = 'pro' and a.deleted_at is null
-       and not (a.id = any (v_told))
-  loop
-    perform public.notify_account(r.account_id, 'clinic_message', 'clinic', p_clinic, p_body);
-  end loop;
+  -- 2026-11-27: "every pro sees every clinic message"), once per account; a
+  -- pro already told as a player is not told twice. Not Unpaid (a pro never
+  -- sees money, decision 0025), not a draft, not a deleted account.
+  select published_at is not null into v_published from public.clinics where id = p_clinic;
+  if coalesce(v_published, false) and p_audience <> 'unpaid' then
+    for r in
+      select a.id as account_id
+        from public.accounts a
+       where a.role::text = 'pro' and a.deleted_at is null
+         and not (a.id = any (v_told))
+    loop
+      perform public.notify_account(r.account_id, 'clinic_message', 'clinic', p_clinic, p_body);
+    end loop;
+  end if;
 
   return m;
 end;

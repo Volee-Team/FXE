@@ -157,14 +157,20 @@ begin
   select count(*) into n from public.clinics_public where id = priv;
   insert into _probe_result values ('still_not_listed_to_ken', '0', n::text);
 
-  -- Her message to everyone reaches who is on it, and only them.
+  -- Her message to everyone reaches who is on it, and no other member; the
+  -- pros are told too (20261127000004: "every pro sees every clinic
+  -- message", decision 0062 amended).
   perform set_config('request.jwt.claims', json_build_object('sub', TARA)::text, true);
   perform public.send_clinic_message(priv, 'everyone', 'Bring water.');
   perform set_config('role', 'postgres', true);
   select string_agg(a.first_name, ',' order by a.first_name) into t
     from public.notifications nt join public.accounts a on a.id = nt.account_id
-   where nt.entity_id = priv and nt.type = 'clinic_message';
+   where nt.entity_id = priv and nt.type = 'clinic_message' and a.role::text <> 'pro';
   insert into _probe_result values ('message_reaches_who_is_on_it', 'Maria,Rob', coalesce(t, 'NONE'));
+  select count(*) into n
+    from public.notifications nt join public.accounts a on a.id = nt.account_id
+   where nt.entity_id = priv and nt.type = 'clinic_message' and a.role::text = 'pro';
+  insert into _probe_result values ('the_pros_are_told_of_a_private_message', '1', n::text);
 
   -- Rob cancels his spot: canceling works, and the clinic leaves his list.
   perform set_config('request.jwt.claims', json_build_object('sub', ROB)::text, true);
