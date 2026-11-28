@@ -1,5 +1,7 @@
 # 0025: The pro role
 
+**Amended 2026-11-27 (`20261127000004`):** every pro is told of every clinic message Tara sends and of every cancel, with her message. Tara, via John: *"every pro sees every clinic message"*. A notice only; no new power.
+
 **Date:** 2026-09-28 · **Status:** Active; five defaults wait on Tara (below) · **Source:** Tara, 2026-09-28 (decision 0024) and 2026-09-22 (decision 0016)
 
 **Extended by 0051 (forward note added 2026-11-07):** the tab is named Manage and lists the week (`pro_week`), and a pro sets courts on that week's You're In! rows (`pro_assign_court`); everything below about money and the Waitlist still holds.

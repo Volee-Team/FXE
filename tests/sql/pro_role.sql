@@ -484,7 +484,10 @@ begin
                              'pro_week', 'pro_assign_court',
                              -- Reading a 105's rounds (decision 0054), and
                              -- setting them in the week (decision 0056).
-                             'clinic_rounds', 'admin_set_round_court', 'clinic_round_people')
+                             'clinic_rounds', 'admin_set_round_court', 'clinic_round_people',
+                             -- Every pro is TOLD of Tara's clinic messages and
+                             -- cancels (20261127000004); a notice, no power.
+                             'send_clinic_message', 'cancel_clinic')
     union all
     select 'policy ' || pol.tablename || '.' || pol.policyname
       from pg_policies pol
