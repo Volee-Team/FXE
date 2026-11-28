@@ -197,11 +197,17 @@ struct AdminClinicDetailView: View {
     @State private var lateNote = ""
     @State private var cancelError: String?
     @State private var model: AdminClinicModel
-    @State private var showMessage = false
-    /// Set when she taps a name on the roster: the sheet opens on "One
-    /// player" with that player chosen (Tara, 2026-11-23: "find myself wanting
-    /// to click on name in clinic list and send them a message").
-    @State private var messageTo: UUID?
+    /// Message Players, open. `startWith` is set when she taps a name on the
+    /// roster: the sheet opens on "One player" with that player chosen (Tara,
+    /// 2026-11-23: "find myself wanting to click on name in clinic list and
+    /// send them a message"). One value, not a flag plus a player: with
+    /// sheet(isPresented:) the sheet was built before the tapped player
+    /// reached it and opened on Everyone (CI, 2026-11-27, testAdminE2).
+    @State private var messaging: MessageTarget?
+    struct MessageTarget: Identifiable {
+        let id = UUID()
+        let startWith: UUID?
+    }
     /// A Waitlist Invite / Move In waiting on "Your clinic is full" (item 5).
     @State private var fullFor: RosterEntry?
     /// Invite anyone, not only the Waitlist (item 2).
@@ -449,9 +455,9 @@ struct AdminClinicDetailView: View {
                 await model.load()
             }
         }
-        .sheet(isPresented: $showMessage, onDismiss: { messageTo = nil }) {
+        .sheet(item: $messaging) { target in
             MessageClinicSheet(clinic: clinic, unpaidCount: model.unpaidCount, roster: model.messageable,
-                               startWith: messageTo)
+                               startWith: target.startWith)
         }
     }
 
@@ -485,8 +491,7 @@ struct AdminClinicDetailView: View {
             }
 
             Button {
-                messageTo = nil
-                showMessage = true
+                messaging = MessageTarget(startWith: nil)
             } label: {
                 Label("Message Players", systemImage: "bubble.left.and.bubble.right")
                     .brandFont(.button)
@@ -613,8 +618,7 @@ struct AdminClinicDetailView: View {
                             // invited).
                             if model.messageable.contains(where: { $0.registration.playerId == entry.registration.playerId }) {
                                 Button {
-                                    messageTo = entry.registration.playerId
-                                    showMessage = true
+                                    messaging = MessageTarget(startWith: entry.registration.playerId)
                                 } label: {
                                     rosterIdentity(entry, index: numbered ? index + 1 : nil, history: history)
                                         .frame(maxWidth: .infinity, alignment: .leading)

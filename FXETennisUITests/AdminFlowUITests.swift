@@ -198,7 +198,9 @@ final class AdminFlowUITests: XCTestCase {
 
         // The confirmation takes an optional message (Tara, 2026-11-23), then
         // reuses the same words for its button.
-        let message = app.textFields["admin.cancel.message"]
+        // An alert's text field does not carry its identifier through, so it
+        // is found as the alert's field (CI, 2026-11-27).
+        let message = app.alerts.firstMatch.textFields.firstMatch
         XCTAssertTrue(message.waitForExistence(timeout: 10), "No message field on the cancel alert")
         message.tap()
         message.typeText("Courts are wet")
@@ -336,7 +338,8 @@ final class AdminFlowUITests: XCTestCase {
         // The sheet opens on her, not on Everyone.
         let player = app.buttons["admin.messagePlayer"]
         XCTAssertTrue(player.waitForExistence(timeout: 10), "Message Players did not open on One player")
-        XCTAssertTrue(player.label.contains("Maria Alvarez"), "The sheet chose '\(player.label)', not Maria")
+        XCTAssertTrue(player.label.contains("Maria Alvarez") || (player.value as? String ?? "").contains("Maria Alvarez"),
+                      "The sheet chose '\(player.label)', not Maria")
 
         let body = app.textViews["admin.messageBody"]
         XCTAssertTrue(body.waitForExistence(timeout: 10))
@@ -351,7 +354,8 @@ final class AdminFlowUITests: XCTestCase {
                       "The recap does not name who gets it")
         XCTAssertTrue(recap.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "See you Saturday")).firstMatch.exists,
                       "The recap does not show the message")
-        recap.buttons["Send"].tap()
+        // The alert's Send, not the toolbar's (both are "Send" on iOS 26).
+        recap.buttons["Send"].firstMatch.tap()
         XCTAssertTrue(body.waitForNonExistence(timeout: 20), "The sheet stayed open after sending")
     }
 
