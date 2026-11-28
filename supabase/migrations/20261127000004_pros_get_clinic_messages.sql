@@ -15,12 +15,10 @@
 --   * Each account is told once per message (20261127000004): a parent with
 --     two children on a clinic got two notices; the recipient rows stay one
 --     per player.
---   * cancel_clinic: the cancel notice, with her message when she wrote one,
---     goes to every pro as well (a clinic that was never published still
---     tells nobody).
+--   * Not the cancel notice: John, 2026-11-27, "drop" (pros see a canceled
+--     clinic in their week; cancel_clinic is unchanged).
 --
--- Bodies copied from 20261107000002 (send_clinic_message) and 20261125000002
--- (cancel_clinic); only the marked lines differ. Pinned by
+-- Body copied from 20261107000002; only the marked lines differ. Pinned by
 -- tests/sql/pros_get_clinic_messages.sql.
 
 create or replace function public.send_clinic_message(p_clinic uuid, p_audience message_audience, p_body text)
@@ -89,78 +87,3 @@ $function$;
 
 revoke all on function public.send_clinic_message(uuid, message_audience, text) from public, anon;
 grant execute on function public.send_clinic_message(uuid, message_audience, text) to authenticated;
-
-create or replace function public.cancel_clinic(p_clinic uuid, p_message text default null)
- returns public.clinics
- language plpgsql
- security definer
- set search_path to 'public', 'pg_temp'
-as $function$
-declare
-  v     public.clinics;
-  r     record;
-  v_msg text := nullif(btrim(coalesce(p_message, ''), E' \t\r\n'), '');
-begin
-  perform public.require_admin();
-  if length(v_msg) > 500 then
-    raise exception 'message_too_long' using errcode = 'P0001';
-  end if;
-
-  update public.clinics set status = 'canceled', canceled_at = now()
-   where id = p_clinic and status <> 'canceled'
-  returning * into v;
-  if not found then
-    raise exception 'already_canceled' using errcode = 'P0001';
-  end if;
-
-  -- A rained-out clinic owes nothing: charges queued for it and not yet
-  -- sent to Stripe are canceled with it (audit 2026-10-12). A refund still
-  -- goes through; a charge already with Stripe is refunded by hand.
-  update public.payments p
-     set status = 'canceled', failure_reason = 'clinic_canceled', updated_at = now()
-    from public.registrations reg
-   where reg.id = p.registration_id and reg.clinic_id = p_clinic
-     and p.status = 'pending' and p.kind <> 'refund'
-     and p.stripe_payment_intent_id is null;
-
-  -- Nobody is told about a clinic that was never published.
-  if v.published_at is not null then
-    if v_msg is not null then
-      insert into public.clinic_messages (clinic_id, audience, body)
-      values (p_clinic, 'everyone', v_msg);
-    end if;
-
-    for r in
-      select p.account_id
-        from public.registrations reg
-        join public.players p on p.id = reg.player_id
-       where reg.clinic_id = p_clinic
-         and reg.status in ('in', 'pool', 'response_needed')
-      union
-      select p.account_id
-        from public.late_requests lr
-        join public.players p on p.id = lr.player_id
-        join public.accounts a on a.id = p.account_id and a.deleted_at is null
-       where lr.clinic_id = p_clinic
-         and lr.status = 'pending'
-      -- 20261127000004: every pro, with her message (the same notice).
-      union
-      select a.id
-        from public.accounts a
-       where a.role::text = 'pro' and a.deleted_at is null
-    loop
-      perform public.notify_account(r.account_id, 'clinic_canceled', 'clinic', p_clinic,
-        v.name || ' has been canceled.' || coalesce(' ' || v_msg, ''));
-    end loop;
-  end if;
-
-  -- After the notices, which read the waiting requests.
-  update public.late_requests
-     set status = 'declined', resolved_at = now(), resolved_by = auth.uid()
-   where clinic_id = p_clinic and status = 'pending';
-
-  return v;
-end; $function$;
-
-revoke all on function public.cancel_clinic(uuid, text) from public, anon;
-grant execute on function public.cancel_clinic(uuid, text) to authenticated;

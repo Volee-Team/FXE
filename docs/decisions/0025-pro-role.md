@@ -1,6 +1,6 @@
 # 0025: The pro role
 
-**Amended 2026-11-27 (`20261127000004`):** every pro is told of every clinic message Tara sends and of every cancel, with her message. Tara, via John: *"every pro sees every clinic message"*. A notice only; no new power.
+**Amended 2026-11-27 (`20261127000004`):** every pro is told of every clinic message Tara sends (not an Unpaid one, not on a draft). Tara, via John: *"every pro sees every clinic message"*. Not the cancel notice (John: drop). A notice only; no new power.
 
 **Date:** 2026-09-28 · **Status:** Active; five defaults wait on Tara (below) · **Source:** Tara, 2026-09-28 (decision 0024) and 2026-09-22 (decision 0016)
 

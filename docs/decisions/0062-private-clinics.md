@@ -48,7 +48,7 @@ on (`clinics.is_private`, set only by `admin_set_clinic_private`).
   announces a clinic either: publishing tells nobody, and every notice about a
   clinic goes to who is on it, and (since `20261127000004`, decision 0025
   amended, Tara: "every pro sees every clinic message") to every pro: her
-  messages to the clinic and its cancel notice. Pinned as
+  messages to the clinic, not its cancel notice. Pinned as
   `the_pros_are_told_of_a_private_message`.
 - **Copy to next week keeps it** (`admin_copy_week`), so a private event
   copied with the week is not listed to everyone the day she publishes the

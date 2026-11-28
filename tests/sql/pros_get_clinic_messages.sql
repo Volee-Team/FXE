@@ -1,9 +1,10 @@
 -- pros_get_clinic_messages.sql
 --
 -- 20261127000004. Tara, via John, 2026-11-27: "every pro sees every clinic
--- message". Every pro is told of every message Tara sends to a clinic,
--- whatever its audience, once; and of a cancel, with her message. One
--- player's message stays private. A deleted pro is not told.
+-- message". Every pro is told of every message Tara sends to a clinic, once,
+-- but not an Unpaid one or one on a draft. Not of a cancel (John,
+-- 2026-11-27: "drop"). One player's message stays private. A deleted pro is
+-- not told.
 --
 -- Expected: every row reads PASS.
 
@@ -66,8 +67,8 @@ begin
   select count(*) into n from public.notifications where account_id = PRO and body = 'Probe pro twice';
   insert into _probe_result values ('a_pro_on_the_clinic_is_told_once', '1', n::text);
 
-  -- The cancel notice, with her message, reaches the pro on a clinic the
-  -- pro is not on.
+  -- The cancel notice is not for a pro who is not on the clinic (John,
+  -- 2026-11-27: "drop").
   perform set_config('role', 'authenticated', true);
   c := public.admin_upsert_clinic(null, 'Probe Pro Messages', 'coed',
          now() + interval '3 days', 60, 8, null, null, null, null, null);
@@ -76,8 +77,7 @@ begin
   perform set_config('role', 'postgres', true);
   select string_agg(body, '|') into t from public.notifications
    where account_id = PRO and entity_id = c.id and type = 'clinic_canceled';
-  insert into _probe_result values ('the_pro_gets_the_cancel_with_her_message',
-    'Probe Pro Messages has been canceled. Courts are wet', coalesce(t, 'NONE'));
+  insert into _probe_result values ('the_pro_gets_no_cancel_notice', 'NONE', coalesce(t, 'NONE'));
 
   -- A message on a clinic never published reaches no pro.
   perform set_config('role', 'authenticated', true);
